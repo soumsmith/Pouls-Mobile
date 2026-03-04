@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "645784199906",
+    "project_id": "parent-responsable-4e33f",
+    "storage_bucket": "parent-responsable-4e33f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:645784199906:android:b7feb9903694b80148b4bb",
+        "android_client_info": {
+          "package_name": "com.pouls.scolaire.parentresponsable"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVcbPzwvHWZEDk9J9cn3rIoVhzb7c4DZk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

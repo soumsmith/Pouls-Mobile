@@ -1,0 +1,475 @@
+{
+  "bulletin": {
+    "eleve": {
+      "id": 25785,
+      "matricule": "24047355B",
+      "nom": "BAMBA",
+      "prenom": "Fousseni Junior",
+      "dateNaissance": "2013-04-24",
+      "lieuNaissance": "ABOBO",
+      "nationalite": "IVOIRIENNE",
+      "sexe": "MASCULIN",
+      "urlPhoto": "https://s3.eu-west-3.amazonaws.com/vie-ecoles/hinneh/photos/eleves/43273a2ea9fa4f66a7baecd42fb2311c.jpg"
+    },
+    "classe": {
+      "id": 87945,
+      "code": "010",
+      "libelle": "5EME A",
+      "branche": {
+        "id": 2,
+        "libelle": "5EME",
+        "filiere": "GENERAL",
+        "niveau": "Cinquième",
+        "programme": "Ivoirien"
+      },
+      "ecole": {
+        "id": 38,
+        "libelle": "Collège Privé Hînneh Biabou",
+        "tel": "0789353025",
+        "nomSignataire": "M.SANGARE",
+        "identifiantVieEcole": "hinneh",
+        "code": "057955"
+      },
+      "effectif": 46
+    },
+    "periode": {
+      "id": 1,
+      "libelle": "Premier Trimestre",
+      "type": "Trimestrielle"
+    },
+    "annee": {
+      "id": 385,
+      "libelle": "Année 2025 - 2026",
+      "debut": 2025,
+      "statut": "DIFFUSE"
+    },
+    "synthese": {
+      "moyenneGenerale": 12.78,
+      "rang": 43,
+      "appreciation": "Assez Bien",
+      "totalCoefficients": 0,
+      "moyenneFrancais": 14.59,
+      "rangFrancais": 32,
+      "appreciationFrancais": "Bien"
+    },
+    "matieres": [
+      {
+        "id": 2019,
+        "code": "02",
+        "libelle": "COMPOSITION FRANCAISE",
+        "categorie": "Littéraire",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": 13.17,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 30, "sur": 40, "type": "Devoir", "date": "2025-11-11" },
+          { "note": 26, "sur": 40, "type": "Devoir de niveau", "date": "2025-10-10" },
+          { "note": 36, "sur": 40, "type": "Test lourd", "date": "2025-11-17" },
+          { "note": 30, "sur": 40, "type": "Devoir", "date": "2025-12-04" }
+        ]
+      },
+      {
+        "id": 2021,
+        "code": "04",
+        "libelle": "ORTHOGRAPHE ET GRAMMAIRE",
+        "categorie": "Littéraire",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 19, "sur": 20, "type": "Interrogation", "date": "2025-09-18" },
+          { "note": 23, "sur": 40, "type": "Devoir de niveau", "date": "2025-10-10" },
+          { "note": 25, "sur": 40, "type": "Test lourd", "date": "2025-10-20" }
+        ]
+      },
+      {
+        "id": 2020,
+        "code": "03",
+        "libelle": "EXPRESSION ORALE",
+        "categorie": "Littéraire",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 14, "sur": 20, "type": "Interrogation", "date": "2025-09-30" },
+          { "note": 14, "sur": 20, "type": "Interrogation", "date": "2025-10-02" }
+        ]
+      },
+      {
+        "id": 2022,
+        "code": "05",
+        "libelle": "ANGLAIS",
+        "categorie": "Littéraire",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 8, "sur": 20, "type": "Interrogation", "date": "2025-12-04" },
+          { "note": 13, "sur": 20, "type": "Interrogation", "date": "2025-12-04" },
+          { "note": 24, "sur": 40, "type": "Devoir", "date": "2025-12-04" },
+          { "note": 7, "sur": 20, "type": "Interrogation", "date": "2025-12-04" },
+          { "note": 26, "sur": 40, "type": "Devoir", "date": "2025-12-04" },
+          { "note": 30, "sur": 40, "type": "Test lourd", "date": "2025-12-02" }
+        ]
+      },
+      {
+        "id": 2023,
+        "code": "06",
+        "libelle": "HISTOIRE-GEOGRAPHIE",
+        "categorie": "Littéraire",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 10, "sur": 20, "type": "Interrogation", "date": "2025-11-28" },
+          { "note": 12, "sur": 20, "type": "Interrogation", "date": "2025-11-28" },
+          { "note": 20, "sur": 20, "type": "Interrogation", "date": "2025-11-28" },
+          { "note": 22, "sur": 40, "type": "Devoir", "date": "2025-11-28" },
+          { "note": 23, "sur": 40, "type": "Devoir de niveau", "date": "2025-11-28" },
+          { "note": 20, "sur": 40, "type": "Test lourd", "date": "2025-11-28" }
+        ]
+      },
+      {
+        "id": 2024,
+        "code": "07",
+        "libelle": "MATHEMATIQUES",
+        "categorie": "Scientifique",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 0, "sur": 10, "type": "Interrogation", "date": "2025-12-09" },
+          { "note": 4, "sur": 10, "type": "Interrogation", "date": "2025-12-09" },
+          { "note": 15, "sur": 20, "type": "Devoir", "date": "2025-12-09" },
+          { "note": 10, "sur": 10, "type": "Interrogation", "date": "2025-12-09" },
+          { "note": 26, "sur": 40, "type": "Devoir de niveau", "date": "2025-12-07" },
+          { "note": 26, "sur": 40, "type": "Devoir de niveau", "date": "2025-12-09" },
+          { "note": 16, "sur": 40, "type": "Test lourd", "date": "2025-12-07" }
+        ]
+      },
+      {
+        "id": 2025,
+        "code": "08",
+        "libelle": "PHYSIQUE-CHIMIE",
+        "categorie": "Scientifique",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 6, "sur": 20, "type": "Devoir", "date": "2025-10-15" },
+          { "note": 6, "sur": 10, "type": "Interrogation", "date": "2025-09-24" },
+          { "note": 34, "sur": 40, "type": "Devoir de niveau", "date": "2025-09-30" },
+          { "note": 2, "sur": 10, "type": "Interrogation", "date": "2025-11-12" },
+          { "note": 14, "sur": 40, "type": "Devoir de niveau", "date": "2025-11-04" },
+          { "note": 30, "sur": 40, "type": "Test lourd", "date": "2025-11-17" }
+        ]
+      },
+      {
+        "id": 2026,
+        "code": "09",
+        "libelle": "SVT",
+        "categorie": "Scientifique",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 5, "sur": 20, "type": "Interrogation", "date": "2025-10-01" },
+          { "note": 19, "sur": 20, "type": "Interrogation", "date": "2025-09-24" },
+          { "note": 12, "sur": 40, "type": "Devoir", "date": "2025-10-15" },
+          { "note": 16, "sur": 20, "type": "Interrogation", "date": "2025-11-05" },
+          { "note": 22, "sur": 40, "type": "Test lourd", "date": "2025-11-18" }
+        ]
+      },
+      {
+        "id": 2027,
+        "code": "10",
+        "libelle": "EPS",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 16, "sur": 20, "type": "Devoir", "date": "2025-12-02" },
+          { "note": 18, "sur": 20, "type": "Devoir", "date": "2025-11-25" },
+          { "note": 14, "sur": 20, "type": "Devoir", "date": "2025-12-02" },
+          { "note": 24, "sur": 40, "type": "Test lourd", "date": "2025-12-04" }
+        ]
+      },
+      {
+        "id": 2028,
+        "code": "11",
+        "libelle": "EDHC",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 8, "sur": 10, "type": "Interrogation", "date": "2025-12-09" },
+          { "note": 5.5, "sur": 10, "type": "Interrogation", "date": "2025-12-09" },
+          { "note": 12, "sur": 20, "type": "Devoir", "date": "2025-12-09" },
+          { "note": 32, "sur": 40, "type": "Devoir de niveau", "date": "2025-12-09" },
+          { "note": 40, "sur": 40, "type": "Test lourd", "date": "2025-12-09" }
+        ]
+      },
+      {
+        "id": 2029,
+        "code": "12",
+        "libelle": "CONDUITE",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 15, "sur": 20, "type": "Devoir", "date": "2025-12-05" }
+        ]
+      },
+      {
+        "id": 2040,
+        "code": "27",
+        "libelle": "TICE",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 10, "sur": 10, "type": "Interrogation", "date": "2025-12-03" },
+          { "note": 8, "sur": 10, "type": "Interrogation", "date": "2025-12-04" },
+          { "note": 28, "sur": 40, "type": "Devoir", "date": "2025-12-04" },
+          { "note": 29, "sur": 40, "type": "Devoir de niveau", "date": "2025-12-04" },
+          { "note": 31, "sur": 40, "type": "Test lourd", "date": "2025-12-04" }
+        ]
+      },
+      {
+        "id": 2042,
+        "code": "29",
+        "libelle": "MEMORISATION",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 19, "sur": 20, "type": "Interrogation", "date": "2025-11-17" },
+          { "note": 12, "sur": 20, "type": "Interrogation", "date": "2025-11-17" },
+          { "note": 18, "sur": 20, "type": "Interrogation", "date": "2025-11-18" },
+          { "note": 7, "sur": 20, "type": "Interrogation", "date": "2025-11-19" },
+          { "note": 9, "sur": 10, "type": "Interrogation", "date": "2025-11-20" },
+          { "note": 26, "sur": 40, "type": "Devoir", "date": "2025-11-21" },
+          { "note": 33, "sur": 40, "type": "Test lourd", "date": "2025-12-01" }
+        ]
+      },
+      {
+        "id": 2043,
+        "code": "30",
+        "libelle": "FIQ",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 19.5, "sur": 20, "type": "Interrogation", "date": "2025-12-06" },
+          { "note": 14, "sur": 20, "type": "Interrogation", "date": "2025-12-02" },
+          { "note": 39, "sur": 40, "type": "Test lourd", "date": "2025-12-03" }
+        ]
+      },
+      {
+        "id": 2044,
+        "code": "31",
+        "libelle": "EMR",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 14.17, "sur": 20, "type": "Moyenne", "date": null },
+          { "note": 15.67, "sur": 20, "type": "Moyenne", "date": null },
+          { "note": 11.92, "sur": 20, "type": "Moyenne", "date": null },
+          { "note": 18.58, "sur": 20, "type": "Moyenne", "date": null },
+          { "note": 14.33, "sur": 20, "type": "Moyenne", "date": null }
+        ]
+      },
+      {
+        "id": 2047,
+        "code": "35",
+        "libelle": "AS-SIRAH",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 6, "sur": 20, "type": "Interrogation", "date": "2025-12-06" },
+          { "note": 17.5, "sur": 20, "type": "Interrogation", "date": "2025-12-02" },
+          { "note": 24, "sur": 40, "type": "Test lourd", "date": "2025-12-06" }
+        ]
+      },
+      {
+        "id": 2048,
+        "code": "36",
+        "libelle": "ARTS VISUELS",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 13, "sur": 20, "type": "Interrogation", "date": "2025-11-27" },
+          { "note": 14, "sur": 20, "type": "Interrogation", "date": "2025-11-27" },
+          { "note": 14, "sur": 20, "type": "Interrogation", "date": "2025-11-27" },
+          { "note": 30, "sur": 40, "type": "Devoir de niveau", "date": "2025-11-27" },
+          { "note": 28, "sur": 40, "type": "Test lourd", "date": "2025-11-27" }
+        ]
+      },
+      {
+        "id": 2049,
+        "code": "37",
+        "libelle": "AL-AQIDAH",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 0, "sur": 20, "type": "Interrogation", "date": "2025-12-06" },
+          { "note": 9, "sur": 20, "type": "Interrogation", "date": "2025-12-02" },
+          { "note": 38, "sur": 40, "type": "Test lourd", "date": "2025-12-03" }
+        ]
+      },
+      {
+        "id": 2050,
+        "code": "38",
+        "libelle": "AL-AKHLÂQ",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 15, "sur": 20, "type": "Interrogation", "date": "2025-12-06" },
+          { "note": 17, "sur": 20, "type": "Interrogation", "date": "2025-12-06" },
+          { "note": 27, "sur": 40, "type": "Test lourd", "date": "2025-12-02" }
+        ]
+      },
+      {
+        "id": 2085,
+        "code": "73",
+        "libelle": "ARABE",
+        "categorie": "Autres",
+        "coefficient": null,
+        "statistiques": {
+          "moyenne": null,
+          "rang": null,
+          "appreciation": null,
+          "isClassed": null,
+          "controle": true
+        },
+        "notes": [
+          { "note": 7, "sur": 10, "type": "Interrogation", "date": "2025-12-03" },
+          { "note": 10, "sur": 10, "type": "Interrogation", "date": "2025-12-03" },
+          { "note": 10, "sur": 40, "type": "Devoir", "date": "2025-12-03" },
+          { "note": 15, "sur": 20, "type": "Devoir", "date": "2025-12-03" },
+          { "note": 29, "sur": 40, "type": "Test lourd", "date": "2025-11-27" }
+        ]
+      }
+    ],
+    "absences": {
+      "justifiees": 0,
+      "nonJustifiees": 0
+    },
+    "metadata": {
+      "version": "1.0",
+      "dateGeneration": "2026-03-03",
+      "source": "API optimisée"
+    }
+  }
+}

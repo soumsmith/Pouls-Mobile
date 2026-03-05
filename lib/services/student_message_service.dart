@@ -13,7 +13,7 @@ class StudentMessageService {
   Future<List<StudentMessage>> getMessagesForStudent(String matricule) async {
     print('🔄 Début du chargement des messages pour l\'élève: $matricule');
     
-    final url = Uri.parse('https://api2.vie-ecoles.com/api/vie-ecoles/liste-messages-groupe/$matricule');
+    final url = Uri.parse('https://api2.vie-ecoles.com/api/vie-ecoles/liste-messages-groupe/$matricule');//
 
     try {
       print('📡 Appel API: $url');

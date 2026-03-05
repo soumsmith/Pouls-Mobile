@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class Avis {
   final int id;
   final String nom;
-  final String etablissement;
+  final String? etablissement;
   final int statut;
   final String contenu;
   final String? photo;
@@ -12,7 +12,7 @@ class Avis {
   Avis({
     required this.id,
     required this.nom,
-    required this.etablissement,
+    this.etablissement,
     required this.statut,
     required this.contenu,
     this.photo,
@@ -23,7 +23,7 @@ class Avis {
     return Avis(
       id: json['id'] as int,
       nom: json['nom'] as String,
-      etablissement: json['etablissement'] as String,
+      etablissement: json['etablissement'] as String?,
       statut: json['statut'] as int,
       contenu: json['contenu'] as String,
       photo: json['photo'] as String?,
@@ -57,9 +57,9 @@ class Avis {
     return {
       'id': id.toString(),
       'title': 'Avis de ${nom}',
-      'subtitle': etablissement,
+      'subtitle': etablissement ?? 'Établissement non spécifié',
       'date': date,
-      'establishment': etablissement,
+      'establishment': etablissement ?? 'Établissement non spécifié',
       'type': _getStatutLabel(statut),
       'color': color,
       'image': photo,

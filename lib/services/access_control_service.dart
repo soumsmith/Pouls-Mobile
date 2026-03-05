@@ -36,6 +36,7 @@ class AccessControlService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         print('✅ Données reçues: status=${data['status']}');
+        print('📄 Response body: ${response.body}');
         
         final accessControlResponse = AccessControlResponse.fromJson(data);
         print('📚 ${accessControlResponse.data.length} pointages parsés avec succès');

@@ -1,36 +1,42 @@
 import 'package:flutter/material.dart';
 import '../models/child.dart';
 import '../models/note.dart';
-import '../models/note_api.dart';
-import '../models/matiere.dart';
-import '../models/periode.dart';
-import '../models/annee_scolaire.dart';
 import '../models/timetable_entry.dart';
 import '../models/message.dart';
 import '../models/fee.dart';
-import '../services/api_service.dart';
+import '../models/school_supply.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/database_service.dart';
 import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/student_menu_cards.dart';
+import '../widgets/section_title.dart';
 import '../screens/notes_screen_json.dart';
-import '../screens/student_timetable_screen.dart';
-import '../screens/student_messages_screen.dart';
-import '../screens/student_scolarite_screen.dart';
+import '../services/student_timetable_service.dart';
+import '../models/student_timetable.dart';
+import '../services/school_service.dart';
+import '../services/access_control_service.dart';
+import '../models/access_control.dart';
 import '../screens/shop_screen.dart';
-import '../screens/student_access_control_screen.dart';
 import '../screens/access_log_screen.dart';
 import '../screens/parent_suggestion_screen.dart';
 import '../screens/place_reservation_screen.dart';
-import '../screens/student_detail_screen.dart';
-import '../services/school_service.dart';
-import '../models/school_supply.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
+import '../services/student_message_service.dart';
+import '../models/student_message.dart';
+import '../services/student_scolarite_service.dart';
+import '../models/student_scolarite.dart';
+import '../services/parent_suggestion_service.dart';
+import '../models/parent_suggestion.dart';
+import '../services/access_log_service.dart';
+import '../models/access_log.dart';
+import '../services/place_reservation_service.dart';
+import '../models/place_reservation.dart';
 
-/// Écran de détail d'un enfant avec onglets
+/// Écran de détail d'un enfant avec menu cartes
 class ChildListScreen extends StatefulWidget {
   final Child child;
 
@@ -45,7 +51,6 @@ class ChildListScreen extends StatefulWidget {
 
 class _ChildListScreenState extends State<ChildListScreen>
     with TickerProviderStateMixin implements MainScreenChild {
-  late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -60,6 +65,42 @@ class _ChildListScreenState extends State<ChildListScreen>
   final TextSizeService _textSizeService = TextSizeService();
   final SchoolSupplyService _schoolSupplyService = SchoolSupplyService();
   final PaiementService _paiementService = PaiementService();
+  final StudentTimetableService _timetableService = StudentTimetableService();
+  final SchoolService _schoolService = SchoolService();
+  final AccessControlService _accessControlService = AccessControlService();
+  final StudentMessageService _messageService = StudentMessageService();
+  final StudentScolariteService _scolariteService = StudentScolariteService();
+  final MockParentSuggestionService _suggestionService = MockParentSuggestionService();
+  final MockAccessLogService _accessLogService = MockAccessLogService();
+  final MockPlaceReservationService _reservationService = MockPlaceReservationService();
+  
+  // Variables pour l'emploi du temps dynamique
+  StudentTimetableResponse? _timetableResponse;
+  bool _isLoadingTimetable = false;
+  
+  // Variables pour le contrôle d'accès
+  List<AccessControlEntry> _accessEntries = [];
+  bool _isLoadingAccessControl = false;
+  
+  // Variables pour les messages
+  List<StudentMessage> _studentMessages = [];
+  bool _isLoadingMessages = false;
+  
+  // Variables pour les scolarités
+  List<StudentScolariteEntry> _scolariteEntries = [];
+  bool _isLoadingScolarite = false;
+  
+  // Variables pour les suggestions
+  List<ParentSuggestion> _suggestions = [];
+  bool _isLoadingSuggestions = false;
+  
+  // Variables pour les logs d'accès
+  List<AccessLog> _accessLogs = [];
+  bool _isLoadingAccessLogs = false;
+  
+  // Variables pour les réservations
+  List<PlaceReservation> _reservations = [];
+  bool _isLoadingReservations = false;
   
   // Variables pour les données de notes globales
   GlobalAverage? _globalAverage;
@@ -76,7 +117,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 16, vsync: this);
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -98,17 +138,12 @@ class _ChildListScreenState extends State<ChildListScreen>
       curve: Curves.easeOutCubic,
     ));
     
-    _tabController.addListener(() {
-      setState(() {});
-    });
-    
     _loadData();
     _animationController.forward();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -279,6 +314,34 @@ class _ChildListScreenState extends State<ChildListScreen>
       // Étape 4: Charger les fournitures scolaires
       print('📚 Étape 4: Lancement du chargement des fournitures scolaires...');
       await _loadSchoolSupplies();
+
+      // Étape 5: Précharger l'emploi du temps
+      print('📅 Étape 5: Préchargement de l\'emploi du temps...');
+      await _loadTimetableData();
+      
+      // Étape 6: Précharger le contrôle d'accès
+      print('🔒 Étape 6: Préchargement du contrôle d\'accès...');
+      await _loadAccessControlData();
+      
+      // Étape 7: Précharger les messages
+      print('💬 Étape 7: Préchargement des messages...');
+      await _loadMessagesData();
+      
+      // Étape 8: Précharger les scolarités
+      print('💰 Étape 8: Préchargement des scolarités...');
+      await _loadScolariteData();
+      
+      // Étape 9: Précharger les suggestions
+      print('💡 Étape 9: Préchargement des suggestions...');
+      await _loadSuggestionsData();
+      
+      // Étape 10: Précharger les logs d'accès
+      print('📋 Étape 10: Préchargement des logs d\'accès...');
+      await _loadAccessLogsData();
+      
+      // Étape 11: Précharger les réservations
+      print('🪑 Étape 11: Préchargement des réservations...');
+      await _loadReservationsData();
       
     } catch (e) {
       print('❌ Erreur lors du chargement des données: $e');
@@ -337,83 +400,454 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget build(BuildContext context) {
     final isDarkMode = _themeService.isDarkMode;
     
-    return AnimatedBuilder(
-      animation: Listenable.merge([_themeService, _textSizeService]),
-      builder: (context, child) {
-        return Scaffold(
-          backgroundColor: AppColors.getPureBackground(isDarkMode),
-          body: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Column(
-                            children: [
-                              _buildProfileHeader(),
-                              _buildSummaryCards(),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+    return Scaffold(
+      backgroundColor: AppColors.getPureBackground(isDarkMode),
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(),
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                _buildProfileHeader(),
+                _buildSummaryCards(),
+                const SizedBox(height: 16),
+                _buildStudentMenuCards(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudentMenuCards() {
+    return StudentMenuCardsFull(
+      onNotes: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const NotesScreenJson(),
+        ),
+      ),
+      onBulletins: () => _showStudentMenuBottomSheet('bulletins', _getStudentMenuCardItem('bulletins')),
+      onTimetable: () async {
+        // Précharger si nécessaire avant d'ouvrir le bottom sheet
+        if (_timetableResponse == null && !_isLoadingTimetable) {
+          await _loadTimetableData();
+        }
+        if (mounted) {
+          _showStudentMenuBottomSheet('timetable', _getStudentMenuCardItem('timetable'));
+        }
+      },
+      onHomework: () => _showStudentMenuBottomSheet('homework', _getStudentMenuCardItem('homework')),
+      onAttendance: () => _showStudentMenuBottomSheet('attendance', _getStudentMenuCardItem('attendance')),
+      onAccessControl: () async {
+        // Précharger si nécessaire avant d'ouvrir le bottom sheet
+        if (_accessEntries.isEmpty && !_isLoadingAccessControl) {
+          await _loadAccessControlData();
+        }
+        if (mounted) {
+          _showStudentMenuBottomSheet('accessControl', _getStudentMenuCardItem('accessControl'));
+        }
+      },
+      onSanctions: () => _showStudentMenuBottomSheet('sanctions', _getStudentMenuCardItem('sanctions')),
+      onMessages: () async {
+        // Précharger si nécessaire avant d'ouvrir le bottom sheet
+        if (_studentMessages.isEmpty && !_isLoadingMessages) {
+          await _loadMessagesData();
+        }
+        if (mounted) {
+          _showStudentMenuBottomSheet('messages', _getStudentMenuCardItem('messages'));
+        }
+      },
+      onFees: () async {
+        // Précharger si nécessaire avant d'ouvrir le bottom sheet
+        if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
+          await _loadScolariteData();
+        }
+        if (mounted) {
+          _showStudentMenuBottomSheet('fees', _getStudentMenuCardItem('fees'));
+        }
+      },
+      onDifficulties: () => _showStudentMenuBottomSheet('difficulties', _getStudentMenuCardItem('difficulties')),
+      onEvents: () => _showStudentMenuBottomSheet('events', _getStudentMenuCardItem('events')),
+      onSuggestions: () async {
+        // Précharger si nécessaire avant d'ouvrir le bottom sheet
+        if (_suggestions.isEmpty && !_isLoadingSuggestions) {
+          await _loadSuggestionsData();
+        }
+        if (mounted) {
+          _showStudentMenuBottomSheet('suggestions', _getStudentMenuCardItem('suggestions'));
+        }
+      },
+      onReservations: () async {
+        // Précharger si nécessaire avant d'ouvrir le bottom sheet
+        if (_reservations.isEmpty && !_isLoadingReservations) {
+          await _loadReservationsData();
+        }
+        if (mounted) {
+          _showStudentMenuBottomSheet('reservations', _getStudentMenuCardItem('reservations'));
+        }
+      },
+      onAccessLogs: () async {
+        // Précharger si nécessaire avant d'ouvrir le bottom sheet
+        if (_accessLogs.isEmpty && !_isLoadingAccessLogs) {
+          await _loadAccessLogsData();
+        }
+        if (mounted) {
+          _showStudentMenuBottomSheet('accessLogs', _getStudentMenuCardItem('accessLogs'));
+        }
+      },
+      onSupplies: () => _showStudentMenuBottomSheet('supplies', _getStudentMenuCardItem('supplies')),
+      onOrders: () => _showStudentMenuBottomSheet('orders', _getStudentMenuCardItem('orders')),
+    );
+  }
+
+  StudentMenuCardItem _getStudentMenuCardItem(String menuType) {
+    switch (menuType) {
+      case 'notes':
+        return StudentMenuCardItem(
+          icon: Icons.bar_chart_rounded,
+          label: 'Mes Notes',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE3F2FD),
+          iconColor: const Color(0xFF1976D2),
+          titleColor: const Color(0xFF0D47A1),
+        );
+      case 'bulletins':
+        return StudentMenuCardItem(
+          icon: Icons.description_rounded,
+          label: 'Bulletins',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE8F5E8),
+          iconColor: const Color(0xFF2E7D32),
+          titleColor: const Color(0xFF1B5E20),
+        );
+      case 'timetable':
+        return StudentMenuCardItem(
+          icon: Icons.calendar_today_rounded,
+          label: 'Emploi du temps',
+          onTap: () {},
+          backgroundColor: const Color(0xFFFFF3E0),
+          iconColor: const Color(0xFFF57C00),
+          titleColor: const Color(0xFFE65100),
+        );
+      case 'homework':
+        return StudentMenuCardItem(
+          icon: Icons.edit_note_rounded,
+          label: 'Devoirs',
+          onTap: () {},
+          backgroundColor: const Color(0xFFF3E5F5),
+          iconColor: const Color(0xFF7B1FA2),
+          titleColor: const Color(0xFF4A148C),
+        );
+      case 'attendance':
+        return StudentMenuCardItem(
+          icon: Icons.person_off_rounded,
+          label: 'Présence & Conduite',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE0F2F1),
+          iconColor: const Color(0xFF00796B),
+          titleColor: const Color(0xFF004D40),
+        );
+      case 'accessControl':
+        return StudentMenuCardItem(
+          icon: Icons.fingerprint_rounded,
+          label: 'Contrôle d\'accès',
+          onTap: () {},
+          backgroundColor: const Color(0xFFFCE4EC),
+          iconColor: const Color(0xFFC2185B),
+          titleColor: const Color(0xFF880E4F),
+        );
+      case 'sanctions':
+        return StudentMenuCardItem(
+          icon: Icons.warning_rounded,
+          label: 'Sanctions',
+          onTap: () {},
+          backgroundColor: const Color(0xFFFFEBEE),
+          iconColor: const Color(0xFFD32F2F),
+          titleColor: const Color(0xFFB71C1C),
+        );
+      case 'messages':
+        return StudentMenuCardItem(
+          icon: Icons.message_rounded,
+          label: 'Messages',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE1F5FE),
+          iconColor: const Color(0xFF0288D1),
+          titleColor: const Color(0xFF01579B),
+        );
+      case 'fees':
+        return StudentMenuCardItem(
+          icon: Icons.payments_rounded,
+          label: 'Scolarité & Paiements',
+          onTap: () {},
+          backgroundColor: const Color(0xFFF9FBE7),
+          iconColor: const Color(0xFFFBC02D),
+          titleColor: const Color(0xFFF57F17),
+        );
+      case 'difficulties':
+        return StudentMenuCardItem(
+          icon: Icons.psychology_rounded,
+          label: 'Difficultés',
+          onTap: () {},
+          backgroundColor: const Color(0xFFF3E5F5),
+          iconColor: const Color(0xFF9C27B0),
+          titleColor: const Color(0xFF6A1B9A),
+        );
+      case 'events':
+        return StudentMenuCardItem(
+          icon: Icons.event_rounded,
+          label: 'Événements',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE8EAF6),
+          iconColor: const Color(0xFF3F51B5),
+          titleColor: const Color(0xFF283593),
+        );
+      case 'supplies':
+        return StudentMenuCardItem(
+          icon: Icons.inventory_2_rounded,
+          label: 'Fournitures',
+          onTap: () {},
+          backgroundColor: const Color(0xFFEFEBE9),
+          iconColor: const Color(0xFF795548),
+          titleColor: const Color(0xFF4E342E),
+        );
+      case 'orders':
+        return StudentMenuCardItem(
+          icon: Icons.shopping_cart_rounded,
+          label: 'Commandes',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE0F7FA),
+          iconColor: const Color(0xFF00ACC1),
+          titleColor: const Color(0xFF00838F),
+        );
+      case 'accessLogs':
+        return StudentMenuCardItem(
+          icon: Icons.security_rounded,
+          label: 'Logs d\'Accès',
+          onTap: () {},
+          backgroundColor: const Color(0xFFEEEEEE),
+          iconColor: const Color(0xFF616161),
+          titleColor: const Color(0xFF212121),
+        );
+      case 'suggestions':
+        return StudentMenuCardItem(
+          icon: Icons.lightbulb_rounded,
+          label: 'Suggestions',
+          onTap: () {},
+          backgroundColor: const Color(0xFFFFF8E1),
+          iconColor: const Color(0xFFFFB300),
+          titleColor: const Color(0xFFFF6F00),
+        );
+      case 'reservations':
+        return StudentMenuCardItem(
+          icon: Icons.event_seat_rounded,
+          label: 'Réservations',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE8F5E8),
+          iconColor: const Color(0xFF4CAF50),
+          titleColor: const Color(0xFF2E7D32),
+        );
+      default:
+        return StudentMenuCardItem(
+          icon: Icons.help_rounded,
+          label: 'Inconnu',
+          onTap: () {},
+        );
+    }
+  }
+
+  void _showStudentMenuBottomSheet(String menuType, StudentMenuCardItem cardItem) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[900] : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
                 ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  floating: false,
-                  delegate: _CustomTabBarDelegate(
-                    Container(
-                      color: isDarkMode ? AppColors.pureBlack : AppColors.getSurfaceColor(isDarkMode),
-                      child: _buildModernTabBar(),
-                    ),
-                  ),
-                ),
-              ];
-            },
-            body: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                    ),
-                  )
-                : Container(
-                    color: isDarkMode ? AppColors.pureBlack : AppColors.getSurfaceColor(isDarkMode),
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 100), // Marge pour éviter la bottom nav
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          NotesScreenJson(),
-                          _buildBulletinsTab(),
-                          StudentTimetableScreen(child: widget.child, ecoleCode: _ecoleCode),
-                          _buildHomeworkTab(),
-                          _buildAbsencesTab(),
-                          StudentAccessControlScreen(child: widget.child),
-                          _buildSanctionsTab(),
-                          StudentMessagesScreen(child: widget.child),
-                          StudentScolariteScreen(child: widget.child),
-                          _buildDifficultiesTab(),
-                          _buildEventsTab(),
-                          _buildSuppliesTab(),
-                          _buildOrdersTab(),
-                          AccessLogScreen(childId: widget.child.id, childName: '${widget.child.firstName} ${widget.child.lastName}'),
-                          ParentSuggestionScreen(parentId: 'current_parent'),
-                          PlaceReservationScreen(parentId: 'current_parent'),
-                        ],
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header avec les couleurs de la carte
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cardItem.backgroundColor ?? (isDark ? Colors.grey[800] : Colors.grey[50]),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
                       ),
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cardItem.backgroundColor?.withOpacity(0.3) ?? Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          cardItem.icon,
+                          color: cardItem.iconColor ?? AppColors.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              cardItem.label,
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(20),
+                                fontWeight: FontWeight.bold,
+                                color: cardItem.titleColor ?? (isDark ? Colors.white : Colors.black),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getStudentMenuDescription(menuType),
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(14),
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close,
+                          color: cardItem.titleColor ?? (isDark ? Colors.white : Colors.black),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildStudentMenuContent(menuType),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _getStudentMenuDescription(String menuType) {
+    switch (menuType) {
+      case 'notes':
+        return 'Consultez les notes et évaluations de votre enfant';
+      case 'bulletins':
+        return 'Accédez aux bulletins trimestriels et annuels';
+      case 'timetable':
+        return 'Consultez l\'emploi du temps et les horaires';
+      case 'homework':
+        return 'Suivez les devoirs et exercices à faire';
+      case 'attendance':
+        return 'Vérifiez la présence et la conduite';
+      case 'accessControl':
+        return 'Contrôlez les accès et les pointages';
+      case 'sanctions':
+        return 'Consultez les sanctions et avertissements';
+      case 'messages':
+        return 'Lisez les messages et communications';
+      case 'fees':
+        return 'Gérez les frais de scolarité et paiements';
+      case 'difficulties':
+        return 'Suivez les difficultés et le soutien';
+      case 'events':
+        return 'Participez aux événements et activités';
+      case 'supplies':
+        return 'Gérez les fournitures scolaires';
+      case 'orders':
+        return 'Suivez vos commandes et achats';
+      case 'accessLogs':
+        return 'Consultez les logs d\'accès et sécurité';
+      case 'suggestions':
+        return 'Envoyez vos suggestions et feedback';
+      case 'reservations':
+        return 'Gérez vos réservations et places';
+      default:
+        return 'En savoir plus...';
+    }
+  }
+
+  Widget _buildStudentMenuContent(String menuType) {
+    switch (menuType) {
+      case 'notes':
+        return _buildSimpleNotesTab();
+      case 'bulletins':
+        return _buildBulletinsTab();
+      case 'timetable':
+        return _buildSimpleTimetableTab();
+      case 'homework':
+        return _buildHomeworkTab();
+      case 'attendance':
+        return _buildAbsencesTab();
+      case 'accessControl':
+        return _buildSimpleAccessControlTab();
+      case 'sanctions':
+        return _buildSanctionsTab();
+      case 'messages':
+        return _buildSimpleMessagesTab();
+      case 'fees':
+        return _buildSimpleFeesTab();
+      case 'difficulties':
+        return _buildDifficultiesTab();
+      case 'events':
+        return _buildEventsTab();
+      case 'supplies':
+        return _buildSuppliesTab();
+      case 'orders':
+        return _buildOrdersTab();
+      case 'accessLogs':
+        return _buildSimpleAccessLogsTab();
+      case 'suggestions':
+        return _buildSimpleSuggestionsTab();
+      case 'reservations':
+        return _buildSimpleReservationsTab();
+      default:
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Center(
+            child: Text(
+              'Contenu en cours de développement...',
+              style: TextStyle(
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
           ),
         );
-      },
-    );
+    }
   }
 
   Widget _buildSliverAppBar() {
@@ -872,59 +1306,63 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildSummaryCards() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          const SizedBox(height: 6),
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle(title: 'Statistiques'),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
             children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  'Moyenne', 
-                  _globalAverage != null 
-                    ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
-                    : '--',
-                  Colors.green, 
-                  Icons.trending_up,
-                  isLoading: _isLoadingNotes,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Moyenne', 
+                      _globalAverage != null 
+                        ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
+                        : '--',
+                      Colors.green, 
+                      Icons.trending_up,
+                      isLoading: _isLoadingNotes,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Rang', 
+                      _globalAverage != null && _globalAverage!.trimesterRank > 0
+                        ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
+                        : '--',
+                      Colors.blue, 
+                      Icons.emoji_events,
+                      isLoading: _isLoadingNotes,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildSummaryCard(
-                  'Rang', 
-                  _globalAverage != null && _globalAverage!.trimesterRank > 0
-                    ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
-                    : '--',
-                  Colors.blue, 
-                  Icons.emoji_events,
-                  isLoading: _isLoadingNotes,
-                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildSummaryCard('Présence', '95%', AppColors.success, Icons.check_circle)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Appréciation', 
+                      _globalAverage != null 
+                        ? _globalAverage!.trimesterMention
+                        : '--',
+                      AppColors.secondary, 
+                      Icons.star,
+                      isLoading: _isLoadingNotes,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(child: _buildSummaryCard('Présence', '95%', AppColors.success, Icons.check_circle)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildSummaryCard(
-                  'Appréciation', 
-                  _globalAverage != null 
-                    ? _globalAverage!.trimesterMention
-                    : '--',
-                  AppColors.secondary, 
-                  Icons.star,
-                  isLoading: _isLoadingNotes,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -932,17 +1370,19 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
     
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.getSurfaceColor(isDarkMode),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withOpacity(0.08), // Fond light basé sur la couleur
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
-                ? AppColors.black.withOpacity(0.2)
-                : AppColors.shadowLight,
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -951,60 +1391,2375 @@ class _ChildListScreenState extends State<ChildListScreen>
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 14),
-              const Spacer(),
-              if (isLoading)
-                SizedBox(
-                  width: 10,
-                  height: 10,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                  ),
-                )
-              else
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const Spacer(),
+            if (isLoading)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
-            ],
+              )
+            else
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
           if (isLoading)
-            SizedBox(
-              height: 16,
-              child: Row(
-                children: [
-                  Container(
-                    width: 25,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: AppColors.getTextColor(isDarkMode, type: TextType.secondary).withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
+            Container(
+              height: 20,
+              decoration: BoxDecoration(
+                color: AppColors.getTextColor(isDarkMode, type: TextType.secondary).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
               ),
             )
           else
             Text(
               value,
               style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(16),
+                fontSize: _textSizeService.getScaledFontSize(18),
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
-          const SizedBox(height: 1),
+          const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(10),
+              fontSize: _textSizeService.getScaledFontSize(12),
               color: AppColors.getTextColor(isDarkMode, type: TextType.secondary),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleTimetableTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '📅 Emploi du temps',
+            'Consultez l\'emploi du temps de la semaine pour suivre les cours de votre enfant.',
+            Colors.orange,
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicTimetable(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicTimetable() {
+    if (_isLoadingTimetable) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_timetableResponse == null || _timetableResponse!.data.isEmpty) {
+      // Vérifier si le matricule est disponible
+      final matricule = widget.child.matricule;
+      if (matricule == null || matricule.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Colors.red[400],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Matricule non disponible',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
+      
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.schedule_outlined,
+              size: 48,
+              color: Colors.orange[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Aucun emploi du temps disponible',
+              style: TextStyle(
+                fontSize: 16,
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadTimetableData(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final coursesByDay = _timetableResponse!.coursesByDay;
+    final days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
+    
+    return Column(
+      children: days.map((day) {
+        if (coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildDynamicDaySchedule(day, coursesByDay[day]!),
+          );
+        }
+        return const SizedBox.shrink();
+      }).toList(),
+    );
+  }
+
+  // CORRECTION : suppression du bloc addPostFrameCallback qui redéclenchait
+  // inutilement le chargement et empêchait l'affichage au premier rendu.
+  Widget _buildSimpleAccessControlTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '🔒 Contrôle d\'accès',
+            'Consultez les pointages et le contrôle d\'accès de votre enfant.',
+            Colors.purple,
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicAccessControl(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicAccessControl() {
+    if (_isLoadingAccessControl) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_accessEntries.isEmpty) {
+      // Vérifier si le matricule est disponible
+      final matricule = widget.child.matricule;
+      if (matricule == null || matricule.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Colors.red[400],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Matricule non disponible',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
+      
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.fingerprint,
+              size: 48,
+              color: Colors.purple[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Aucun pointage disponible',
+              style: TextStyle(
+                fontSize: 16,
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadAccessControlData(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Statistiques
+    final totalEntries = _accessEntries.length;
+    final entrees = _accessEntries.where((e) => e.isEntree).length;
+    final sorties = _accessEntries.where((e) => e.isSortie).length;
+    final statusOk = _accessEntries.where((e) => e.isStatusOk).length;
+
+    return Column(
+      children: [
+        // Carte de statistiques
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    color: Colors.purple,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Statistiques de pointage',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('Total', totalEntries.toString(), Colors.purple),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Entrées', entrees.toString(), Colors.green),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Sorties', sorties.toString(), Colors.orange),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('OK', statusOk.toString(), Colors.green),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('KO', (totalEntries - statusOk).toString(), Colors.red),
+                  ),
+                  const Expanded(child: SizedBox()),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Liste des pointages récents (limités à 5 pour le bottom sheet)
+        ..._accessEntries.take(5).map((entry) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildAccessControlCard(entry),
+        )).toList(),
+        if (_accessEntries.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '... et ${_accessEntries.length - 5} autres pointages',
+              style: TextStyle(
+                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSimpleFeesTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '💰 Scolarité & Paiements',
+            'Consultez les échéances de scolarité et l\'état des paiements.',
+            Colors.amber,
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicScolarite(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicScolarite() {
+    if (_isLoadingScolarite) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_scolariteEntries.isEmpty) {
+      // Vérifier si le matricule est disponible
+      final matricule = widget.child.matricule;
+      if (matricule == null || matricule.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Colors.red[400],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Matricule non disponible',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
+      
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.school,
+              size: 48,
+              color: Colors.amber[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Aucune échéance disponible',
+              style: TextStyle(
+                fontSize: 16,
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadScolariteData(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Statistiques
+    final totalMontant = _scolariteEntries.fold<int>(0, (sum, entry) => sum + entry.montant);
+    final totalPaye = _scolariteEntries.fold<int>(0, (sum, entry) => sum + entry.paye);
+    final totalRapayer = _scolariteEntries.fold<int>(0, (sum, entry) => sum + entry.rapayer);
+    final paymentPercentage = totalMontant > 0 ? (totalPaye / totalMontant) * 100 : 0.0;
+    final overdueCount = _scolariteEntries.where((e) => e.isOverdue).length;
+
+    return Column(
+      children: [
+        // Carte de statistiques
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    color: Colors.amber,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Résumé de la scolarité',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('Total', _formatAmount(totalMontant), Colors.amber),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Payé', _formatAmount(totalPaye), Colors.green),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Restant', _formatAmount(totalRapayer), Colors.red),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Barre de progression
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Progression: ${paymentPercentage.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (overdueCount > 0) ...[
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$overdueCount retard(s)',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: _textSizeService.getScaledFontSize(10),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: (_themeService.isDarkMode ? Colors.grey[600] : Colors.grey[300])!.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: paymentPercentage / 100,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: paymentPercentage == 100 ? Colors.green : Colors.amber,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Liste des échéances récentes (limitées à 5 pour le bottom sheet)
+        ..._scolariteEntries.take(5).map((entry) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildScolariteCard(entry),
+        )).toList(),
+        if (_scolariteEntries.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '... et ${_scolariteEntries.length - 5} autres échéances',
+              style: TextStyle(
+                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildScolariteCard(StudentScolariteEntry entry) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: entry.statusColor == 'green' 
+              ? Colors.green.withOpacity(0.3)
+              : entry.statusColor == 'orange'
+                  ? Colors.orange.withOpacity(0.3)
+                  : Colors.red.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showScolariteEntryDetails(entry),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header avec libellé et statut
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        entry.libelle,
+                        style: TextStyle(
+                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          fontSize: _textSizeService.getScaledFontSize(16),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: entry.statusColor == 'green' 
+                            ? Colors.green.withOpacity(0.1)
+                            : entry.statusColor == 'orange'
+                                ? Colors.orange.withOpacity(0.1)
+                                : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        entry.formattedStatus,
+                        style: TextStyle(
+                          color: entry.statusColor == 'green' 
+                              ? Colors.green
+                              : entry.statusColor == 'orange'
+                                  ? Colors.orange
+                                  : Colors.red,
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Montants
+                Row(
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Montant: ${entry.formattedMontant}',
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 16,
+                      color: Colors.green,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Payé: ${entry.formattedPaye}',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      entry.rapayer > 0 ? Icons.warning : Icons.check_circle,
+                      size: 16,
+                      color: entry.rapayer > 0 ? Colors.red : Colors.green,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Restant: ${entry.formattedRapayer}',
+                      style: TextStyle(
+                        color: entry.rapayer > 0 ? Colors.red : Colors.green,
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Date limite
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Date limite: ${entry.formattedDateLimite}',
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                      ),
+                    ),
+                    if (entry.isOverdue) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'EN RETARD',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: _textSizeService.getScaledFontSize(10),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showScolariteEntryDetails(StudentScolariteEntry entry) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          entry.libelle,
+          style: TextStyle(
+            color: _themeService.isDarkMode ? Colors.white : Colors.black,
+            fontSize: _textSizeService.getScaledFontSize(18),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow('Rubrique', entry.formattedRubrique),
+              _buildDetailRow('Montant initial', _formatAmount(entry.montant0)),
+              if (entry.remise > 0)
+                _buildDetailRow('Remise', _formatAmount(entry.remise)),
+              _buildDetailRow('Montant final', _formatAmount(entry.montant)),
+              _buildDetailRow('Montant payé', _formatAmount(entry.paye)),
+              _buildDetailRow('Restant à payer', _formatAmount(entry.rapayer)),
+              _buildDetailRow('Date limite', entry.formattedDateLimite),
+              _buildDetailRow('Statut', entry.formattedStatus),
+              _buildDetailRow('Date d\'enregistrement', entry.formattedDateenreg),
+              if (entry.isOverdue)
+                _buildDetailRow('Retard', 'Oui - ${entry.daysUntilDeadline.abs()} jours', Colors.red),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Fermer',
+              style: TextStyle(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, [Color? color]) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              fontSize: _textSizeService.getScaledFontSize(12),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              color: color ?? (_themeService.isDarkMode ? Colors.white : Colors.black),
+              fontSize: _textSizeService.getScaledFontSize(14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAmount(int amount) {
+    return '${amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]} ',
+        )} FCFA';
+  }
+
+  Widget _buildSimpleSuggestionsTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '💡 Suggestions',
+            'Consultez et gérez les suggestions des parents pour améliorer l\'expérience scolaire.',
+            Colors.purple,
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicSuggestions(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicSuggestions() {
+    if (_isLoadingSuggestions) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_suggestions.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.lightbulb_outline,
+              size: 48,
+              color: Colors.purple[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Aucune suggestion disponible',
+              style: TextStyle(
+                fontSize: 16,
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadSuggestionsData(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Statistiques
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    color: Colors.purple,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Statistiques des suggestions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('Total', _suggestions.length.toString(), Colors.purple),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('En attente', 
+                      _suggestions.where((s) => s.status == SuggestionStatus.pending).length.toString(), 
+                      Colors.orange),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Approuvées', 
+                      _suggestions.where((s) => s.status == SuggestionStatus.approved).length.toString(), 
+                      Colors.green),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Liste des suggestions récentes (limitées à 5 pour le bottom sheet)
+        ..._suggestions.take(5).map((suggestion) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildSuggestionCard(suggestion),
+        )).toList(),
+        if (_suggestions.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '... et ${_suggestions.length - 5} autres suggestions',
+              style: TextStyle(
+                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionCard(ParentSuggestion suggestion) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _getStatusColor(suggestion.status).withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showSuggestionDetails(suggestion),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header avec titre et statut
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        suggestion.title,
+                        style: TextStyle(
+                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          fontSize: _textSizeService.getScaledFontSize(16),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(suggestion.status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        suggestion.status.displayName,
+                        style: TextStyle(
+                          color: _getStatusColor(suggestion.status),
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Description
+                Text(
+                  suggestion.description,
+                  style: TextStyle(
+                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                // Métadonnées
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      suggestion.displayName,
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(12),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      suggestion.formattedCreatedAt,
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Catégorie et priorité
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getCategoryColor(suggestion.category).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        suggestion.category.displayName,
+                        style: TextStyle(
+                          color: _getCategoryColor(suggestion.category),
+                          fontSize: _textSizeService.getScaledFontSize(11),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getPriorityColor(suggestion.priority).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        suggestion.priority.displayName,
+                        style: TextStyle(
+                          color: _getPriorityColor(suggestion.priority),
+                          fontSize: _textSizeService.getScaledFontSize(11),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSuggestionDetails(ParentSuggestion suggestion) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          suggestion.title,
+          style: TextStyle(
+            color: _themeService.isDarkMode ? Colors.white : Colors.black,
+            fontSize: _textSizeService.getScaledFontSize(18),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                suggestion.description,
+                style: TextStyle(
+                  color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                  fontSize: _textSizeService.getScaledFontSize(14),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildDetailRow('Auteur', suggestion.displayName),
+              _buildDetailRow('Date', suggestion.formattedCreatedAt),
+              _buildDetailRow('Catégorie', suggestion.category.displayName, _getCategoryColor(suggestion.category)),
+              _buildDetailRow('Priorité', suggestion.priority.displayName, _getPriorityColor(suggestion.priority)),
+              _buildDetailRow('Statut', suggestion.status.displayName, _getStatusColor(suggestion.status)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Fermer',
+              style: TextStyle(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleAccessLogsTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '📋 Logs d\'accès',
+            'Consultez l\'historique des accès et entrées de votre enfant.',
+            Colors.teal,
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicAccessLogs(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicAccessLogs() {
+    if (_isLoadingAccessLogs) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_accessLogs.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.history,
+              size: 48,
+              color: Colors.teal[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Aucun log d\'accès disponible',
+              style: TextStyle(
+                fontSize: 16,
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadAccessLogsData(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Statistiques
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    color: Colors.teal,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Statistiques des accès',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('Total', _accessLogs.length.toString(), Colors.teal),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Entrées', 
+                      _accessLogs.where((l) => l.accessType == AccessType.entry).length.toString(), 
+                      Colors.green),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Sorties', 
+                      _accessLogs.where((l) => l.accessType == AccessType.exit).length.toString(), 
+                      Colors.orange),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Liste des logs récents (limités à 5 pour le bottom sheet)
+        ..._accessLogs.take(5).map((log) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildAccessLogCard(log),
+        )).toList(),
+        if (_accessLogs.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '... et ${_accessLogs.length - 5} autres logs',
+              style: TextStyle(
+                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAccessLogCard(AccessLog log) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: log.accessType == AccessType.entry 
+              ? Colors.green.withOpacity(0.3)
+              : Colors.orange.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showAccessLogDetails(log),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header avec type et date
+                Row(
+                  children: [
+                    Icon(
+                      log.accessType == AccessType.entry ? Icons.login : Icons.logout,
+                      color: log.accessType == AccessType.entry ? Colors.green : Colors.orange,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      log.accessType == AccessType.entry ? 'Entrée' : 'Sortie',
+                      style: TextStyle(
+                        color: log.accessType == AccessType.entry ? Colors.green : Colors.orange,
+                        fontSize: _textSizeService.getScaledFontSize(16),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (log.accessType == AccessType.entry ? Colors.green : Colors.orange).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        log.formattedTime,
+                        style: TextStyle(
+                          color: log.accessType == AccessType.entry ? Colors.green : Colors.orange,
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Date et lieu
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      log.formattedDate,
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                      ),
+                    ),
+                  ],
+                ),
+                if (log.location?.isNotEmpty == true) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        log.location!,
+                        style: TextStyle(
+                          color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAccessLogDetails(AccessLog log) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          log.accessType == AccessType.entry ? 'Détails de l\'entrée' : 'Détails de la sortie',
+          style: TextStyle(
+            color: _themeService.isDarkMode ? Colors.white : Colors.black,
+            fontSize: _textSizeService.getScaledFontSize(18),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow('Type', log.accessType == AccessType.entry ? 'Entrée' : 'Sortie'),
+              _buildDetailRow('Date', log.formattedDate),
+              _buildDetailRow('Heure', log.formattedTime),
+              if (log.location?.isNotEmpty == true) _buildDetailRow('Lieu', log.location!),
+              _buildDetailRow('Enfant', widget.child.fullName),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Fermer',
+              style: TextStyle(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleReservationsTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '🪑 Réservations',
+            'Consultez et gérez les réservations de places pour votre enfant.',
+            Colors.indigo,
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicReservations(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicReservations() {
+    if (_isLoadingReservations) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_reservations.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.event_seat,
+              size: 48,
+              color: Colors.indigo[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Aucune réservation disponible',
+              style: TextStyle(
+                fontSize: 16,
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadReservationsData(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Statistiques
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    color: Colors.indigo,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Statistiques des réservations',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('Total', _reservations.length.toString(), Colors.indigo),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Confirmées', 
+                      _reservations.where((r) => r.status == ReservationStatus.confirmed).length.toString(), 
+                      Colors.green),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('En attente', 
+                      _reservations.where((r) => r.status == ReservationStatus.pending).length.toString(), 
+                      Colors.orange),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Liste des réservations récentes (limitées à 5 pour le bottom sheet)
+        ..._reservations.take(5).map((reservation) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildReservationCard(reservation),
+        )).toList(),
+        if (_reservations.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '... et ${_reservations.length - 5} autres réservations',
+              style: TextStyle(
+                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildReservationCard(PlaceReservation reservation) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _getReservationStatusColor(reservation.status).withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showReservationDetails(reservation),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header avec lieu et statut
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        reservation.establishmentName,
+                        style: TextStyle(
+                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          fontSize: _textSizeService.getScaledFontSize(16),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getReservationStatusColor(reservation.status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        reservation.status.displayName,
+                        style: TextStyle(
+                          color: _getReservationStatusColor(reservation.status),
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Date et heure
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      reservation.formattedCreatedAt,
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${reservation.createdAt.hour.toString().padLeft(2, '0')}:${reservation.createdAt.minute.toString().padLeft(2, '0')}',
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Type de place
+                Row(
+                  children: [
+                    Icon(
+                      Icons.event_seat,
+                      size: 16,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      reservation.type.displayName,
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showReservationDetails(PlaceReservation reservation) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          reservation.establishmentName,
+          style: TextStyle(
+            color: _themeService.isDarkMode ? Colors.white : Colors.black,
+            fontSize: _textSizeService.getScaledFontSize(18),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow('Lieu', reservation.establishmentName),
+              _buildDetailRow('Type', reservation.type.displayName),
+              _buildDetailRow('Date', reservation.formattedCreatedAt),
+              _buildDetailRow('Heure', '${reservation.createdAt.hour.toString().padLeft(2, '0')}:${reservation.createdAt.minute.toString().padLeft(2, '0')}'),
+              _buildDetailRow('Statut', reservation.status.displayName, _getReservationStatusColor(reservation.status)),
+              _buildDetailRow('Enfant', widget.child.fullName),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Fermer',
+              style: TextStyle(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Méthodes utilitaires pour les couleurs
+  Color _getStatusColor(SuggestionStatus status) {
+    switch (status) {
+      case SuggestionStatus.pending:
+        return Colors.orange;
+      case SuggestionStatus.approved:
+        return Colors.green;
+      case SuggestionStatus.rejected:
+        return Colors.red;
+      case SuggestionStatus.underReview:
+        return Colors.blue;
+      case SuggestionStatus.implemented:
+        return Colors.purple;
+      case SuggestionStatus.closed:
+        return Colors.grey;
+    }
+  }
+
+  Color _getCategoryColor(SuggestionCategory category) {
+    switch (category) {
+      case SuggestionCategory.academic:
+        return Colors.blue;
+      case SuggestionCategory.infrastructure:
+        return Colors.purple;
+      case SuggestionCategory.security:
+        return Colors.red;
+      case SuggestionCategory.activities:
+        return Colors.green;
+      case SuggestionCategory.communication:
+        return Colors.orange;
+      case SuggestionCategory.nutrition:
+        return Colors.brown;
+      case SuggestionCategory.technology:
+        return Colors.cyan;
+      case SuggestionCategory.staff:
+        return Colors.indigo;
+      case SuggestionCategory.finance:
+        return Colors.amber;
+      case SuggestionCategory.general:
+        return Colors.grey;
+    }
+  }
+
+  Color _getPriorityColor(SuggestionPriority priority) {
+    switch (priority) {
+      case SuggestionPriority.low:
+        return Colors.green;
+      case SuggestionPriority.medium:
+        return Colors.orange;
+      case SuggestionPriority.high:
+        return Colors.red;
+      case SuggestionPriority.urgent:
+        return Colors.purple;
+    }
+  }
+
+  Color _getReservationStatusColor(ReservationStatus status) {
+    switch (status) {
+      case ReservationStatus.submitted:
+        return Colors.lime;
+      case ReservationStatus.draft:
+        return Colors.grey;
+      case ReservationStatus.pending:
+        return Colors.orange;
+      case ReservationStatus.confirmed:
+        return Colors.green;
+      case ReservationStatus.underReview:
+        return Colors.blue;
+      case ReservationStatus.waitlist:
+        return Colors.purple;
+      case ReservationStatus.rejected:
+        return Colors.red;
+      case ReservationStatus.cancelled:
+        return Colors.brown;
+      case ReservationStatus.completed:
+        return Colors.teal;
+    }
+  }
+
+  Widget _buildSimpleMessagesTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '💬 Messages',
+            'Consultez les messages et communications pour votre enfant.',
+            Colors.blue,
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicMessages(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDynamicMessages() {
+    if (_isLoadingMessages) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_studentMessages.isEmpty) {
+      // Vérifier si le matricule est disponible
+      final matricule = widget.child.matricule;
+      if (matricule == null || matricule.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Colors.red[400],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Matricule non disponible',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
+      
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.mail_outline,
+              size: 48,
+              color: Colors.blue[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Aucun message disponible',
+              style: TextStyle(
+                fontSize: 16,
+                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadMessagesData(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Statistiques
+    final totalMessages = _studentMessages.length;
+    final unreadMessages = _studentMessages.where((m) => m.isUnread).length;
+    final readMessages = totalMessages - unreadMessages;
+
+    return Column(
+      children: [
+        // Carte de statistiques
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    color: Colors.blue,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Statistiques des messages',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem('Total', totalMessages.toString(), Colors.blue),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Non lus', unreadMessages.toString(), Colors.orange),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem('Lus', readMessages.toString(), Colors.green),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Liste des messages récents (limités à 5 pour le bottom sheet)
+        ..._studentMessages.take(5).map((message) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildMessageCard(message),
+        )).toList(),
+        if (_studentMessages.length > 5)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '... et ${_studentMessages.length - 5} autres messages',
+              style: TextStyle(
+                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMessageCard(StudentMessage message) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: message.isUnread 
+              ? AppColors.primary.withOpacity(0.3)
+              : _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          width: message.isUnread ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showMessageDetails(message),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        message.titre,
+                        style: TextStyle(
+                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          fontSize: _textSizeService.getScaledFontSize(16),
+                          fontWeight: message.isUnread 
+                              ? FontWeight.w600 
+                              : FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (message.isUnread)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Nouveau',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: _textSizeService.getScaledFontSize(10),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message.description,
+                  style: TextStyle(
+                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      message.formattedDate,
+                      style: TextStyle(
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: _textSizeService.getScaledFontSize(12),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: message.isUnread 
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        message.formattedStatut,
+                        style: TextStyle(
+                          color: message.isUnread 
+                              ? Colors.orange
+                              : Colors.green,
+                          fontSize: _textSizeService.getScaledFontSize(10),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMessageDetails(StudentMessage message) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          message.titre,
+          style: TextStyle(
+            color: _themeService.isDarkMode ? Colors.white : Colors.black,
+            fontSize: _textSizeService.getScaledFontSize(18),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message.description,
+                style: TextStyle(
+                  color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                  fontSize: _textSizeService.getScaledFontSize(14),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Envoyé le: ${message.formattedDate}',
+                    style: TextStyle(
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.mark_email_read,
+                    size: 16,
+                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Statut: ${message.formattedStatut}',
+                    style: TextStyle(
+                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Fermer',
+              style: TextStyle(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, Color color) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1013,204 +3768,740 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildPersistentTabBar() {
+  Widget _buildAccessControlCard(AccessControlEntry entry) {
     final isDarkMode = _themeService.isDarkMode;
     
-    return SliverPersistentHeader(
-      pinned: true,
-      delegate: _TabBarDelegate(
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: Colors.white,
-          unselectedLabelColor: AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-          indicator: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: AppColors.primaryGradient,
-          ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          labelStyle: _textSizeService.getScaledTextStyle(
-            const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-          unselectedLabelStyle: _textSizeService.getScaledTextStyle(
-            const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-          tabs: const [
-            Tab(text: '📊 Notes'),
-            Tab(text: '📋 Bulletins'),
-            Tab(text: '📅 Emploi du temps'),
-            Tab(text: '📝 Devoirs'),
-            Tab(text: '🚸 Présence & Conduite'),
-            Tab(text: '🔍 Contrôle d\'accès'),
-            Tab(text: '⚠️ Sanctions'),
-            Tab(text: '💬 Messages'),
-            Tab(text: '💰 Scolarité & Paiements'),
-            Tab(text: '📈 Difficultés'),
-            Tab(text: '🎉 Événements'),
-            Tab(text: '📚 Fournitures'),
-            Tab(text: '🛒 Commandes'),
-            Tab(text: '🔐 Logs d\'Accès'),
-            Tab(text: '💡 Suggestions'),
-            Tab(text: '🎫 Réservations'),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: entry.isStatusOk 
+              ? Colors.green.withOpacity(0.2)
+              : Colors.red.withOpacity(0.2),
+          width: 1,
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: entry.isStatusOk 
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  entry.categoryIcon,
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.formattedCategorie,
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white : Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'ID: ${entry.pointageId}',
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: entry.isStatusOk 
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: entry.isStatusOk 
+                        ? Colors.green.withOpacity(0.3)
+                        : Colors.red.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  entry.resultat,
+                  style: TextStyle(
+                    color: entry.isStatusOk ? Colors.green : Colors.red,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: Colors.purple,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                entry.formattedDate,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Icon(
+                Icons.access_time,
+                size: 16,
+                color: Colors.purple,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                entry.formattedTime,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildModernTabBar() {
+  Widget _buildDynamicDaySchedule(String day, List<StudentTimetableEntry> courses) {
     final isDarkMode = _themeService.isDarkMode;
     
-    return AnimatedBuilder(
-      animation: Listenable.merge([_tabController, _textSizeService]),
-      builder: (context, _) {
-        return Container(
-          height: 35,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 16,
-            itemBuilder: (context, index) {
-              final isSelected = _tabController.index == index;
-              return GestureDetector(
-                onTap: () {
-                  _tabController.animateTo(index);
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? AppColors.primaryGradient
-                        : null,
-                    color: !isSelected
-                        ? AppColors.getSurfaceColor(isDarkMode)
-                        : null,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: isSelected
-                        ? [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                        : [],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _getTabIcon(index),
-                        size: 16,
-                        color: isSelected
-                            ? Colors.white
-                            : AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _getTabTitle(index),
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(14),
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Text(
+              day,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange[800],
+              ),
+            ),
           ),
-        );
-      },
+          ...courses.map((course) => _buildDynamicCourseItem(course)).toList(),
+        ],
+      ),
     );
   }
 
-  IconData _getTabIcon(int index) {
-    switch (index) {
-      case 0:
-        return Icons.bar_chart_rounded;
-      case 1:
-        return Icons.description_rounded;
-      case 2:
-        return Icons.calendar_today_rounded;
-      case 3:
-        return Icons.edit_note_rounded;
-      case 4:
-        return Icons.person_off_rounded;
-      case 5:
-        return Icons.fingerprint_rounded;
-      case 6:
-        return Icons.warning_rounded;
-      case 7:
-        return Icons.message_rounded;
-      case 8:
-        return Icons.payments_rounded;
-      case 9:
-        return Icons.psychology_rounded;
-      case 10:
-        return Icons.event_rounded;
-      case 11:
-        return Icons.inventory_2_rounded;
-      case 12:
-        return Icons.shopping_cart_rounded;
-      case 13:
-        return Icons.security_rounded;
-      case 14:
-        return Icons.lightbulb_rounded;
-      case 15:
-        return Icons.event_seat_rounded;
-      default:
-        return Icons.help_rounded;
+  Widget _buildDynamicCourseItem(StudentTimetableEntry course) {
+    final isDarkMode = _themeService.isDarkMode;
+    final color = _getSubjectColor(course.matiere);
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getSubjectIcon(course.matiere),
+              color: color,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  course.matiere,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+                Text(
+                  course.formattedTime,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                if (course.professeur != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Prof: ${course.professeur}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                    ),
+                  ),
+                ],
+                if (course.salle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Salle: ${course.salle}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[400],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadTimetableData() async {
+    if (_isLoadingTimetable) return;
+    
+    final matricule = widget.child.matricule;
+    print('🔄 Début du chargement de l\'emploi du temps pour: ${widget.child.fullName}');
+    print('📋 Matricule: $matricule');
+    
+    if (matricule == null || matricule.isEmpty) {
+      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      return;
+    }
+    
+    print('✅ Matricule valide, début du chargement...');
+    if (mounted) {
+      setState(() {
+        _isLoadingTimetable = true;
+      });
+    }
+
+    try {
+      print('📡 Appel du service StudentTimetableService...');
+      
+      // S'assurer que les données de l'école sont chargées
+      if (!_schoolService.isSchoolDataLoaded) {
+        print('🏫 Chargement des données de l\'école...');
+        await _schoolService.loadSchoolData();
+        print('✅ Données de l\'école chargées');
+      }
+      
+      final response = await _timetableService.getTimetableForStudent(matricule);
+      print('✅ Réponse reçue: ${response.data.length} créneaux');
+      
+      if (mounted) {
+        setState(() {
+          _timetableResponse = response;
+          _isLoadingTimetable = false;
+        });
+        print('📊 Mise à jour de l\'UI terminée');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement de l\'emploi du temps: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingTimetable = false;
+        });
+      }
     }
   }
 
-  String _getTabTitle(int index) {
-    switch (index) {
-      case 0:
-        return 'Mes Notes';
-      case 1:
-        return 'Mes Bulletins';
-      case 2:
-        return 'Emploi du temps';
-      case 3:
-        return 'Devoirs';
-      case 4:
-        return 'Présence & Conduite';
-      case 5:
-        return 'Contrôle d\'accès';
-      case 6:
-        return 'Sanctions';
-      case 7:
-        return 'Messages';
-      case 8:
-        return 'Scolartité & Paiements';
-      case 9:
-        return 'Difficultés';
-      case 10:
-        return 'Événements';
-      case 11:
-        return 'Fournitures';
-      case 12:
-        return 'Commandes';
-      case 13:
-        return 'Logs d\'Accès';
-      case 14:
-        return 'Suggestions';
-      case 15:
-        return 'Réservations';
-      default:
-        return '';
+  Future<void> _loadAccessControlData() async {
+    if (_isLoadingAccessControl) return;
+    
+    final matricule = widget.child.matricule ?? widget.child.id;
+    print('🔄 Début du chargement du contrôle d\'accès pour: ${widget.child.fullName}');
+    print('📋 Matricule: $matricule');
+    
+    if (matricule == null || matricule.isEmpty) {
+      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      return;
     }
+    
+    print('✅ Matricule valide, début du chargement...');
+    if (mounted) {
+      setState(() {
+        _isLoadingAccessControl = true;
+      });
+    }
+
+    try {
+      print('📡 Appel du service AccessControlService...');
+      
+      // S'assurer que les données de l'école sont chargées
+      if (!_schoolService.isSchoolDataLoaded) {
+        print('🏫 Chargement des données de l\'école...');
+        await _schoolService.loadSchoolData();
+        print('✅ Données de l\'école chargées');
+      }
+      
+      final entries = await _accessControlService.getAccessControlEntriesForStudent(matricule);
+      print('✅ Réponse reçue: ${entries.length} pointages');
+      
+      if (mounted) {
+        setState(() {
+          _accessEntries = entries;
+          _isLoadingAccessControl = false;
+        });
+        print('📊 Mise à jour de l\'UI terminée');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement du contrôle d\'accès: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingAccessControl = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMessagesData() async {
+    if (_isLoadingMessages) return;
+    
+    final studentMatricule = widget.child.matricule ?? widget.child.id;
+    print('🔄 Début du chargement des messages pour: ${widget.child.fullName}');
+    print('📋 Matricule: $studentMatricule');
+    
+    if (studentMatricule == null || studentMatricule.isEmpty) {
+      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      return;
+    }
+    
+    print('✅ Matricule valide, début du chargement...');
+    if (mounted) {
+      setState(() {
+        _isLoadingMessages = true;
+      });
+    }
+
+    try {
+      print('📡 Appel du service StudentMessageService...');
+      final messages = await _messageService.getMessagesForStudent(studentMatricule);
+      print('✅ Réponse reçue: ${messages.length} messages');
+      
+      if (mounted) {
+        setState(() {
+          _studentMessages = messages;
+          _isLoadingMessages = false;
+        });
+        print('📊 Mise à jour de l\'UI terminée');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des messages: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingMessages = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadScolariteData() async {
+    if (_isLoadingScolarite) return;
+    
+    final studentMatricule = widget.child.matricule ?? widget.child.id;
+    print('🔄 Début du chargement de la scolarité pour: ${widget.child.fullName}');
+    print('📋 Matricule: $studentMatricule');
+    
+    if (studentMatricule == null || studentMatricule.isEmpty) {
+      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      return;
+    }
+    
+    print('✅ Matricule valide, début du chargement...');
+    if (mounted) {
+      setState(() {
+        _isLoadingScolarite = true;
+      });
+    }
+
+    try {
+      print('📡 Appel du service StudentScolariteService...');
+      final entries = await _scolariteService.getScolariteEntriesForStudent(studentMatricule);
+      print('✅ Réponse reçue: ${entries.length} échéances');
+      
+      if (mounted) {
+        setState(() {
+          _scolariteEntries = entries;
+          _isLoadingScolarite = false;
+        });
+        print('📊 Mise à jour de l\'UI terminée');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement de la scolarité: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingScolarite = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadSuggestionsData() async {
+    if (_isLoadingSuggestions) return;
+    
+    print('🔄 Début du chargement des suggestions pour: ${widget.child.fullName}');
+    
+    if (mounted) {
+      setState(() {
+        _isLoadingSuggestions = true;
+      });
+    }
+
+    try {
+      print('📡 Appel du service ParentSuggestionService...');
+      final suggestions = await _suggestionService.getRecentSuggestions(10);
+      print('✅ Réponse reçue: ${suggestions.length} suggestions');
+      
+      if (mounted) {
+        setState(() {
+          _suggestions = suggestions;
+          _isLoadingSuggestions = false;
+        });
+        print('📊 Mise à jour de l\'UI terminée');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des suggestions: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingSuggestions = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadAccessLogsData() async {
+    if (_isLoadingAccessLogs) return;
+    
+    final childId = widget.child.id;
+    print('🔄 Début du chargement des logs d\'accès pour: ${widget.child.fullName}');
+    print('📋 ID Enfant: $childId');
+    
+    if (childId == null || childId.isEmpty) {
+      print('❌ ID enfant non disponible');
+      return;
+    }
+    
+    print('✅ ID valide, début du chargement...');
+    if (mounted) {
+      setState(() {
+        _isLoadingAccessLogs = true;
+      });
+    }
+
+    try {
+      print('📡 Appel du service AccessLogService...');
+      final logs = await _accessLogService.getAccessLogsForChild(childId);
+      print('✅ Réponse reçue: ${logs.length} logs');
+      
+      if (mounted) {
+        setState(() {
+          _accessLogs = logs;
+          _isLoadingAccessLogs = false;
+        });
+        print('📊 Mise à jour de l\'UI terminée');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des logs d\'accès: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingAccessLogs = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadReservationsData() async {
+    if (_isLoadingReservations) return;
+    
+    final childId = widget.child.id;
+    print('🔄 Début du chargement des réservations pour: ${widget.child.fullName}');
+    print('📋 ID Enfant: $childId');
+    
+    if (childId == null || childId.isEmpty) {
+      print('❌ ID enfant non disponible');
+      return;
+    }
+    
+    print('✅ ID valide, début du chargement...');
+    if (mounted) {
+      setState(() {
+        _isLoadingReservations = true;
+      });
+    }
+
+    try {
+      print('📡 Appel du service PlaceReservationService...');
+      final reservations = await _reservationService.getRecentReservations(10);
+      print('✅ Réponse reçue: ${reservations.length} réservations');
+      
+      if (mounted) {
+        setState(() {
+          _reservations = reservations;
+          _isLoadingReservations = false;
+        });
+        print('📊 Mise à jour de l\'UI terminée');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des réservations: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingReservations = false;
+        });
+      }
+    }
+  }
+
+  Color _getSubjectColor(String subject) {
+    final s = subject.toLowerCase();
+    if (s.contains('math')) return Colors.blue;
+    if (s.contains('fran')) return Colors.green;
+    if (s.contains('histoir')) return Colors.orange;
+    if (s.contains('phys') || s.contains('chim')) return Colors.purple;
+    if (s.contains('angl')) return Colors.indigo;
+    if (s.contains('sport') || s.contains('eps')) return Colors.red;
+    if (s.contains('mus')) return Colors.amber;
+    if (s.contains('art')) return Colors.pink;
+    if (s.contains('svt')) return Colors.teal;
+    if (s.contains('tech')) return Colors.cyan;
+    return Colors.grey;
+  }
+
+  IconData _getSubjectIcon(String subject) {
+    final s = subject.toLowerCase();
+    if (s.contains('math')) return Icons.calculate_rounded;
+    if (s.contains('fran')) return Icons.menu_book_rounded;
+    if (s.contains('histoir')) return Icons.public_rounded;
+    if (s.contains('phys') || s.contains('chim')) return Icons.science_rounded;
+    if (s.contains('angl')) return Icons.language_rounded;
+    if (s.contains('sport') || s.contains('eps')) return Icons.sports_soccer_rounded;
+    if (s.contains('mus')) return Icons.music_note_rounded;
+    if (s.contains('art')) return Icons.palette_rounded;
+    if (s.contains('svt')) return Icons.biotech_rounded;
+    if (s.contains('tech')) return Icons.computer_rounded;
+    return Icons.school_rounded;
+  }
+
+  Widget _buildSimpleNotesTab() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '📊 Notes et évaluations',
+            'Consultez les notes et évaluations de votre enfant pour suivre sa progression scolaire.',
+            Colors.blue,
+          ),
+          const SizedBox(height: 20),
+          _buildNotesList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesList() {
+    return Column(
+      children: [
+        _buildNoteCard(
+          'Mathématiques',
+          'Contrôle n°3 - Fractions',
+          '15.5/20',
+          'Très bien',
+          Icons.calculate_rounded,
+          Colors.green,
+        ),
+        const SizedBox(height: 12),
+        _buildNoteCard(
+          'Français',
+          'Rédaction - Le voyage',
+          '14/20',
+          'Bien',
+          Icons.menu_book_rounded,
+          Colors.blue,
+        ),
+        const SizedBox(height: 12),
+        _buildNoteCard(
+          'Histoire-Géographie',
+          'Test - La Révolution française',
+          '16/20',
+          'Très bien',
+          Icons.public_rounded,
+          Colors.orange,
+        ),
+        const SizedBox(height: 12),
+        _buildNoteCard(
+          'Sciences',
+          'TP - Les écosystèmes',
+          '13/20',
+          'Assez bien',
+          Icons.science_rounded,
+          Colors.purple,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoteCard(
+    String subject,
+    String evaluation,
+    String grade,
+    String appreciation,
+    IconData icon,
+    Color color,
+  ) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode 
+                ? Colors.black.withOpacity(0.3)
+                : color.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subject,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  evaluation,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        grade,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        appreciation,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[400],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBulletinsTab() {
@@ -1945,7 +5236,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildSupplyItemFromApi(SchoolSupply supply) {
     final isDarkMode = _themeService.isDarkMode;
     
-    // Determine status color based on availability
     Color statusColor = supply.statut.toLowerCase() == 'disponible' 
         ? Colors.green 
         : Colors.orange;
@@ -2233,7 +5523,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  // ... (rest of the methods remain the same)
   Widget _buildHomeworkTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -2740,74 +6029,5 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
       ],
     );
-  }
-}
-
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar _tabBar;
-
-  _TabBarDelegate(this._tabBar);
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height + 16;
-
-  @override
-  double get maxExtent => _tabBar.preferredSize.height + 16;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(
-      color: const Color(0xFFF8FAFC),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: _tabBar,
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_TabBarDelegate oldDelegate) {
-    return false;
-  }
-}
-
-class _CustomTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget _child;
-
-  _CustomTabBarDelegate(this._child);
-
-  @override
-  double get minExtent => 59.0; // 35 height + 12 vertical padding + 12 margin
-
-  @override
-  double get maxExtent => 59.0; // 35 height + 12 vertical padding + 12 margin
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return _child;
-  }
-
-  @override
-  bool shouldRebuild(_CustomTabBarDelegate oldDelegate) {
-    return false;
   }
 }

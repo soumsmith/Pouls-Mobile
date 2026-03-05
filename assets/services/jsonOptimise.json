@@ -9,7 +9,7 @@
       "lieuNaissance": "ABOBO",
       "nationalite": "IVOIRIENNE",
       "sexe": "MASCULIN",
-      "urlPhoto": "https://s3.eu-west-3.amazonaws.com/vie-ecoles/Gainhs/photos/eleves/43273a2ea9fa4f66a7baecd42fb2311c.jpg"
+      "urlPhoto": "https://s3.eu-west-3.amazonaws.com/vie-ecoles/hinneh/photos/eleves/43273a2ea9fa4f66a7baecd42fb2311c.jpg"
     },
     "classe": {
       "id": 87945,
@@ -27,7 +27,7 @@
         "libelle": "Collège Privé Hînneh Biabou",
         "tel": "0789353025",
         "nomSignataire": "M.SANGARE",
-        "identifiantVieEcole": "Gainhs",
+        "identifiantVieEcole": "hinneh",
         "code": "057955"
       },
       "effectif": 46

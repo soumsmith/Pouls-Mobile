@@ -24,10 +24,13 @@ import '../models/avis.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_search_bar.dart';
 import '../widgets/back_button_widget.dart';
+import '../widgets/color_card_grid.dart';
+import '../widgets/menu_card_list.dart';
+import '../widgets/section_title.dart';
+import '../widgets/establishment_header_card.dart';
 import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
 import 'all_events_screen.dart';
-import 'package:file_picker/file_picker.dart';
 
 /// Écran des établissements
 class EstablishmentScreen extends StatefulWidget implements MainScreenChild {
@@ -265,40 +268,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen> {
                           ),
                         ),
                       ),
-                      // Badge pour le nombre d'événements
-                      FutureBuilder(
-                        future: EventsService().getEventsForUI(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                            final eventCount = snapshot.data!.length;
-                            return Positioned(
-                              right: -4,
-                              top: -4,
-                              child: Container(
-                                height: 16,
-                                constraints: const BoxConstraints(minWidth: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.white, width: 1.5),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    eventCount > 99 ? '99+' : '$eventCount',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ],
+                                          ],
                   ),
                 ],
               ),
@@ -694,61 +664,60 @@ void initState() {
     
     if (nomEtablissement.isEmpty || codeEcole.isEmpty) return;
     
-    // Charger les blogs
+    // Initialiser les états de chargement
     setState(() {
       _isLoadingBlogs = true;
-      _blogsError = null;
-    });
-    
-    try {
-      final blogs = await _blogService.getBlogsForUI(nomEtablissement);
-      setState(() {
-        _blogs = blogs;
-        _isLoadingBlogs = false;
-      });
-    } catch (e) {
-      setState(() {
-        _blogsError = e.toString();
-        _isLoadingBlogs = false;
-      });
-    }
-    
-    // Charger les événements
-    setState(() {
       _isLoadingEvents = true;
-      _eventsError = null;
-    });
-    
-    try {
-      final events = await _eventsService.getEventsForUI(nomEtablissement: nomEtablissement);
-      setState(() {
-        _schoolEvents = events;
-        _isLoadingEvents = false;
-      });
-    } catch (e) {
-      setState(() {
-        _eventsError = e.toString();
-        _isLoadingEvents = false;
-      });
-    }
-    
-    // Charger les avis
-    setState(() {
       _isLoadingAvis = true;
+      _blogsError = null;
+      _eventsError = null;
       _avisError = null;
     });
     
+    // Exécuter toutes les requêtes en parallèle
     try {
-      final avis = await _avisService.getAvisForUI(codeEcole);
+      final results = await Future.wait([
+        _blogService.getBlogsForUI(nomEtablissement).catchError((e) {
+          setState(() {
+            _blogsError = e.toString();
+            _isLoadingBlogs = false;
+          });
+          throw e;
+        }),
+        _eventsService.getEventsForUI(nomEtablissement: nomEtablissement).catchError((e) {
+          setState(() {
+            _eventsError = e.toString();
+            _isLoadingEvents = false;
+          });
+          throw e;
+        }),
+        _avisService.getAvisForUI(codeEcole).catchError((e) {
+          setState(() {
+            _avisError = e.toString();
+            _isLoadingAvis = false;
+          });
+          throw e;
+        }),
+      ]);
+      
+      // Mettre à jour les résultats réussis
       setState(() {
-        _avis = avis;
-        _isLoadingAvis = false;
+        if (_blogsError == null) {
+          _blogs = results[0] as List<Map<String, dynamic>>;
+          _isLoadingBlogs = false;
+        }
+        if (_eventsError == null) {
+          _schoolEvents = results[1] as List<Map<String, dynamic>>;
+          _isLoadingEvents = false;
+        }
+        if (_avisError == null) {
+          _avis = results[2] as List<Map<String, dynamic>>;
+          _isLoadingAvis = false;
+        }
       });
     } catch (e) {
-      setState(() {
-        _avisError = e.toString();
-        _isLoadingAvis = false;
-      });
+      // Les erreurs individuelles sont déjà gérées par catchError ci-dessus
+      print('Erreur générale lors du chargement: $e');
     }
   }
 
@@ -783,24 +752,16 @@ void initState() {
                           position: _slideAnimation,
                           child: Column(
                             children: [
-                              _buildHeroImage(),
-                              _buildEstablishmentInfo(color),
+                              _buildEstablishmentHeader(),
+                              const SectionTitle(title: 'Actions rapides'),
                               _buildActionButtons(color),
+                              const SectionTitle(title: 'Menu principal'),
+                              _buildMenuCards(),
                             ],
                           ),
                         ),
                       );
                     },
-                  ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  floating: false,
-                  delegate: _CustomTabBarDelegate(
-                    Container(
-                      color: isDarkMode ? AppColors.pureBlack : AppColors.getSurfaceColor(isDarkMode),
-                      child: _buildModernTabBar(),
-                    ),
                   ),
                 ),
               ];
@@ -809,16 +770,14 @@ void initState() {
               color: isDarkMode ? AppColors.pureBlack : AppColors.getSurfaceColor(isDarkMode),
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 100),
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildUnifiedInfoTab(),
-                    _buildCommunicationTab(),
-                    _buildLevelsTab(),
-                    _buildEventsTab(),
-                    _buildScolariteTab(),
-                    _buildNotesTab(),
-                  ],
+                child: Center(
+                  child: Text(
+                    'Sélectionnez une option dans le menu ci-dessus',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -878,242 +837,195 @@ void initState() {
     );
   }
 
-  Widget _buildHeroImage() {
-    // Utiliser l'image du détail si disponible, sinon celle de l'école de base
+  Widget _buildEstablishmentHeader() {
+    // Utiliser les données du détail si disponibles, sinon celles de l'école de base
     final imageUrl = _ecoleDetail?.image ?? widget.ecole.displayImage;
+    final establishmentName = _ecoleDetail?.data.nom ?? widget.ecole.parametreNom ?? 'École';
+    final establishmentType = widget.ecole.typePrincipal ?? 'Primaire';
+    final motto = _ecoleDetail?.data.slogan ?? 'L\'excellence notre priorité';
+    final address = _ecoleDetail?.data.adresse ?? widget.ecole.adresse ?? 'Adresse non disponible';
+    final phone = _ecoleDetail?.data.telephone ?? widget.ecole.telephone ?? 'Téléphone non disponible';
+    final email = _ecoleDetail?.data.email ?? 'Email non disponible';
     
-    return Container(
-      margin: const EdgeInsets.all(16),
-      height: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: ImageHelper.buildNetworkImage(
-          imageUrl: imageUrl,
-          placeholder: widget.ecole.parametreNom ?? 'École',
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEstablishmentInfo(Color color) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.ecole.parametreNom ?? 'École',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(22),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
-                ),
-                child: Text(
-                  widget.ecole.typePrincipal,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: _textSizeService.getScaledFontSize(12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          // Slogan si disponible
-          if (_ecoleDetail?.data.slogan != null && _ecoleDetail!.data.slogan!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '"${_ecoleDetail!.data.slogan!}"',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(14),
-                fontStyle: FontStyle.italic,
-                color: Colors.white.withOpacity(0.9),
-              ),
-            ),
-          ],
-          
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.location_on, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${widget.ecole.adresse ?? 'Adresse non disponible'}, ${widget.ecole.ville ?? 'Ville non disponible'}',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          // Téléphone si disponible dans les détails
-          if (_ecoleDetail?.data.telephone != null && _ecoleDetail!.data.telephone.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.phone, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  _ecoleDetail!.data.telephone,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          
-          // Email si disponible dans les détails
-          if (_ecoleDetail?.data.email != null && _ecoleDetail!.data.email!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.email, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _ecoleDetail!.data.email!,
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(14),
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
+    return EstablishmentHeaderCard(
+      imageUrl: imageUrl,
+      establishmentName: establishmentName,
+      establishmentType: establishmentType,
+      motto: motto,
+      address: address,
+      phone: phone,
+      email: email,
     );
   }
 
   Widget _buildActionButtons(Color color) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
+    return EstablishmentActionGrid(
+      onIntegration: () => _showActionBottomSheet('integration', _getActionCardItem('integration')),
+      onRating: () => _showActionBottomSheet('rating', _getActionCardItem('rating')),
+      onSponsorship: () => _showActionBottomSheet('sponsorship', _getActionCardItem('sponsorship')),
+      onRecommend: () => _showActionBottomSheet('recommend', _getActionCardItem('recommend')),
+      onShare: () => _showActionBottomSheet('share', _getActionCardItem('share')),
+    );
+  }
+
+  ColorCardItem _getActionCardItem(String actionType) {
+    switch (actionType) {
+      case 'integration':
+        return ColorCardItem(
+          icon: Icons.person_add_alt_1_rounded,
+          label: 'Intégration',
+          subtitle: 'Rejoindre',
+          onTap: () {},
+          backgroundColor: const Color(0xFF3B82F6), // Bleu
+          textColor: Colors.white,
+          subtitleColor: Colors.white.withValues(alpha: 0.8),
+        );
+      case 'rating':
+        return ColorCardItem(
+          icon: Icons.star_rate_rounded,
+          label: 'Noter',
+          subtitle: 'Évaluer',
+          onTap: () {},
+          backgroundColor: const Color(0xFF10B981), // Vert
+          textColor: Colors.white,
+          subtitleColor: Colors.white.withValues(alpha: 0.8),
+        );
+      case 'sponsorship':
+        return ColorCardItem(
+          icon: Icons.card_giftcard_rounded,
+          label: 'Parrainer',
+          subtitle: 'Inviter',
+          onTap: () {},
+          backgroundColor: const Color(0xFFF59E0B), // Orange
+          textColor: Colors.white,
+          subtitleColor: Colors.white.withValues(alpha: 0.8),
+        );
+      case 'recommend':
+        return ColorCardItem(
+          icon: Icons.recommend_rounded,
+          label: 'Recommander',
+          subtitle: 'Suggérer',
+          onTap: () {},
+          backgroundColor: const Color(0xFF8B5CF6), // Violet
+          textColor: Colors.white,
+          subtitleColor: Colors.white.withValues(alpha: 0.8),
+        );
+      case 'share':
+        return ColorCardItem(
+          icon: Icons.share_rounded,
+          label: 'Partager',
+          subtitle: 'Diffuser',
+          onTap: () {},
+          backgroundColor: const Color(0xFFEC4899), // Rose
+          textColor: Colors.white,
+          subtitleColor: Colors.white.withValues(alpha: 0.8),
+        );
+      default:
+        return ColorCardItem(
+          icon: Icons.help_rounded,
+          label: 'Inconnu',
+          onTap: () {},
+          backgroundColor: Colors.grey,
+        );
+    }
+  }
+
+  void _showActionBottomSheet(String actionType, ColorCardItem cardItem) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Bouton Demande d'intégration
-            ElevatedButton.icon(
-              onPressed: () {
-                _showIntegrationBottomSheet();
-              },
-              icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-              label: const Text('Intégration'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            // Header avec les couleurs de la carte
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cardItem.backgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            
-            // Bouton Noter & commenter
-            OutlinedButton.icon(
-              onPressed: () {
-                _showRatingBottomSheet();
-              },
-              icon: const Icon(Icons.star_rate_rounded, size: 16),
-              label: const Text('Noter'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      cardItem.icon,
+                      color: cardItem.textColor ?? Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cardItem.label,
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(20),
+                            fontWeight: FontWeight.bold,
+                            color: cardItem.textColor ?? Colors.white,
+                          ),
+                        ),
+                        if (cardItem.subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            cardItem.subtitle!,
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: cardItem.subtitleColor ?? Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(
+                      Icons.close,
+                      color: cardItem.textColor ?? Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
             
-            // Bouton Parrainer
-            OutlinedButton.icon(
-              onPressed: () {
-                _showSponsorshipBottomSheet();
-              },
-              icon: const Icon(Icons.card_giftcard_rounded, size: 16),
-              label: const Text('Parrainer'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            
-            // Bouton Recommander une école
-            OutlinedButton.icon(
-              onPressed: () {
-                _showRecommendationBottomSheet();
-              },
-              icon: const Icon(Icons.recommend_rounded, size: 16),
-              label: const Text('Recommander'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            
-            // Bouton Partager
-            OutlinedButton.icon(
-              onPressed: () {
-                _showShareBottomSheet();
-              },
-              icon: const Icon(Icons.share_rounded, size: 16),
-              label: const Text('Partager'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: _buildActionContent(actionType),
               ),
             ),
           ],
@@ -1122,75 +1034,1699 @@ void initState() {
     );
   }
 
-  Widget _buildModernTabBar() {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return AnimatedBuilder(
-      animation: Listenable.merge([_tabController, _textSizeService]),
-      builder: (context, _) {
-        return Container(
-          height: 35,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 11.5),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 6,
-            itemBuilder: (context, index) {
-              final isSelected = _tabController.index == index;
-              return GestureDetector(
-                onTap: () {
-                  _tabController.animateTo(index);
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? AppColors.primaryGradient
-                        : null,
-                    color: !isSelected
-                        ? AppColors.getSurfaceColor(isDarkMode)
-                        : null,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: isSelected
-                        ? [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                        : [],
+  Widget _buildActionContent(String actionType) {
+    switch (actionType) {
+      case 'integration':
+        return _buildIntegrationForm();
+      case 'rating':
+        return _buildRatingForm();
+      case 'sponsorship':
+        return _buildSponsorshipForm();
+      case 'recommend':
+        return _buildRecommendationForm();
+      case 'share':
+        return _buildShareForm();
+      default:
+        return const Center(child: Text('Contenu non disponible'));
+    }
+  }
+
+  Widget _buildIntegrationForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+
+        // Section Informations élève
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_rounded,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _getTabIcon(index),
-                        size: 16,
-                        color: isSelected
-                            ? Colors.white
-                            : AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _getTabTitle(index),
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(14),
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.getTextColor(isDarkMode, type: TextType.secondary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Informations de l\'élève',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildFormField(
+                'Nom',
+                'Entrez le nom complet',
+                Icons.person_rounded,
+                controller: _studentNameController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Prénoms',
+                'Entrez les prénoms',
+                Icons.person_outline_rounded,
+                controller: _studentFirstNameController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Matricule',
+                'Entrez le matricule',
+                Icons.badge_rounded,
+                controller: _matriculeController,
+              ),
+              const SizedBox(height: 8),
+              _buildDropdownField(
+                'Sexe',
+                'Sélectionner le sexe',
+                Icons.person_rounded,
+                value: _selectedSexe,
+                items: ['M', 'F'],
+                onChanged: (value) {
+                  // Note: setState n'est pas disponible ici, mais on peut utiliser un ValueNotifier
+                },
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Date de naissance',
+                'AAAA-MM-JJ',
+                Icons.cake_rounded,
+                controller: _birthDateController,
+                keyboardType: TextInputType.datetime,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Lieu de naissance',
+                'Entrez le lieu de naissance',
+                Icons.location_on_rounded,
+                controller: _lieuNaissanceController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Nationalité',
+                'Entrez la nationalité',
+                Icons.flag_rounded,
+                controller: _nationaliteController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Adresse',
+                'Entrez l\'adresse complète',
+                Icons.home_rounded,
+                controller: _adresseController,
+              ),
+            ],
+          ),
+        ),
+
+        // Section Contacts
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.phone_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Contacts',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildFormField(
+                'Contact 1',
+                'Entrez le numéro de téléphone principal',
+                Icons.phone_rounded,
+                controller: _contact1Controller,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Contact 2',
+                'Entrez le numéro de téléphone secondaire',
+                Icons.phone_android_rounded,
+                controller: _contact2Controller,
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+        ),
+
+        // Section Parents
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.family_restroom_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Informations des parents',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildFormField(
+                'Nom du père',
+                'Entrez le nom complet du père',
+                Icons.person_rounded,
+                controller: _nomPereController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Nom de la mère',
+                'Entrez le nom complet de la mère',
+                Icons.person_outline_rounded,
+                controller: _nomMereController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Nom du tuteur',
+                'Entrez le nom du tuteur (optionnel)',
+                Icons.supervisor_account_rounded,
+                controller: _nomTuteurController,
+              ),
+            ],
+          ),
+        ),
+
+        // Section Scolarité antérieure
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.school_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Scolarité antérieure',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildFormField(
+                'Niveau antérieur',
+                'Ex: CP1, 6ème...',
+                Icons.school_rounded,
+                controller: _niveauAntController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'École antérieure',
+                'Entrez le nom de l\'école précédente',
+                Icons.account_balance_rounded,
+                controller: _ecoleAntController,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Moyenne antérieure',
+                'Ex: 12.5',
+                Icons.assessment_rounded,
+                controller: _moyenneAntController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Rang antérieur',
+                'Ex: 3',
+                Icons.format_list_numbered_rounded,
+                controller: _rangAntController,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Décision antérieure',
+                'Ex: Passage, Redoublement...',
+                Icons.gavel_rounded,
+                controller: _decisionAntController,
+              ),
+            ],
+          ),
+        ),
+
+        // Section Documents
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.description_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Documents à fournir',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildFileUploadField(
+                'Bulletin scolaire',
+                'Sélectionner le bulletin',
+                Icons.description_rounded,
+                fileName: _bulletinFile,
+                onTap: () => _showFilePickerMessage('bulletin'),
+              ),
+              const SizedBox(height: 8),
+              _buildFileUploadField(
+                'Certificat de vaccination',
+                'Sélectionner le certificat',
+                Icons.medical_services_rounded,
+                fileName: _certificatVaccinationFile,
+                onTap: () => _showFilePickerMessage('certificat_vaccination'),
+              ),
+              const SizedBox(height: 8),
+              _buildFileUploadField(
+                'Certificat de scolarité',
+                'Sélectionner le certificat',
+                Icons.school_rounded,
+                fileName: _certificatScolariteFile,
+                onTap: () => _showFilePickerMessage('certificat_scolarite'),
+              ),
+              const SizedBox(height: 8),
+              _buildFileUploadField(
+                'Extrait de naissance',
+                'Sélectionner l\'extrait',
+                Icons.card_membership_rounded,
+                fileName: _extraitNaissanceFile,
+                onTap: () => _showFilePickerMessage('extrait_naissance'),
+              ),
+              const SizedBox(height: 8),
+              _buildFileUploadField(
+                'CNI des parents',
+                'Sélectionner la CNI',
+                Icons.credit_card_rounded,
+                fileName: _cniParentFile,
+                onTap: () => _showFilePickerMessage('cni_parent'),
+              ),
+            ],
+          ),
+        ),
+
+        // Section Détails de la demande
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.note_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Détails de la demande',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildFormField(
+                'Motif',
+                'Ex: Nouvelle inscription, Transfert...',
+                Icons.note_rounded,
+                controller: _motifController,
+              ),
+              const SizedBox(height: 8),
+              _buildDropdownField(
+                'Statut d\'affectation',
+                'Sélectionner le statut',
+                Icons.assignment_turned_in_rounded,
+                value: _selectedStatutAff,
+                items: ['Affecté', 'En attente', 'Refusé'],
+                onChanged: (value) {
+                  // Note: setState n'est pas disponible ici
+                },
+              ),
+              const SizedBox(height: 8),
+              _buildFormField(
+                'Filière',
+                'Ex: primaire, secondaire, technique...',
+                Icons.category_rounded,
+                controller: _filiereController,
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // Submit button
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              _submitIntegrationRequest();
+              Navigator.of(context).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF3B82F6),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+            ),
+            child: const Text(
+              'Envoyer la demande',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  void _showFilePickerMessage(String fileType) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Sélection de fichier pour: $fileType'),
+        backgroundColor: const Color(0xFF3B82F6),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildRatingForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        
+        // Rating section with improved design
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.grey50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.grey200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.grade_rounded,
+                    color: AppColors.warning,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Votre note',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimaryLight,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(5, (index) {
+                      final currentRating = int.tryParse(_ratingController.text) ?? 0;
+                      final isSelected = currentRating > index;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _ratingController.text = (index + 1).toString();
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isSelected 
+                                ? AppColors.warning.withOpacity(0.1) 
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            isSelected ? Icons.star_rounded : Icons.star_border_rounded,
+                            color: isSelected ? AppColors.warning : AppColors.grey400,
+                            size: 36,
+                          ),
                         ),
+                      );
+                    }),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Comment section with improved design
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.grey50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.grey200),
+          ),
+          child: TextFormField(
+            controller: _commentController,
+            maxLines: 5,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(15),
+              color: AppColors.textPrimaryLight,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Votre commentaire',
+              hintText: 'Partagez votre expérience...',
+              labelStyle: TextStyle(
+                color: AppColors.textSecondaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+              hintStyle: TextStyle(
+                color: AppColors.textTertiaryLight,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(left: 16, right: 12),
+                child: Icon(
+                  Icons.comment_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // Submit button with reduced width and improved design
+        Center(
+          child: RatingSubmitButton(
+            onPressed: () async {
+              // Validation des champs
+              if (_ratingController.text.isEmpty || _commentController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.warning_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        const Text('Veuillez remplir la note et le commentaire'),
+                      ],
+                    ),
+                    backgroundColor: AppColors.warning,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              // Récupérer l'utilisateur connecté
+              final currentUser = AuthService().getCurrentUser();
+              if (currentUser == null || currentUser.phone.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        const Text('Utilisateur non connecté'),
+                      ],
+                    ),
+                    backgroundColor: AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              // Afficher un indicateur de chargement
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => Container(
+                  color: Colors.black54,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ],
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _getTypeColor(widget.ecole.typePrincipal),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Envoi en cours...',
+                            style: TextStyle(
+                              color: AppColors.textPrimaryLight,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               );
+
+              try {
+                // Appel à l'API
+                final result = await TestimonialService.submitTestimonial(
+                  codeecole: widget.ecole.parametreCode ?? '',
+                  note: _ratingController.text,
+                  contenu: _commentController.text,
+                  userNumero: currentUser.phone,
+                );
+
+                // Fermer le dialogue de chargement
+                Navigator.of(context).pop();
+
+                if (result['success'] == true) {
+                  // Fermer le bottom sheet
+                  Navigator.of(context).pop();
+                  
+                  // Réinitialiser les champs
+                  _ratingController.clear();
+                  _commentController.clear();
+                  
+                  // Afficher le message de succès
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Témoignage envoyé avec succès!'),
+                        ],
+                      ),
+                      backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  );
+                } else {
+                  // Afficher le message d'erreur
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 8),
+                          Text(result['message'] ?? 'Erreur lors de l\'envoi'),
+                        ],
+                      ),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                // Fermer le dialogue de chargement
+                Navigator.of(context).pop();
+                
+                // Afficher l'erreur
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Erreur: $e'),
+                      ],
+                    ),
+                    backgroundColor: AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              }
             },
           ),
-        );
-      },
+        ),
+        
+        const SizedBox(height: 20),
+      ],
     );
+  }
+
+  Widget _buildSponsorshipForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Handle bar with improved design
+        Center(
+          child: Container(
+            width: 48,
+            height: 5,
+            margin: const EdgeInsets.only(top: 12, bottom: 16),
+            decoration: BoxDecoration(
+              color: AppColors.grey300,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        ),
+
+        // Header with better spacing and design
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              // Icon container with gradient
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.15),
+                      AppColors.primary.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  Icons.card_giftcard_rounded,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Parrainer un ami',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimaryLight,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Invitez vos amis et bénéficiez d\'avantages',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                        color: AppColors.textSecondaryLight,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Close button with better design
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.grey100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: AppColors.grey600,
+                    size: 20,
+                  ),
+                  iconSize: 20,
+                  splashRadius: 24,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Divider
+        Container(
+          height: 1,
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          color: AppColors.grey200,
+        ),
+
+        // Form content with better padding
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+
+              // Name field with improved design
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.grey50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.grey200),
+                ),
+                child: TextFormField(
+                  controller: _sponsorNameController,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(15),
+                    color: AppColors.textPrimaryLight,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Votre nom',
+                    hintText: 'Entrez votre nom complet',
+                    labelStyle: TextStyle(
+                      color: AppColors.textSecondaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    hintStyle: TextStyle(
+                      color: AppColors.textTertiaryLight,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 12),
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Your email field with improved design
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.grey50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.grey200),
+                ),
+                child: TextFormField(
+                  controller: _sponsorEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(15),
+                    color: AppColors.textPrimaryLight,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Votre email',
+                    hintText: 'votre@email.com',
+                    labelStyle: TextStyle(
+                      color: AppColors.textSecondaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    hintStyle: TextStyle(
+                      color: AppColors.textTertiaryLight,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 12),
+                      child: Icon(
+                        Icons.email_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Friend email field with improved design
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.grey50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.grey200),
+                ),
+                child: TextFormField(
+                  controller: _recommenderEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(15),
+                    color: AppColors.textPrimaryLight,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Email de l\'ami à parrainer',
+                    hintText: 'ami@email.com',
+                    labelStyle: TextStyle(
+                      color: AppColors.textSecondaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    hintStyle: TextStyle(
+                      color: AppColors.textTertiaryLight,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 12),
+                      child: Icon(
+                        Icons.person_add_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Promo code field with improved design
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.grey50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.grey200),
+                ),
+                child: TextFormField(
+                  controller: _promoCodeController,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(15),
+                    color: AppColors.textPrimaryLight,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Code promo (optionnel)',
+                    hintText: 'Entrez un code promo si vous en avez',
+                    labelStyle: TextStyle(
+                      color: AppColors.textSecondaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    hintStyle: TextStyle(
+                      color: AppColors.textTertiaryLight,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 12),
+                      child: Icon(
+                        Icons.local_offer_rounded,
+                        color: AppColors.warning,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Submit button with reduced width and improved design
+              Center(
+                child: SponsorshipSubmitButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            const Text('Invitation de parrainage envoyée avec succès!'),
+                          ],
+                        ),
+                        backgroundColor: AppColors.success,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendationForm() {
+    // Pré-remplir avec les données de l'école actuelle
+    _etablissementController.text = widget.ecole.parametreNom ?? '';
+    _paysController.text = 'Côte d\'Ivoire';
+    _villeController.text = 'Abidjan';
+    _ordreController.text = 'Primaire, collège';
+    _adresseEtablissementController.text = 'Adjamé';
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        
+        // Section Établissement with improved design
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.business_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Informations sur l\'établissement',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildFormField('Nom de l\'établissement', 'Entrez le nom de l\'établissement', Icons.business_rounded, controller: _etablissementController),
+              const SizedBox(height: 12),
+              _buildFormField('Adresse', 'Adresse complète', Icons.location_on_rounded, controller: _adresseEtablissementController),
+              const SizedBox(height: 12),
+              _buildFormField('Ordre', 'Ex: Primaire, collège...', Icons.category_rounded, controller: _ordreController),
+              const SizedBox(height: 12),
+              _buildFormField('Ville', 'Ville de l\'établissement', Icons.location_city_rounded, controller: _villeController),
+              const SizedBox(height: 12),
+              _buildFormField('Pays', 'Pays de l\'établissement', Icons.public_rounded, controller: _paysController),
+            ],
+          ),
+        ),
+          
+        // Section Parent with improved design
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Vos informations',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildFormField('Nom', 'Votre nom', Icons.person_rounded, controller: _parentNomController),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildFormField('Prénom', 'Votre prénom', Icons.person_outline_rounded, controller: _parentPrenomController),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildFormField('Téléphone', 'Votre numéro de téléphone', Icons.phone_rounded, controller: _parentTelephoneController),
+              const SizedBox(height: 12),
+              _buildFormField('Email', 'Votre adresse email', Icons.email_rounded, controller: _recommandationEmailController),
+              const SizedBox(height: 12),
+              _buildFormField('Pays', 'Votre pays', Icons.public_rounded, controller: _parentPaysController),
+              const SizedBox(height: 12),
+              _buildFormField('Ville', 'Votre ville', Icons.location_city_rounded, controller: _parentVilleController),
+              const SizedBox(height: 12),
+              _buildFormField('Adresse', 'Votre adresse', Icons.home_rounded, controller: _parentAdresseController),
+            ],
+          ),
+        ),
+          
+        const SizedBox(height: 32),
+          
+        // Submit button with reduced width and improved design
+        Center(
+          child: ElevatedButton(
+            onPressed: () async {
+              // Logger le début du processus
+              developer.log('🎯 Début de la soumission de recommandation', name: 'RecommendationForm');
+              
+              // Afficher le loader centralisé
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => Container(
+                  color: Colors.black54,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF8B5CF6)),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Envoi de votre recommandation...',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+              
+              // Validation basique
+              if (_etablissementController.text.isEmpty ||
+                  _parentNomController.text.isEmpty ||
+                  _parentPrenomController.text.isEmpty ||
+                  _parentTelephoneController.text.isEmpty ||
+                  _recommandationEmailController.text.isEmpty) {
+                developer.log('⚠️ Validation échouée - champs obligatoires manquants', name: 'RecommendationForm');
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.warning_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        const Expanded(child: Text('Veuillez remplir tous les champs obligatoires')),
+                      ],
+                    ),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+                return;
+              }
+              
+              developer.log('✅ Validation réussie - fermeture du formulaire', name: 'RecommendationForm');
+              
+              // Fermer le bottomsheet d'abord
+              Navigator.of(context).pop();
+              
+              // Appeler l'API
+              final result = await RecommendationService.submitRecommendation(
+                etablissement: _etablissementController.text,
+                pays: _paysController.text,
+                ville: _villeController.text,
+                ordre: _ordreController.text,
+                adresseEtablissement: _adresseEtablissementController.text,
+                nomParent: _parentNomController.text,
+                prenomParent: _parentPrenomController.text,
+                telephone: _parentTelephoneController.text,
+                email: _recommandationEmailController.text,
+                paysParent: _parentPaysController.text,
+                villeParent: _parentVilleController.text,
+                adresseParent: _parentAdresseController.text,
+              );
+              
+              // Logger le résultat
+              developer.log('📊 Résultat de l\'API: ${result['success']}', name: 'RecommendationForm');
+              developer.log('📝 Message: ${result['message']}', name: 'RecommendationForm');
+              
+              // Afficher une notification détaillée
+              if (result['success'] == true) {
+                // Notification de succès
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Recommandation envoyée avec succès!',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              if (result['statusCode'] != null)
+                                Text(
+                                  'Code: ${result['statusCode']}',
+                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                ),
+                              if (result['message'] != null && result['message'] != 'Recommandation envoyée avec succès!')
+                                Text(
+                                  '${result['message']}',
+                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+                
+                // Vider les champs après succès
+                _parentNomController.clear();
+                _parentPrenomController.clear();
+                _parentTelephoneController.clear();
+                _recommandationEmailController.clear();
+                _parentPaysController.clear();
+                _parentVilleController.clear();
+                _parentAdresseController.clear();
+                
+                developer.log('🧹 Champs du formulaire vidés après succès', name: 'RecommendationForm');
+              } else {
+                // Notification d'erreur
+                String errorMessage = result['message'] ?? 'Erreur inconnue';
+                String errorDetails = '';
+                
+                if (result['statusCode'] != null) {
+                  errorDetails = ' (Code: ${result['statusCode']})';
+                }
+                
+                if (result['error'] != null && result['error'].toString().length < 100) {
+                  errorDetails += ' - ${result['error']}';
+                }
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Erreur: $errorMessage$errorDetails',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+                
+                developer.log('❌ Erreur affichée à l\'utilisateur: $errorMessage$errorDetails', name: 'RecommendationForm');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF8B5CF6),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+            ),
+            child: const Text(
+              'Envoyer la recommandation',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildShareForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Handle
+        Center(
+          child: Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+
+        // Header
+        Text(
+          'Partager l\'établissement',
+          style: TextStyle(
+            fontSize: _textSizeService.getScaledFontSize(18),
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          widget.ecole.parametreNom ?? 'École',
+          style: TextStyle(
+            fontSize: _textSizeService.getScaledFontSize(14),
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Share options
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildShareOption(Icons.message, 'WhatsApp'),
+            _buildShareOption(Icons.email, 'Email'),
+            _buildShareOption(Icons.link, 'Copier'),
+            _buildShareOption(Icons.share, 'Réseaux'),
+          ],
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildShareOption(IconData icon, String label) {
+    return GestureDetector(
+      onTap: () {
+        // Logique de partage spécifique
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.grey50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.grey200),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: AppColors.primary,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCards() {
+    return EstablishmentMenuCards(
+      onInfos: () => _showMenuBottomSheet('informations', _getMenuCardItem('informations')),
+      onCommunication: () => _showMenuBottomSheet('communication', _getMenuCardItem('communication')),
+      onLevels: () => _showMenuBottomSheet('niveaux', _getMenuCardItem('niveaux')),
+      onEvents: () => _showMenuBottomSheet('events', _getMenuCardItem('events')),
+      onScolarite: () => _showMenuBottomSheet('scolarite', _getMenuCardItem('scolarite')),
+      onNotes: () => _showMenuBottomSheet('notes', _getMenuCardItem('notes')),
+    );
+  }
+
+  MenuCardItem _getMenuCardItem(String menuType) {
+    switch (menuType) {
+      case 'informations':
+        return MenuCardItem(
+          icon: Icons.info_rounded,
+          label: 'Informations',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE3F2FD),
+          iconColor: const Color(0xFF1976D2),
+          titleColor: const Color(0xFF0D47A1),
+          descriptionColor: const Color(0xFF1565C0),
+        );
+      case 'communication':
+        return MenuCardItem(
+          icon: Icons.campaign_rounded,
+          label: 'Communication',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE8F5E8),
+          iconColor: const Color(0xFF2E7D32),
+          titleColor: const Color(0xFF1B5E20),
+          descriptionColor: const Color(0xFF388E3C),
+        );
+      case 'niveaux':
+        return MenuCardItem(
+          icon: Icons.school_rounded,
+          label: 'Niveaux',
+          onTap: () {},
+          backgroundColor: const Color(0xFFFFF3E0),
+          iconColor: const Color(0xFFF57C00),
+          titleColor: const Color(0xFFE65100),
+          descriptionColor: const Color(0xFFEF6C00),
+        );
+      case 'events':
+        return MenuCardItem(
+          icon: Icons.event_rounded,
+          label: 'Event school',
+          onTap: () {},
+          backgroundColor: const Color(0xFFF3E5F5),
+          iconColor: const Color(0xFF7B1FA2),
+          titleColor: const Color(0xFF4A148C),
+          descriptionColor: const Color(0xFF8E24AA),
+        );
+      case 'scolarite':
+        return MenuCardItem(
+          icon: Icons.account_balance_wallet_rounded,
+          label: 'Scolarité',
+          onTap: () {},
+          backgroundColor: const Color(0xFFFCE4EC),
+          iconColor: const Color(0xFFC2185B),
+          titleColor: const Color(0xFF880E4F),
+          descriptionColor: const Color(0xFFD81B60),
+        );
+      case 'notes':
+        return MenuCardItem(
+          icon: Icons.star_rate_rounded,
+          label: 'Notes',
+          onTap: () {},
+          backgroundColor: const Color(0xFFFAFAFA),
+          iconColor: const Color(0xFF616161),
+          titleColor: const Color(0xFF212121),
+          descriptionColor: const Color(0xFF757575),
+        );
+      default:
+        return MenuCardItem(
+          icon: Icons.help_rounded,
+          label: 'Inconnu',
+          onTap: () {},
+        );
+    }
+  }
+
+  void _showMenuBottomSheet(String menuType, MenuCardItem cardItem) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header avec les couleurs de la carte
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cardItem.backgroundColor ?? (isDark ? Colors.grey[800] : Colors.grey[50]),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cardItem.backgroundColor?.withOpacity(0.3) ?? Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      cardItem.icon,
+                      color: cardItem.iconColor ?? AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cardItem.label,
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(20),
+                            fontWeight: FontWeight.bold,
+                            color: cardItem.titleColor ?? (isDark ? Colors.white : Colors.black),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _getMenuDescription(menuType),
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(14),
+                            color: cardItem.descriptionColor ?? (isDark ? Colors.grey[400] : Colors.grey[600]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(
+                      Icons.close,
+                      color: cardItem.titleColor ?? (isDark ? Colors.white : Colors.black),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: _buildMenuContent(menuType),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuContent(String menuType) {
+    switch (menuType) {
+      case 'informations':
+        return _buildUnifiedInfoTab();
+      case 'communication':
+        return _buildCommunicationTab();
+      case 'niveaux':
+        return _buildLevelsTab();
+      case 'events':
+        return _buildEventsTab();
+      case 'scolarite':
+        return _buildScolariteTab();
+      case 'notes':
+        return _buildNotesTab();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+
+  String _getMenuDescription(String menuType) {
+    switch (menuType) {
+      case 'informations':
+        return 'Détails, contacts, localisation';
+      case 'communication':
+        return 'Actualités, annonces, newsletters';
+      case 'niveaux':
+        return 'Classes, programmes, enseignants';
+      case 'events':
+        return 'Événements, activités, calendrier';
+      case 'scolarite':
+        return 'Frais, inscription, bourses';
+      case 'notes':
+        return 'Avis, témoignages, évaluations';
+      default:
+        return 'En savoir plus...';
+    }
+  }
+
+  String _getMenuTitle(String menuType) {
+    switch (menuType) {
+      case 'informations':
+        return 'Informations';
+      case 'communication':
+        return 'Communication';
+      case 'niveaux':
+        return 'Niveaux';
+      case 'events':
+        return 'Event school';
+      case 'scolarite':
+        return 'Scolarité';
+      case 'notes':
+        return 'Notes';
+      default:
+        return '';
+    }
   }
 
   IconData _getTabIcon(int index) {
@@ -1231,954 +2767,7 @@ void initState() {
     }
   }
 
-  void _showRecommendationBottomSheet() {
-    // Pré-remplir avec les données de l'école actuelle
-    _etablissementController.text = widget.ecole.parametreNom ?? '';
-    _paysController.text = 'Côte d\'Ivoire';
-    _villeController.text = 'Abidjan';
-    _ordreController.text = 'Primaire, collège';
-    _adresseEtablissementController.text = 'Adjamé';
-    
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 20,
-              offset: Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar with improved design
-            Center(
-              child: Container(
-                width: 48,
-                height: 5,
-                margin: const EdgeInsets.only(top: 12, bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.grey300,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
 
-            // Header with better spacing and design
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  // Icon container with gradient
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary.withOpacity(0.15),
-                          AppColors.primary.withOpacity(0.05),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.school_rounded,
-                      color: AppColors.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recommander une école',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(18),
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimaryLight,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Aidez-nous à découvrir de nouveaux établissements',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(13),
-                            color: AppColors.textSecondaryLight,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Close button with better design
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.grey100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: AppColors.grey600,
-                        size: 20,
-                      ),
-                      iconSize: 20,
-                      splashRadius: 24,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-              
-            const SizedBox(height: 8),
-              
-            // Divider
-            Container(
-              height: 1,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              color: AppColors.grey200,
-            ),
-              
-            // Form content with better padding
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    
-                    // Section Établissement with improved design
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: AppColors.grey50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.grey200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.business_rounded,
-                                color: AppColors.primary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Informations sur l\'établissement',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(16),
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimaryLight,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildFormField('Nom de l\'établissement', 'Entrez le nom de l\'établissement', Icons.business_rounded, controller: _etablissementController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Adresse', 'Adresse complète', Icons.location_on_rounded, controller: _adresseEtablissementController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Ordre', 'Ex: Primaire, collège...', Icons.category_rounded, controller: _ordreController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Ville', 'Ville de l\'établissement', Icons.location_city_rounded, controller: _villeController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Pays', 'Pays de l\'établissement', Icons.public_rounded, controller: _paysController),
-                        ],
-                      ),
-                    ),
-                      
-                    // Section Parent with improved design
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: AppColors.grey50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.grey200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.person_rounded,
-                                color: AppColors.primary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Vos informations',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(16),
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimaryLight,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildFormField('Nom', 'Votre nom', Icons.person_rounded, controller: _parentNomController),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildFormField('Prénom', 'Votre prénom', Icons.person_outline_rounded, controller: _parentPrenomController),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _buildFormField('Téléphone', 'Votre numéro de téléphone', Icons.phone_rounded, controller: _parentTelephoneController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Email', 'Votre adresse email', Icons.email_rounded, controller: _recommandationEmailController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Pays', 'Votre pays', Icons.public_rounded, controller: _parentPaysController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Ville', 'Votre ville', Icons.location_city_rounded, controller: _parentVilleController),
-                          const SizedBox(height: 12),
-                          _buildFormField('Adresse', 'Votre adresse', Icons.home_rounded, controller: _parentAdresseController),
-                        ],
-                      ),
-                    ),
-                      
-                    const SizedBox(height: 32),
-                      
-                    // Submit button with reduced width and improved design
-                    Center(
-                      child: RecommendationSubmitButton(
-                        onPressed: () async {
-                            // Logger le début du processus
-                            developer.log('🎯 Début de la soumission de recommandation', name: 'RecommendationForm');
-                            
-                            // Afficher le loader centralisé
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => AppLoader(
-                                message: 'Envoi de la recommandation...',
-                                backgroundColor: Colors.white,
-                                iconColor: AppColors.primary,
-                                size: 80.0,
-                              ),
-                            );
-                            
-                            // Validation basique
-                            if (_etablissementController.text.isEmpty ||
-                                _parentNomController.text.isEmpty ||
-                                _parentPrenomController.text.isEmpty ||
-                                _parentTelephoneController.text.isEmpty ||
-                                _recommandationEmailController.text.isEmpty) {
-                              developer.log('⚠️ Validation échouée - champs obligatoires manquants', name: 'RecommendationForm');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Row(
-                                    children: [
-                                      Icon(Icons.warning_rounded, color: Colors.white, size: 20),
-                                      const SizedBox(width: 8),
-                                      const Expanded(child: Text('Veuillez remplir tous les champs obligatoires')),
-                                    ],
-                                  ),
-                                  backgroundColor: AppColors.warning,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  duration: const Duration(seconds: 4),
-                                  action: SnackBarAction(
-                                    label: 'OK',
-                                    textColor: Colors.white,
-                                    onPressed: () {},
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            
-                            developer.log('✅ Validation réussie - fermeture du formulaire', name: 'RecommendationForm');
-                            
-                            // Fermer le bottomsheet d'abord
-                            Navigator.of(context).pop();
-                            
-                            // Afficher indicateur de chargement dans un nouveau contexte
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => Container(
-                                color: Colors.black54,
-                                child: Center(
-                                  child: Container(
-                                    padding: const EdgeInsets.all(24),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CircularProgressIndicator(
-                                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Envoi de votre recommandation...',
-                                          style: TextStyle(
-                                            fontSize: _textSizeService.getScaledFontSize(14),
-                                            color: AppColors.textPrimaryLight,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                            
-                            developer.log('📤 Appel de l\'API de recommandation', name: 'RecommendationForm');
-                            
-                            // Appeler l'API
-                            final result = await RecommendationService.submitRecommendation(
-                              etablissement: _etablissementController.text,
-                              pays: _paysController.text,
-                              ville: _villeController.text,
-                              ordre: _ordreController.text,
-                              adresseEtablissement: _adresseEtablissementController.text,
-                              nomParent: _parentNomController.text,
-                              prenomParent: _parentPrenomController.text,
-                              telephone: _parentTelephoneController.text,
-                              email: _recommandationEmailController.text,
-                              paysParent: _parentPaysController.text,
-                              villeParent: _parentVilleController.text,
-                              adresseParent: _parentAdresseController.text,
-                            );
-                            
-                            // Logger le résultat
-                            developer.log('📊 Résultat de l\'API: ${result['success']}', name: 'RecommendationForm');
-                            developer.log('📝 Message: ${result['message']}', name: 'RecommendationForm');
-                            
-                            // Fermer le dialogue de chargement
-                            if (context.mounted) {
-                              Navigator.of(context).pop();
-                            }
-                            
-                            // Afficher une notification détaillée
-                            if (context.mounted) {
-                              if (result['success'] == true) {
-                                // Notification de succès
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                'Recommandation envoyée avec succès!',
-                                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                                              ),
-                                              if (result['statusCode'] != null)
-                                                Text(
-                                                  'Code: ${result['statusCode']}',
-                                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                                ),
-                                              if (result['message'] != null && result['message'] != 'Recommandation envoyée avec succès!')
-                                                Text(
-                                                  '${result['message']}',
-                                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    backgroundColor: AppColors.success,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    duration: const Duration(seconds: 5),
-                                    action: SnackBarAction(
-                                      label: 'OK',
-                                      textColor: Colors.white,
-                                      onPressed: () {},
-                                    ),
-                                  ),
-                                );
-                                
-                                // Vider les champs après succès
-                                _parentNomController.clear();
-                                _parentPrenomController.clear();
-                                _parentTelephoneController.clear();
-                                _recommandationEmailController.clear();
-                                _parentPaysController.clear();
-                                _parentVilleController.clear();
-                                _parentAdresseController.clear();
-                                
-                                developer.log('🧹 Champs du formulaire vidés après succès', name: 'RecommendationForm');
-                                
-                                // Fermer le loader et afficher le dialogue de succès
-                                Navigator.of(context).pop();
-                                _showSuccessDialog('Recommandation envoyée avec succès!');
-                              } else {
-                                // Notification d'erreur
-                                String errorMessage = result['message'] ?? 'Erreur inconnue';
-                                String errorDetails = '';
-                                
-                                if (result['statusCode'] != null) {
-                                  errorDetails = ' (Code: ${result['statusCode']})';
-                                }
-                                
-                                if (result['error'] != null && result['error'].toString().length < 100) {
-                                  errorDetails += ' - ${result['error']}';
-                                }
-                                
-                                // Fermer le loader et afficher le dialogue d'erreur
-                                Navigator.of(context).pop();
-                                _showErrorDialog(
-                                  'Échec de l\'envoi',
-                                  'Une erreur est survenue lors de l\'envoi de votre recommandation.',
-                                  details: errorMessage + errorDetails,
-                                );
-                                
-                                developer.log('❌ Erreur affichée à l\'utilisateur: $errorMessage$errorDetails', name: 'RecommendationForm');
-                              }
-                            }
-                          },
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showIntegrationBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 20,
-                offset: Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  margin: const EdgeInsets.only(top: 12, bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.grey300,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            _getTypeColor(widget.ecole.typePrincipal).withOpacity(0.15),
-                            _getTypeColor(widget.ecole.typePrincipal).withOpacity(0.05),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _getTypeColor(widget.ecole.typePrincipal).withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.person_add_alt_1_rounded,
-                        color: _getTypeColor(widget.ecole.typePrincipal),
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Demande d\'intégration',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(18),
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimaryLight,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.ecole.parametreNom ?? 'École',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(13),
-                              color: AppColors.textSecondaryLight,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.grey100,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: AppColors.grey600,
-                          size: 20,
-                        ),
-                        iconSize: 20,
-                        splashRadius: 24,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Divider
-              Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                color: AppColors.grey200,
-              ),
-
-              // Form content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-
-                      // Section Informations élève
-                      _buildSectionHeader('Informations de l\'élève'),
-
-                      _buildFormField(
-                        'Nom',
-                        'Entrez le nom complet',
-                        Icons.person_rounded,
-                        controller: _studentNameController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Prénoms',
-                        'Entrez les prénoms',
-                        Icons.person_outline_rounded,
-                        controller: _studentFirstNameController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Matricule',
-                        'Entrez le matricule',
-                        Icons.badge_rounded,
-                        controller: _matriculeController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildDropdownField(
-                        'Sexe',
-                        'Sélectionner le sexe',
-                        Icons.person_rounded,
-                        value: _selectedSexe,
-                        items: ['M', 'F'],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSexe = value!;
-                          });
-                        },
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Date de naissance',
-                        'AAAA-MM-JJ',
-                        Icons.cake_rounded,
-                        controller: _birthDateController,
-                        keyboardType: TextInputType.datetime,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Lieu de naissance',
-                        'Entrez le lieu de naissance',
-                        Icons.location_on_rounded,
-                        controller: _lieuNaissanceController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Nationalité',
-                        'Entrez la nationalité',
-                        Icons.flag_rounded,
-                        controller: _nationaliteController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Adresse',
-                        'Entrez l\'adresse complète',
-                        Icons.home_rounded,
-                        controller: _adresseController,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Section Contacts
-                      _buildSectionHeader('Contacts'),
-
-                      _buildFormField(
-                        'Contact 1',
-                        'Entrez le numéro de téléphone principal',
-                        Icons.phone_rounded,
-                        controller: _contact1Controller,
-                        keyboardType: TextInputType.phone,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Contact 2',
-                        'Entrez le numéro de téléphone secondaire',
-                        Icons.phone_android_rounded,
-                        controller: _contact2Controller,
-                        keyboardType: TextInputType.phone,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Section Parents
-                      _buildSectionHeader('Informations des parents'),
-
-                      _buildFormField(
-                        'Nom du père',
-                        'Entrez le nom complet du père',
-                        Icons.person_rounded,
-                        controller: _nomPereController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Nom de la mère',
-                        'Entrez le nom complet de la mère',
-                        Icons.person_outline_rounded,
-                        controller: _nomMereController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Nom du tuteur',
-                        'Entrez le nom du tuteur (optionnel)',
-                        Icons.supervisor_account_rounded,
-                        controller: _nomTuteurController,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Section Scolarité antérieure
-                      _buildSectionHeader('Scolarité antérieure'),
-
-                      _buildFormField(
-                        'Niveau antérieur',
-                        'Ex: CP1, 6ème...',
-                        Icons.school_rounded,
-                        controller: _niveauAntController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'École antérieure',
-                        'Entrez le nom de l\'école précédente',
-                        Icons.account_balance_rounded,
-                        controller: _ecoleAntController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Moyenne antérieure',
-                        'Ex: 12.5',
-                        Icons.assessment_rounded,
-                        controller: _moyenneAntController,
-                        keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Rang antérieur',
-                        'Ex: 3',
-                        Icons.format_list_numbered_rounded,
-                        controller: _rangAntController,
-                        keyboardType: TextInputType.number,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Décision antérieure',
-                        'Ex: Passage, Redoublement...',
-                        Icons.gavel_rounded,
-                        controller: _decisionAntController,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Section Documents
-                      _buildSectionHeader('Documents à fournir'),
-
-                      _buildFileUploadField(
-                        'Bulletin scolaire',
-                        'Sélectionner le bulletin',
-                        Icons.description_rounded,
-                        fileName: _bulletinFile,
-                        onTap: () => _pickFile('bulletin'),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFileUploadField(
-                        'Certificat de vaccination',
-                        'Sélectionner le certificat',
-                        Icons.medical_services_rounded,
-                        fileName: _certificatVaccinationFile,
-                        onTap: () => _pickFile('certificat_vaccination'),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFileUploadField(
-                        'Certificat de scolarité',
-                        'Sélectionner le certificat',
-                        Icons.school_rounded,
-                        fileName: _certificatScolariteFile,
-                        onTap: () => _pickFile('certificat_scolarite'),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFileUploadField(
-                        'Extrait de naissance',
-                        'Sélectionner l\'extrait',
-                        Icons.card_membership_rounded,
-                        fileName: _extraitNaissanceFile,
-                        onTap: () => _pickFile('extrait_naissance'),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFileUploadField(
-                        'CNI des parents',
-                        'Sélectionner la CNI',
-                        Icons.credit_card_rounded,
-                        fileName: _cniParentFile,
-                        onTap: () => _pickFile('cni_parent'),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Section Détails de la demande
-                      _buildSectionHeader('Détails de la demande'),
-
-                      _buildFormField(
-                        'Motif',
-                        'Ex: Nouvelle inscription, Transfert...',
-                        Icons.note_rounded,
-                        controller: _motifController,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildDropdownField(
-                        'Statut d\'affectation',
-                        'Sélectionner le statut',
-                        Icons.assignment_turned_in_rounded,
-                        value: _selectedStatutAff,
-                        items: ['Affecté', 'En attente', 'Refusé'],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedStatutAff = value!;
-                          });
-                        },
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildFormField(
-                        'Filière',
-                        'Ex: primaire, secondaire, technique...',
-                        Icons.category_rounded,
-                        controller: _filiereController,
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Submit button
-                      Center(
-                        child: GradientSubmitButton(
-                          text: 'Envoyer la demande',
-                          onPressed: () {
-                            _submitIntegrationRequest();
-                          },
-                          type: SubmitButtonType.primary,
-                          icon: Icons.send_rounded,
-                          width: 220,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ), // closes Expanded
-            ],   // closes outer Column's children
-          ),     // closes Column
-        ),       // closes Container
-      ),         // closes StatefulBuilder
-    );           // closes showModalBottomSheet
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: _textSizeService.getScaledFontSize(13),
-          fontWeight: FontWeight.bold,
-          color: _getTypeColor(widget.ecole.typePrincipal),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickFile(String fileType) async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
-        allowMultiple: false,
-      );
-
-      if (result != null && result.files.single.path != null) {
-        String selectedFileName = result.files.single.name;
-        setState(() {
-          switch (fileType) {
-            case 'bulletin':
-              _bulletinFile = selectedFileName;
-              break;
-            case 'certificat_vaccination':
-              _certificatVaccinationFile = selectedFileName;
-              break;
-            case 'certificat_scolarite':
-              _certificatScolariteFile = selectedFileName;
-              break;
-            case 'extrait_naissance':
-              _extraitNaissanceFile = selectedFileName;
-              break;
-            case 'cni_parent':
-              _cniParentFile = selectedFileName;
-              break;
-          }
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fichier sélectionné: $selectedFileName'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la sélection du fichier: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   void _submitIntegrationRequest() async {
     // Valider les champs obligatoires
@@ -2679,422 +3268,6 @@ void initState() {
     );
   }
 
-  void _showRatingBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 20,
-              offset: Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar with improved design
-            Center(
-              child: Container(
-                width: 48,
-                height: 5,
-                margin: const EdgeInsets.only(top: 12, bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.grey300,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-
-            // Header with better spacing and design
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  // Icon container with gradient
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          _getTypeColor(widget.ecole.typePrincipal).withOpacity(0.15),
-                          _getTypeColor(widget.ecole.typePrincipal).withOpacity(0.05),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _getTypeColor(widget.ecole.typePrincipal).withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.star_rate_rounded,
-                      color: _getTypeColor(widget.ecole.typePrincipal),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Noter et commenter',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(18),
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimaryLight,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.ecole.parametreNom ?? 'École',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(13),
-                            color: AppColors.textSecondaryLight,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Close button with better design
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.grey100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: AppColors.grey600,
-                        size: 20,
-                      ),
-                      iconSize: 20,
-                      splashRadius: 24,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Divider
-            Container(
-              height: 1,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              color: AppColors.grey200,
-            ),
-
-            // Form content with better padding
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    
-                    // Rating section with improved design
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.grey50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.grey200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.grade_rounded,
-                                color: AppColors.warning,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Votre note',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(16),
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimaryLight,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          StatefulBuilder(
-                            builder: (context, setState) {
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: List.generate(5, (index) {
-                                  final currentRating = int.tryParse(_ratingController.text) ?? 0;
-                                  final isSelected = currentRating > index;
-                                  return GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _ratingController.text = (index + 1).toString();
-                                      });
-                                    },
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: isSelected 
-                                            ? AppColors.warning.withOpacity(0.1) 
-                                            : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        isSelected ? Icons.star_rounded : Icons.star_border_rounded,
-                                        color: isSelected ? AppColors.warning : AppColors.grey400,
-                                        size: 36,
-                                      ),
-                                    ),
-                                  );
-                                }),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Comment section with improved design
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.grey50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.grey200),
-                      ),
-                      child: TextFormField(
-                        controller: _commentController,
-                        maxLines: 5,
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(15),
-                          color: AppColors.textPrimaryLight,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Votre commentaire',
-                          hintText: 'Partagez votre expérience...',
-                          labelStyle: TextStyle(
-                            color: AppColors.textSecondaryLight,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          hintStyle: TextStyle(
-                            color: AppColors.textTertiaryLight,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.all(16),
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.only(left: 16, right: 12),
-                            child: Icon(
-                              Icons.comment_rounded,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Submit button with reduced width and improved design
-                    Center(
-                      child: RatingSubmitButton(
-                        onPressed: () async {
-                          // Validation des champs
-                          if (_ratingController.text.isEmpty || _commentController.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    Icon(Icons.warning_rounded, color: Colors.white, size: 20),
-                                    const SizedBox(width: 8),
-                                    const Text('Veuillez remplir la note et le commentaire'),
-                                  ],
-                                ),
-                                backgroundColor: AppColors.warning,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-
-                          // Récupérer l'utilisateur connecté
-                          final currentUser = AuthService().getCurrentUser();
-                          if (currentUser == null || currentUser.phone.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    Icon(Icons.error_rounded, color: Colors.white, size: 20),
-                                    const SizedBox(width: 8),
-                                    const Text('Utilisateur non connecté'),
-                                  ],
-                                ),
-                                backgroundColor: AppColors.error,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-
-                          // Afficher un indicateur de chargement
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (context) => Container(
-                              color: Colors.black54,
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          _getTypeColor(widget.ecole.typePrincipal),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Envoi en cours...',
-                                        style: TextStyle(
-                                          color: AppColors.textPrimaryLight,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-
-                          try {
-                            // Appel à l'API
-                            final result = await TestimonialService.submitTestimonial(
-                              codeecole: widget.ecole.parametreCode ?? '',
-                              note: _ratingController.text,
-                              contenu: _commentController.text,
-                              userNumero: currentUser.phone,
-                            );
-
-                            // Fermer le dialogue de chargement
-                            Navigator.of(context).pop();
-
-                            if (result['success'] == true) {
-                              // Fermer le bottom sheet
-                              Navigator.of(context).pop();
-                              
-                              // Réinitialiser les champs
-                              _ratingController.clear();
-                              _commentController.clear();
-                              
-                              // Afficher le message de succès
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Row(
-                                    children: [
-                                      Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                                      const SizedBox(width: 8),
-                                      const Text('Témoignage envoyé avec succès!'),
-                                    ],
-                                  ),
-                                  backgroundColor: AppColors.success,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            } else {
-                              // Afficher le message d'erreur
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Row(
-                                    children: [
-                                      Icon(Icons.error_rounded, color: Colors.white, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text(result['message'] ?? 'Erreur lors de l\'envoi'),
-                                    ],
-                                  ),
-                                  backgroundColor: AppColors.error,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            // Fermer le dialogue de chargement
-                            Navigator.of(context).pop();
-                            
-                            // Afficher l'erreur
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    Icon(Icons.error_rounded, color: Colors.white, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text('Erreur: $e'),
-                                  ],
-                                ),
-                                backgroundColor: AppColors.error,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showSponsorshipBottomSheet() {
     showModalBottomSheet(
@@ -3422,136 +3595,6 @@ void initState() {
     );
   }
 
-  void _showShareBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: IntrinsicHeight(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            // Header
-            Text(
-              'Partager l\'établissement',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(18),
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.titleLarge?.color,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.ecole.parametreNom ?? 'École',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(14),
-                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Share options
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildShareOption(
-                  'WhatsApp',
-                  Icons.message_rounded,
-                  Colors.green,
-                  () {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Partage via WhatsApp'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
-                  },
-                ),
-                _buildShareOption(
-                  'Facebook',
-                  Icons.facebook_rounded,
-                  Colors.blue,
-                  () {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Partage via Facebook'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
-                  },
-                ),
-                _buildShareOption(
-                  'Copier lien',
-                  Icons.link_rounded,
-                  AppColors.primary,
-                  () {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Lien copié dans le presse-papiers!'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-      ),
-    );
-  }
-
-  Widget _buildShareOption(String label, IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(12),
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).textTheme.bodyMedium?.color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildFormField(String label, String hint, IconData icon, {
     TextEditingController? controller,
@@ -6550,7 +6593,7 @@ Widget _buildScolariteTab() {
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () {
-                        _showRatingBottomSheet();
+                        _buildRatingForm();
                       },
                       icon: const Icon(Icons.star_rate),
                       label: const Text('Donner mon avis'),

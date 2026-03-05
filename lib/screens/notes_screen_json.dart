@@ -195,8 +195,46 @@ class _NotesScreenJsonState extends State<NotesScreenJson> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = _themeService.isDarkMode;
+    final theme = Theme.of(context);
+    
     return Scaffold(
       backgroundColor: AppColors.getPureBackground(isDarkMode),
+      appBar: AppBar(
+        backgroundColor: AppColors.getPureAppBarBackground(isDarkMode),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.iconTheme.color,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Mes Notes',
+          style: TextStyle(
+            color: theme.textTheme.titleLarge?.color,
+            fontWeight: FontWeight.w600,
+            fontSize: _textSizeService.getScaledFontSize(20),
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: theme.iconTheme.color,
+            ),
+            onPressed: () {
+              setState(() {
+                _isLoading = true;
+              });
+              _loadJsonData();
+            },
+            tooltip: 'Actualiser',
+          ),
+        ],
+      ),
       body: _isLoading ? _buildLoadingState() : _buildContent(),
     );
   }

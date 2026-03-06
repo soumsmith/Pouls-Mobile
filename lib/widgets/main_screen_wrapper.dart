@@ -183,7 +183,6 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             child: BottomNav(
               currentIndex: _currentIndex,
               onTap: _onTabTapped,
-              textSizeService: TextSizeService(),
             ),
           ),
         ],

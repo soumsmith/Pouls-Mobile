@@ -1,17 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/text_size_service.dart';
 import '../services/cart_service.dart';
 import '../screens/tutor_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/help_support_screen.dart';
 import '../screens/new_settings_screen.dart';
 import '../screens/messages_screen.dart';
-import '../screens/my_tickets_screen.dart';
+import '../screens/orders_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
-import '../config/app_colors.dart';
-import '../config/app_typography.dart';
 
+// ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
+const _kOrange        = Color(0xFFFF6B2C);
+const _kOrangeLight   = Color(0xFFFFF0E8);
+const _kSurface       = Color(0xFFF8F8F8);
+const _kCard          = Colors.white;
+const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF8A8A8A);
+const _kDivider       = Color(0xFFF0F0F0);
+const _kShadow        = Color(0x0D000000);
+
+const _kOrangeGradient = LinearGradient(
+  colors: [Color(0xFFFF7A3C), _kOrange],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+// ─── Menu Item Model ──────────────────────────────────────────────────────────
+class _MenuItem {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final int badgeCount;
+
+  const _MenuItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+}
+
+// ─── Main Widget ──────────────────────────────────────────────────────────────
 class BottomSheetMenu extends StatefulWidget {
   const BottomSheetMenu({super.key});
 
@@ -19,477 +52,511 @@ class BottomSheetMenu extends StatefulWidget {
   State<BottomSheetMenu> createState() => _BottomSheetMenuState();
 }
 
-class _BottomSheetMenuState extends State<BottomSheetMenu> {
-  final TextSizeService _textSizeService = TextSizeService();
+class _BottomSheetMenuState extends State<BottomSheetMenu>
+    with SingleTickerProviderStateMixin {
   final CartService _cartService = MockCartService();
-  int _cartItemCount = 0;
-  int _unreadMessageCount = 0;
-  int _ticketCount = 0;
+  int _cartItemCount     = 0;
+  int _unreadMessages    = 5; // demo
+  int _ticketCount       = 2; // demo
+
+  late AnimationController _sheetController;
+  late Animation<double>    _sheetAnim;
 
   @override
   void initState() {
     super.initState();
-    _loadCounts();
-  }
-
-  Future<void> _loadCounts() async {
-    await Future.wait([
-      _loadCartItemCount(),
-      _loadMessageCount(),
-      _loadTicketCount(),
-    ]);
-  }
-
-  Future<void> _loadMessageCount() async {
-    try {
-      // Simuler un comptage de messages non lus
-      if (mounted) {
-        setState(() {
-          _unreadMessageCount = 5; // Valeur de démonstration
-        });
-      }
-    } catch (e) {
-      print('Erreur lors du chargement des messages: $e');
-    }
-  }
-
-  Future<void> _loadTicketCount() async {
-    try {
-      // Simuler un comptage de tickets
-      if (mounted) {
-        setState(() {
-          _ticketCount = 2; // Valeur de démonstration
-        });
-      }
-    } catch (e) {
-      print('Erreur lors du chargement des tickets: $e');
-    }
-  }
-
-  Future<void> _loadCartItemCount() async {
-    final cart = await _cartService.getCurrentCart();
-    if (mounted) {
-      setState(() {
-        _cartItemCount = cart.totalItems;
-      });
-    }
+    _sheetController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _sheetAnim = CurvedAnimation(
+      parent: _sheetController,
+      curve: Curves.easeOutCubic,
+    );
+    _sheetController.forward();
+    _loadCartCount();
   }
 
   @override
+  void dispose() {
+    _sheetController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCartCount() async {
+    final cart = await _cartService.getCurrentCart();
+    if (mounted) setState(() => _cartItemCount = cart.totalItems);
+  }
+
+  // ── Build ─────────────────────────────────────────────────
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return AnimatedBuilder(
-      animation: _textSizeService,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.getSurfaceColor(isDark),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
+    return FadeTransition(
+      opacity: _sheetAnim,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: _kCard,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x18000000),
+              blurRadius: 32,
+              offset: Offset(0, -8),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadowMedium,
-                blurRadius: 24,
-                offset: const Offset(0, -8),
-              ),
-              BoxShadow(
-                color: AppColors.shadowLight,
-                blurRadius: 6,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle Bar
-              _buildHandleBar(context),
-              
-              // Header
-              _buildHeader(context),
-              
-              // Menu Items
-              _buildMenuItems(context),
-              
-              // Bottom Padding
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
+            BoxShadow(
+              color: Color(0x08000000),
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHandle(),
+            _buildHeader(),
+            _buildDivider(),
+            _buildMenuList(),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildHandleBar(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+  // ── Handle ────────────────────────────────────────────────
+  Widget _buildHandle() {
     return Container(
-      margin: const EdgeInsets.only(top: 12, bottom: 8),
-      width: 36,
+      margin: const EdgeInsets.only(top: 14, bottom: 6),
+      width: 40,
       height: 4,
       decoration: BoxDecoration(
-        color: AppColors.getBorderColor(isDark).withOpacity(0.6),
+        color: const Color(0xFFE0E0E0),
         borderRadius: BorderRadius.circular(2),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+  // ── Header ────────────────────────────────────────────────
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 12, 10),
       child: Row(
         children: [
+          // Orange icon box — même style que les boutons action du cart
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.toSurface(),
-                  AppColors.primary.toSurface().withOpacity(0.5),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(10),
+              gradient: _kOrangeGradient,
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: _kOrange.withOpacity(0.30),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            child: Icon(
-              Icons.menu,
-              color: AppColors.primary,
-              size: 16,
-            ),
+            child: const Icon(Icons.grid_view_rounded,
+                size: 18, color: Colors.white),
           ),
+
           const SizedBox(width: 12),
-          Expanded(
+
+          // Title
+          const Expanded(
             child: Text(
               'Menu',
-              style: _textSizeService.getScaledTextStyle(
-                TextStyle(
-                  fontSize: AppTypography.titleLarge,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextColor(isDark),
-                  letterSpacing: -0.3,
-                ),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: _kTextPrimary,
+                letterSpacing: -0.5,
               ),
             ),
           ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: Icon(
-              Icons.close_rounded,
-              color: AppColors.getTextColor(isDark, type: TextType.secondary),
-              size: 24,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.getSurfaceColor(isDark).withOpacity(0.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              minimumSize: const Size(32, 32),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildMenuItems(BuildContext context) {
-    final menuItems = [
-      {
-        'title': 'Messages',
-        'subtitle': 'Vos messages et communications',
-        'icon': Icons.message_outlined,
-        'color': 0xFF2196F3,
-        'onTap': () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MessagesScreen()),
-          );
-        },
-        'showBadge': true,
-        'badgeCount': _unreadMessageCount,
-      },
-      {
-        'title': 'Mes Tickets',
-        'subtitle': 'Voir vos tickets achetés',
-        'icon': Icons.confirmation_number,
-        'color': 0xFF10B981,
-        'onTap': () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MyTicketsScreen()),
-          );
-        },
-        'showBadge': true,
-        'badgeCount': _ticketCount,
-      },
-      {
-        'title': 'Boutique (Libouli)',
-        'subtitle': 'Accéder à la boutique en ligne',
-        'icon': Icons.shopping_bag_outlined,
-        'color': 0xFF6366F1,
-        'onTap': () {
-          Navigator.of(context).pop();
-          // Mettre à jour l'index pour sélectionner l'onglet boutique
-          final mainScreenWrapper = MainScreenWrapper.maybeOf(context);
-          if (mainScreenWrapper != null) {
-            mainScreenWrapper.updateCurrentIndex(1);
-          } else {
-            // Si pas de MainScreenWrapper, retourner à l'écran principal avec boutique sélectionnée
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (_) => const MainScreenWrapper(initialIndex: 1)
-              ),
-              (route) => false,
-            );
-          }
-        },
-        'showBadge': true,
-        'badgeCount': _cartItemCount,
-      },
-      {
-        'title': 'Tuteur à domicile',
-        'subtitle': 'Trouver un tuteur pour vos enfants',
-        'icon': Icons.school_outlined,
-        'color': 0xFF8B5CF6,
-        'onTap': () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MainScreenWrapper(child: TutorScreen())),
-          );
-        },
-        'showBadge': true,
-        'badgeCount': 1,
-      },
-      {
-        'title': 'Profil',
-        'subtitle': 'Gérer votre profil et informations',
-        'icon': Icons.person_outline,
-        'color': 0xFF2196F3,
-        'onTap': () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ProfileScreen()),
-          );
-        },
-        'showBadge': true,
-        'badgeCount': 0,
-      },
-      {
-        'title': 'Aide & Support',
-        'subtitle': 'FAQ, contact et assistance',
-        'icon': Icons.help_outline,
-        'color': 0xFF4CAF50,
-        'onTap': () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
-          );
-        },
-        'showBadge': true,
-        'badgeCount': 0,
-      },
-      {
-        'title': 'Paramètres',
-        'subtitle': 'Préférences et configuration',
-        'icon': Icons.settings_outlined,
-        'color': 0xFF64748B,
-        'onTap': () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NewSettingsScreen()),
-          );
-        },
-        'showBadge': true,
-        'badgeCount': 0,
-      },
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          const SizedBox(height: 6),
-          ...menuItems.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final isLast = index == menuItems.length - 1;
-            
-            return _MenuItemTile(
-              title: item['title'] as String,
-              subtitle: item['subtitle'] as String,
-              icon: item['icon'] as IconData,
-              color: Color(item['color'] as int),
-              onTap: item['onTap'] as VoidCallback,
-              showDivider: !isLast,
-              textSizeService: _textSizeService,
-              showBadge: item['showBadge'] as bool? ?? false,
-              badgeCount: item['badgeCount'] as int? ?? 0,
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuItemTile extends StatefulWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-  final bool showDivider;
-  final TextSizeService textSizeService;
-  final bool showBadge;
-  final int badgeCount;
-
-  const _MenuItemTile({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    required this.showDivider,
-    required this.textSizeService,
-    this.showBadge = false,
-    this.badgeCount = 0,
-  });
-
-  @override
-  State<_MenuItemTile> createState() => _MenuItemTileState();
-}
-
-class _MenuItemTileState extends State<_MenuItemTile> {
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Column(
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              widget.onTap();
-            },
-            borderRadius: BorderRadius.circular(16),
+          // Close button — white card avec ombre (même pattern que AppBar)
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  // Icon
-                  Stack(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: widget.color.withAlpha(25),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          widget.icon,
-                          color: widget.color,
-                          size: 24,
-                        ),
-                      ),
-                      if (widget.showBadge && widget.badgeCount > 0)
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            height: 22,
-                            constraints: const BoxConstraints(minWidth: 22),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(11),
-                              border: Border.all(color: Colors.white, width: 1.5),
-                            ),
-                            child: Center(
-                              child: Text(
-                                widget.badgeCount > 99 ? '99+' : '${widget.badgeCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  
-                  // Text Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.title,
-                          style: widget.textSizeService.getScaledTextStyle(
-                            TextStyle(
-                              fontSize: AppTypography.titleSmall,
-                              color: AppColors.getTextColor(isDark),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.subtitle,
-                          style: widget.textSizeService.getScaledTextStyle(
-                            AppTypography.overline.copyWith(
-                              color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Arrow Icon
-                  Icon(
-                    Icons.chevron_right,
-                    color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                    size: 18,
-                  ),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _kSurface,
+                borderRadius: BorderRadius.circular(11),
+                boxShadow: const [
+                  BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
                 ],
               ),
+              child: const Icon(Icons.close_rounded,
+                  size: 18, color: _kTextSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      color: _kDivider,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+    );
+  }
+
+  // ── Menu List ─────────────────────────────────────────────
+  Widget _buildMenuList() {
+    final items = _buildItems();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Column(
+        children: List.generate(items.length, (i) {
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: Duration(milliseconds: 280 + i * 55),
+            curve: Curves.easeOutCubic,
+            builder: (_, v, child) => Opacity(
+              opacity: v,
+              child: Transform.translate(
+                offset: Offset(0, 14 * (1 - v)),
+                child: child,
+              ),
+            ),
+            child: _MenuTile(
+              item: items[i],
+              showDivider: i < items.length - 1,
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  List<_MenuItem> _buildItems() => [
+        _MenuItem(
+          title: 'Mon panier',
+          subtitle: 'Voir les articles dans votre panier',
+          icon: Icons.shopping_cart_rounded,
+          color: _kOrange,
+          badgeCount: _cartItemCount,
+          onTap: () {
+            Navigator.of(context).pop();
+            final wrapper = MainScreenWrapper.maybeOf(context);
+            if (wrapper != null) {
+              wrapper.updateCurrentIndex(1);
+            } else {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => const MainScreenWrapper(initialIndex: 1),
+                ),
+                (r) => false,
+              );
+            }
+          },
+        ),
+        _MenuItem(
+          title: 'Mes commandes',
+          subtitle: 'Voir l\'historique de vos commandes',
+          icon: Icons.receipt_long_rounded,
+          color: const Color(0xFF10B981),
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OrdersScreen()),
+            );
+          },
+        ),
+        _MenuItem(
+          title: 'Messages',
+          subtitle: 'Vos messages et communications',
+          icon: Icons.message_rounded,
+          color: const Color(0xFF2196F3),
+          badgeCount: _unreadMessages,
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MessagesScreen()),
+            );
+          },
+        ),
+        _MenuItem(
+          title: 'Mes Tickets',
+          subtitle: 'Voir vos tickets achetés',
+          icon: Icons.confirmation_number_rounded,
+          color: const Color(0xFF10B981),
+          badgeCount: _ticketCount,
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OrdersScreen()),
+            );
+          },
+        ),
+        _MenuItem(
+          title: 'Boutique (Libouli)',
+          subtitle: 'Accéder à la boutique en ligne',
+          icon: Icons.shopping_bag_rounded,
+          color: _kOrange,
+          badgeCount: _cartItemCount,
+          onTap: () {
+            Navigator.of(context).pop();
+            final wrapper = MainScreenWrapper.maybeOf(context);
+            if (wrapper != null) {
+              wrapper.updateCurrentIndex(1);
+            } else {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => const MainScreenWrapper(initialIndex: 1),
+                ),
+                (r) => false,
+              );
+            }
+          },
+        ),
+        _MenuItem(
+          title: 'Tuteur à domicile',
+          subtitle: 'Trouver un tuteur pour vos enfants',
+          icon: Icons.school_rounded,
+          color: const Color(0xFF8B5CF6),
+          badgeCount: 1,
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const MainScreenWrapper(child: TutorScreen()),
+              ),
+            );
+          },
+        ),
+        _MenuItem(
+          title: 'Profil',
+          subtitle: 'Gérer votre profil et informations',
+          icon: Icons.person_rounded,
+          color: const Color(0xFF2196F3),
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+          },
+        ),
+        _MenuItem(
+          title: 'Aide & Support',
+          subtitle: 'FAQ, contact et assistance',
+          icon: Icons.help_rounded,
+          color: const Color(0xFF4CAF50),
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+            );
+          },
+        ),
+        _MenuItem(
+          title: 'Paramètres',
+          subtitle: 'Préférences et configuration',
+          icon: Icons.settings_rounded,
+          color: const Color(0xFF64748B),
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NewSettingsScreen()),
+            );
+          },
+        ),
+      ];
+}
+
+// ─── Menu Tile ────────────────────────────────────────────────────────────────
+class _MenuTile extends StatefulWidget {
+  final _MenuItem item;
+  final bool showDivider;
+
+  const _MenuTile({required this.item, required this.showDivider});
+
+  @override
+  State<_MenuTile> createState() => _MenuTileState();
+}
+
+class _MenuTileState extends State<_MenuTile> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+
+    return Column(
+      children: [
+        // ── Row ───────────────────────────────────────────
+        GestureDetector(
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            item.onTap();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: _pressed ? _kOrangeLight : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                // ── Icon box ──────────────────────────────
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: item.color.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(14),
+                        // Subtle border de la couleur
+                        border: Border.all(
+                          color: item.color.withOpacity(0.15),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(item.icon, color: item.color, size: 22),
+                    ),
+
+                    // Badge
+                    if (item.badgeCount > 0)
+                      Positioned(
+                        top: -5,
+                        right: -5,
+                        child: _Badge(
+                          count: item.badgeCount,
+                          // La boutique/cart utilise orange, les autres rouge
+                          isOrange: item.color == _kOrange,
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(width: 14),
+
+                // ── Texts ─────────────────────────────────
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: _kTextPrimary,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _kTextSecondary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // ── Arrow ─────────────────────────────────
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: _kSurface,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 13,
+                    color: _kTextSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        if (widget.showDivider) ...[
-          const SizedBox(height: 2),
+
+        // ── Divider ───────────────────────────────────────
+        if (widget.showDivider)
           Container(
             height: 1,
-            margin: const EdgeInsets.only(left: 64),
-            decoration: BoxDecoration(
-              color: AppColors.getBorderColor(isDark).withOpacity(0.3),
-            ),
+            margin: const EdgeInsets.only(left: 70, right: 4),
+            color: _kDivider,
           ),
-          const SizedBox(height: 2),
-        ],
       ],
     );
   }
 }
 
-// Utility function to show the bottom sheet
+// ─── Badge ────────────────────────────────────────────────────────────────────
+class _Badge extends StatelessWidget {
+  final int count;
+  final bool isOrange;
+  const _Badge({required this.count, this.isOrange = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      decoration: BoxDecoration(
+        gradient: isOrange
+            ? _kOrangeGradient
+            : const LinearGradient(
+                colors: [Color(0xFFFF3B2C), Color(0xFFFF6060)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: _kCard, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: (isOrange ? _kOrange : const Color(0xFFFF3B2C))
+                .withOpacity(0.35),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          count > 99 ? '99+' : '$count',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Helper function ──────────────────────────────────────────────────────────
 void showMenuBottomSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.4),
-    builder: (context) => const BottomSheetMenu(),
+    barrierColor: Colors.black.withOpacity(0.40),
+    builder: (_) => const BottomSheetMenu(),
   );
 }

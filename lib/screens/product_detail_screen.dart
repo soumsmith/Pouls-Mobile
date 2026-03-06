@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
@@ -6,8 +7,17 @@ import '../models/product.dart';
 import '../services/cart_service.dart';
 import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
-import '../widgets/back_button_widget.dart';
 import '../widgets/custom_button.dart';
+
+// ─── DESIGN TOKENS (même palette que CartScreen & OrdersScreen) ───────────────
+const _kOrange = Color(0xFFFF6B2C);
+const _kOrangeLight = Color(0xFFFFF0E8);
+const _kSurface = Color(0xFFF8F8F8);
+const _kCard = Colors.white;
+const _kTextPrimary = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF8A8A8A);
+const _kDivider = Color(0xFFF0F0F0);
+const _kShadow = Color(0x0D000000);
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -23,7 +33,8 @@ class ProductDetailScreen extends StatefulWidget {
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
+class _ProductDetailScreenState extends State<ProductDetailScreen>
+    with SingleTickerProviderStateMixin {
   final CartService _cartService = MockCartService();
   final ProduitService _produitService = ProduitService();
   bool _isLoading = false;
@@ -31,277 +42,440 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
   Product? _detailedProduct;
 
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnimation =
+        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _loadProductDetail();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProductDetail() async {
     if (widget.produitUid != null) {
       try {
-        final detailedProduct = await _produitService.getProduitDetail(widget.produitUid!);
+        final detailedProduct =
+            await _produitService.getProduitDetail(widget.produitUid!);
         setState(() {
           _detailedProduct = detailedProduct;
           _isDetailLoading = false;
         });
       } catch (e) {
-        setState(() {
-          _isDetailLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors du chargement des détails: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        setState(() => _isDetailLoading = false);
+        _showSnackBar('Erreur lors du chargement des détails: $e',
+            isError: true);
       }
     } else {
-      setState(() {
-        _isDetailLoading = false;
-      });
+      setState(() => _isDetailLoading = false);
     }
+    _fadeController.forward();
+  }
+
+  void _showSnackBar(String msg, {bool isError = false, bool isSuccess = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError
+            ? Colors.red[400]
+            : isSuccess
+                ? Colors.green[500]
+                : Colors.blue[500],
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final Product currentProduct = _detailedProduct ?? widget.product;
     final Color primaryColor = Color(int.parse(currentProduct.color));
 
-    return Scaffold(
-      backgroundColor: AppColors.getPureBackground(isDark),
-      appBar: AppBar(
-        backgroundColor: AppColors.getPureAppBarBackground(isDark),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: const BackButtonWidget(),
-        title: Text(
-          'Détails du produit',
-          style: TextStyle(
-            fontSize: AppTypography.headlineMedium,
-            color: Theme.of(context).textTheme.titleLarge?.color,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.share,
-              color: Theme.of(context).iconTheme.color,
-            ),
-            onPressed: _shareProduct,
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
       ),
-      body: _isDetailLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.spacingM,
-                      vertical: AppDimensions.spacingS,
+      child: Scaffold(
+        backgroundColor: _kSurface,
+        body: _isDetailLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                    color: _kOrange, strokeWidth: 2.5),
+              )
+            : FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: CustomScrollView(
+                        slivers: [
+                          _buildSliverAppBar(currentProduct, primaryColor),
+                          SliverToBoxAdapter(
+                            child: _buildContent(currentProduct, primaryColor),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Product Image
-                        _buildProductImage(currentProduct),
-                        SizedBox(height: AppDimensions.spacingL),
-                        
-                        // Product Info
-                        _buildProductInfo(currentProduct, primaryColor),
-                        SizedBox(height: AppDimensions.spacingL),
-                        
-                        // Description and Stock in same row for compact layout
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 2,
-                              child: _buildDescription(currentProduct),
-                            ),
-                            SizedBox(width: AppDimensions.spacingM),
-                            Expanded(
-                              child: _buildStockStatus(currentProduct),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: AppDimensions.spacingL),
-                        
-                        // Quantity Selector
-                        if (currentProduct.price > 0) _buildQuantitySelector(currentProduct),
-                      ],
-                    ),
-                  ),
+                    // Bottom bar
+                    if (currentProduct.price > 0)
+                      _buildBottomActionBar(currentProduct, primaryColor)
+                    else
+                      _buildFreeServiceAction(currentProduct, primaryColor),
+                  ],
                 ),
-                
-                // Bottom Action Bar
-                if (currentProduct.price > 0)
-                  _buildBottomActionBar(currentProduct, primaryColor)
-                else
-                  _buildFreeServiceAction(currentProduct, primaryColor),
+              ),
+      ),
+    );
+  }
+
+  // ─── SLIVER APP BAR avec image hero ────────────────────────────────────────
+  Widget _buildSliverAppBar(Product product, Color primaryColor) {
+    return SliverAppBar(
+      expandedHeight: 280,
+      pinned: true,
+      backgroundColor: _kCard,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      leading: Padding(
+        padding: const EdgeInsets.all(8),
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: _kCard,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                    color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
               ],
             ),
-    );
-  }
-
-  Widget _buildProductImage(Product product) {
-    return Container(
-      width: double.infinity,
-      height: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppDimensions.cardBorderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            child: const Icon(Icons.arrow_back_ios_new,
+                size: 15, color: _kTextPrimary),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppDimensions.cardBorderRadius),
-        child: ImageHelper.buildNetworkImage(
-          imageUrl: product.imageUrl,
-          placeholder: product.title,
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
         ),
       ),
-    );
-  }
-
-  Widget _buildProductInfo(Product product, Color primaryColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Title and Type
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.title,
-                    style: TextStyle(
-                      fontSize: AppTypography.titleSmall,
-                      color: Theme.of(context).textTheme.titleMedium?.color,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: AppDimensions.spacingS),
-                  Text(
-                    product.subtitle,
-                    style: TextStyle(
-                      fontSize: AppTypography.bodyLarge,
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
-                    ),
-                  ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: GestureDetector(
+            onTap: _shareProduct,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _kCard,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                      color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
                 ],
               ),
+              child: const Icon(Icons.share_outlined,
+                  size: 16, color: _kTextPrimary),
             ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          ),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Image
+            ImageHelper.buildNetworkImage(
+              imageUrl: product.imageUrl,
+              placeholder: product.title,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+            ),
+            // Gradient overlay au bas pour la transition
+            const DecoratedBox(
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                product.type,
-                style: TextStyle(
-                  fontSize: AppTypography.labelMedium,
-                  color: primaryColor,
-                  fontWeight: FontWeight.w600,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    Color(0x33000000),
+                    Color(0x88000000),
+                  ],
+                  stops: [0, 0.5, 0.8, 1],
                 ),
               ),
+            ),
+            // Type badge en bas à gauche sur l'image
+            Positioned(
+              left: 16,
+              bottom: 16,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  product.type,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            // Stock badge en bas à droite
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: _buildStockBadge(product),
             ),
           ],
         ),
-        
-        SizedBox(height: AppDimensions.spacingM),
-        
-        // Price section removed - price shown in bottom action bar
-      ],
+      ),
     );
   }
 
-  Widget _buildDescription(Product product) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Description',
-          style: TextStyle(
-            fontSize: AppTypography.titleMedium,
-            color: Theme.of(context).textTheme.titleLarge?.color,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: AppDimensions.spacingS),
-        Text(
-          product.description,
-          style: TextStyle(
-            fontSize: AppTypography.bodyMedium,
-            color: Theme.of(context).textTheme.bodyMedium?.color,
-            height: 1.4,
-          ),
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStockStatus(Product product) {
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
+  Widget _buildStockBadge(Product product) {
+    Color color;
+    String label;
+    IconData icon;
 
     if (!product.isAvailable) {
-      statusColor = Colors.red;
-      statusText = 'Rupture';
-      statusIcon = Icons.inventory_2_outlined;
+      color = Colors.red;
+      label = 'Rupture';
+      icon = Icons.inventory_2_outlined;
     } else if (product.stockQuantity <= 10) {
-      statusColor = Colors.orange;
-      statusText = 'Limité';
-      statusIcon = Icons.warning_amber_outlined;
+      color = Colors.orange;
+      label = 'Stock limité';
+      icon = Icons.warning_amber_outlined;
     } else {
-      statusColor = Colors.green;
-      statusText = 'Disponible';
-      statusIcon = Icons.check_circle_outline;
+      color = Colors.green;
+      label = 'Disponible';
+      icon = Icons.check_circle_outline;
     }
 
     return Container(
-      padding: EdgeInsets.all(AppDimensions.spacingS),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(AppDimensions.smallBorderRadius),
-        border: Border.all(
-          color: statusColor.withOpacity(0.2),
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(color: _kShadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            statusIcon,
-            color: statusColor,
-            size: 20,
-          ),
-          SizedBox(width: AppDimensions.spacingXS),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
           Text(
-            statusText,
+            label,
             style: TextStyle(
-              fontSize: AppTypography.bodySmall,
-              color: statusColor,
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── CONTENU PRINCIPAL ─────────────────────────────────────────────────────
+  Widget _buildContent(Product product, Color primaryColor) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Titre + sous-titre
+          _buildProductHeader(product, primaryColor),
+          const SizedBox(height: 20),
+
+          // Description
+          _buildDescriptionCard(product),
+          const SizedBox(height: 16),
+
+          // Infos chips (stock qty, catégorie…)
+          _buildInfoChips(product, primaryColor),
+          const SizedBox(height: 16),
+
+          // Sélecteur de quantité
+          if (product.price > 0) _buildQuantitySelector(product),
+
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  // ── Titre ──────────────────────────────────────────────────────────────────
+  Widget _buildProductHeader(Product product, Color primaryColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                product.title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: _kTextPrimary,
+                  letterSpacing: -0.6,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                product.subtitle,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: _kTextSecondary,
+                  fontWeight: FontWeight.w400,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (product.price > 0) ...[
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${product.price.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: _kOrange,
+                  letterSpacing: -1,
+                ),
+              ),
+              const Text(
+                'FCFA / unité',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: _kTextSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Description card ───────────────────────────────────────────────────────
+  Widget _buildDescriptionCard(Product product) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kDivider),
+        boxShadow: const [
+          BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.info_outline_rounded, size: 16, color: _kOrange),
+              SizedBox(width: 8),
+              Text(
+                'Description',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: _kTextPrimary,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            product.description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: _kTextSecondary,
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Info chips ─────────────────────────────────────────────────────────────
+  Widget _buildInfoChips(Product product, Color primaryColor) {
+    return Row(
+      children: [
+        _infoChip(
+          icon: Icons.inventory_2_outlined,
+          label: '${product.stockQuantity} en stock',
+          color: product.stockQuantity > 10
+              ? Colors.green
+              : product.stockQuantity > 0
+                  ? Colors.orange
+                  : Colors.red,
+        ),
+        const SizedBox(width: 10),
+        _infoChip(
+          icon: Icons.label_outline_rounded,
+          label: product.type,
+          color: primaryColor,
+        ),
+      ],
+    );
+  }
+
+  Widget _infoChip(
+      {required IconData icon,
+      required String label,
+      required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -310,134 +484,173 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  // ── Quantity selector ──────────────────────────────────────────────────────
   Widget _buildQuantitySelector(Product product) {
     return Container(
-      padding: EdgeInsets.all(AppDimensions.spacingM),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(AppDimensions.cardBorderRadius),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
+        color: _kCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kDivider),
+        boxShadow: const [
+          BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
+          const Icon(Icons.shopping_bag_outlined,
+              size: 18, color: _kTextSecondary),
+          const SizedBox(width: 10),
+          const Text(
             'Quantité',
             style: TextStyle(
-              fontSize: AppTypography.titleMedium,
-              color: Theme.of(context).textTheme.titleLarge?.color,
-              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: _kTextPrimary,
+              letterSpacing: -0.2,
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(AppDimensions.smallBorderRadius),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: _quantity > 1
-                      ? () => setState(() => _quantity--)
-                      : null,
-                  icon: const Icon(Icons.remove),
-                  iconSize: 18,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                ),
-                Container(
-                  width: 40,
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$_quantity',
-                    style: TextStyle(
-                      fontSize: AppTypography.titleMedium,
-                      fontWeight: FontWeight.w600,
-                    ),
+          const Spacer(),
+          // Stepper — même style que CartScreen
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _quantity > 1
+                    ? () => setState(() => _quantity--)
+                    : null,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: _quantity > 1
+                        ? _kSurface
+                        : const Color(0xFFEEEEEE),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.remove,
+                    size: 16,
+                    color: _quantity > 1
+                        ? _kTextPrimary
+                        : const Color(0xFFCCCCCC),
                   ),
                 ),
-                IconButton(
-                  onPressed: _quantity < product.stockQuantity
-                      ? () => setState(() => _quantity++)
-                      : null,
-                  icon: const Icon(Icons.add),
-                  iconSize: 18,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+              Container(
+                width: 40,
+                alignment: Alignment.center,
+                child: Text(
+                  '$_quantity',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: _kTextPrimary,
+                  ),
                 ),
-              ],
-            ),
+              ),
+              GestureDetector(
+                onTap: _quantity < product.stockQuantity
+                    ? () => setState(() => _quantity++)
+                    : null,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: _quantity < product.stockQuantity
+                        ? _kOrange
+                        : const Color(0xFFEEEEEE),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    size: 16,
+                    color: _quantity < product.stockQuantity
+                        ? Colors.white
+                        : const Color(0xFFCCCCCC),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  // ─── BOTTOM ACTION BAR ─────────────────────────────────────────────────────
   Widget _buildBottomActionBar(Product product, Color primaryColor) {
+    final double total = product.price * _quantity;
+
     return Container(
-      padding: EdgeInsets.all(AppDimensions.spacingM),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+      decoration: const BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
+              color: Color(0x14000000),
+              blurRadius: 20,
+              offset: Offset(0, -4)),
         ],
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total',
-                    style: TextStyle(
-                      fontSize: AppTypography.bodySmall,
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: _kDivider,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  Text(
-                    '${(product.price * _quantity).toStringAsFixed(0)} FCFA',
-                    style: TextStyle(
-                      fontSize: AppTypography.titleLarge,
-                      color: primaryColor,
-                      fontWeight: FontWeight.bold,
+                ),
+              ),
+              Row(
+                children: [
+                  // Prix total
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Total',
+                        style:
+                            TextStyle(fontSize: 13, color: _kTextSecondary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${total.toStringAsFixed(0)} FCFA',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: _kTextPrimary,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  // CTA button
+                  Expanded(
+                    child: _buildOrangeButton(
+                      label: 'Ajouter au panier',
+                      icon: Icons.shopping_bag_outlined,
+                      isLoading: _isLoading,
+                      enabled: product.isAvailable && !_isLoading,
+                      onTap: product.isAvailable && !_isLoading
+                          ? () => _addToCart(product)
+                          : null,
                     ),
                   ),
                 ],
               ),
-            ),
-            SizedBox(width: AppDimensions.spacingM),
-            Expanded(
-              flex: 2,
-              child: CustomButton(
-                text: 'Ajouter au panier',
-                onPressed: product.isAvailable && !_isLoading ? () => _addToCart(product) : null,
-                isLoading: _isLoading,
-                backgroundColor: primaryColor,
-                height: AppDimensions.buttonHeight,
-                borderRadius: BorderRadius.circular(AppDimensions.buttonBorderRadius),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -445,92 +658,139 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildFreeServiceAction(Product product, Color primaryColor) {
     return Container(
-      padding: EdgeInsets.all(AppDimensions.spacingM),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+      decoration: const BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
+              color: Color(0x14000000),
+              blurRadius: 20,
+              offset: Offset(0, -4)),
         ],
       ),
       child: SafeArea(
-        child: CustomButton(
-          text: 'Accéder au service',
-          onPressed: () => _accessFreeService(product),
-          backgroundColor: primaryColor,
-          height: AppDimensions.buttonHeight,
-          borderRadius: BorderRadius.circular(AppDimensions.buttonBorderRadius),
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: _kDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              _buildOrangeButton(
+                label: 'Accéder au service',
+                icon: Icons.open_in_new_rounded,
+                onTap: () => _accessFreeService(product),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ─── ORANGE BUTTON (même style que CartScreen) ────────────────────────────
+  Widget _buildOrangeButton({
+    required String label,
+    required IconData icon,
+    VoidCallback? onTap,
+    bool isLoading = false,
+    bool enabled = true,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 54,
+        decoration: BoxDecoration(
+          gradient: enabled
+              ? const LinearGradient(
+                  colors: [Color(0xFFFF7A3C), _kOrange],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: enabled ? null : const Color(0xFFDDDDDD),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: _kOrange.withOpacity(0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : [],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon,
+                        size: 18,
+                        color: enabled ? Colors.white : _kTextSecondary),
+                    const SizedBox(width: 8),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: enabled ? Colors.white : _kTextSecondary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  // ─── ACTIONS ──────────────────────────────────────────────────────────────
   Future<void> _addToCart(Product product) async {
     setState(() => _isLoading = true);
-
     try {
-      final success = await _cartService.addToCart(
-        product,
-        quantity: _quantity,
-      );
-
+      final success =
+          await _cartService.addToCart(product, quantity: _quantity);
       if (success) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${product.title} ajouté au panier'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        // Redirection automatique vers le panier
+        _showSnackBar('${product.title} ajouté au panier', isSuccess: true);
         Future.delayed(const Duration(milliseconds: 500), () {
           Navigator.pushNamed(context, '/cart');
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de l\'ajout au panier'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        _showSnackBar('Erreur lors de l\'ajout au panier', isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erreur lors de l\'ajout au panier'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      _showSnackBar('Erreur lors de l\'ajout au panier', isError: true);
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   void _accessFreeService(Product product) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Accès à ${product.title}'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    _showSnackBar('Accès à ${product.title}', isSuccess: true);
   }
 
   void _shareProduct() {
-    final Product currentProduct = _detailedProduct ?? widget.product;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Partage du produit bientôt disponible'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    _showSnackBar('Partage du produit bientôt disponible');
   }
-
-  }
+}

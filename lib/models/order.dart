@@ -129,6 +129,101 @@ class Order {
     );
   }
 
+  factory Order.fromApiMap(Map<String, dynamic> map) {
+    // Extract products from API response
+    final productsData = map['produit'] as List<dynamic>? ?? [];
+    final itemsList = productsData.map((productData) {
+      final product = productData as Map<String, dynamic>;
+      return CartItem.fromApiMap(product);
+    }).toList();
+
+    // Parse status from API
+    final statusStr = map['statut']?.toString() ?? 'en_attente';
+    OrderStatus status;
+    switch (statusStr.toLowerCase()) {
+      case 'en_attente':
+        status = OrderStatus.pending;
+        break;
+      case 'confirmée':
+      case 'confirmed':
+        status = OrderStatus.confirmed;
+        break;
+      case 'en_traitement':
+      case 'processing':
+        status = OrderStatus.processing;
+        break;
+      case 'expédiée':
+      case 'shipped':
+        status = OrderStatus.shipped;
+        break;
+      case 'livrée':
+      case 'delivered':
+        status = OrderStatus.delivered;
+        break;
+      case 'annulée':
+      case 'cancelled':
+        status = OrderStatus.cancelled;
+        break;
+      case 'remboursée':
+      case 'refunded':
+        status = OrderStatus.refunded;
+        break;
+      default:
+        status = OrderStatus.pending;
+    }
+
+    // Parse payment method from API
+    final paymentMethodStr = map['type_livraison']?.toString() ?? 'domicile';
+    PaymentMethod paymentMethod;
+    switch (paymentMethodStr.toLowerCase()) {
+      case 'domicile':
+        paymentMethod = PaymentMethod.cash;
+        break;
+      case 'mobile':
+        paymentMethod = PaymentMethod.mobile;
+        break;
+      case 'carte':
+        paymentMethod = PaymentMethod.card;
+        break;
+      case 'virement':
+        paymentMethod = PaymentMethod.transfer;
+        break;
+      default:
+        paymentMethod = PaymentMethod.cash;
+    }
+
+    // Parse dates
+    DateTime createdAt = DateTime.now();
+    if (map['created_at'] != null) {
+      createdAt = DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now();
+    }
+
+    return Order(
+      id: map['uid_commande']?.toString() ?? map['id']?.toString() ?? '',
+      items: itemsList,
+      totalAmount: (map['total_prix'] as num?)?.toDouble() ?? 0.0,
+      status: status,
+      paymentMethod: paymentMethod,
+      paymentReference: map['payment_reference']?.toString(),
+      createdAt: createdAt,
+      confirmedAt: null, // API doesn't provide this
+      deliveredAt: map['date_livraison'] != null 
+          ? DateTime.tryParse(map['date_livraison'].toString())
+          : null,
+      shippingAddress: map['adresse_livraison']?.toString(),
+      billingAddress: null, // API doesn't provide this
+      notes: map['notes']?.toString(),
+      metadata: {
+        'ecole': map['ecole']?.toString(),
+        'eleve_uid': map['eleve_uid']?.toString(),
+        'frais_livraison': map['frais_livraison'],
+        'type_livraison': map['type_livraison']?.toString(),
+        'source': map['source']?.toString(),
+        'parent_uid': map['parent_uid']?.toString(),
+      },
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

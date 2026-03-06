@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/child.dart';
@@ -9,6 +10,16 @@ import '../widgets/main_screen_wrapper.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import 'add_child_screen.dart';
+
+// ─── DESIGN TOKENS (alignés sur CartScreen) ───────────────────────────────
+const _kOrange      = Color(0xFFFF6B2C);
+const _kOrangeLight = Color(0xFFFFF0E8);
+const _kSurface     = Color(0xFFF8F8F8);
+const _kCard        = Colors.white;
+const _kTextPrimary = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF8A8A8A);
+const _kDivider     = Color(0xFFF0F0F0);
+const _kShadow      = Color(0x0D000000);
 
 /// Écran d'accueil avec liste des enfants
 class HomeScreen extends StatefulWidget {
@@ -27,16 +38,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _textSizeService.addListener(() { if (mounted) setState(() {}); });
     _loadChildren();
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadChildren();
-    });
+  void dispose() {
+    _textSizeService.removeListener(() {});
+    super.dispose();
   }
+
 
   Future<void> _loadChildren() async {
     setState(() {
@@ -46,69 +57,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       MainScreenWrapper.of(context).refreshCurrentUser();
-
-      final parentId = MainScreenWrapper.of(context).currentUserId ?? 'parent1';
-
+      final parentId =
+          MainScreenWrapper.of(context).currentUserId ?? 'parent1';
       final apiService = MainScreenWrapper.of(context).apiService;
       final children = await apiService.getChildrenForParent(parentId);
 
-      final poulsApiService = PoulsScolaireApiService();
-      for (final child in children) {
-        if ((child.photoUrl == null || child.photoUrl!.isEmpty) &&
-            child.id.isNotEmpty) {
-          try {
-            final childInfo =
-                await DatabaseService.instance.getChildInfoById(child.id);
-            if (childInfo != null) {
-              final ecoleId = childInfo['ecoleId'] as int?;
-              final matricule = childInfo['matricule'] as String?;
-
-              if (ecoleId != null && matricule != null) {
-                final anneeScolaire =
-                    await poulsApiService.getAnneeScolaireOuverte(ecoleId);
-                final anneeId = anneeScolaire.anneeOuverteCentraleId;
-
-                final eleve = await poulsApiService.findEleveByMatricule(
-                  ecoleId,
-                  anneeId,
-                  matricule,
-                );
-
-                if (eleve != null &&
-                    eleve.urlPhoto != null &&
-                    eleve.urlPhoto!.isNotEmpty) {
-                  await DatabaseService.instance
-                      .updateChildPhoto(child.id, eleve.urlPhoto);
-                  final updatedChild = Child(
-                    id: child.id,
-                    firstName: child.firstName,
-                    lastName: child.lastName,
-                    establishment: child.establishment,
-                    grade: child.grade,
-                    photoUrl: eleve.urlPhoto,
-                    parentId: child.parentId,
-                  );
-                  final index = children.indexOf(child);
-                  if (index >= 0) {
-                    children[index] = updatedChild;
-                  }
-                  print(
-                      '✅ Photo mise à jour pour ${child.fullName}: ${eleve.urlPhoto}');
-                }
-              }
-            }
-          } catch (e) {
-            print(
-                '⚠️ Erreur lors de la mise à jour de la photo pour ${child.fullName}: $e');
-          }
-        }
-      }
-
+      // ✅ Affichage immédiat des enfants sans attendre les photos
+      if (!mounted) return;
       setState(() {
-        _children = children;
+        _children = List.from(children);
         _isLoading = false;
       });
+
+      // 🔄 Mise à jour des photos en arrière-plan (sans bloquer l'UI)
+      _updatePhotosInBackground(children);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -116,171 +80,405 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Affiche le menu contextuel de partage
+  /// Met à jour les photos enfant par enfant sans bloquer l'affichage
+  Future<void> _updatePhotosInBackground(List<Child> children) async {
+    final poulsApiService = PoulsScolaireApiService();
+    for (final child in children) {
+      if ((child.photoUrl == null || child.photoUrl!.isEmpty) &&
+          child.id.isNotEmpty) {
+        try {
+          final childInfo =
+              await DatabaseService.instance.getChildInfoById(child.id);
+          if (childInfo != null) {
+            final ecoleId = childInfo['ecoleId'] as int?;
+            final matricule = childInfo['matricule'] as String?;
+            if (ecoleId != null && matricule != null) {
+              final anneeScolaire =
+                  await poulsApiService.getAnneeScolaireOuverte(ecoleId);
+              final anneeId = anneeScolaire.anneeOuverteCentraleId;
+              final eleve = await poulsApiService.findEleveByMatricule(
+                  ecoleId, anneeId, matricule);
+              if (eleve != null &&
+                  eleve.urlPhoto != null &&
+                  eleve.urlPhoto!.isNotEmpty) {
+                await DatabaseService.instance
+                    .updateChildPhoto(child.id, eleve.urlPhoto);
+                if (!mounted) return;
+                // Mise à jour optimiste : seule la carte concernée se rafraîchit
+                setState(() {
+                  final index =
+                      _children.indexWhere((c) => c.id == child.id);
+                  if (index >= 0) {
+                    _children[index] = Child(
+                      id: child.id,
+                      firstName: child.firstName,
+                      lastName: child.lastName,
+                      establishment: child.establishment,
+                      grade: child.grade,
+                      photoUrl: eleve.urlPhoto,
+                      parentId: child.parentId,
+                    );
+                  }
+                });
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    }
+  }
+
+  // ─── SHARE MENU ────────────────────────────────────────────────────────────
   void _showShareMenu() {
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
     showMenu(
       context: context,
       position: RelativeRect.fromRect(
         Rect.fromLTWH(
-          MediaQuery.of(context).size.width - 16, // Position à droite
-          kToolbarHeight + 50, // Descendu de 20px pour éviter de couvrir les boutons
-          0,
-          0,
-        ),
+            MediaQuery.of(context).size.width - 16, kToolbarHeight + 50, 0, 0),
         Offset.zero & overlay.size,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      elevation: 0,
-      color: Theme.of(context).brightness == Brightness.dark ? null : Colors.white,
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 8,
+      color: _kCard,
       items: [
-        PopupMenuItem(
-          value: 'mail',
-          child: Row(
-            children: [
-              Icon(Icons.email, color: Colors.red, size: 20),
-              SizedBox(width: 12),
-              Text('Partager par mail'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'whatsapp',
-          child: Row(
-            children: [
-              Icon(Icons.message, color: Colors.green, size: 20),
-              SizedBox(width: 12),
-              Text('Partager par WhatsApp'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'facebook',
-          child: Row(
-            children: [
-              Icon(Icons.facebook, color: Colors.blue, size: 20),
-              SizedBox(width: 12),
-              Text('Partager sur Facebook'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'other',
-          child: Row(
-            children: [
-              Icon(Icons.share, color: Colors.grey, size: 20),
-              SizedBox(width: 12),
-              Text('Autres options'),
-            ],
-          ),
-        ),
+        _shareMenuItem(Icons.email, Colors.red, 'Partager par mail', 'mail'),
+        _shareMenuItem(
+            Icons.message, Colors.green, 'Partager par WhatsApp', 'whatsapp'),
+        _shareMenuItem(
+            Icons.facebook, Colors.blue, 'Partager sur Facebook', 'facebook'),
+        _shareMenuItem(Icons.share, _kTextSecondary, 'Autres options', 'other'),
       ],
     ).then((value) {
-      if (value != null) {
-        _handleShareAction(value);
-      }
+      if (value != null) _handleShareAction(value);
     });
   }
 
-  /// Gère l'action de partage sélectionnée
+  PopupMenuItem<String> _shareMenuItem(
+      IconData icon, Color color, String label, String value) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 12),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 14,
+                color: _kTextPrimary,
+                fontWeight: FontWeight.w500)),
+      ]),
+    );
+  }
+
   void _handleShareAction(String action) async {
-    final String appUrl = 'https://play.google.com/store/apps/details?id=com.pouls.ecole';
-    final String shareText = 'Découvrez Pouls École, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !';
-    
+    const appUrl =
+        'https://play.google.com/store/apps/details?id=com.pouls.ecole';
+    const shareText =
+        'Découvrez Pouls École, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !';
     switch (action) {
       case 'mail':
-        final Uri emailUri = Uri(
-          scheme: 'mailto',
-          query: 'subject=${Uri.encodeComponent('Découvrez Pouls École')}&body=${Uri.encodeComponent('$shareText\n\nTéléchargez l\'application ici : $appUrl')}',
-        );
-        if (await canLaunchUrl(emailUri)) {
-          await launchUrl(emailUri);
-        }
+        final uri = Uri(
+            scheme: 'mailto',
+            query:
+                'subject=${Uri.encodeComponent('Découvrez Pouls École')}&body=${Uri.encodeComponent('$shareText\n\nTéléchargez l\'application ici : $appUrl')}');
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
         break;
-        
       case 'whatsapp':
-        final Uri whatsappUri = Uri(
-          scheme: 'https',
-          host: 'wa.me',
-          path: '',
-          queryParameters: {
-            'text': '$shareText\n\nTéléchargez l\'application ici : $appUrl',
-          },
-        );
-        if (await canLaunchUrl(whatsappUri)) {
-          await launchUrl(whatsappUri);
-        }
+        final uri = Uri(
+            scheme: 'https',
+            host: 'wa.me',
+            queryParameters: {
+              'text': '$shareText\n\nTéléchargez l\'application ici : $appUrl'
+            });
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
         break;
-        
       case 'facebook':
-        final Uri facebookUri = Uri(
-          scheme: 'https',
-          host: 'www.facebook.com',
-          path: 'sharer/sharer.php',
-          queryParameters: {
-            'u': appUrl,
-            'quote': shareText,
-          },
-        );
-        if (await canLaunchUrl(facebookUri)) {
-          await launchUrl(facebookUri);
-        }
+        final uri = Uri(
+            scheme: 'https',
+            host: 'www.facebook.com',
+            path: 'sharer/sharer.php',
+            queryParameters: {'u': appUrl, 'quote': shareText});
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
         break;
-        
       case 'other':
-        await Share.share(
-          '$shareText\n\nTéléchargez l\'application ici : $appUrl',
-          subject: 'Découvrez Pouls École',
-        );
+        await Share.share('$shareText\n\nTéléchargez l\'application ici : $appUrl',
+            subject: 'Découvrez Pouls École');
         break;
     }
   }
 
-  /// Carte de statistique réutilisable
+  // ─── BUILD ─────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark
+          .copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: _kSurface,
+        body: Column(
+          children: [
+            _buildAppBar(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── APP BAR ───────────────────────────────────────────────────────────────
+  Widget _buildAppBar() {
+    return Container(
+      color: _kSurface,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
+          child: Row(
+            children: [
+              // Logo / title
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pouls École',
+                      style: TextStyle(
+                        fontSize:
+                            _textSizeService.getScaledFontSize(22),
+                        fontWeight: FontWeight.w800,
+                        color: _kTextPrimary,
+                        letterSpacing: -0.6,
+                      ),
+                    ),
+                    Text(
+                      'Suivi scolaire en temps réel',
+                      style: TextStyle(
+                        fontSize:
+                            _textSizeService.getScaledFontSize(12),
+                        color: _kTextSecondary,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Share button
+              _appBarIconButton(
+                icon: Icons.share_outlined,
+                onTap: _showShareMenu,
+              ),
+              const SizedBox(width: 8),
+              // Notifications button
+              _appBarIconButton(
+                icon: Icons.notifications_outlined,
+                onTap: () {/* TODO: Notifications */},
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _appBarIconButton(
+      {required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: _kCard,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Icon(icon, size: 18, color: _kOrange),
+      ),
+    );
+  }
+
+  // ─── BODY ──────────────────────────────────────────────────────────────────
+  Widget _buildBody() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Section fixe : hero + stats ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hero text
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  'Suivez le parcours scolaire\nde vos enfants',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(22),
+                    fontWeight: FontWeight.w800,
+                    color: _kTextPrimary,
+                    letterSpacing: -0.6,
+                    height: 1.25,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Stats grid
+              _buildStatsGrid(),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+
+        // ── Panneau scrollable : header + liste ──
+        Expanded(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: _kCard,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: [
+                BoxShadow(
+                    color: Color(0x10000000),
+                    blurRadius: 20,
+                    offset: Offset(0, -4)),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 12, bottom: 4),
+                    decoration: BoxDecoration(
+                      color: _kDivider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // Section header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  child: _buildSectionHeader(),
+                ),
+                // Scrollable list
+                Expanded(
+                  child: _buildChildrenContent(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── STATS GRID ────────────────────────────────────────────────────────────
+  Widget _buildStatsGrid() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.child_care_rounded,
+                color: const Color(0xFF4A90D9),
+                value: '${_children.length}',
+                label:
+                    'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.grade_rounded,
+                color: const Color(0xFF27AE60),
+                value: _getAverageGradeDisplay(),
+                label: 'Niveau moyen',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.school_rounded,
+                color: _kOrange,
+                value: '${_getUniqueSchoolsCount()}',
+                label:
+                    'École${_getUniqueSchoolsCount() > 1 ? 's' : ''}',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.class_rounded,
+                color: const Color(0xFF8E44AD),
+                value: '${_getUniqueClassesCount()}',
+                label:
+                    'Classe${_getUniqueClassesCount() > 1 ? 's' : ''}',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatCard({
     required IconData icon,
     required Color color,
     required String value,
     required String label,
-    required bool isDark,
-    required bool isTablet,
   }) {
     return Container(
-      padding: EdgeInsets.all(isTablet ? 16.0 : 12.0),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(isTablet ? 16.0 : 12.0),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        color: _kCard,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.all(isTablet ? 8.0 : 6.0),
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(isTablet ? 8.0 : 6.0),
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: Colors.white, size: isTablet ? 20.0 : 16.0),
+            child: Icon(icon, color: color, size: 18),
           ),
-          SizedBox(height: isTablet ? 12.0 : 8.0),
+          const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(isTablet ? 24.0 : 20.0),
-              fontWeight: FontWeight.w700,
-              color: AppColors.getTextColor(isDark),
+              fontSize: _textSizeService.getScaledFontSize(22),
+              fontWeight: FontWeight.w800,
+              color: _kTextPrimary,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(9),
-              color: AppColors.getTextColor(isDark, type: TextType.secondary),
+              fontSize: _textSizeService.getScaledFontSize(11),
+              color: _kTextSecondary,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -288,602 +486,415 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isTablet = AppDimensions.isTablet(context) ||
-        AppDimensions.isLargeTablet(context);
-
-    return AnimatedBuilder(
-      animation: _textSizeService,
-      builder: (context, child) {
-        return Scaffold(
-          backgroundColor: AppColors.getPureBackground(isDark),
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            title: Text(
-              'Pouls École',
-              style: TextStyle(
-                color: AppColors.getTextColor(isDark),
-                fontSize: _textSizeService.getScaledFontSize(20),
-                fontWeight: FontWeight.w600,
-              ),
+  // ─── SECTION HEADER ────────────────────────────────────────────────────────
+  Widget _buildSectionHeader() {
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            'Mes Enfants',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(17),
+              fontWeight: FontWeight.w700,
+              color: _kTextPrimary,
+              letterSpacing: -0.3,
             ),
-            automaticallyImplyLeading: false,
-            elevation: 0,
-            backgroundColor: AppColors.getPureAppBarBackground(isDark),
-            surfaceTintColor: Colors.transparent,
-            foregroundColor: AppColors.getTextColor(isDark),
-            actions: [
-              IconButton(
-                onPressed: _showShareMenu,
-                icon: Container(
-                  padding: EdgeInsets.all(isTablet ? 10.0 : 8.0),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.toSurface(),
-                    borderRadius: BorderRadius.circular(isTablet ? 14.0 : 12.0),
-                  ),
-                  child: Icon(
-                    Icons.share_outlined,
-                    color: AppColors.primary,
-                    size: isTablet ? 24.0 : 20.0,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  // TODO: Notifications
-                },
-                icon: Container(
-                  padding: EdgeInsets.all(isTablet ? 10.0 : 8.0),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.toSurface(),
-                    borderRadius: BorderRadius.circular(isTablet ? 14.0 : 12.0),
-                  ),
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    color: AppColors.primary,
-                    size: isTablet ? 24.0 : 20.0,
-                  ),
-                ),
-              ),
-              SizedBox(width: isTablet ? 12.0 : 8.0),
-            ],
           ),
-          // floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-          // floatingActionButton: Container(
-          //   margin: const EdgeInsets.only(bottom: 80), // Positionne le FAB juste au-dessus du dock
-          //   decoration: BoxDecoration(
-          //     gradient: AppColors.primaryGradient,
-          //     borderRadius: BorderRadius.circular(16),
-          //     boxShadow: [
-          //       BoxShadow(
-          //         color: AppColors.primary.withOpacity(0.3),
-          //         blurRadius: 20,
-          //         offset: const Offset(0, 8),
-          //       ),
-          //     ],
-          //   ),
-          //   child: FloatingActionButton(
-          //     onPressed: () async {
-          //       final result = await Navigator.of(context).push(
-          //         MaterialPageRoute(
-          //           builder: (_) => const AddChildScreen(),
-          //         ),
-          //       );
-          //       if (result == true) {
-          //         _loadChildren();
-          //       }
-          //     },
-          //     backgroundColor: AppColors.primary,
-          //     elevation: 8,
-          //     child: const Icon(Icons.add, color: Colors.white, size: 24),
-          //   ),
-          // ),
-          body: Container(
+        ),
+        const Spacer(),
+        GestureDetector(
+          onTap: () async {
+            final result = await Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AddChildScreen()),
+            );
+            if (result == true) _loadChildren();
+          },
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [
-                        AppColors.primary.withOpacity(0),
-                        AppColors.primary.withOpacity(0),
-                        AppColors.primary.withOpacity(0.3),
-                        AppColors.getPureAppBarBackground(true),
-                      ]
-                    : [
-                        AppColors.primary.withOpacity(0),
-                        AppColors.primary.withOpacity(0),
-                        AppColors.primary.withOpacity(0.3),
-                        AppColors.getPureAppBarBackground(false),
-                      ],
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF7A3C), _kOrange],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: _kOrange.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 15),
+                const SizedBox(width: 5),
+                Text(
+                  'Ajouter un enfant',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize:
+                        _textSizeService.getScaledFontSize(12),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── CHILDREN CONTENT ──────────────────────────────────────────────────────
+  Widget _buildChildrenContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: _kOrange, strokeWidth: 2.5),
+      );
+    }
+
+    if (_error != null) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+        child: _buildErrorState(),
+      );
+    }
+    if (_children.isEmpty) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+        child: _buildEmptyState(),
+      );
+    }
+    return _buildChildrenList();
+  }
+
+  Widget _buildErrorState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF0F0),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.error_outline,
+                  size: 36, color: Colors.red[400]),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Une erreur est survenue',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(17),
+                fontWeight: FontWeight.w700,
+                color: _kTextPrimary,
               ),
             ),
-            child: SafeArea(
-              bottom: false, // Supprime le padding du bas de la SafeArea
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: AppDimensions.getHomePageResponsivePadding(context).left,
-                  right: AppDimensions.getHomePageResponsivePadding(context).right,
-                  top: AppDimensions.getHomePageResponsivePadding(context).top,
-                  // bottom: 100, // Padding pour le dock flottant - supprimé ici
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(13),
+                color: _kTextSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildOrangeButton(
+              label: 'Réessayer',
+              onTap: _loadChildren,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: const BoxDecoration(
+                color: _kOrangeLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.child_care_rounded,
+                  size: 44, color: _kOrange),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Commencez votre parcours',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(19),
+                fontWeight: FontWeight.w700,
+                color: _kTextPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Ajoutez votre premier enfant\npour suivre son évolution',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(13),
+                color: _kTextSecondary,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChildrenList() {
+    return Stack(
+      children: [
+        ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+          itemCount: _children.length,
+          itemBuilder: (context, index) =>
+              _buildChildCard(_children[index], index),
+        ),
+        // Gradient fade at bottom
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 80,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    _kCard.withOpacity(0),
+                    _kCard,
+                  ],
                 ),
-                child: Column(
-                  children: [
-                    SizedBox(height: AppDimensions.getAdaptiveSpacing(context) * 1.5),
-                    // Header hero section
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Suivez le parcours scolaire\nde vos enfants',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(
-                                AppDimensions.getFormTitleFontSize(context) * 0.8),
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.getTextColor(isDark),
-                            height: 1.3,
-                          ),
-                        ),
-                        SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
-                        // Stats cards — grille 2x2
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 16.0, //AppDimensions.getHomePageResponsivePadding(context).left),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      icon: Icons.child_care,
-                                      color: Colors.blue,
-                                      value: '${_children.length}',
-                                      label:
-                                          'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
-                                      isDark: isDark,
-                                      isTablet: isTablet,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      icon: Icons.grade,
-                                      color: Colors.green,
-                                      value: _getAverageGradeDisplay(),
-                                      label: 'Niveau moyen',
-                                      isDark: isDark,
-                                      isTablet: isTablet,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      icon: Icons.school,
-                                      color: Colors.orange,
-                                      value: '${_getUniqueSchoolsCount()}',
-                                      label:
-                                          'École${_getUniqueSchoolsCount() > 1 ? 's' : ''}',
-                                      isDark: isDark,
-                                      isTablet: isTablet,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      icon: Icons.class_,
-                                      color: Colors.purple,
-                                      value: '${_getUniqueClassesCount()}',
-                                      label:
-                                          'Classe${_getUniqueClassesCount() > 1 ? 's' : ''}',
-                                      isDark: isDark,
-                                      isTablet: isTablet,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChildCard(Child child, int index) {
+    return GestureDetector(
+      onTap: () =>
+          MainScreenWrapper.of(context).navigateToChildDetail(child),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: _kCard,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+                color: _kShadow, blurRadius: 12, offset: Offset(0, 4)),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              // Photo / avatar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFF7A3C), _kOrange],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
-                    // Section enfants
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.getPureBackground(isDark),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(32),
-                            topRight: Radius.circular(32),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 28),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 22),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'Mes Enfants',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(15),
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.getTextColor(isDark),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  // Badge pour le nombre d'enfants
-                                  // Container(
-                                  //   padding: const EdgeInsets.symmetric(
-                                  //       horizontal: 12, vertical: 6),
-                                  //   decoration: BoxDecoration(
-                                  //     color: AppColors.primary.toSurface(),
-                                  //     borderRadius: BorderRadius.circular(20),
-                                  //   ),
-                                  //   child: Text(
-                                  //     '${_children.length} enfant${_children.length > 1 ? 's' : ''}',
-                                  //     style: TextStyle(
-                                  //       fontSize: _textSizeService.getScaledFontSize(12),
-                                  //       fontWeight: FontWeight.w600,
-                                  //       color: AppColors.primary,
-                                  //     ),
-                                  //   ),
-                                  // ),
-                                  // const SizedBox(width: 8),
-                                  // Bouton ajouter enfant
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      gradient: AppColors.primaryGradient,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: TextButton(
-                                      onPressed: () async {
-                                        final result = await Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => const AddChildScreen(),
-                                          ),
-                                        );
-                                        if (result == true) {
-                                          _loadChildren();
-                                        }
-                                      },
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.add, color: Colors.white, size: 16),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Ajouter un enfant',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: _textSizeService.getScaledFontSize(11),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 100), // Padding pour éviter que le contenu soit caché par la bottom nav
-                                child: _isLoading
-                                    ? const Center(child: CircularProgressIndicator())
-                                    : _error != null
-                                        ? Center(
-                                            child: SingleChildScrollView(
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(Icons.error_outline,
-                                                      size: 64, color: AppColors.error),
-                                                  const SizedBox(height: 16),
-                                                  Text(
-                                                    'Une erreur est survenue',
-                                                    style: TextStyle(
-                                                      fontSize: _textSizeService
-                                                          .getScaledFontSize(18),
-                                                      fontWeight: FontWeight.w600,
-                                                      color: AppColors.getTextColor(isDark),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    _error!,
-                                                    style: TextStyle(
-                                                      fontSize: _textSizeService
-                                                          .getScaledFontSize(14),
-                                                      color: AppColors.getTextColor(isDark,
-                                                          type: TextType.secondary),
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                  const SizedBox(height: 24),
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                      gradient: AppColors.primaryGradient,
-                                                      borderRadius:
-                                                          BorderRadius.circular(12),
-                                                    ),
-                                                    child: ElevatedButton(
-                                                      onPressed: _loadChildren,
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.transparent,
-                                                        shadowColor: Colors.transparent,
-                                                        padding: const EdgeInsets.symmetric(
-                                                            horizontal: 24, vertical: 12),
-                                                      ),
-                                                      child: Text(
-                                                        'Réessayer',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontWeight: FontWeight.w600,
-                                                          fontSize: _textSizeService
-                                                              .getScaledFontSize(14),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                        : _children.isEmpty
-                                            ? Center(
-                                                child: Padding(
-                                                  padding: const EdgeInsets.symmetric(
-                                                      horizontal: 16, vertical: 24),
-                                                  child: Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.center,
-                                                    children: [
-                                                      Container(
-                                                        width: 60,
-                                                        height: 60,
-                                                        decoration: BoxDecoration(
-                                                          gradient: LinearGradient(
-                                                            colors: [
-                                                              AppColors.primaryLight
-                                                                  .withOpacity(0.15),
-                                                              AppColors.primary
-                                                                  .withOpacity(0.08),
-                                                            ],
-                                                          ),
-                                                          borderRadius:
-                                                              BorderRadius.circular(30),
-                                                        ),
-                                                        child: Icon(Icons.child_care,
-                                                            size: 32,
-                                                            color: AppColors.primary),
-                                                      ),
-                                                      const SizedBox(height: 24),
-                                                      Text(
-                                                        'Commencez votre parcours',
-                                                        style: TextStyle(
-                                                          fontSize: _textSizeService
-                                                              .getScaledFontSize(18),
-                                                          fontWeight: FontWeight.w700,
-                                                          color: AppColors.getTextColor(
-                                                              isDark),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 12),
-                                                      Text(
-                                                        'Ajoutez votre premier enfant\npour suivre son évolution',
-                                                        style: TextStyle(
-                                                          fontSize: _textSizeService
-                                                              .getScaledFontSize(13),
-                                                          color: AppColors.getTextColor(
-                                                              isDark,
-                                                              type: TextType.secondary),
-                                                          height: 1.3,
-                                                        ),
-                                                        textAlign: TextAlign.center,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              )
-                                            : SingleChildScrollView(
-                                                child: Column(
-                                                  children: _children.map((child) {
-                                                    return Container(
-                                                      margin: const EdgeInsets.only(
-                                                          bottom: 20,
-                                                          left: 16,
-                                                          right: 16),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors.getPureBackground(
-                                                            isDark),
-                                                        borderRadius:
-                                                            BorderRadius.circular(16),
-                                                        border: Border.all(
-                                                          color: isDark
-                                                              ? AppColors.grey700
-                                                                  .withOpacity(0.3)
-                                                              : AppColors.grey200
-                                                                  .withOpacity(0.5),
-                                                          width: 1,
-                                                        ),
-                                                      ),
-                                                      child: ListTile(
-                                                        contentPadding:
-                                                            const EdgeInsets.symmetric(
-                                                                horizontal: 8,
-                                                                vertical: 5),
-                                                        leading: Container(
-                                                          width: 42,
-                                                          height: 42,
-                                                          decoration: BoxDecoration(
-                                                            gradient:
-                                                                AppColors.primaryGradient,
-                                                            borderRadius:
-                                                                BorderRadius.circular(10),
-                                                          ),
-                                                          child: child.photoUrl != null &&
-                                                                  child.photoUrl!.isNotEmpty
-                                                              ? ClipRRect(
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                          10),
-                                                                  child: Image.network(
-                                                                    child.photoUrl!,
-                                                                    fit: BoxFit.cover,
-                                                                    errorBuilder: (context,
-                                                                        error, stackTrace) {
-                                                                      return const Icon(
-                                                                          Icons.person,
-                                                                          color: Colors.white,
-                                                                          size: 20);
-                                                                    },
-                                                                  ),
-                                                                )
-                                                              : const Icon(Icons.person,
-                                                                  color: Colors.white,
-                                                                  size: 20),
-                                                        ),
-                                                        title: Text(
-                                                          child.fullName,
-                                                          style: TextStyle(
-                                                            fontSize: _textSizeService
-                                                                .getScaledFontSize(14),
-                                                            fontWeight: FontWeight.w700,
-                                                            color: AppColors.getTextColor(
-                                                                isDark),
-                                                          ),
-                                                        ),
-                                                        subtitle: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment.start,
-                                                          children: [
-                                                            const SizedBox(height: 2),
-                                                            Text(
-                                                              child.establishment.isNotEmpty
-                                                                  ? child.establishment
-                                                                  : 'Établissement non renseigné',
-                                                              style: TextStyle(
-                                                                fontSize: _textSizeService
-                                                                    .getScaledFontSize(11),
-                                                                color: AppColors.getTextColor(
-                                                                    isDark,
-                                                                    type:
-                                                                        TextType.secondary),
-                                                                fontWeight: FontWeight.w500,
-                                                              ),
-                                                            ),
-                                                            Text(
-                                                              child.grade.isNotEmpty
-                                                                  ? child.grade
-                                                                  : 'Classe non renseignée',
-                                                              style: TextStyle(
-                                                                fontSize: _textSizeService
-                                                                    .getScaledFontSize(10),
-                                                                color: AppColors.getTextColor(
-                                                                        isDark,
-                                                                        type:
-                                                                            TextType.secondary)
-                                                                    .withOpacity(0.7),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        trailing: Container(
-                                                          padding:
-                                                              const EdgeInsets.all(4),
-                                                          decoration: BoxDecoration(
-                                                            color:
-                                                                AppColors.primary.toSurface(),
-                                                            borderRadius:
-                                                                BorderRadius.circular(4),
-                                                          ),
-                                                          child: Icon(
-                                                              Icons.arrow_forward_ios,
-                                                              color: AppColors.primary,
-                                                              size: 12),
-                                                        ),
-                                                        onTap: () {
-                                                          MainScreenWrapper.of(context).navigateToChildDetail(child);
-                                                        },
-                                                      ),
-                                                    );
-                                                  }).toList(),
-                                                ),
-                                              ),
-                              ),
-                            ),
-                          ],
+                  ),
+                  child: child.photoUrl != null &&
+                          child.photoUrl!.isNotEmpty
+                      ? Image.network(
+                          child.photoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 26),
+                        )
+                      : const Icon(Icons.person,
+                          color: Colors.white, size: 26),
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      child.fullName,
+                      style: TextStyle(
+                        fontSize:
+                            _textSizeService.getScaledFontSize(15),
+                        fontWeight: FontWeight.w700,
+                        color: _kTextPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      child.establishment.isNotEmpty
+                          ? child.establishment
+                          : 'Établissement non renseigné',
+                      style: TextStyle(
+                        fontSize:
+                            _textSizeService.getScaledFontSize(12),
+                        color: _kTextSecondary,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // Grade badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _kOrangeLight,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        child.grade.isNotEmpty
+                            ? child.grade
+                            : 'Classe non renseignée',
+                        style: TextStyle(
+                          fontSize:
+                              _textSizeService.getScaledFontSize(11),
+                          color: _kOrange,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+
+              // Arrow
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _kOrangeLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.arrow_forward_ios_rounded,
+                    color: _kOrange, size: 14),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  int _getUniqueClassesCount() {
-    final uniqueClasses = _children.map((child) => child.grade).toSet();
-    return uniqueClasses.length;
+  // ─── ORANGE BUTTON (same as CartScreen) ───────────────────────────────────
+  Widget _buildOrangeButton({
+    required String label,
+    VoidCallback? onTap,
+    bool isLoading = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 52,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF7A3C), _kOrange],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _kOrange.withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white)),
+                )
+              : Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+        ),
+      ),
+    );
   }
 
-  int _getUniqueSchoolsCount() {
-    final uniqueSchools = _children.map((child) => child.establishment).toSet();
-    return uniqueSchools.length;
-  }
+  // ─── HELPERS ───────────────────────────────────────────────────────────────
+  int _getUniqueClassesCount() =>
+      _children.map((c) => c.grade).toSet().length;
+
+  int _getUniqueSchoolsCount() =>
+      _children.map((c) => c.establishment).toSet().length;
 
   String _getAverageGradeDisplay() {
     if (_children.isEmpty) return '-';
-
-    final gradeLevels = _children.map((child) {
-      final grade = child.grade.toLowerCase();
-      if (grade.contains('cp') || grade.contains('1ère')) return 1;
-      if (grade.contains('ce1') || grade.contains('2ème')) return 2;
-      if (grade.contains('ce2') || grade.contains('3ème')) return 3;
-      if (grade.contains('cm1') || grade.contains('4ème')) return 4;
-      if (grade.contains('cm2') || grade.contains('5ème')) return 5;
-      if (grade.contains('6ème')) return 6;
-      if (grade.contains('5ème')) return 5;
-      if (grade.contains('4ème')) return 4;
-      if (grade.contains('3ème')) return 3;
-      if (grade.contains('seconde')) return 10;
-      if (grade.contains('première')) return 11;
-      if (grade.contains('terminale')) return 12;
+    final levels = _children.map((child) {
+      final g = child.grade.toLowerCase();
+      if (g.contains('cp') || g.contains('1ère')) return 1;
+      if (g.contains('ce1') || g.contains('2ème')) return 2;
+      if (g.contains('ce2') || g.contains('3ème')) return 3;
+      if (g.contains('cm1') || g.contains('4ème')) return 4;
+      if (g.contains('cm2') || g.contains('5ème')) return 5;
+      if (g.contains('6ème')) return 6;
+      if (g.contains('seconde')) return 10;
+      if (g.contains('première')) return 11;
+      if (g.contains('terminale')) return 12;
       return 3;
     }).toList();
-
-    if (gradeLevels.isEmpty) return '-';
-
-    final average = gradeLevels.reduce((a, b) => a + b) / gradeLevels.length;
-
-    if (average <= 1) return 'CP';
-    if (average <= 2) return 'CE1';
-    if (average <= 3) return 'CE2';
-    if (average <= 4) return 'CM1';
-    if (average <= 5) return 'CM2';
-    if (average <= 6) return '6ème';
-    if (average <= 10) return 'Collège';
-    if (average <= 11) return 'Première';
+    final avg = levels.reduce((a, b) => a + b) / levels.length;
+    if (avg <= 1) return 'CP';
+    if (avg <= 2) return 'CE1';
+    if (avg <= 3) return 'CE2';
+    if (avg <= 4) return 'CM1';
+    if (avg <= 5) return 'CM2';
+    if (avg <= 6) return '6ème';
+    if (avg <= 10) return 'Collège';
+    if (avg <= 11) return 'Première';
     return 'Lycée';
   }
 }

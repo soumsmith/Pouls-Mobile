@@ -12,7 +12,6 @@ import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/student_menu_cards.dart';
-import '../widgets/section_title.dart';
 import '../screens/notes_screen_json.dart';
 import '../services/student_timetable_service.dart';
 import '../models/student_timetable.dart';
@@ -35,6 +34,16 @@ import '../services/access_log_service.dart';
 import '../models/access_log.dart';
 import '../services/place_reservation_service.dart';
 import '../models/place_reservation.dart';
+
+// ─── DESIGN TOKENS MODERNES INSPIRÉS DU PANIER ───────────────────────────────────
+const _kSurface = Color(0xFFF8F8F8);
+const _kCard = Colors.white;
+const _kTextPrimary = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF8A8A8A);
+const _kDivider = Color(0xFFF0F0F0);
+const _kShadow = Color(0x0D000000);
+const _kOrange = Color(0xFFFF6B2C);
+const _kOrangeLight = Color(0xFFFFF0E8);
 
 /// Écran de détail d'un enfant avec menu cartes
 class ChildListScreen extends StatefulWidget {
@@ -401,18 +410,22 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
     
     return Scaffold(
-      backgroundColor: AppColors.getPureBackground(isDarkMode),
+      backgroundColor: isDarkMode ? Colors.grey[900] : _kSurface,
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(),
+          _buildModernSliverAppBar(),
           SliverToBoxAdapter(
-            child: Column(
-              children: [
-                _buildProfileHeader(),
-                _buildSummaryCards(),
-                const SizedBox(height: 16),
-                _buildStudentMenuCards(),
-              ],
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                children: [
+                  _buildModernProfileHeader(),
+                  const SizedBox(height: 20),
+                  _buildModernSummaryCards(),
+                  const SizedBox(height: 24),
+                  _buildStudentMenuCards(),
+                ],
+              ),
             ),
           ),
         ],
@@ -850,65 +863,114 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildModernSliverAppBar() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
     
     return SliverAppBar(
-      expandedHeight: 20,
+      expandedHeight: 80,
       floating: false,
       pinned: true,
-      backgroundColor: AppColors.getPureAppBarBackground(isDarkMode),
+      backgroundColor: isDarkMode ? Colors.grey[900] : _kSurface,
       elevation: 0,
       forceElevated: false,
       surfaceTintColor: Colors.transparent,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          widget.child.fullName,
-          style: TextStyle(
-            color: theme.textTheme.titleLarge?.color,
-            fontWeight: FontWeight.w600,
-            fontSize: _textSizeService.getScaledFontSize(20),
-          ),
+      leading: Container(
+        margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+        decoration: BoxDecoration(
+          color: _kCard,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+          ],
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+        child: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, size: 16, color: theme.iconTheme.color),
+          onPressed: () {
+            if (MainScreenWrapper.maybeOf(context) != null) {
+              MainScreenWrapper.of(context).navigateToHome();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
       ),
       actions: [
-        IconButton(
-          icon: Icon(Icons.notifications_outlined, color: theme.iconTheme.color),
-          onPressed: () {},
+        Container(
+          margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+          decoration: BoxDecoration(
+            color: _kCard,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(Icons.notifications_outlined, color: theme.iconTheme.color),
+            onPressed: () {},
+          ),
         ),
-        IconButton(
-          icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
-          onPressed: () {},
+        Container(
+          margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+          decoration: BoxDecoration(
+            color: _kCard,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
+            onPressed: () {},
+          ),
         ),
       ],
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
-        onPressed: () {
-          if (MainScreenWrapper.maybeOf(context) != null) {
-            MainScreenWrapper.of(context).navigateToHome();
-          } else {
-            Navigator.of(context).pop();
-          }
-        },
+      flexibleSpace: FlexibleSpaceBar(
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.child.fullName,
+              style: TextStyle(
+                color: theme.textTheme.titleLarge?.color,
+                fontWeight: FontWeight.w700,
+                fontSize: _textSizeService.getScaledFontSize(20),
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.child.grade,
+              style: TextStyle(
+                color: _kTextSecondary,
+                fontSize: _textSizeService.getScaledFontSize(13),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        titlePadding: const EdgeInsets.only(left: 76, bottom: 16),
       ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildModernProfileHeader() {
     return Container(
-      margin: const EdgeInsets.all(10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      height: 180,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: AppColors.warningGradient,
-        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          colors: [const Color(0xFFFF7A3C), _kOrange],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.warning.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: _kOrange.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -917,11 +979,12 @@ class _ChildListScreenState extends State<ChildListScreen>
           Row(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: 70,
+                height: 70,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: AppColors.primaryGradient,
+                  color: Colors.white.withOpacity(0.2),
+                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                 ),
                 child: widget.child.photoUrl != null
                     ? ClipOval(
@@ -935,7 +998,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       )
                     : _buildDefaultAvatar(),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -943,20 +1006,21 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Text(
                       widget.child.fullName,
                       style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(17),
-                        fontWeight: FontWeight.bold,
+                        fontSize: _textSizeService.getScaledFontSize(20),
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       widget.child.grade,
                       style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(13),
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -964,7 +1028,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       widget.child.establishment,
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: Colors.white60,
+                        color: Colors.white.withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -972,24 +1036,24 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Row(
             children: [
-              _buildStatusBadge('⭐ Excellent', AppColors.success),
-              const SizedBox(width: 4),
-              _buildStatusBadge('✔ Assidu', AppColors.primary),
-              const SizedBox(width: 4),
-              _buildStatusBadge('📈 Progression', AppColors.secondary),
+              _buildModernStatusBadge('⭐ Excellent', Colors.white),
+              const SizedBox(width: 8),
+              _buildModernStatusBadge('✔ Assidu', Colors.white),
+              const SizedBox(width: 8),
+              _buildModernStatusBadge('📈 Progression', Colors.white),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           GestureDetector(
             onTap: _showPaiementBottomSheet,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white.withOpacity(0.3)),
               ),
               child: Row(
@@ -998,16 +1062,22 @@ class _ChildListScreenState extends State<ChildListScreen>
                   const Icon(
                     Icons.payment_outlined,
                     color: Colors.white,
-                    size: 16,
+                    size: 18,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Text(
-                    'Paiement',
+                    'Paiement en ligne',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: _textSizeService.getScaledFontSize(12),
-                      fontWeight: FontWeight.w600,
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 12,
                   ),
                 ],
               ),
@@ -1026,27 +1096,20 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildStatusBadge(String text, Color color) {
+  Widget _buildModernStatusBadge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: _textSizeService.getScaledFontSize(10),
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF333333),
+          fontSize: _textSizeService.getScaledFontSize(11),
+          fontWeight: FontWeight.w700,
+          color: color,
         ),
       ),
     );
@@ -1054,6 +1117,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showPaiementBottomSheet() {
     final TextEditingController montantController = TextEditingController();
+    bool isLoading = false;
 
     showModalBottomSheet(
       context: context,
@@ -1062,174 +1126,185 @@ class _ChildListScreenState extends State<ChildListScreen>
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            bool isLoading = false;
-            
             return Container(
               decoration: BoxDecoration(
-                color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+                color: _kCard,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: _kShadow,
+                    blurRadius: 20,
+                    offset: Offset(0, -4),
+                  ),
+                ],
               ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 20,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.payment,
-                            color: Colors.white,
-                            size: 24,
-                          ),
+              child: DraggableScrollableSheet(
+                initialChildSize: 0.7,
+                maxChildSize: 0.9,
+                minChildSize: 0.5,
+                expand: false,
+                builder: (context, scrollController) {
+                  return Column(
+                    children: [
+                      // Handle + header
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                        child: Column(
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 36,
+                                height: 4,
+                                margin: const EdgeInsets.only(bottom: 18),
+                                decoration: BoxDecoration(
+                                  color: _kDivider,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [const Color(0xFFFF7A3C), _kOrange],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(
+                                    Icons.payment,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Paiement en ligne',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: _kTextPrimary,
+                                        letterSpacing: -0.4,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Entrez le montant à payer pour ${widget.child.firstName}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: _kTextSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: _kTextSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            const Divider(color: _kDivider, height: 1),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
+                      ),
+
+                      // Form content
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const SizedBox(height: 8),
                               Text(
-                                'Paiement en ligne',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: _themeService.isDarkMode ? Colors.white : Colors.black87,
+                                'Montant à payer (FCFA)',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: _kTextPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Entrez le montant à payer pour ${widget.child.firstName}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                              const SizedBox(height: 12),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: _kSurface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: _kDivider),
+                                ),
+                                child: TextField(
+                                  controller: montantController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    hintText: 'Ex: 10000',
+                                    prefixIcon: const Icon(Icons.attach_money, color: _kTextSecondary),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.all(16),
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: _kTextPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              _buildModernPaymentButton(
+                                label: isLoading ? '' : 'Procéder au paiement',
+                                onTap: isLoading ? null : () => _effectuerPaiement(montantController.text, setState, () {
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+                                }, () {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                }),
+                                isLoading: isLoading,
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: _kOrangeLight.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: _kOrange.withOpacity(0.2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.info_outline, color: _kOrange, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Le paiement sera traité via notre partenaire WicPay',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _kOrange,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: Icon(
-                            Icons.close,
-                            color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Montant à payer (FCFA)',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _themeService.isDarkMode ? Colors.white : Colors.black87,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: montantController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: 'Ex: 10000',
-                        prefixIcon: const Icon(Icons.attach_money),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.grey[300]!,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: _themeService.isDarkMode 
-                            ? Colors.grey[800] 
-                            : Colors.grey[50],
-                      ),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _themeService.isDarkMode ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isLoading ? null : () => _effectuerPaiement(montantController.text, setState, () {
-                          setState(() {
-                            isLoading = true;
-                          });
-                        }, () {
-                          setState(() {
-                            isLoading = false;
-                          });
-                        }),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: isLoading
-                            ? const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text('Traitement...'),
-                                ],
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.payment_outlined),
-                                  SizedBox(width: 8),
-                                  Text('Procéder au paiement'),
-                                ],
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '⚠️ Le paiement sera traité via notre partenaire WicPay',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _themeService.isDarkMode ? Colors.white60 : Colors.grey[600],
-                        fontStyle: FontStyle.italic,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ),
+                    ],
+                  );
+                },
               ),
             );
           },
@@ -1305,11 +1380,97 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Widget _buildSummaryCards() {
+  Widget _buildModernPaymentButton({
+    required String label,
+    VoidCallback? onTap,
+    bool isLoading = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [const Color(0xFFFF7A3C), _kOrange],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _kOrange.withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.payment_outlined,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernSummaryCards() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle(title: 'Statistiques'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _kOrangeLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.analytics_outlined, color: _kOrange, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Statistiques',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: _kTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
@@ -1317,7 +1478,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildSummaryCard(
+                    child: _buildModernSummaryCard(
                       'Moyenne', 
                       _globalAverage != null 
                         ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
@@ -1329,7 +1490,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildSummaryCard(
+                    child: _buildModernSummaryCard(
                       'Rang', 
                       _globalAverage != null && _globalAverage!.trimesterRank > 0
                         ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
@@ -1344,10 +1505,10 @@ class _ChildListScreenState extends State<ChildListScreen>
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _buildSummaryCard('Présence', '95%', AppColors.success, Icons.check_circle)),
+                  Expanded(child: _buildModernSummaryCard('Présence', '95%', AppColors.success, Icons.check_circle)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildSummaryCard(
+                    child: _buildModernSummaryCard(
                       'Appréciation', 
                       _globalAverage != null 
                         ? _globalAverage!.trimesterMention
@@ -1366,88 +1527,103 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, Color color, IconData icon, {bool isLoading = false}) {
+  Widget _buildModernSummaryCard(String title, String value, Color color, IconData icon, {bool isLoading = false}) {
     final isDarkMode = _themeService.isDarkMode;
     
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08), // Fond light basé sur la couleur
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1.5,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: child,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.grey[800] : _kCard,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
-            const Spacer(),
+          ],
+          border: Border.all(
+            color: color.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const Spacer(),
+                if (isLoading)
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
             if (isLoading)
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
+              Container(
+                height: 24,
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.grey[700] : _kDivider,
+                  borderRadius: BorderRadius.circular(6),
                 ),
               )
             else
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(20),
+                  fontWeight: FontWeight.w800,
                   color: color,
-                  shape: BoxShape.circle,
+                  letterSpacing: -0.8,
                 ),
               ),
-          ],
-          ),
-          const SizedBox(height: 12),
-          if (isLoading)
-            Container(
-              height: 20,
-              decoration: BoxDecoration(
-                color: AppColors.getTextColor(isDarkMode, type: TextType.secondary).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            )
-          else
+            const SizedBox(height: 6),
             Text(
-              value,
+              title,
               style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(18),
-                fontWeight: FontWeight.bold,
-                color: color,
+                fontSize: _textSizeService.getScaledFontSize(13),
+                color: isDarkMode ? Colors.grey[400] : _kTextSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(12),
-              color: AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

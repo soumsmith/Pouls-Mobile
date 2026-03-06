@@ -1,244 +1,197 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
-import '../config/app_colors.dart';
-import '../services/text_size_service.dart';
+import 'package:flutter/material.dart';
 import '../services/cart_service.dart';
 
-/// Barre de navigation inférieure
+// ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
+const _kOrange      = Color(0xFFFF6B2C);
+const _kOrangeLight = Color(0xFFFFF0E8);
+const _kCard        = Colors.white;
+const _kShadow      = Color(0x0D000000);
+const _kTextPrimary = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF8A8A8A);
+
+const _kOrangeGradient = LinearGradient(
+  colors: [Color(0xFFFF7A3C), _kOrange],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+// ─── Nav Items Definition ─────────────────────────────────────────────────────
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
+}
+
+const _navItems = [
+  _NavItem(
+    icon: Icons.home_outlined,
+    activeIcon: Icons.home_rounded,
+    label: 'Accueil',
+  ),
+  _NavItem(
+    icon: Icons.shopping_bag_outlined,
+    activeIcon: Icons.shopping_bag_rounded,
+    label: 'Boutique',
+  ),
+  _NavItem(
+    icon: Icons.business_outlined,
+    activeIcon: Icons.business_rounded,
+    label: 'Établissements',
+  ),
+  _NavItem(
+    icon: Icons.grid_view_outlined,
+    activeIcon: Icons.grid_view_rounded,
+    label: 'Plus',
+  ),
+];
+
+// ─── BottomNav Widget ─────────────────────────────────────────────────────────
 class BottomNav extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
-  final TextSizeService? textSizeService;
 
   const BottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
-    this.textSizeService,
   });
 
   @override
   State<BottomNav> createState() => _BottomNavState();
 }
 
-class _BottomNavState extends State<BottomNav> {
+class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   final CartService _cartService = MockCartService();
   int _cartItemCount = 0;
   Timer? _cartTimer;
 
+  // Un controller d'animation par item pour le bounce au tap
+  late List<AnimationController> _bounceControllers;
+  late List<Animation<double>> _bounceAnims;
+
   @override
   void initState() {
     super.initState();
-    _loadCartItemCount();
+
+    // Initialiser les animations de bounce
+    _bounceControllers = List.generate(
+      _navItems.length,
+      (_) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+      ),
+    );
+    _bounceAnims = _bounceControllers.map((c) {
+      return TweenSequence<double>([
+        TweenSequenceItem(
+          tween: Tween(begin: 1.0, end: 0.80)
+              .chain(CurveTween(curve: Curves.easeIn)),
+          weight: 40,
+        ),
+        TweenSequenceItem(
+          tween: Tween(begin: 0.80, end: 1.08)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 35,
+        ),
+        TweenSequenceItem(
+          tween: Tween(begin: 1.08, end: 1.0)
+              .chain(CurveTween(curve: Curves.elasticOut)),
+          weight: 25,
+        ),
+      ]).animate(c);
+    }).toList();
+
+    _loadCartCount();
     _setupCartListener();
   }
 
   @override
   void dispose() {
     _cartTimer?.cancel();
+    for (final c in _bounceControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   void _setupCartListener() {
-    // Écouter les changements du panier toutes les secondes
     _cartTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       final cart = await _cartService.getCurrentCart();
       if (mounted && cart.totalItems != _cartItemCount) {
-        setState(() {
-          _cartItemCount = cart.totalItems;
-        });
+        setState(() => _cartItemCount = cart.totalItems);
       }
     });
   }
 
-  Future<void> _loadCartItemCount() async {
+  Future<void> _loadCartCount() async {
     final cart = await _cartService.getCurrentCart();
-    if (mounted) {
-      setState(() {
-        _cartItemCount = cart.totalItems;
-      });
-    }
+    if (mounted) setState(() => _cartItemCount = cart.totalItems);
+  }
+
+  void _handleTap(int index) {
+    // Lance l'animation de bounce sur l'item tapé
+    _bounceControllers[index].forward(from: 0);
+    widget.onTap(index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Container(
-      height: 80,
-      margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+      // Hauteur fixe + padding système en bas
+      height: 72 + bottomPadding,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       decoration: BoxDecoration(
-        color: isDark 
-            ? Colors.black.withOpacity(0.3)
-            : Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(20),
+        color: _kCard.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark 
-              ? Colors.white.withOpacity(0.1)
-              : Colors.black.withOpacity(0.1),
-          width: 0.5,
+          color: const Color(0xFFEEEEEE),
+          width: 0.8,
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: isDark 
-                ? Colors.black.withOpacity(0.4)
-                : Colors.black.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Color(0x14000000),
+            blurRadius: 24,
+            offset: Offset(0, 8),
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: isDark 
-                ? Colors.black.withOpacity(0.2)
-                : Colors.black.withOpacity(0.1),
-            blurRadius: 40,
-            offset: const Offset(0, 20),
-            spreadRadius: -5,
+            color: Color(0x08000000),
+            blurRadius: 48,
+            offset: Offset(0, 20),
+            spreadRadius: -4,
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildDockItem(
-                context: context,
-                icon: Icons.home,
-                label: 'Accueil',
-                isSelected: widget.currentIndex == 0,
-                isDark: isDark,
-                onTap: () => widget.onTap(0),
-              ),
-              _buildDockItem(
-                context: context,
-                icon: Icons.shopping_bag,
-                label: 'Boutique',
-                isSelected: widget.currentIndex == 1,
-                isDark: isDark,
-                onTap: () => widget.onTap(1),
-                showBadge: true,
-                badgeCount: _cartItemCount,
-              ),
-              _buildDockItem(
-                context: context,
-                icon: Icons.business,
-                label: 'Établissements',
-                isSelected: widget.currentIndex == 2,
-                isDark: isDark,
-                onTap: () => widget.onTap(2),
-              ),
-              _buildDockItem(
-                context: context,
-                icon: Icons.more_horiz,
-                label: 'Plus',
-                isSelected: widget.currentIndex == 3,
-                isDark: isDark,
-                onTap: () => widget.onTap(3),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDockItem({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required bool isDark,
-    required VoidCallback onTap,
-    bool showBadge = false,
-    int badgeCount = 0,
-  }) {
-    final textScaleFactor = MediaQuery.textScaleFactorOf(context);
-    final baseFontSize = 14.0;
-    final scaledFontSize = baseFontSize * textScaleFactor.clamp(0.8, 1.5);
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 65,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withOpacity(0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: isSelected
-                          ? Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
-                              width: 1,
-                            )
-                          : null,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 22,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.getTextColor(isDark, type: TextType.secondary),
-                    ),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: bottomPadding),
+            child: Row(
+              children: List.generate(
+                _navItems.length,
+                (i) => Expanded(
+                  child: _NavItemWidget(
+                    item: _navItems[i],
+                    isSelected: widget.currentIndex == i,
+                    bounceAnim: _bounceAnims[i],
+                    showBadge: i == 1, // Boutique = index 1
+                    badgeCount: i == 1 ? _cartItemCount : 0,
+                    onTap: () => _handleTap(i),
                   ),
-                  if (showBadge && badgeCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        height: 20,
-                        constraints: const BoxConstraints(minWidth: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        child: Center(
-                          child: Text(
-                            badgeCount > 99 ? '99+' : '$badgeCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: scaledFontSize,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.getTextColor(isDark, type: TextType.secondary),
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -246,3 +199,158 @@ class _BottomNavState extends State<BottomNav> {
   }
 }
 
+// ─── Single Nav Item ──────────────────────────────────────────────────────────
+class _NavItemWidget extends StatelessWidget {
+  final _NavItem item;
+  final bool isSelected;
+  final Animation<double> bounceAnim;
+  final bool showBadge;
+  final int badgeCount;
+  final VoidCallback onTap;
+
+  const _NavItemWidget({
+    required this.item,
+    required this.isSelected,
+    required this.bounceAnim,
+    required this.showBadge,
+    required this.badgeCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        height: 72,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // ── Icon container avec bounce + indicateur ───────
+            AnimatedBuilder(
+              animation: bounceAnim,
+              builder: (_, child) => Transform.scale(
+                scale: bounceAnim.value,
+                child: child,
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  // Fond animé (pill orange quand actif)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    width: isSelected ? 52 : 40,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: isSelected ? _kOrangeGradient : null,
+                      color: isSelected ? null : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: _kOrange.withOpacity(0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Icon(
+                      isSelected ? item.activeIcon : item.icon,
+                      size: 22,
+                      color: isSelected ? Colors.white : _kTextSecondary,
+                    ),
+                  ),
+
+                  // Badge panier (top-right)
+                  if (showBadge && badgeCount > 0)
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: _Badge(count: badgeCount),
+                    ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // ── Label ─────────────────────────────────────────
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? _kOrange : _kTextSecondary,
+                letterSpacing: isSelected ? 0.1 : 0,
+              ),
+              child: Text(item.label, maxLines: 1),
+            ),
+
+            // ── Dot indicateur sous le label ──────────────────
+            const SizedBox(height: 3),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              width: isSelected ? 16 : 0,
+              height: isSelected ? 3 : 0,
+              decoration: BoxDecoration(
+                gradient: isSelected ? _kOrangeGradient : null,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Badge Widget ─────────────────────────────────────────────────────────────
+class _Badge extends StatelessWidget {
+  final int count;
+  const _Badge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: count > 0 ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.elasticOut,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF3B2C), Color(0xFFFF6B2C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: _kCard, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF3B2C).withOpacity(0.40),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            count > 99 ? '99+' : '$count',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

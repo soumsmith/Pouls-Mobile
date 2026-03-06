@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/child.dart';
 import '../models/eleve.dart';
 import '../models/ecole.dart';
@@ -14,10 +15,20 @@ import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_config.dart';
 import '../config/app_colors.dart';
-import '../widgets/custom_button.dart';
 import '../widgets/searchable_dropdown.dart';
-import '../widgets/back_button_widget.dart';
 import 'login_screen.dart';
+
+// ─── DESIGN TOKENS (partagés avec CartScreen / HomeScreen) ────────────────
+const _kOrange        = Color(0xFFFF6B2C);
+const _kOrangeLight   = Color(0xFFFFF0E8);
+const _kGreen         = Color(0xFF27AE60);
+const _kGreenLight    = Color(0xFFE8F8EE);
+const _kSurface       = Color(0xFFF8F8F8);
+const _kCard          = Colors.white;
+const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF8A8A8A);
+const _kDivider       = Color(0xFFF0F0F0);
+const _kShadow        = Color(0x0D000000);
 
 /// Écran pour ajouter un élève par matricule
 class AddChildScreen extends StatefulWidget {
@@ -32,21 +43,19 @@ class _AddChildScreenState extends State<AddChildScreen>
   final _formKey = GlobalKey<FormState>();
   final _matriculeController = TextEditingController();
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
-  final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
-  
+
   bool _isLoading = false;
   bool _isSearching = false;
   bool _isLoadingEcoles = false;
   Eleve? _foundEleve;
   Ecole? _foundEcole;
   String? _errorMessage;
-  
+
   List<Ecole> _ecoles = [];
   int? _selectedEcoleId;
   String? _selectedEcoleName;
-  final TextEditingController _ecoleSearchController = TextEditingController();
-  
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -54,1167 +63,151 @@ class _AddChildScreenState extends State<AddChildScreen>
   @override
   void initState() {
     super.initState();
+    _textSizeService.addListener(() { if (mounted) setState(() {}); });
     _loadEcoles();
-    
+
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _fadeAnimation = CurvedAnimation(
+        parent: _animationController, curve: Curves.easeOut);
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-    
+        parent: _animationController, curve: Curves.easeOutCubic));
+
     _animationController.forward();
   }
 
   @override
   void dispose() {
     _matriculeController.dispose();
-    _ecoleSearchController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
+  // ─── DATA ──────────────────────────────────────────────────────────────────
   Future<void> _loadEcoles() async {
-    setState(() {
-      _isLoadingEcoles = true;
-      _errorMessage = null;
-    });
-    
-    print('🔄 Début du chargement des écoles...');
-    
+    setState(() { _isLoadingEcoles = true; _errorMessage = null; });
     try {
       final ecoles = await _poulsApiService.getAllEcoles();
-      print('✅ ${ecoles.length} école(s) chargée(s) avec succès');
-      
-      setState(() {
-        _ecoles = ecoles;
-        _isLoadingEcoles = false;
-        // Ne pas initialiser _selectedEcoleId - le champ doit rester vide
-      });
-      
-      if (ecoles.isEmpty) {
-        print('⚠️ Aucune école trouvée');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Aucune école disponible'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
+      setState(() { _ecoles = ecoles; _isLoadingEcoles = false; });
+      if (ecoles.isEmpty && mounted) {
+        _showSnackbar('Aucune école disponible', isError: true);
       }
     } catch (e) {
-      print('❌ Erreur lors du chargement des écoles: $e');
-      print('Stack trace: ${StackTrace.current}');
-      
-      setState(() {
-        _isLoadingEcoles = false;
-        _errorMessage = 'Erreur lors du chargement des écoles. Appuyez sur "Réessayer" pour recharger.';
-      });
-      
-      if (mounted) {
-        // Afficher un message d'erreur plus détaillé dans une dialog
-        final errorMessage = e.toString();
-        final isDnsError = errorMessage.contains('Failed host lookup') || 
-                          errorMessage.contains('No address associated');
-        
-        if (isDnsError) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Erreur de connexion'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Impossible de se connecter au serveur. Le nom de domaine ne peut pas être résolu.',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Solutions possibles :'),
-                    const SizedBox(height: 8),
-                    const Text('1. Vérifiez votre connexion internet'),
-                    const Text('2. Si vous êtes sur un émulateur, vérifiez qu\'il a accès à internet'),
-                    const Text('3. Testez l\'URL dans un navigateur :'),
-                    const SizedBox(height: 4),
-                    SelectableText(
-                      'https://api-pro.pouls-scolaire.net/api/connecte/ecole',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text('4. Vérifiez que le nom de domaine est correct'),
-                    const Text('5. Vérifiez les paramètres DNS de votre réseau'),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Fermer'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _loadEcoles();
-                  },
-                  child: const Text('Réessayer'),
-                ),
-              ],
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur: ${e.toString()}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-              action: SnackBarAction(
-                label: 'Réessayer',
-                textColor: Colors.white,
-                onPressed: () {
-                  _loadEcoles();
-                },
-              ),
-            ),
-          );
-        }
-      }
+      setState(() { _isLoadingEcoles = false; _errorMessage = 'Erreur chargement des écoles'; });
+      final isDns = e.toString().contains('Failed host lookup') ||
+          e.toString().contains('No address associated');
+      if (isDns && mounted) _showDnsDialog();
+      else if (mounted) _showSnackbar('Erreur : ${e.toString()}', isError: true);
     }
   }
 
   Future<void> _searchEleve() async {
     if (_matriculeController.text.trim().isEmpty) {
-      setState(() {
-        _errorMessage = 'Veuillez entrer un matricule';
-      });
+      setState(() => _errorMessage = 'Veuillez entrer un matricule');
       return;
     }
-
     if (_selectedEcoleId == null) {
-      setState(() {
-        _errorMessage = 'Veuillez sélectionner une école';
-      });
+      setState(() => _errorMessage = 'Veuillez sélectionner une école');
       return;
     }
-
-    setState(() {
-      _isSearching = true;
-      _errorMessage = null;
-      _foundEleve = null;
-      _foundEcole = null;
-    });
-
+    setState(() { _isSearching = true; _errorMessage = null; _foundEleve = null; _foundEcole = null; });
     try {
       final matricule = _matriculeController.text.trim();
-      print('🔍 ===== RECHERCHE D\'ÉLÈVE =====');
-      print('📝 Matricule recherché: $matricule');
-      print('🏫 École ID: $_selectedEcoleId');
-      
-      // Charger l'année scolaire ouverte
       final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(_selectedEcoleId!);
       final idAnnee = anneeScolaire.anneeOuverteCentraleId;
-      
-      print('📅 Identifiant de l\'année scolaire récupéré: $idAnnee');
-
-      // Vérifier que l'année scolaire est valide
       if (idAnnee == 0 || anneeScolaire.anneeEcoleList.isEmpty) {
-        print('❌ Aucune année scolaire ouverte trouvée');
-        setState(() {
-          _errorMessage = 'Aucune année scolaire ouverte trouvée pour cette école';
-          _isSearching = false;
-        });
+        setState(() { _errorMessage = 'Aucune année scolaire ouverte pour cette école'; _isSearching = false; });
         return;
       }
-
-      // Rechercher l'élève par matricule
-      print('🔎 Appel de findEleveByMatricule avec:');
-      print('   - École ID: $_selectedEcoleId');
-      print('   - Année ID: $idAnnee');
-      print('   - Matricule: $matricule');
-      
-      final eleve = await _poulsApiService.findEleveByMatricule(
-        _selectedEcoleId!,
-        idAnnee,
-        matricule,
-      );
-
+      final eleve = await _poulsApiService.findEleveByMatricule(_selectedEcoleId!, idAnnee, matricule);
       if (eleve != null) {
-        // Trouver l'école correspondante
-        final ecole = _ecoles.firstWhere(
-          (e) => e.ecoleid == _selectedEcoleId,
-          orElse: () => _ecoles.first,
-        );
-
-        print('✅ ===== ÉLÈVE SÉLECTIONNÉ =====');
-        print('👤 Informations de l\'élève sélectionné:');
-        print('   - Matricule: ${eleve.matriculeEleve}');
-        print('   - Nom complet: ${eleve.fullName}');
-        print('   - Nom: ${eleve.nomEleve}');
-        print('   - Prénom: ${eleve.prenomEleve}');
-        print('   - Classe ID (classeid): ${eleve.classeid}');
-        print('   - Classe (libellé): ${eleve.classe}');
-        print('   - École ID: ${ecole.ecoleid}');
-        print('   - École: ${ecole.ecoleclibelle}');
-        print('   - Année ID utilisée: $idAnnee');
-        print('================================');
-
-        setState(() {
-          _foundEleve = eleve;
-          _foundEcole = ecole;
-          _isSearching = false;
-        });
+        final ecole = _ecoles.firstWhere((e) => e.ecoleid == _selectedEcoleId, orElse: () => _ecoles.first);
+        setState(() { _foundEleve = eleve; _foundEcole = ecole; _isSearching = false; });
       } else {
-        print('❌ Aucun élève trouvé avec le matricule: $matricule');
-        setState(() {
-          _errorMessage = 'Aucun élève trouvé avec ce matricule';
-          _isSearching = false;
-        });
+        setState(() { _errorMessage = 'Aucun élève trouvé avec ce matricule'; _isSearching = false; });
       }
     } catch (e) {
-      String errorMsg = 'Erreur lors de la recherche';
-      if (e.toString().contains('année scolaire')) {
-        errorMsg = 'Impossible de récupérer l\'année scolaire pour cette école. Veuillez réessayer ou contacter le support.';
-      } else if (e.toString().contains('timeout')) {
-        errorMsg = 'La requête a pris trop de temps. Vérifiez votre connexion internet.';
-      } else {
-        errorMsg = 'Erreur lors de la recherche: ${e.toString().split(':').last.trim()}';
-      }
-      
-      setState(() {
-        _errorMessage = errorMsg;
-        _isSearching = false;
-      });
-      
-      // Log pour le débogage
-      print('Erreur recherche élève: $e');
+      String msg = 'Erreur lors de la recherche';
+      if (e.toString().contains('année scolaire')) msg = 'Impossible de récupérer l\'année scolaire.';
+      else if (e.toString().contains('timeout')) msg = 'Délai dépassé. Vérifiez votre connexion.';
+      else msg = 'Erreur : ${e.toString().split(':').last.trim()}';
+      setState(() { _errorMessage = msg; _isSearching = false; });
     }
   }
 
   Future<void> _handleAddChild() async {
-    if (_foundEleve == null || _foundEcole == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur: Informations de l\'élève manquantes'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Stocker les valeurs localement pour éviter les problèmes de null
+    if (_foundEleve == null || _foundEcole == null) return;
     final eleve = _foundEleve!;
     final ecole = _foundEcole!;
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      // Récupérer l'utilisateur actuel depuis AuthService avec vérification supplémentaire
       User? currentUser = AuthService.instance.getCurrentUser();
-      
-      // Si aucun utilisateur n'est trouvé, essayer de recharger la session
       if (currentUser == null) {
-        print('⚠️ Aucun utilisateur trouvé, tentative de rechargement de la session...');
         await AuthService.instance.loadSavedSession();
         currentUser = AuthService.instance.getCurrentUser();
-        
         if (currentUser == null) {
-          print('❌ Échec du chargement de la session, redirection vers la connexion...');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Session expirée. Veuillez vous reconnecter.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
-              ),
-            );
-            // Rediriger vers l'écran de connexion
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
-            );
-          }
+          _showSnackbar('Session expirée. Veuillez vous reconnecter.', isError: true);
+          if (mounted) Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
           return;
         }
       }
-      
       final parentId = currentUser.id;
-      print('✅ Utilisateur trouvé: ${currentUser.firstName} ${currentUser.lastName} (ID: $parentId)');
-      
-      // Créer le service API directement
-      final apiService = AppConfig.MOCK_MODE
-          ? MockApiService()
-          : RemoteApiService();
-
-      // Vérifier que les valeurs nécessaires ne sont pas vides
-      if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty) {
-        throw Exception('Les informations de l\'élève sont incomplètes');
-      }
-
+      final apiService = AppConfig.MOCK_MODE ? MockApiService() : RemoteApiService();
+      if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty) throw Exception('Informations élève incomplètes');
       final newChild = Child(
         id: eleve.inscriptionsidEleve.toString(),
         firstName: eleve.prenomEleve,
         lastName: eleve.nomEleve,
-        establishment: ecole.ecoleclibelle.isNotEmpty 
-            ? ecole.ecoleclibelle 
-            : 'École non spécifiée',
-        grade: eleve.classe.isNotEmpty 
-            ? eleve.classe 
-            : 'Classe non spécifiée',
+        establishment: ecole.ecoleclibelle.isNotEmpty ? ecole.ecoleclibelle : 'École non spécifiée',
+        grade: eleve.classe.isNotEmpty ? eleve.classe : 'Classe non spécifiée',
         photoUrl: eleve.urlPhoto,
         parentId: parentId,
       );
-
-      // Vérifier et logger les valeurs avant sauvegarde
-      print('📝 Sauvegarde de l\'élève:');
-      print('   - Matricule: ${eleve.matriculeEleve}');
-      print('   - Ecole ID: ${ecole.ecoleid}');
-      print('   - Classe ID (classeid): ${eleve.classeid}');
-      print('   - Classe Name: ${eleve.classe}');
-      print('   - Photo URL: ${eleve.urlPhoto ?? "null"}');
-      
-      if (eleve.classeid == null || eleve.classeid == 0) {
-        print('⚠️ ATTENTION: classeid est null ou 0!');
-      }
-      
-      if (eleve.urlPhoto == null || eleve.urlPhoto!.isEmpty) {
-        print('⚠️ ATTENTION: urlPhoto est null ou vide!');
-      }
-      
-      // Sauvegarder l'enfant dans la base de données locale
-      await DatabaseService.instance.saveChild(
-        newChild,
-        matricule: eleve.matriculeEleve,
-        ecoleId: ecole.ecoleid,
-        ecoleName: ecole.ecoleclibelle,
-        classeId: eleve.classeid,
-        classeName: eleve.classe,
-      );
-      
-      print('✅ Enfant sauvegardé avec classeId: ${eleve.classeid}');
-
-      // Associer le matricule au token FCM et réenregistrer le token
+      await DatabaseService.instance.saveChild(newChild,
+          matricule: eleve.matriculeEleve, ecoleId: ecole.ecoleid,
+          ecoleName: ecole.ecoleclibelle, classeId: eleve.classeid, classeName: eleve.classe);
       await _updateNotificationTokenWithNewMatricule(parentId, eleve.matriculeEleve);
-
-      // Ajouter l'enfant via l'API
       final success = await apiService.addChild(parentId, newChild);
-
-      setState(() {
-        _isLoading = false;
-      });
-
+      setState(() => _isLoading = false);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Élève ajouté avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.of(context).pop(true); // Retour avec succès
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de l\'ajout de l\'élève'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+        _showSnackbar('Élève ajouté avec succès');
+        Navigator.of(context).pop(true);
+      } else if (mounted) _showSnackbar('Erreur lors de l\'ajout', isError: true);
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      setState(() => _isLoading = false);
+      if (mounted) _showSnackbar('Erreur : $e', isError: true);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return AnimatedBuilder(
-      animation: Listenable.merge([_themeService, _textSizeService]),
-      builder: (context, child) {
-        return Scaffold(
-          backgroundColor: AppColors.getPureBackground(isDarkMode),
-          body: CustomScrollView(
-            slivers: [
-              _buildSliverAppBar(),
-              SliverToBoxAdapter(
-                child: AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildWelcomeSection(),
-                                const SizedBox(height: 32),
-                                _buildSearchForm(),
-                                if (_foundEleve != null && _foundEcole != null) ...[
-                                  const SizedBox(height: 24),
-                                  _buildFoundStudentCard(),
-                                ],
-                                //const SizedBox(height: 24),
-                                //_buildInfoCard(),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  // ─── HELPERS UI ────────────────────────────────────────────────────────────
+  void _showSnackbar(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: const TextStyle(color: Colors.white)),
+      backgroundColor: isError ? Colors.red[400] : _kGreen,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+    ));
   }
 
-  Widget _buildSliverAppBar() {
-    final theme = Theme.of(context);
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return SliverAppBar(
-      expandedHeight: 20,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.getPureAppBarBackground(isDarkMode),
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'Ajouter un élève',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: _textSizeService.getScaledFontSize(20),
-          ),
-        ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-      ),
-      leading: const BackButtonWidget(),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.help_outline, color: theme.iconTheme.color),
-          onPressed: () {
-            _showHelpDialog();
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWelcomeSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.successGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.success.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.9),
-            ),
-            child: Icon(
-              Icons.person_add,
-              size: 25,
-              color: AppColors.success,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ajouter votre enfant',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(20),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Retrouvez facilement votre enfant en entrant son matricule scolaire',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(13),
-                    color: Colors.white70,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchForm() {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.getSurfaceColor(isDarkMode),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
-          width: 0,
-        ),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: Colors.black.withOpacity(0.3),
-        //     blurRadius: 15,
-        //     offset: const Offset(0, 4),
-        //   ),
-        // ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Recherche',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(20),
-              fontWeight: FontWeight.bold,
-              color: AppColors.getTextColor(isDarkMode),
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildSchoolField(),
-          const SizedBox(height: 20),
-          _buildMatriculeField(),
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 12),
-            _buildErrorMessage(),
-          ],
-          const SizedBox(height: 24),
-          CustomButton(
-            text: _isSearching ? 'Recherche en cours...' : 'Rechercher mon enfant',
-            onPressed: _isSearching ? null : () => _searchEleve(),
-            isLoading: _isSearching,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSchoolField() {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    if (_isLoadingEcoles) {
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.getSurfaceColor(isDarkMode),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.getBorderColor(isDarkMode),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Icon(
-              Icons.school,
-              color: AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Chargement des écoles...',
-                style: TextStyle(
-                  color: AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppColors.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    if (_ecoles.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SearchableDropdown(
-            label: 'École *',
-            value: _errorMessage ?? 'Aucune école disponible',
-            items: ['Aucune école disponible'],
-            onChanged: (String value) {},
-            isDarkMode: isDarkMode,
-          ),
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _loadEcoles,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ],
-      );
-    }
-    
-    // Préparer la liste des noms d'écoles pour le SearchableDropdown
-    final ecoleNames = _ecoles.map((ecole) => ecole.ecoleclibelle).toList();
-    
-    return SearchableDropdown(
-      label: 'École *',
-      value: _selectedEcoleName ?? 'Sélectionner une école...',
-      items: ecoleNames,
-      onChanged: (String selectedName) {
-        // Trouver l'école correspondante par nom
-        final selectedEcole = _ecoles.firstWhere(
-          (ecole) => ecole.ecoleclibelle == selectedName,
-        );
-        
-        setState(() {
-          _selectedEcoleId = selectedEcole.ecoleid;
-          _selectedEcoleName = selectedName;
-          _foundEleve = null;
-          _foundEcole = null;
-          _errorMessage = null;
-        });
-      },
-      isDarkMode: isDarkMode,
-    );
-  }
-
-  Widget _buildMatriculeField() {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.getSurfaceColor(isDarkMode),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.getBorderColor(isDarkMode),
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'MATRICULE DE L\'ÉLÈVE *',
-            style: TextStyle(
-              color: AppColors.getTextColor(isDarkMode, type: TextType.secondary),
-              fontSize: _textSizeService.getScaledFontSize(11),
-            ),
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
-            controller: _matriculeController,
-            decoration: const InputDecoration(
-              hintText: 'Ex: 24047355B',
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-              isDense: true,
-            ),
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(12),
-              fontWeight: FontWeight.w500,
-              color: AppColors.getTextColor(isDarkMode),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Veuillez entrer le matricule';
-              }
-              return null;
-            },
-            autofocus: true,
-            onFieldSubmitted: (_) => _searchEleve(),
-          ),
-          // const SizedBox(height: 4),
-          // Text(
-          //   'Vous trouverez ce numéro sur les documents scolaires',
-          //   style: TextStyle(
-          //     fontSize: 10,
-          //     color: AppColors.getTextColor(isDarkMode, type: TextType.secondary).withOpacity(0.8),
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorMessage() {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.error.toSurface(),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.error.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _errorMessage!,
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(14),
-                color: AppColors.error,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFoundStudentCard() {
-    final theme = Theme.of(context);
-    final eleve = _foundEleve!;
-    final ecole = _foundEcole!;
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(15),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: isDarkMode 
-        //         ? AppColors.black.withOpacity(0.4)
-        //         : AppColors.primary.withOpacity(0.15),
-        //     blurRadius: 20,
-        //     offset: const Offset(0, 8),
-        //   ),
-        //   BoxShadow(
-        //     color: isDarkMode 
-        //         ? AppColors.black.withOpacity(0.2)
-        //         : AppColors.shadowLight,
-        //     blurRadius: 10,
-        //     offset: const Offset(0, 2),
-        //   ),
-        // ],
-      ),
-      child: Column(
-        children: [
-          // Header avec succès
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.green.shade50,
-                  Colors.green.shade100,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
-            ),
-            child: Row(
-              //mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.green,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Élève trouvé !',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(17),
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Contenu principal
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Photo et informations principales
-                Row(
-                  children: [
-                    // Photo de profil
-                    Hero(
-                      tag: 'student_photo_${eleve.matriculeEleve}',
-                      child: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: AppColors.primaryGradient,
-                        ),
-                        child: ClipOval(
-                          child: eleve.urlPhoto != null && eleve.urlPhoto!.isNotEmpty
-                              ? Image.network(
-                                  eleve.urlPhoto!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: theme.dividerColor,
-                                      child: Icon(
-                                        Icons.person,
-                                        size: 40,
-                                        color: theme.iconTheme.color?.withOpacity(0.6),
-                                      ),
-                                    );
-                                  },
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          theme.primaryColor,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Icon(
-                                  Icons.person,
-                                  size: 40,
-                                  color: Colors.white,
-                                ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 16),
-                    
-                    // Informations principales
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                eleve.nomEleve ?? 'Nom inconnu',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: _textSizeService.getScaledFontSize(20),
-                                ),
-                              ),
-                              Text(
-                                eleve.prenomEleve ?? 'Prénom inconnu',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.textTheme.titleMedium?.color?.withOpacity(0.8),
-                                  fontSize: _textSizeService.getScaledFontSize(16),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Informations détaillées compactes
-                _buildCompactInfoRow(Icons.school, 'École', ecole.ecoleclibelle),
-                const SizedBox(height: 8),
-                _buildCompactInfoRow(Icons.class_, 'Classe', eleve.classe),
-                const SizedBox(height: 8),
-                _buildCompactInfoRow(Icons.badge, 'Matricule', eleve.matriculeEleve),
-                
-                const SizedBox(height: 20),
-                
-                // Bouton d'action
-                Container(
-                  width: double.infinity,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.green.shade400,
-                        Colors.green.shade700,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: _isLoading ? null : _handleAddChild,
-                      child: Center(
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : Text(
-                                'Ajouter cet élève à mon compte',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(16),
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactInfoRow(IconData icon, String label, String value) {
-    final theme = Theme.of(context);
-    
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.primaryColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(
-              icon, 
-              size: 16, 
-              color: theme.primaryColor,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(12),
-              fontWeight: FontWeight.w600,
-              color: theme.textTheme.bodySmall?.color,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(14),
-                fontWeight: FontWeight.w500,
-                color: theme.textTheme.bodyMedium?.color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStudentInfoRow(IconData icon, String label, String value) {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isDarkMode 
-                ? const Color(0xFF4F46E5).withOpacity(0.1)
-                : const Color(0xFF4F46E5).withOpacity(0.05),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon, 
-            size: 20, 
-            color: isDarkMode ? const Color(0xFF4F46E5) : const Color(0xFF4F46E5),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          '$label:',
-          style: TextStyle(
-            fontSize: _textSizeService.getScaledFontSize(14),
-            fontWeight: FontWeight.w600,
-            color: isDarkMode ? Colors.grey[300] : const Color(0xFF6B7280),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              fontWeight: FontWeight.w500,
-              color: isDarkMode ? Colors.grey[100] : const Color(0xFF374151),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoCard() {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDarkMode 
-            ? const Color(0xFF4F46E5).withOpacity(0.1)
-            : const Color(0xFF4F46E5).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDarkMode 
-              ? const Color(0xFF4F46E5).withOpacity(0.3)
-              : const Color(0xFF4F46E5).withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isDarkMode 
-                  ? const Color(0xFF4F46E5).withOpacity(0.2)
-                  : const Color(0xFF4F46E5).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.info_outline,
-              color: isDarkMode ? const Color(0xFF4F46E5) : const Color(0xFF4F46E5),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Besoin d\'aide ?',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Le matricule se trouve sur les documents scolaires de votre enfant',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.grey[300] : const Color(0xFF6B7280),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
+  void _showDnsDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Erreur de connexion', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+        content: const Text('Impossible de joindre le serveur. Vérifiez votre connexion internet.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fermer')),
+          TextButton(
+            onPressed: () { Navigator.pop(context); _loadEcoles(); },
+            child: Text('Réessayer', style: TextStyle(color: _kOrange, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1222,117 +215,708 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   void _showHelpDialog() {
-    final isDarkMode = _themeService.isDarkMode;
-    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Comment trouver le matricule ?'),
-        content: SingleChildScrollView(
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Comment trouver le matricule ?',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Le matricule se trouve sur :', style: TextStyle(color: _kTextSecondary)),
+            const SizedBox(height: 12),
+            _helpItem('📄', 'Carnet de correspondance'),
+            _helpItem('🎓', 'Bulletin scolaire'),
+            _helpItem('📝', 'Carte d\'élève'),
+            _helpItem('💻', 'Portail en ligne de l\'école'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Compris', style: TextStyle(color: _kOrange, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpItem(String emoji, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(children: [
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 10),
+          Text(text, style: const TextStyle(fontSize: 14, color: _kTextPrimary)),
+        ]),
+      );
+
+  // ─── BUILD ─────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: _kSurface,
+        body: FadeTransition(
+          opacity: _fadeAnimation,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Le matricule de votre enfant se trouve généralement sur :',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              _buildHelpItem('📄', 'Carnet de correspondance'),
-              _buildHelpItem('🎓', 'Bulletin scolaire'),
-              _buildHelpItem('📝', 'Carte d\'élève'),
-              _buildHelpItem('💻', 'Portail en ligne de l\'école'),
-              const SizedBox(height: 16),
-              const Text(
-                'Le matricule est généralement composé de chiffres et parfois de lettres.',
-                style: TextStyle(fontStyle: FontStyle.italic),
+              _buildAppBar(),
+              Expanded(
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: _buildBody(),
+                ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Compris'),
+      ),
+    );
+  }
+
+  // ─── APP BAR ───────────────────────────────────────────────────────────────
+  Widget _buildAppBar() {
+    return Container(
+      color: _kSurface,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Row(
+            children: [
+              // Back button
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _kCard,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: const Icon(Icons.arrow_back_ios_new, size: 16, color: _kTextPrimary),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Title
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Ajouter un élève',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(18),
+                          fontWeight: FontWeight.w800,
+                          color: _kTextPrimary,
+                          letterSpacing: -0.5,
+                        )),
+                    Text('Recherche par matricule',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          color: _kTextSecondary,
+                        )),
+                  ],
+                ),
+              ),
+              // Help button
+              GestureDetector(
+                onTap: _showHelpDialog,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _kCard,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: const Icon(Icons.help_outline, size: 18, color: _kOrange),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── BODY ──────────────────────────────────────────────────────────────────
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeroBanner(),
+            const SizedBox(height: 20),
+            _buildSearchPanel(),
+            if (_foundEleve != null && _foundEcole != null) ...[
+              const SizedBox(height: 16),
+              _buildFoundStudentCard(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── HERO BANNER ───────────────────────────────────────────────────────────
+  Widget _buildHeroBanner() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF7A3C), _kOrange],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: _kOrange.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Ajouter votre enfant',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.3,
+                    )),
+                const SizedBox(height: 3),
+                Text('Entrez le matricule scolaire pour retrouver votre enfant',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      color: Colors.white.withOpacity(0.8),
+                      height: 1.3,
+                    )),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHelpItem(String emoji, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+  // ─── SEARCH PANEL ──────────────────────────────────────────────────────────
+  Widget _buildSearchPanel() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(color: _kShadow, blurRadius: 16, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text)),
+          // Header du panneau
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _kOrangeLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.search_rounded, color: _kOrange, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Text('Recherche',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(17),
+                      fontWeight: FontWeight.w700,
+                      color: _kTextPrimary,
+                      letterSpacing: -0.3,
+                    )),
+              ],
+            ),
+          ),
+
+          // Drag handle décoratif
+          Center(
+            child: Container(
+              width: 36,
+              height: 3,
+              margin: const EdgeInsets.only(top: 14, bottom: 4),
+              decoration: BoxDecoration(color: _kDivider, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+
+          // Formulaire
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              children: [
+                // Champ école
+                _buildEcoleField(),
+                const SizedBox(height: 14),
+                // Champ matricule
+                _buildMatriculeField(),
+                // Message erreur
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  _buildErrorBanner(),
+                ],
+                const SizedBox(height: 20),
+                // Bouton rechercher
+                _buildOrangeButton(
+                  label: _isSearching ? 'Recherche en cours...' : 'Rechercher mon enfant',
+                  onTap: _isSearching ? null : _searchEleve,
+                  isLoading: _isSearching,
+                  icon: Icons.search_rounded,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Met à jour le token de notification avec le nouveau matricule
-  Future<void> _updateNotificationTokenWithNewMatricule(String userId, String newMatricule) async {
+  // ─── ÉCOLE FIELD ───────────────────────────────────────────────────────────
+  Widget _buildEcoleField() {
+    if (_isLoadingEcoles) {
+      return _buildLoadingField('Chargement des écoles...');
+    }
+    if (_ecoles.isEmpty) {
+      return Column(
+        children: [
+          _buildEmptyEcoleField(),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 10),
+            _buildRetryButton(),
+          ],
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('École', required: true),
+        const SizedBox(height: 6),
+        SearchableDropdown(
+          label: 'École',
+          value: _selectedEcoleName ?? 'Sélectionner une école...',
+          items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+          onChanged: (String selected) {
+            final ecole = _ecoles.firstWhere((e) => e.ecoleclibelle == selected);
+            setState(() {
+              _selectedEcoleId = ecole.ecoleid;
+              _selectedEcoleName = selected;
+              _foundEleve = null;
+              _foundEcole = null;
+              _errorMessage = null;
+            });
+          },
+          isDarkMode: false,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingField(String msg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kDivider),
+      ),
+      child: Row(children: [
+        const SizedBox(width: 16, height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange)),
+        const SizedBox(width: 12),
+        Text(msg, style: const TextStyle(fontSize: 13, color: _kTextSecondary)),
+      ]),
+    );
+  }
+
+  Widget _buildEmptyEcoleField() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Row(children: [
+        Icon(Icons.error_outline, color: Colors.red[400], size: 18),
+        const SizedBox(width: 10),
+        const Expanded(child: Text('Aucune école disponible',
+            style: TextStyle(fontSize: 13, color: _kTextPrimary))),
+      ]),
+    );
+  }
+
+  Widget _buildRetryButton() {
+    return GestureDetector(
+      onTap: _loadEcoles,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: _kOrangeLight,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.refresh_rounded, color: _kOrange, size: 16),
+          const SizedBox(width: 8),
+          Text('Réessayer', style: TextStyle(
+            color: _kOrange,
+            fontWeight: FontWeight.w700,
+            fontSize: _textSizeService.getScaledFontSize(13),
+          )),
+        ]),
+      ),
+    );
+  }
+
+  // ─── MATRICULE FIELD ───────────────────────────────────────────────────────
+  Widget _buildMatriculeField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('Matricule de l\'élève', required: true),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: _kSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _kDivider),
+          ),
+          child: TextField(
+            controller: _matriculeController,
+            autofocus: false,
+            style: const TextStyle(
+              fontSize: 14,
+              color: _kTextPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Ex: 24047355B',
+              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+              prefixIcon: const Icon(Icons.badge_outlined, color: _kOrange, size: 18),
+              filled: true,
+              fillColor: _kSurface,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _kDivider),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _kDivider),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _kOrange, width: 1.5),
+              ),
+            ),
+            onSubmitted: (_) => _searchEleve(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _fieldLabel(String label, {bool required = false}) {
+    return Row(children: [
+      Text(label, style: const TextStyle(
+          fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary, letterSpacing: 0.2)),
+      if (required)
+        const Text(' *', style: TextStyle(color: _kOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+    ]);
+  }
+
+  // ─── ERROR BANNER ──────────────────────────────────────────────────────────
+  Widget _buildErrorBanner() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Row(children: [
+        Icon(Icons.error_outline, color: Colors.red[400], size: 16),
+        const SizedBox(width: 8),
+        Expanded(child: Text(_errorMessage!,
+            style: TextStyle(color: Colors.red[700], fontSize: 13, fontWeight: FontWeight.w500))),
+      ]),
+    );
+  }
+
+  // ─── FOUND STUDENT CARD ────────────────────────────────────────────────────
+  Widget _buildFoundStudentCard() {
+    final eleve = _foundEleve!;
+    final ecole = _foundEcole!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(color: _kShadow, blurRadius: 16, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ── Header succès ──
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            decoration: const BoxDecoration(
+              color: _kGreenLight,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _kGreen.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.check_rounded, color: _kGreen, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text('Élève trouvé !',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(15),
+                    fontWeight: FontWeight.w700,
+                    color: _kGreen,
+                    letterSpacing: -0.2,
+                  )),
+            ]),
+          ),
+
+          // ── Contenu ──
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Photo + nom
+                Row(
+                  children: [
+                    Hero(
+                      tag: 'student_photo_${eleve.matriculeEleve}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFFF7A3C), _kOrange],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: eleve.urlPhoto != null && eleve.urlPhoto!.isNotEmpty
+                              ? Image.network(eleve.urlPhoto!, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      const Icon(Icons.person, color: Colors.white, size: 32),
+                                  loadingBuilder: (_, child, progress) => progress == null
+                                      ? child
+                                      : const Center(child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.white)))
+                              : const Icon(Icons.person, color: Colors.white, size: 32),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(eleve.nomEleve ?? 'Nom inconnu',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(17),
+                                fontWeight: FontWeight.w800,
+                                color: _kTextPrimary,
+                                letterSpacing: -0.3,
+                              )),
+                          const SizedBox(height: 2),
+                          Text(eleve.prenomEleve ?? 'Prénom inconnu',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(14),
+                                color: _kTextSecondary,
+                                fontWeight: FontWeight.w500,
+                              )),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _kOrangeLight,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(eleve.classe.isNotEmpty ? eleve.classe : 'Classe inconnue',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  color: _kOrange,
+                                  fontWeight: FontWeight.w600,
+                                )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+                const Divider(color: _kDivider, height: 1),
+                const SizedBox(height: 14),
+
+                // Infos détaillées
+                _infoRow(Icons.school_outlined, 'École', ecole.ecoleclibelle),
+                const SizedBox(height: 8),
+                _infoRow(Icons.badge_outlined, 'Matricule', eleve.matriculeEleve),
+
+                const SizedBox(height: 16),
+
+                // Bouton ajouter
+                _buildOrangeButton(
+                  label: 'Ajouter cet élève à mon compte',
+                  onTap: _isLoading ? null : _handleAddChild,
+                  isLoading: _isLoading,
+                  icon: Icons.person_add_rounded,
+                  color: _kGreen,
+                  shadowColor: _kGreen,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: _kOrangeLight,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: _kOrange, size: 15),
+        ),
+        const SizedBox(width: 10),
+        Text('$label :', style: const TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary)),
+        const SizedBox(width: 6),
+        Expanded(child: Text(value, style: const TextStyle(
+            fontSize: 13, fontWeight: FontWeight.w600, color: _kTextPrimary),
+            overflow: TextOverflow.ellipsis)),
+      ]),
+    );
+  }
+
+  // ─── ORANGE BUTTON (identique CartScreen) ─────────────────────────────────
+  Widget _buildOrangeButton({
+    required String label,
+    VoidCallback? onTap,
+    bool isLoading = false,
+    IconData? icon,
+    Color color = _kOrange,
+    Color? shadowColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 54,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: color == _kOrange
+                ? const [Color(0xFFFF7A3C), _kOrange]
+                : [color.withOpacity(0.85), color],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: (shadowColor ?? color).withOpacity(0.3),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(width: 22, height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+              : Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: Colors.white, size: 18),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(label, style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.1,
+                  )),
+                ]),
+        ),
+      ),
+    );
+  }
+
+  // ─── NOTIFICATION TOKEN UPDATE ────────────────────────────────────────────
+  Future<void> _updateNotificationTokenWithNewMatricule(
+      String userId, String newMatricule) async {
     try {
-      print('🔄 Mise à jour du token de notification avec le nouveau matricule: $newMatricule');
-      
       final notificationService = NotificationService();
-      
-      // Obtenir le token de manière asynchrone (récupère depuis Firebase si nécessaire)
       final token = await notificationService.getTokenAsync();
-      
-      if (token == null || token.isEmpty) {
-        print('⚠️ Aucun token FCM disponible actuellement.');
-        print('   Le matricule sera associé au token lors de la prochaine initialisation des notifications.');
-        print('   Ou lorsque le token FCM sera disponible.');
-        // Ne pas bloquer l'ajout de l'élève si le token n'est pas disponible
-        // Le token sera mis à jour lors de la prochaine initialisation
-        return;
-      }
-      
-      // Récupérer tous les matricules de l'utilisateur (y compris le nouveau)
-      final databaseService = DatabaseService.instance;
-      final childrenInfo = await databaseService.getChildrenInfoByParent(userId);
-      
-      // Extraire les matricules non null
+      if (token == null || token.isEmpty) return;
+      final childrenInfo = await DatabaseService.instance.getChildrenInfoByParent(userId);
       final matricules = childrenInfo
           .map((info) => info['matricule'] as String?)
-          .where((matricule) => matricule != null && matricule.isNotEmpty)
+          .where((m) => m != null && m.isNotEmpty)
           .cast<String>()
           .toList();
-      
-      if (matricules.isEmpty) {
-        print('⚠️ Aucun matricule trouvé pour l\'utilisateur');
-        return;
-      }
-      
-      print('📋 Matricules à associer au token: ${matricules.length}');
-      for (final matricule in matricules) {
-        print('   - $matricule');
-      }
-      
-      // Déterminer le type d'appareil
+      if (matricules.isEmpty) return;
       final deviceType = Platform.isIOS ? 'ios' : 'android';
-      
-      // Réenregistrer le token avec tous les matricules
-      final apiService = PoulsScolaireApiService();
-      final success = await apiService.registerNotificationToken(
-        token,
-        userId,
-        deviceType: deviceType,
-        matricules: matricules,
-      );
-      
-      if (success) {
-        print('✅ Token de notification mis à jour avec succès avec ${matricules.length} matricule(s)');
-      } else {
-        print('❌ Erreur lors de la mise à jour du token de notification');
-      }
-    } catch (e) {
-      print('❌ Erreur lors de la mise à jour du token de notification: $e');
-      // Ne pas bloquer l'ajout de l'élève si la mise à jour du token échoue
-    }
+      await PoulsScolaireApiService().registerNotificationToken(
+          token, userId, deviceType: deviceType, matricules: matricules);
+    } catch (_) {}
   }
 }

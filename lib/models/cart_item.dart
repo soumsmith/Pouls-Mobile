@@ -24,6 +24,26 @@ class CartItem {
     );
   }
 
+  factory CartItem.fromApiMap(Map<String, dynamic> map) {
+    // Construire l'URL complète de l'image
+    String? imageUrl = map['produit_image']?.toString();
+    if (imageUrl != null && !imageUrl.startsWith('http')) {
+      imageUrl = 'https://api2.vie-ecoles.com/$imageUrl';
+    }
+    
+    return CartItem(
+      id: map['id_cf']?.toString() ?? '',
+      product: Product.fromApiMap({
+        'produit_uid': map['produit_scolaire_uid'],
+        'titre': map['produit_nom'],
+        'image': imageUrl,
+        'prix_librairie': map['prix_unitaire'],
+      }),
+      quantity: map['quantite'] as int? ?? 1,
+      addedAt: DateTime.now(),
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

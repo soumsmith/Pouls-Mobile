@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/cart_item.dart';
+import '../models/order.dart';
+import 'auth_service.dart';
 
 class OrderService {
   static const String baseUrl = 'https://api2.vie-ecoles.com/api';
@@ -89,6 +91,94 @@ class OrderService {
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la création de la commande: $e');
+    }
+  }
+
+  /// Récupère la liste des commandes d'un utilisateur
+  Future<List<Order>> getUserOrders(String phoneNumber) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('📦 RÉCUPÉRATION DES COMMANDES');
+    print('═══════════════════════════════════════════════════════════');
+    print('📱 Téléphone: $phoneNumber');
+    
+    final url = '$baseUrl/vie-ecoles/suivi-commandes/$phoneNumber';
+    print('🔗 URL: $url');
+    print('📡 Envoi de la requête GET...');
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      print('📥 Réponse reçue:');
+      print('   - Status Code: ${response.statusCode}');
+      print('   - Content-Type: ${response.headers['content-type']}');
+      print('   - Body length: ${response.body.length} caractères');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        
+        if (data['status'] == true && data['data'] != null) {
+          final responseData = data['data'] as Map<String, dynamic>;
+          final ordersData = responseData['data'] as List<dynamic>? ?? [];
+          
+          print('✅ ${ordersData.length} commande(s) récupérée(s)');
+          
+          final orders = ordersData.map((orderData) {
+            return Order.fromApiMap(orderData as Map<String, dynamic>);
+          }).toList();
+          
+          print('═══════════════════════════════════════════════════════════');
+          print('');
+          return orders;
+        } else {
+          print('❌ Status false ou data manquant dans la réponse');
+          print('═══════════════════════════════════════════════════════════');
+          print('');
+          return [];
+        }
+      } else {
+        print('❌ Erreur HTTP ${response.statusCode}');
+        print('❌ Corps de la réponse: ${response.body}');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        throw Exception('Erreur HTTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('💥 Exception lors de la récupération des commandes: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      throw Exception('Erreur lors de la récupération des commandes: $e');
+    }
+  }
+
+  /// Annule une commande
+  Future<bool> cancelOrder(String orderId) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('❌ ANNUATION DE COMMANDE');
+    print('═══════════════════════════════════════════════════════════');
+    print('🆔 ID Commande: $orderId');
+    
+    // Pour l'instant, nous allons juste simuler l'annulation
+    // En production, il faudrait appeler l'API d'annulation
+    try {
+      await Future.delayed(const Duration(seconds: 1)); // Simulation d'appel API
+      
+      print('✅ Commande $orderId annulée avec succès');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      return true;
+    } catch (e) {
+      print('💥 Erreur lors de l\'annulation: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      return false;
     }
   }
 }

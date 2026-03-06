@@ -10,7 +10,7 @@ import '../utils/image_helper.dart';
 import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design tokens (same as cart / orders / library screens) ────────────────
 const _kOrange      = Color(0xFFFF6B2C);
 const _kOrangeLight = Color(0xFFFFF0E8);
 const _kSurface     = Color(0xFFF8F8F8);
@@ -28,7 +28,7 @@ const _kOrangeGradient = LinearGradient(
   end: Alignment.bottomRight,
 );
 
-// ─── Color per school type ────────────────────────────────────────────────────
+// ─── Color per school type ───────────────────────────────────────────────────
 Color _typeColor(String type) {
   switch (type.toLowerCase()) {
     case 'primaire':   return const Color(0xFF3B82F6);
@@ -51,7 +51,7 @@ IconData _typeIcon(String type) {
   }
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 class EstablishmentScreen extends StatefulWidget implements MainScreenChild {
   const EstablishmentScreen({super.key});
 
@@ -61,23 +61,23 @@ class EstablishmentScreen extends StatefulWidget implements MainScreenChild {
 
 class _EstablishmentScreenState extends State<EstablishmentScreen>
     with TickerProviderStateMixin {
-  // ── State ──────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────
   String _selectedFilter = 'Tous';
   bool   _isSearching    = false;
   final  _searchController = TextEditingController();
   final  _textSizeService  = TextSizeService();
   double _currentTextScale = 1.0;
-  List<Ecole> _ecoles    = [];
+  List<Ecole> _ecoles  = [];
   bool        _isLoading = true;
   String?     _error;
 
-  // ── Animations ─────────────────────────────────────────────
+  // ── Animations ────────────────────────────────────────────
   late AnimationController _fadeController;
   late Animation<double>   _fadeAnim;
 
   final List<String> _filters = ['Tous', 'Primaire', 'Collège', 'Lycée', 'Privé', 'Public'];
 
-  // ── Lifecycle ──────────────────────────────────────────────
+  // ── Lifecycle ─────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -104,7 +104,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   void _onTextSizeChanged() =>
       setState(() => _currentTextScale = _textSizeService.getScale());
 
-  // ── Data ───────────────────────────────────────────────────
+  // ── Data ──────────────────────────────────────────────────
   Future<void> _loadEcoles() async {
     setState(() { _isLoading = true; _error = null; });
     try {
@@ -132,7 +132,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     return items;
   }
 
-  // ── Build ──────────────────────────────────────────────────
+  // ── Build ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -158,7 +158,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Header (sans bouton Événements) ───────────────────────
+  // ── Header ────────────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
       color: _kCard,
@@ -170,7 +170,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       ),
       child: Row(
         children: [
-          // Back button
+          // Back button — white card with shadow (same pattern as other screens)
           GestureDetector(
             onTap: () => MainScreenWrapper.of(context).navigateToHome(),
             child: Container(
@@ -201,13 +201,52 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             ),
           ),
 
-          // Search button seulement
+          // Search button
           _buildHeaderAction(
             icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
             onTap: () => setState(() {
               _isSearching = !_isSearching;
               if (!_isSearching) _searchController.clear();
             }),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Events button — orange badge style
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AllEventsScreen()),
+            ),
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                gradient: _kOrangeGradient,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: _kOrange.withOpacity(0.30),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.event_rounded, size: 16, color: Colors.white),
+                  SizedBox(width: 6),
+                  Text(
+                    'Événements',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -230,7 +269,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Search Bar ─────────────────────────────────────────────
+  // ── Search Bar ────────────────────────────────────────────
   Widget _buildSearchBar() {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -259,13 +298,16 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Rechercher un établissement...',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  hintStyle: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                  ),
                   prefixIcon: const Icon(Icons.search_rounded,
                       size: 18, color: _kOrange),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? GestureDetector(
-                          onTap: () =>
-                              setState(() => _searchController.clear()),
+                          onTap: () => setState(() =>
+                              _searchController.clear()),
                           child: Icon(Icons.cancel_rounded,
                               size: 18, color: Colors.grey[400]),
                         )
@@ -280,7 +322,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Filter Row ─────────────────────────────────────────────
+  // ── Filter Row ────────────────────────────────────────────
   Widget _buildFilterRow() {
     return Container(
       color: _kCard,
@@ -322,8 +364,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                     f,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: selected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: selected
                           ? Colors.white
                           : const Color(0xFF666666),
@@ -338,7 +381,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Body ───────────────────────────────────────────────────
+  // ── Body ──────────────────────────────────────────────────
   Widget _buildBody() {
     if (_isLoading) return _buildLoadingState();
     if (_error != null) return _buildErrorState();
@@ -409,7 +452,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF999999)),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF999999),
+              ),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -453,23 +499,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           opacity: _fadeAnim,
           child: CustomScrollView(
             slivers: [
-              // ── Événements Banner Card ─────────────────────
+              // Results header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: _EventsBannerCard(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const AllEventsScreen()),
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Results header ─────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                   child: Row(
                     children: [
                       RichText(
@@ -538,7 +571,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 ),
               ),
 
-              // ── Empty state ────────────────────────────────
+              // Empty state
               if (items.isEmpty)
                 SliverFillRemaining(
                   child: Center(
@@ -607,7 +640,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   ),
                 )
               else
-                // ── Grid ──────────────────────────────────────
+                // Grid
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                   sliver: SliverGrid(
@@ -636,7 +669,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) =>
-                                  EstablishmentDetailScreen(ecole: items[i]),
+                                  EstablishmentDetailScreen(
+                                      ecole: items[i]),
                             ),
                           ),
                         ),
@@ -661,7 +695,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0x00F8F8F8), _kSurface],
+                  colors: [
+                    Color(0x00F8F8F8),
+                    _kSurface,
+                  ],
                 ),
               ),
             ),
@@ -672,189 +709,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 }
 
-// ─── Events Banner Card ───────────────────────────────────────────────────────
-class _EventsBannerCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _EventsBannerCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 110,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: _kOrange.withOpacity(0.25),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // ── Fond dégradé principal ──────────────────────
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFFF5A1F), Color(0xFFFF8C42), Color(0xFFFFB347)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                ),
-              ),
-
-              // ── Cercles décoratifs translucides ────────────
-              Positioned(
-                right: -28,
-                top: -28,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.10),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 48,
-                bottom: -40,
-                child: Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.07),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: -16,
-                bottom: -20,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.06),
-                  ),
-                ),
-              ),
-
-              // ── Points décoratifs ───────────────────────────
-              Positioned(
-                top: 18,
-                right: 110,
-                child: Container(
-                  width: 5,
-                  height: 5,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white30,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 22,
-                right: 88,
-                child: Container(
-                  width: 3,
-                  height: 3,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white24,
-                  ),
-                ),
-              ),
-
-              // ── Contenu ─────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 16),
-                child: Row(
-                  children: [
-                    // Icône dans un cercle blanc
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.22),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.35),
-                            width: 1.5),
-                      ),
-                      child: const Icon(
-                        Icons.event_rounded,
-                        size: 26,
-                        color: Colors.white,
-                      ),
-                    ),
-
-                    const SizedBox(width: 16),
-
-                    // Textes
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Événements',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.3,
-                              height: 1.1,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Découvrez les activités\net actualités des écoles',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.white70,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Flèche droite
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.20),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── École Card ───────────────────────────────────────────────────────────────
+// ─── Card Widget ─────────────────────────────────────────────────────────────
 class _EcoleCard extends StatelessWidget {
   final Ecole ecole;
   final VoidCallback onTap;
@@ -876,15 +731,16 @@ class _EcoleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Image zone ────────────────────────────────────
+            // ── Image zone ───────────────────────────────────
             Expanded(
               flex: 3,
               child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(18)),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
+                    // Image
                     ImageHelper.buildNetworkImage(
                       imageUrl: ecole.displayImage,
                       placeholder: ecole.parametreNom ?? 'École',
@@ -892,6 +748,8 @@ class _EcoleCard extends StatelessWidget {
                       height: double.infinity,
                       fit: BoxFit.cover,
                     ),
+
+                    // Subtle gradient overlay for text legibility
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -910,6 +768,8 @@ class _EcoleCard extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                    // Type badge (top-right)
                     Positioned(
                       top: 10,
                       right: 10,
@@ -938,6 +798,8 @@ class _EcoleCard extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                    // Availability dot (bottom-left)
                     Positioned(
                       bottom: 8,
                       left: 10,
@@ -947,10 +809,12 @@ class _EcoleCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFF22C55E),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
+                          border: Border.all(
+                              color: Colors.white, width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF22C55E).withOpacity(0.5),
+                              color:
+                                  const Color(0xFF22C55E).withOpacity(0.5),
                               blurRadius: 4,
                             ),
                           ],
@@ -962,7 +826,7 @@ class _EcoleCard extends StatelessWidget {
               ),
             ),
 
-            // ── Info zone ─────────────────────────────────────
+            // ── Info zone ────────────────────────────────────
             Expanded(
               flex: 2,
               child: Padding(
@@ -970,6 +834,7 @@ class _EcoleCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Name
                     Text(
                       ecole.parametreNom ?? 'École sans nom',
                       style: const TextStyle(
@@ -981,7 +846,10 @@ class _EcoleCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+
                     const SizedBox(height: 4),
+
+                    // Address
                     Text(
                       ecole.adresse,
                       style: const TextStyle(
@@ -992,7 +860,10 @@ class _EcoleCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+
                     const Spacer(),
+
+                    // City row
                     Row(
                       children: [
                         Icon(Icons.location_on_rounded,

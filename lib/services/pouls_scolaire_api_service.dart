@@ -11,6 +11,8 @@ import '../models/periode.dart';
 import '../models/matiere.dart';
 import '../models/note_api.dart';
 import '../models/note_classe_dto.dart';
+import '../models/student_class_info.dart';
+import 'school_service.dart';
 
 /// Classe pour retourner les notes avec les informations globales
 class NotesResult {
@@ -967,6 +969,100 @@ class PoulsScolaireApiService {
     } catch (e) {
       print('❌ Exception lors de la suppression du token: $e');
       return false;
+    }
+  }
+
+  /// Récupère les informations de la classe et de l'école pour un élève
+  /// 
+  /// Endpoint: GET /classe-eleve/get-ecole-by-classe/{matricule}?annee={anneeId}&classe={classeId}
+  Future<StudentClassInfo> getStudentClassInfo(String matricule, int anneeId, int classeId) async {
+    try {
+      _logApiRequest('GET', '/classe-eleve/get-ecole-by-classe/$matricule', params: {
+        'annee': anneeId.toString(),
+        'classe': classeId.toString(),
+      });
+      
+      final uri = Uri.parse('$_baseUrl/classe-eleve/get-ecole-by-classe/$matricule')
+          .replace(queryParameters: {
+        'annee': anneeId.toString(),
+        'classe': classeId.toString(),
+      });
+      
+      print('');
+      print('═══════════════════════════════════════════════════════════');
+      print('🏫 CHARGEMENT DES INFOS CLASSE/ÉCOLE');
+      print('═══════════════════════════════════════════════════════════');
+      print('🔗 URL complète:');
+      print('   $uri');
+      print('');
+      print('📋 Paramètres utilisés:');
+      print('   🎫 Matricule: $matricule');
+      print('   📅 Année ID: $anneeId');
+      print('   📚 Classe ID: $classeId');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      
+      final response = await http
+          .get(uri, headers: _headers)
+          .timeout(AppConfig.API_TIMEOUT);
+
+      _logApiResponse(response.statusCode, bodyLength: response.body.length);
+
+      if (response.statusCode == 200) {
+        try {
+          final Map<String, dynamic> data = json.decode(response.body);
+          print('✅ Informations classe/école récupérées avec succès');
+          print('   🏫 École: ${data['ecole']?['libelle']}');
+          print('   📚 Classe: ${data['classe']?['libelle']}');
+          print('   👤 Élève: ${data['eleve']?['prenom']} ${data['eleve']?['nom']}');
+          print('   🏷️ ID Vie École: ${data['identifiantVieEcole']}');
+          print('');
+          
+          final studentClassInfo = StudentClassInfo.fromJson(data);
+          
+          // Mettre à jour le SchoolService avec le nouvel identifiantVieEcole
+          await _updateSchoolServiceWithVieEcoleId(studentClassInfo);
+          
+          return studentClassInfo;
+        } catch (e) {
+          print('❌ Erreur lors du parsing JSON: $e');
+          print('❌ Contenu de la réponse: ${response.body}');
+          throw Exception('Erreur lors du parsing des informations classe/école: $e');
+        }
+      } else {
+        print('❌ Erreur HTTP ${response.statusCode}: ${response.body}');
+        throw Exception(
+          'Erreur lors de la récupération des informations classe/école: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      _logApiError('getStudentClassInfo', e);
+      throw Exception('Erreur lors de la récupération des informations classe/école: $e');
+    }
+  }
+
+  /// Met à jour le SchoolService avec les informations de l'école et l'ID Vie École
+  Future<void> _updateSchoolServiceWithVieEcoleId(StudentClassInfo studentClassInfo) async {
+    try {
+      // Importer SchoolService ici pour éviter les dépendances circulaires
+      final schoolService = SchoolService();
+      
+      // Créer les données de l'école au format attendu par SchoolService
+      final schoolData = {
+        'id': studentClassInfo.ecole.id,
+        'libelle': studentClassInfo.ecole.libelle,
+        'code': studentClassInfo.ecole.code,
+        'identifiantVieEcole': studentClassInfo.identifiantVieEcole,
+        // Ajouter d'autres champs si nécessaire
+        'tel': null,
+        'nomSignataire': null,
+      };
+      
+      await schoolService.updateSchoolData(schoolData);
+      print('✅ SchoolService mis à jour avec le nouvel ID Vie École: ${studentClassInfo.identifiantVieEcole}');
+    } catch (e) {
+      print('⚠️ Impossible de mettre à jour le SchoolService: $e');
+      // Ne pas lancer d'exception pour ne pas bloquer le processus principal
     }
   }
 }

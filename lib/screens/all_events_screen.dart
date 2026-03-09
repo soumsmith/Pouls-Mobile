@@ -5,22 +5,7 @@ import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
 import '../services/events_service.dart';
 
-// ─── Design tokens (identiques à EstablishmentScreen) ────────────────────────
-const _kOrange      = Color(0xFFFF6B2C);
-const _kOrangeLight = Color(0xFFFFF0E8);
-const _kSurface     = Color(0xFFF8F8F8);
-const _kCard        = Colors.white;
-
-const _kCardShadow = [
-  BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
-  BoxShadow(color: Color(0x06000000), blurRadius: 4,  offset: Offset(0, 1)),
-];
-
-const _kOrangeGradient = LinearGradient(
-  colors: [Color(0xFFFF7A3C), _kOrange],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
+// ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
 // ─── Couleur par statut d'événement ──────────────────────────────────────────
 Color _statusColor(String status) {
@@ -29,7 +14,7 @@ Color _statusColor(String status) {
     case "aujourd'hui":    return const Color(0xFF10B981);
     case 'cette semaine':  return const Color(0xFF8B5CF6);
     case 'passés':         return const Color(0xFF9CA3AF);
-    default:               return _kOrange;
+    default:               return AppColors.screenOrange;
   }
 }
 
@@ -119,7 +104,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     ));
 
     return Scaffold(
-      backgroundColor: _kSurface,
+      backgroundColor: AppColors.screenSurface,
       body: Column(
         children: [
           _buildHeader(),
@@ -134,7 +119,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   // ── Header ───────────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
-      color: _kCard,
+      color: AppColors.screenCard,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 8,
         left: 20,
@@ -150,9 +135,9 @@ class _AllEventsScreenState extends State<AllEventsScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _kCard,
+                color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: _kCardShadow,
+                boxShadow: AppColors.screenCardShadow,
               ),
               child: const Icon(Icons.arrow_back_ios_new_rounded,
                   size: 18, color: Color(0xFF1A1A1A)),
@@ -184,9 +169,9 @@ class _AllEventsScreenState extends State<AllEventsScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _kCard,
+                color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: _kCardShadow,
+                boxShadow: AppColors.screenCardShadow,
               ),
               child: Icon(
                 _isSearching ? Icons.close_rounded : Icons.search_rounded,
@@ -206,18 +191,18 @@ class _AllEventsScreenState extends State<AllEventsScreen>
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       height: _isSearching ? 60 : 0,
-      color: _kCard,
+      color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: _isSearching
           ? Container(
               height: 44,
               decoration: BoxDecoration(
-                color: _kSurface,
+                color: AppColors.screenSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _kOrange.withOpacity(0.4)),
+                border: Border.all(color: AppColors.screenOrange.withOpacity(0.4)),
                 boxShadow: [
                   BoxShadow(
-                    color: _kOrange.withOpacity(0.08),
+                    color: AppColors.screenOrange.withOpacity(0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -232,7 +217,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                   hintStyle:
                       TextStyle(color: Colors.grey[400], fontSize: 14),
                   prefixIcon: const Icon(Icons.search_rounded,
-                      size: 18, color: _kOrange),
+                      size: 18, color: AppColors.screenOrange),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? GestureDetector(
                           onTap: () =>
@@ -254,7 +239,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   // ── Filtres ──────────────────────────────────────────────
   Widget _buildFilterRow() {
     return Container(
-      color: _kCard,
+      color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: SizedBox(
         height: 36,
@@ -277,13 +262,13 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    gradient: selected ? _kOrangeGradient : null,
-                    color: selected ? null : _kSurface,
+                    gradient: selected ? AppColors.screenOrangeGradient : null,
+                    color: selected ? null : AppColors.screenSurface,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: selected
                         ? [
                             BoxShadow(
-                              color: _kOrange.withOpacity(0.30),
+                              color: AppColors.screenOrange.withOpacity(0.30),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             )
@@ -327,13 +312,13 @@ class _AllEventsScreenState extends State<AllEventsScreen>
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: _kOrangeLight,
+              color: AppColors.screenOrangeLight,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Padding(
               padding: EdgeInsets.all(14),
               child: CircularProgressIndicator(
-                  color: _kOrange, strokeWidth: 2.5),
+                  color: AppColors.screenOrange, strokeWidth: 2.5),
             ),
           ),
           const SizedBox(height: 16),
@@ -389,11 +374,11 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                 padding: const EdgeInsets.symmetric(
                     horizontal: 24, vertical: 14),
                 decoration: BoxDecoration(
-                  gradient: _kOrangeGradient,
+                  gradient: AppColors.screenOrangeGradient,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: _kOrange.withOpacity(0.3),
+                      color: AppColors.screenOrange.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -441,7 +426,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: _kOrange,
+                                color: AppColors.screenOrange,
                               ),
                             ),
                             const TextSpan(
@@ -472,7 +457,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: _kOrangeLight,
+                              color: AppColors.screenOrangeLight,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -483,12 +468,12 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: _kOrange,
+                                    color: AppColors.screenOrange,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 const Icon(Icons.close_rounded,
-                                    size: 12, color: _kOrange),
+                                    size: 12, color: AppColors.screenOrange),
                               ],
                             ),
                           ),
@@ -510,11 +495,11 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: _kOrangeLight,
+                            color: AppColors.screenOrangeLight,
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: const Icon(Icons.event_busy_rounded,
-                              size: 40, color: _kOrange),
+                              size: 40, color: AppColors.screenOrange),
                         ),
                         const SizedBox(height: 20),
                         const Text(
@@ -541,11 +526,11 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 12),
                             decoration: BoxDecoration(
-                              gradient: _kOrangeGradient,
+                              gradient: AppColors.screenOrangeGradient,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _kOrange.withOpacity(0.3),
+                                  color: AppColors.screenOrange.withOpacity(0.3),
                                   blurRadius: 6,
                                   offset: const Offset(0, 3),
                                 ),
@@ -627,7 +612,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0x00F8F8F8), _kSurface],
+                  colors: [Color(0x00F8F8F8), AppColors.screenSurface],
                 ),
               ),
             ),
@@ -675,9 +660,9 @@ class _EventCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: _kCard,
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: _kCardShadow,
+          boxShadow: AppColors.screenCardShadow,
         ),
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -979,7 +964,7 @@ class _EventDetailSheetState extends State<_EventDetailSheet> {
         final maxH = MediaQuery.of(context).size.height * 0.90;
         return Container(
       decoration: const BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       constraints: BoxConstraints(maxHeight: maxH),
@@ -1136,7 +1121,7 @@ class _EventDetailSheetState extends State<_EventDetailSheet> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: _kOrange,
+                              color: AppColors.screenOrange,
                             ),
                           ),
                         ],
@@ -1145,7 +1130,7 @@ class _EventDetailSheetState extends State<_EventDetailSheet> {
                       // Sélecteur quantité
                       Container(
                         decoration: BoxDecoration(
-                          color: _kSurface,
+                          color: AppColors.screenSurface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                               color: const Color(0xFFE5E7EB)),
@@ -1202,7 +1187,7 @@ class _EventDetailSheetState extends State<_EventDetailSheet> {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: _kOrange,
+                          color: AppColors.screenOrange,
                         ),
                       ),
                     ],
@@ -1218,11 +1203,11 @@ class _EventDetailSheetState extends State<_EventDetailSheet> {
                       padding:
                           const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        gradient: _kOrangeGradient,
+                        gradient: AppColors.screenOrangeGradient,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: _kOrange.withOpacity(0.35),
+                            color: AppColors.screenOrange.withOpacity(0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 5),
                           ),
@@ -1375,7 +1360,7 @@ class _QtyButton extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           color: active && enabled
-              ? _kOrangeLight
+              ? AppColors.screenOrangeLight
               : const Color(0xFFF0F0F0),
           borderRadius: BorderRadius.circular(10),
         ),
@@ -1383,7 +1368,7 @@ class _QtyButton extends StatelessWidget {
           icon,
           size: 16,
           color: enabled
-              ? (active ? _kOrange : const Color(0xFF444444))
+              ? (active ? AppColors.screenOrange : const Color(0xFF444444))
               : const Color(0xFFCCCCCC),
         ),
       ),

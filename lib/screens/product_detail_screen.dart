@@ -9,15 +9,7 @@ import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
 import '../widgets/custom_button.dart';
 
-// ─── DESIGN TOKENS (même palette que CartScreen & OrdersScreen) ───────────────
-const _kOrange = Color(0xFFFF6B2C);
-const _kOrangeLight = Color(0xFFFFF0E8);
-const _kSurface = Color(0xFFF8F8F8);
-const _kCard = Colors.white;
-const _kTextPrimary = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF8A8A8A);
-const _kDivider = Color(0xFFF0F0F0);
-const _kShadow = Color(0x0D000000);
+// ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -110,11 +102,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: _kSurface,
+        backgroundColor: AppColors.screenSurface,
         body: _isDetailLoading
             ? const Center(
                 child: CircularProgressIndicator(
-                    color: _kOrange, strokeWidth: 2.5),
+                    color: AppColors.screenOrangeLight,
+                    strokeWidth: 2.5),
               )
             : FadeTransition(
                 opacity: _fadeAnimation,
@@ -147,7 +140,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return SliverAppBar(
       expandedHeight: 280,
       pinned: true,
-      backgroundColor: _kCard,
+      backgroundColor: AppColors.screenCard,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       leading: Padding(
@@ -158,15 +151,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: _kCard,
+              color: AppColors.screenCard,
               borderRadius: BorderRadius.circular(12),
               boxShadow: const [
                 BoxShadow(
-                    color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                    color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
               ],
             ),
             child: const Icon(Icons.arrow_back_ios_new,
-                size: 15, color: _kTextPrimary),
+                size: 15, color: AppColors.screenTextPrimary),
           ),
         ),
       ),
@@ -179,15 +172,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _kCard,
+                color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: const [
                   BoxShadow(
-                      color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                      color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
                 ],
               ),
               child: const Icon(Icons.share_outlined,
-                  size: 16, color: _kTextPrimary),
+                  size: 16, color: AppColors.screenTextPrimary),
             ),
           ),
         ),
@@ -278,7 +271,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: _kShadow, blurRadius: 6, offset: Offset(0, 2))
+          BoxShadow(color: AppColors.screenShadow, blurRadius: 6, offset: Offset(0, 2))
         ],
       ),
       child: Row(
@@ -341,7 +334,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: _kTextPrimary,
+                  color: AppColors.screenTextPrimary,
                   letterSpacing: -0.6,
                   height: 1.2,
                 ),
@@ -351,7 +344,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 product.subtitle,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: _kTextSecondary,
+                  color: AppColors.screenTextSecondary,
                   fontWeight: FontWeight.w400,
                   height: 1.4,
                 ),
@@ -369,7 +362,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
-                  color: _kOrange,
+                  color: AppColors.screenOrange,
                   letterSpacing: -1,
                 ),
               ),
@@ -377,7 +370,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 'FCFA / unité',
                 style: TextStyle(
                   fontSize: 11,
-                  color: _kTextSecondary,
+                  color: AppColors.screenTextSecondary,
                 ),
               ),
             ],
@@ -393,11 +386,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kDivider),
+        border: Border.all(color: AppColors.screenDivider),
         boxShadow: const [
-          BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+          BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -405,14 +398,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         children: [
           Row(
             children: const [
-              Icon(Icons.info_outline_rounded, size: 16, color: _kOrange),
+              Icon(Icons.info_outline_rounded, size: 16, color: AppColors.screenOrange),
               SizedBox(width: 8),
               Text(
                 'Description',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: _kTextPrimary,
+                  color: AppColors.screenTextPrimary,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -423,7 +416,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             product.description,
             style: const TextStyle(
               fontSize: 13,
-              color: _kTextSecondary,
+              color: AppColors.screenTextSecondary,
               height: 1.6,
             ),
           ),
@@ -489,24 +482,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kDivider),
+        border: Border.all(color: AppColors.screenDivider),
         boxShadow: const [
-          BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+          BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
         children: [
           const Icon(Icons.shopping_bag_outlined,
-              size: 18, color: _kTextSecondary),
+              size: 18, color: AppColors.screenTextSecondary),
           const SizedBox(width: 10),
           const Text(
             'Quantité',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: _kTextPrimary,
+              color: AppColors.screenTextPrimary,
               letterSpacing: -0.2,
             ),
           ),
@@ -523,7 +516,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 34,
                   decoration: BoxDecoration(
                     color: _quantity > 1
-                        ? _kSurface
+                        ? AppColors.screenSurface
                         : const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -531,7 +524,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     Icons.remove,
                     size: 16,
                     color: _quantity > 1
-                        ? _kTextPrimary
+                        ? AppColors.screenTextPrimary
                         : const Color(0xFFCCCCCC),
                   ),
                 ),
@@ -544,7 +537,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: _kTextPrimary,
+                    color: AppColors.screenTextPrimary,
                   ),
                 ),
               ),
@@ -557,7 +550,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 34,
                   decoration: BoxDecoration(
                     color: _quantity < product.stockQuantity
-                        ? _kOrange
+                        ? AppColors.screenOrange
                         : const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -583,7 +576,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
     return Container(
       decoration: const BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
@@ -606,7 +599,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: _kDivider,
+                    color: AppColors.screenDivider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -620,7 +613,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       const Text(
                         'Total',
                         style:
-                            TextStyle(fontSize: 13, color: _kTextSecondary),
+                            TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -628,7 +621,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
-                          color: _kTextPrimary,
+                          color: AppColors.screenTextPrimary,
                           letterSpacing: -0.8,
                         ),
                       ),
@@ -659,7 +652,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   Widget _buildFreeServiceAction(Product product, Color primaryColor) {
     return Container(
       decoration: const BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
@@ -681,7 +674,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: _kDivider,
+                    color: AppColors.screenDivider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -714,7 +707,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         decoration: BoxDecoration(
           gradient: enabled
               ? const LinearGradient(
-                  colors: [Color(0xFFFF7A3C), _kOrange],
+                  colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
@@ -724,7 +717,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: _kOrange.withOpacity(0.35),
+                    color: AppColors.screenOrange.withOpacity(0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -747,14 +740,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   children: [
                     Icon(icon,
                         size: 18,
-                        color: enabled ? Colors.white : _kTextSecondary),
+                        color: enabled ? Colors.white : AppColors.screenTextSecondary),
                     const SizedBox(width: 8),
                     Text(
                       label,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: enabled ? Colors.white : _kTextSecondary,
+                        color: enabled ? Colors.white : AppColors.screenTextSecondary,
                         letterSpacing: 0.2,
                       ),
                     ),

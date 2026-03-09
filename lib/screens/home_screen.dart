@@ -11,15 +11,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import 'add_child_screen.dart';
 
-// ─── DESIGN TOKENS (alignés sur CartScreen) ───────────────────────────────
-const _kOrange      = Color(0xFFFF6B2C);
-const _kOrangeLight = Color(0xFFFFF0E8);
-const _kSurface     = Color(0xFFF8F8F8);
-const _kCard        = Colors.white;
-const _kTextPrimary = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF8A8A8A);
-const _kDivider     = Color(0xFFF0F0F0);
-const _kShadow      = Color(0x0D000000);
+// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
 /// Écran d'accueil avec liste des enfants
 class HomeScreen extends StatefulWidget {
@@ -142,14 +134,14 @@ class _HomeScreenState extends State<HomeScreen> {
       shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,
-      color: _kCard,
+      color: AppColors.screenCard,
       items: [
         _shareMenuItem(Icons.email, Colors.red, 'Partager par mail', 'mail'),
         _shareMenuItem(
             Icons.message, Colors.green, 'Partager par WhatsApp', 'whatsapp'),
         _shareMenuItem(
             Icons.facebook, Colors.blue, 'Partager sur Facebook', 'facebook'),
-        _shareMenuItem(Icons.share, _kTextSecondary, 'Autres options', 'other'),
+        _shareMenuItem(Icons.share, AppColors.screenTextSecondary, 'Autres options', 'other'),
       ],
     ).then((value) {
       if (value != null) _handleShareAction(value);
@@ -166,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(label,
             style: const TextStyle(
                 fontSize: 14,
-                color: _kTextPrimary,
+                color: AppColors.screenTextPrimary,
                 fontWeight: FontWeight.w500)),
       ]),
     );
@@ -216,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
       value: SystemUiOverlayStyle.dark
           .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: _kSurface,
+        backgroundColor: AppColors.screenSurface,
         body: Column(
           children: [
             _buildAppBar(),
@@ -230,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── APP BAR ───────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
     return Container(
-      color: _kSurface,
+      color: AppColors.screenSurface,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -243,12 +235,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pouls École',
+                      'Parent responsable',
                       style: TextStyle(
                         fontSize:
                             _textSizeService.getScaledFontSize(22),
                         fontWeight: FontWeight.w800,
-                        color: _kTextPrimary,
+                        color: AppColors.screenTextPrimary,
                         letterSpacing: -0.6,
                       ),
                     ),
@@ -257,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize:
                             _textSizeService.getScaledFontSize(12),
-                        color: _kTextSecondary,
+                        color: AppColors.screenTextSecondary,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -292,13 +284,13 @@ class _HomeScreenState extends State<HomeScreen> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: _kCard,
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
-            BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+            BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
           ],
         ),
-        child: Icon(icon, size: 18, color: _kOrange),
+        child: Icon(icon, size: 18, color: AppColors.screenOrange),
       ),
     );
   }
@@ -322,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(22),
                     fontWeight: FontWeight.w800,
-                    color: _kTextPrimary,
+                    color: AppColors.screenTextPrimary,
                     letterSpacing: -0.6,
                     height: 1.25,
                   ),
@@ -341,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: Container(
             decoration: const BoxDecoration(
-              color: _kCard,
+              color: AppColors.screenCard,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
@@ -359,7 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(top: 12, bottom: 4),
                     decoration: BoxDecoration(
-                      color: _kDivider,
+                      color: AppColors.screenDivider,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -383,53 +375,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── STATS GRID ────────────────────────────────────────────────────────────
   Widget _buildStatsGrid() {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.child_care_rounded,
-                color: const Color(0xFF4A90D9),
-                value: '${_children.length}',
-                label:
-                    'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.grade_rounded,
-                color: const Color(0xFF27AE60),
-                value: _getAverageGradeDisplay(),
-                label: 'Niveau moyen',
-              ),
-            ),
-          ],
+        Expanded(
+          child: _buildStatCard(
+            icon: Icons.child_care_rounded,
+            color: const Color(0xFF4A90D9),
+            value: '${_children.length}',
+            label:
+                'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
+          ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.school_rounded,
-                color: _kOrange,
-                value: '${_getUniqueSchoolsCount()}',
-                label:
-                    'École${_getUniqueSchoolsCount() > 1 ? 's' : ''}',
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.class_rounded,
-                color: const Color(0xFF8E44AD),
-                value: '${_getUniqueClassesCount()}',
-                label:
-                    'Classe${_getUniqueClassesCount() > 1 ? 's' : ''}',
-              ),
-            ),
-          ],
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildStatCard(
+            icon: Icons.grade_rounded,
+            color: const Color(0xFF27AE60),
+            value: _getAverageGradeDisplay(),
+            label: 'Niveau moyen',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildStatCard(
+            icon: Icons.school_rounded,
+            color: AppColors.screenOrange,
+            value: '${_getUniqueSchoolsCount()}',
+            label:
+                'École${_getUniqueSchoolsCount() > 1 ? 's' : ''}',
+          ),
         ),
       ],
     );
@@ -444,10 +418,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4)),
+          BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -468,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
               fontSize: _textSizeService.getScaledFontSize(22),
               fontWeight: FontWeight.w800,
-              color: _kTextPrimary,
+              color: AppColors.screenTextPrimary,
               letterSpacing: -0.5,
             ),
           ),
@@ -477,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
             label,
             style: TextStyle(
               fontSize: _textSizeService.getScaledFontSize(11),
-              color: _kTextSecondary,
+              color: AppColors.screenTextSecondary,
               fontWeight: FontWeight.w400,
             ),
           ),
@@ -497,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
               fontSize: _textSizeService.getScaledFontSize(17),
               fontWeight: FontWeight.w700,
-              color: _kTextPrimary,
+              color: AppColors.screenTextPrimary,
               letterSpacing: -0.3,
             ),
           ),
@@ -515,14 +489,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFFF7A3C), _kOrange],
+                colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: _kOrange.withOpacity(0.3),
+                  color: AppColors.screenOrange.withOpacity(0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -554,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildChildrenContent() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: _kOrange, strokeWidth: 2.5),
+        child: CircularProgressIndicator(color: AppColors.screenOrange, strokeWidth: 2.5),
       );
     }
 
@@ -595,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(17),
                 fontWeight: FontWeight.w700,
-                color: _kTextPrimary,
+                color: AppColors.screenTextPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -604,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(13),
-                color: _kTextSecondary,
+                color: AppColors.screenTextSecondary,
                 height: 1.5,
               ),
             ),
@@ -629,11 +603,11 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 90,
               height: 90,
               decoration: const BoxDecoration(
-                color: _kOrangeLight,
+                color: AppColors.screenOrangeLight,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.child_care_rounded,
-                  size: 44, color: _kOrange),
+                  size: 44, color: AppColors.screenOrange),
             ),
             const SizedBox(height: 24),
             Text(
@@ -641,7 +615,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(19),
                 fontWeight: FontWeight.w700,
-                color: _kTextPrimary,
+                color: AppColors.screenTextPrimary,
               ),
             ),
             const SizedBox(height: 10),
@@ -650,7 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(13),
-                color: _kTextSecondary,
+                color: AppColors.screenTextSecondary,
                 height: 1.5,
               ),
             ),
@@ -682,8 +656,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    _kCard.withOpacity(0),
-                    _kCard,
+                    AppColors.screenCard.withOpacity(0),
+                    AppColors.screenCard,
                   ],
                 ),
               ),
@@ -701,11 +675,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: _kCard,
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
-                color: _kShadow, blurRadius: 12, offset: Offset(0, 4)),
+                color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
           ],
         ),
         child: Padding(
@@ -720,7 +694,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 56,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFFFF7A3C), _kOrange],
+                      colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -752,7 +726,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize:
                             _textSizeService.getScaledFontSize(15),
                         fontWeight: FontWeight.w700,
-                        color: _kTextPrimary,
+                        color: AppColors.screenTextPrimary,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -764,7 +738,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize:
                             _textSizeService.getScaledFontSize(12),
-                        color: _kTextSecondary,
+                        color: AppColors.screenTextSecondary,
                         fontWeight: FontWeight.w400,
                       ),
                       maxLines: 1,
@@ -776,7 +750,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _kOrangeLight,
+                        color: AppColors.screenOrangeLight,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -786,7 +760,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize:
                               _textSizeService.getScaledFontSize(11),
-                          color: _kOrange,
+                          color: AppColors.screenOrange,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -800,11 +774,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: _kOrangeLight,
+                  color: AppColors.screenOrangeLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.arrow_forward_ios_rounded,
-                    color: _kOrange, size: 14),
+                    color: AppColors.screenOrange, size: 14),
               ),
             ],
           ),
@@ -827,14 +801,14 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 52,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFF7A3C), _kOrange],
+            colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: _kOrange.withOpacity(0.35),
+              color: AppColors.screenOrange.withOpacity(0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),

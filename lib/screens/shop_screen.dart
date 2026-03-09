@@ -16,15 +16,7 @@ import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
 
-// ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
-const _kOrange = Color(0xFFFF6B2C);
-const _kOrangeLight = Color(0xFFFFF0E8);
-const _kSurface = Color(0xFFF8F8F8);
-const _kCard = Colors.white;
-const _kTextPrimary = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF8A8A8A);
-const _kDivider = Color(0xFFF0F0F0);
-const _kShadow = Color(0x0D000000);
+// ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
 
 class LibraryScreen extends StatefulWidget implements MainScreenChild {
   const LibraryScreen({super.key});
@@ -168,7 +160,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: _kSurface,
+        backgroundColor: AppColors.screenSurface,
         body: Column(
           children: [
             _buildAppBar(),
@@ -185,7 +177,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   // ─── APP BAR ───────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
     return Container(
-      color: _kSurface,
+      color: AppColors.screenSurface,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -199,17 +191,17 @@ class _LibraryScreenState extends State<LibraryScreen>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: _kCard,
+                    color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
                       BoxShadow(
-                          color: _kShadow,
+                          color: AppColors.screenShadow,
                           blurRadius: 8,
                           offset: Offset(0, 2)),
                     ],
                   ),
                   child: const Icon(Icons.arrow_back_ios_new,
-                      size: 16, color: _kTextPrimary),
+                      size: 16, color: AppColors.screenTextPrimary),
                 ),
               ),
               const SizedBox(width: 12),
@@ -221,7 +213,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: _kTextPrimary,
+                    color: AppColors.screenTextPrimary,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -230,8 +222,8 @@ class _LibraryScreenState extends State<LibraryScreen>
               // Search button
               _appBarIconButton(
                 icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
-                color: _isSearching ? _kOrange : _kTextPrimary,
-                bgColor: _isSearching ? _kOrangeLight : _kCard,
+                color: _isSearching ? AppColors.screenOrange : AppColors.screenTextPrimary,
+                bgColor: _isSearching ? AppColors.screenOrangeLight : AppColors.screenCard,
                 onTap: () {
                   setState(() {
                     _isSearching = !_isSearching;
@@ -247,10 +239,10 @@ class _LibraryScreenState extends State<LibraryScreen>
               // Cart button
               _appBarIconButton(
                 icon: Icons.shopping_bag_outlined,
-                color: _kTextPrimary,
-                bgColor: _kCard,
+                color: AppColors.screenTextPrimary,
+                bgColor: AppColors.screenCard,
                 badge: _cartItemCount > 0 ? '$_cartItemCount' : null,
-                badgeColor: _kOrange,
+                badgeColor: AppColors.screenOrange,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -264,8 +256,8 @@ class _LibraryScreenState extends State<LibraryScreen>
               // Orders button
               _appBarIconButton(
                 icon: Icons.receipt_long_outlined,
-                color: _kTextPrimary,
-                bgColor: _kCard,
+                color: AppColors.screenTextPrimary,
+                bgColor: AppColors.screenCard,
                 badge: _ordersCount > 0
                     ? (_ordersCount > 99 ? '99+' : '$_ordersCount')
                     : null,
@@ -306,7 +298,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               borderRadius: BorderRadius.circular(12),
               boxShadow: const [
                 BoxShadow(
-                    color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                    color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
               ],
             ),
             child: Icon(icon, size: 18, color: color),
@@ -318,9 +310,9 @@ class _LibraryScreenState extends State<LibraryScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: badgeColor ?? _kOrange,
+                  color: badgeColor ?? AppColors.screenOrange,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _kSurface, width: 1.5),
+                  border: Border.all(color: AppColors.screenSurface, width: 1.5),
                 ),
                 child: Text(
                   badge,
@@ -351,12 +343,12 @@ class _LibraryScreenState extends State<LibraryScreen>
           child: Container(
             height: 48,
             decoration: BoxDecoration(
-              color: _kCard,
+              color: AppColors.screenCard,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _kOrange, width: 1.5),
+              border: Border.all(color: AppColors.screenOrange, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: _kOrange.withOpacity(0.12),
+                  color: AppColors.screenOrange.withOpacity(0.12),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -367,13 +359,13 @@ class _LibraryScreenState extends State<LibraryScreen>
               autofocus: _isSearching,
               onChanged: (_) => _applyFilters(),
               style: const TextStyle(
-                  fontSize: 14, color: _kTextPrimary, fontWeight: FontWeight.w500),
+                  fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: 'Rechercher un produit...',
                 hintStyle: const TextStyle(
                     fontSize: 13, color: Color(0xFFBBBBBB)),
                 prefixIcon:
-                    const Icon(Icons.search_rounded, color: _kOrange, size: 18),
+                    const Icon(Icons.search_rounded, color: AppColors.screenOrange, size: 18),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? GestureDetector(
                         onTap: () {
@@ -381,7 +373,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                           _applyFilters();
                         },
                         child: const Icon(Icons.close_rounded,
-                            color: _kTextSecondary, size: 18),
+                            color: AppColors.screenTextSecondary, size: 18),
                       )
                     : null,
                 border: InputBorder.none,
@@ -396,66 +388,63 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   // ─── FILTER TABS ───────────────────────────────────────────────────────────
   Widget _buildFilterTabs() {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _filters.length,
-        itemBuilder: (context, index) {
-          final filter = _filters[index];
-          final isSelected = filter == _selectedFilter;
-
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedFilter = filter;
-                _applyFilters();
-              });
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? const LinearGradient(
-                        colors: [Color(0xFFFF7A3C), _kOrange],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: isSelected ? null : _kCard,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: _kOrange.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : [
-                        const BoxShadow(
-                          color: _kShadow,
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
-              ),
-              child: Text(
-                filter,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? Colors.white : _kTextSecondary,
+    return Container(
+      color: AppColors.screenCard,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _filters.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (_, i) {
+            final f = _filters[i];
+            final selected = f == _selectedFilter;
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: Duration(milliseconds: 300 + i * 40),
+              builder: (_, v, child) => Opacity(opacity: v, child: child),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedFilter = f;
+                    _applyFilters();
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: selected ? AppColors.screenOrangeGradient : null,
+                    color: selected ? null : AppColors.screenSurface,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.screenOrange.withOpacity(0.30),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            )
+                          ]
+                        : [],
+                  ),
+                  child: Text(
+                    f,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected
+                          ? Colors.white
+                          : const Color(0xFF666666),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -470,7 +459,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             '${_filteredProducts.length} résultat${_filteredProducts.length > 1 ? 's' : ''}',
             style: const TextStyle(
               fontSize: 13,
-              color: _kTextSecondary,
+              color: AppColors.screenTextSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -480,7 +469,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: _kOrangeLight,
+                color: AppColors.screenOrangeLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -490,7 +479,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                     _selectedFilter,
                     style: const TextStyle(
                       fontSize: 11,
-                      color: _kOrange,
+                      color: AppColors.screenOrange,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -503,7 +492,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       });
                     },
                     child: const Icon(Icons.close_rounded,
-                        size: 12, color: _kOrange),
+                        size: 12, color: AppColors.screenOrange),
                   ),
                 ],
               ),
@@ -518,7 +507,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _buildGrid() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: _kOrange, strokeWidth: 2.5),
+        child: CircularProgressIndicator(color: AppColors.screenOrange, strokeWidth: 2.5),
       );
     }
 
@@ -564,8 +553,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      _kSurface.withOpacity(0),
-                      _kSurface,
+                      AppColors.screenSurface.withOpacity(0),
+                      AppColors.screenSurface,
                     ],
                   ),
                 ),
@@ -587,11 +576,11 @@ class _LibraryScreenState extends State<LibraryScreen>
             width: 90,
             height: 90,
             decoration: const BoxDecoration(
-              color: _kOrangeLight,
+              color: AppColors.screenOrangeLight,
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.search_off_rounded,
-                size: 44, color: _kOrange),
+                size: 44, color: AppColors.screenOrange),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -599,7 +588,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: _kTextPrimary,
+              color: AppColors.screenTextPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -608,7 +597,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: _kTextSecondary,
+              color: AppColors.screenTextSecondary,
               height: 1.5,
             ),
           ),
@@ -626,14 +615,14 @@ class _LibraryScreenState extends State<LibraryScreen>
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFFF7A3C), _kOrange],
+                  colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: _kOrange.withOpacity(0.3),
+                    color: AppColors.screenOrange.withOpacity(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -681,10 +670,10 @@ class _LibraryScreenState extends State<LibraryScreen>
         },
         child: Container(
           decoration: BoxDecoration(
-            color: _kCard,
+            color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(18),
             boxShadow: const [
-              BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4)),
+              BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
             ],
           ),
           child: Column(
@@ -721,7 +710,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                           border: Border.all(color: Colors.white, width: 1.5),
                           boxShadow: const [
                             BoxShadow(
-                                color: _kShadow,
+                                color: AppColors.screenShadow,
                                 blurRadius: 4,
                                 offset: Offset(0, 1)),
                           ],
@@ -745,7 +734,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: _kTextPrimary,
+                          color: AppColors.screenTextPrimary,
                           letterSpacing: -0.2,
                           height: 1.2,
                         ),
@@ -757,7 +746,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         product.subtitle,
                         style: const TextStyle(
                           fontSize: 11,
-                          color: _kTextSecondary,
+                          color: AppColors.screenTextSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -789,7 +778,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                               '${product.price.toStringAsFixed(0)} F',
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: _kOrange,
+                                color: AppColors.screenOrange,
                                 fontWeight: FontWeight.w800,
                               ),
                             )

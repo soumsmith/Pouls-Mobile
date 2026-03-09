@@ -180,48 +180,57 @@ class _TutorScreenState extends State<TutorScreen> {
           
           // Filter Tabs
           Container(
-            height: 35,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _filters.length,
-              itemBuilder: (context, index) {
-                final filter = _filters[index];
-                final isSelected = filter == _selectedFilter;
-                final theme = Theme.of(context);
-                final isDark = theme.brightness == Brightness.dark;
-                
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedFilter = filter),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: isSelected ? AppColors.primaryGradient : null,
-                      color: !isSelected ? AppColors.getSurfaceColor(isDark) : null,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: isSelected
-                          ? [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+            color: AppColors.screenCard,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            child: SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _filters.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final f = _filters[i];
+                  final selected = f == _selectedFilter;
+                  return TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: Duration(milliseconds: 300 + i * 40),
+                    builder: (_, v, child) => Opacity(opacity: v, child: child),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedFilter = f),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: selected ? AppColors.screenOrangeGradient : null,
+                          color: selected ? null : AppColors.screenSurface,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: selected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.screenOrange.withOpacity(0.30),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : [],
                         ),
-                      ]
-                          : [],
-                    ),
-                    child: Text(
-                      filter,
-                      style: AppTypography.overline.copyWith(
-                        color: isSelected 
-                          ? Colors.white 
-                          : AppColors.getTextColor(isDark),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        child: Text(
+                          f,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w500,
+                            color: selected
+                                ? Colors.white
+                                : const Color(0xFF666666),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
           

@@ -29,28 +29,6 @@ import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
 import 'all_events_screen.dart';
 
-// ─── Design tokens (aligned with CartScreen) ─────────────────────────────────
-const _kOrange      = Color(0xFFFF6B2C);
-const _kOrangeLight = Color(0xFFFFF0E8);
-const _kSurface     = Color(0xFFF8F8F8);
-const _kCard        = Colors.white;
-const _kTextPrimary   = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF8A8A8A);
-const _kDivider       = Color(0xFFF0F0F0);
-const _kShadow        = Color(0x0D000000);
-
-const _kCardShadow = [
-  BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
-  BoxShadow(color: Color(0x06000000), blurRadius: 4,  offset: Offset(0, 1)),
-];
-
-const _kOrangeGradient = LinearGradient(
-  colors: [Color(0xFFFF7A3C), _kOrange],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
-
-
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
   final IconData icon;
@@ -262,7 +240,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         builder: (context, _) {
           final isDark = _themeService.isDarkMode;
           return Scaffold(
-            backgroundColor: isDark ? const Color(0xFF0F0F0F) : _kSurface,
+            backgroundColor: isDark ? const Color(0xFF0F0F0F) : AppColors.screenSurface,
             body: FadeTransition(
               opacity: _fadeAnimation,
               child: CustomScrollView(
@@ -286,7 +264,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       pinned: true,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      backgroundColor: isDark ? const Color(0xFF1A1A1A) : _kSurface,
+      backgroundColor: isDark ? const Color(0xFF1A1A1A) : AppColors.screenSurface,
       leading: GestureDetector(
         onTap: () {
           if (MainScreenWrapper.maybeOf(context) != null) {
@@ -298,11 +276,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2A2A2A) : _kCard,
+            color: isDark ? const Color(0xFF2A2A2A) : AppColors.screenCard,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2))],
+            boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2))],
           ),
-          child: Icon(Icons.arrow_back_ios_new, size: 16, color: isDark ? Colors.white : _kTextPrimary),
+          child: Icon(Icons.arrow_back_ios_new, size: 16, color: isDark ? Colors.white : AppColors.screenTextPrimary),
         ),
       ),
       title: Text(
@@ -310,7 +288,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         style: TextStyle(
           fontSize: _textSizeService.getScaledFontSize(18),
           fontWeight: FontWeight.w700,
-          color: isDark ? Colors.white : _kTextPrimary,
+          color: isDark ? Colors.white : AppColors.screenTextPrimary,
           letterSpacing: -0.5,
         ),
       ),
@@ -329,11 +307,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         width: 40, height: 40,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2A2A2A) : _kCard,
+          color: isDark ? const Color(0xFF2A2A2A) : AppColors.screenCard,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2))],
+          boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2))],
         ),
-        child: Icon(icon, size: 18, color: isDark ? Colors.white70 : _kTextPrimary),
+        child: Icon(icon, size: 18, color: isDark ? Colors.white70 : AppColors.screenTextPrimary),
       ),
     );
   }
@@ -362,14 +340,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Container(width: 3, height: 18, decoration: BoxDecoration(color: _kOrange, borderRadius: BorderRadius.circular(2))),
+          Container(width: 3, height: 18, decoration: BoxDecoration(color: AppColors.screenOrange, borderRadius: BorderRadius.circular(2))),
           const SizedBox(width: 10),
           Text(
             title,
             style: TextStyle(
               fontSize: _textSizeService.getScaledFontSize(16),
               fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : _kTextPrimary,
+              color: isDark ? Colors.white : AppColors.screenTextPrimary,
               letterSpacing: -0.3,
             ),
           ),
@@ -393,7 +371,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : _kCard,
+          color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [
             BoxShadow(color: Color(0x12000000), blurRadius: 20, offset: Offset(0, 6)),
@@ -457,7 +435,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(20),
                       fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : _kTextPrimary,
+                      color: isDark ? Colors.white : AppColors.screenTextPrimary,
                       letterSpacing: -0.6,
                     ),
                   ),
@@ -466,7 +444,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     motto,
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(13),
-                      color: _kOrange,
+                      color: AppColors.screenOrange,
                       fontStyle: FontStyle.italic,
                       fontWeight: FontWeight.w500,
                     ),
@@ -494,14 +472,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   Widget _infoRow(IconData icon, String text, bool isDark) => Row(
     children: [
-      Icon(icon, size: 14, color: _kOrange),
+      Icon(icon, size: 14, color: AppColors.screenOrange),
       const SizedBox(width: 6),
       Expanded(
         child: Text(
           text,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : _kTextSecondary, fontWeight: FontWeight.w400),
+          style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : AppColors.screenTextSecondary, fontWeight: FontWeight.w400),
         ),
       ),
     ],
@@ -539,9 +517,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           width: 90,
           margin: const EdgeInsets.only(right: 12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : _kCard,
+            color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
             borderRadius: BorderRadius.circular(18),
-            boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+            boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -560,7 +538,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : _kTextPrimary,
+                  color: isDark ? Colors.white : AppColors.screenTextPrimary,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -609,9 +587,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
             height: 100,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : _kCard,
+              color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+              boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -630,7 +608,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : _kTextPrimary,
+                    color: isDark ? Colors.white : AppColors.screenTextPrimary,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -656,7 +634,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       builder: (context) => Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1A) : _kCard,
+          color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, -6))],
         ),
@@ -671,7 +649,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   Center(
                     child: Container(
                       width: 36, height: 4,
-                      decoration: BoxDecoration(color: _kDivider, borderRadius: BorderRadius.circular(2)),
+                      decoration: BoxDecoration(color: AppColors.screenDivider, borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -695,13 +673,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               style: TextStyle(
                                 fontSize: _textSizeService.getScaledFontSize(18),
                                 fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : _kTextPrimary,
+                                color: isDark ? Colors.white : AppColors.screenTextPrimary,
                                 letterSpacing: -0.4,
                               ),
                             ),
                             Text(
                               def.subtitle,
-                              style: const TextStyle(fontSize: 13, color: _kTextSecondary),
+                              style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
                             ),
                           ],
                         ),
@@ -711,16 +689,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         child: Container(
                           width: 32, height: 32,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF2A2A2A) : _kSurface,
+                            color: isDark ? const Color(0xFF2A2A2A) : AppColors.screenSurface,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.close, size: 16, color: isDark ? Colors.white54 : _kTextSecondary),
+                          child: Icon(Icons.close, size: 16, color: isDark ? Colors.white54 : AppColors.screenTextSecondary),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Divider(color: _kDivider, height: 1),
+                  Divider(color: AppColors.screenDivider, height: 1),
                 ],
               ),
             ),
@@ -835,7 +813,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           onTap: () async {
             showDialog(
               context: context, barrierDismissible: false,
-              builder: (_) => const Center(child: CircularProgressIndicator(color: _kOrange)),
+              builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.screenOrange)),
             );
             if (_etablissementController.text.isEmpty || _parentNomController.text.isEmpty ||
                 _parentPrenomController.text.isEmpty || _parentTelephoneController.text.isEmpty ||
@@ -910,19 +888,19 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _kCard,
+            color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+            boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 widget.ecole.parametreNom ?? 'École',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kTextPrimary),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary),
               ),
               const SizedBox(height: 4),
-              Text(widget.ecole.adresse ?? '', style: const TextStyle(fontSize: 13, color: _kTextSecondary)),
+              Text(widget.ecole.adresse ?? '', style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -930,7 +908,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   _buildShareOption(Icons.message, 'WhatsApp', const Color(0xFF25D366)),
                   _buildShareOption(Icons.email, 'Email', const Color(0xFF4285F4)),
                   _buildShareOption(Icons.link, 'Copier', const Color(0xFF6366F1)),
-                  _buildShareOption(Icons.share, 'Réseaux', _kOrange),
+                  _buildShareOption(Icons.share, 'Réseaux', AppColors.screenOrange),
                 ],
               ),
             ],
@@ -952,7 +930,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             child: Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 12, color: _kTextSecondary, fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.screenTextSecondary, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -968,13 +946,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Communication et Actualités',
-          style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: _kTextPrimary)),
+          style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: AppColors.screenTextPrimary)),
         const SizedBox(height: 4),
         Text('Dernières communications de ${widget.ecole.parametreNom}',
-          style: const TextStyle(fontSize: 13, color: _kTextSecondary)),
+          style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
         const SizedBox(height: 20),
         if (_isLoadingBlogs)
-          const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: _kOrange)))
+          const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: AppColors.screenOrange)))
         else if (_blogsError != null)
           _buildTabError(_blogsError!, _loadBlogsEventsAndAvis)
         else if (_blogs.isEmpty)
@@ -986,14 +964,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Widget _buildBlogCard(Map<String, dynamic> blog) {
-    final Color color = blog['color'] as Color? ?? _kOrange;
+    final Color color = blog['color'] as Color? ?? AppColors.screenOrange;
     final String? imageUrl = blog['image'] as String?;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1025,25 +1003,25 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       child: Text(blog['type'] as String? ?? 'Actualité', style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
                     ),
                     const SizedBox(width: 8),
-                    Text(blog['date'] as String? ?? '', style: const TextStyle(fontSize: 11, color: _kTextSecondary)),
+                    Text(blog['date'] as String? ?? '', style: const TextStyle(fontSize: 11, color: AppColors.screenTextSecondary)),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(blog['title'] as String? ?? 'Sans titre',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _kTextPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 6),
                 Text(blog['content'] as String? ?? '',
-                  style: const TextStyle(fontSize: 13, color: _kTextSecondary, height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
+                  style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary, height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.person_outline, size: 14, color: _kTextSecondary),
+                    const Icon(Icons.person_outline, size: 14, color: AppColors.screenTextSecondary),
                     const SizedBox(width: 4),
-                    Expanded(child: Text(blog['auteur'] as String? ?? 'Administration', style: const TextStyle(fontSize: 11, color: _kTextSecondary))),
+                    Expanded(child: Text(blog['auteur'] as String? ?? 'Administration', style: const TextStyle(fontSize: 11, color: AppColors.screenTextSecondary))),
                     if ((blog['establishment'] as String?)?.isNotEmpty == true) ...[
-                      const Icon(Icons.location_on_outlined, size: 13, color: _kTextSecondary),
+                      const Icon(Icons.location_on_outlined, size: 13, color: AppColors.screenTextSecondary),
                       const SizedBox(width: 3),
-                      Flexible(child: Text(blog['establishment'] as String? ?? '', style: const TextStyle(fontSize: 11, color: _kTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      Flexible(child: Text(blog['establishment'] as String? ?? '', style: const TextStyle(fontSize: 11, color: AppColors.screenTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ],
                   ],
                 ),
@@ -1062,7 +1040,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       future: NiveauService.getNiveauxByEcole(ecoleCode),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: _kOrange));
+          return const Center(child: CircularProgressIndicator(color: AppColors.screenOrange));
         }
         if (snapshot.hasError) {
           return _buildTabError(snapshot.error.toString(), () => setState(() {}));
@@ -1084,10 +1062,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Niveaux d\'enseignement',
-              style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: _kTextPrimary)),
+              style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: AppColors.screenTextPrimary)),
             const SizedBox(height: 4),
             Text('${niveaux.length} classe${niveaux.length > 1 ? 's' : ''} disponible${niveaux.length > 1 ? 's' : ''}',
-              style: const TextStyle(fontSize: 13, color: _kTextSecondary)),
+              style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
             const SizedBox(height: 20),
             ...sortedFilieres.map((filiere) {
               final niveauxMap = grouped[filiere]!;
@@ -1111,9 +1089,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1211,9 +1189,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(niveau.nom ?? 'Classe', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _kTextPrimary)),
+                Text(niveau.nom ?? 'Classe', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.screenTextPrimary)),
                 if (niveau.niveau != null && niveau.niveau!.isNotEmpty)
-                  Text('Niveau : ${niveau.niveau}', style: const TextStyle(fontSize: 11, color: _kTextSecondary)),
+                  Text('Niveau : ${niveau.niveau}', style: const TextStyle(fontSize: 11, color: AppColors.screenTextSecondary)),
               ],
             ),
           ),
@@ -1283,13 +1261,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Événements scolaires',
-          style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: _kTextPrimary)),
+          style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: AppColors.screenTextPrimary)),
         const SizedBox(height: 4),
         Text('Découvrez les événements de ${widget.ecole.parametreNom}',
-          style: const TextStyle(fontSize: 13, color: _kTextSecondary)),
+          style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
         const SizedBox(height: 20),
         if (_isLoadingEvents)
-          const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: _kOrange)))
+          const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: AppColors.screenOrange)))
         else if (_eventsError != null)
           _buildTabError(_eventsError!, _loadBlogsEventsAndAvis)
         else if (_schoolEvents.isEmpty)
@@ -1312,16 +1290,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Widget _buildEventCard(Map<String, dynamic> event) {
-    final Color color = event['color'] as Color? ?? _kOrange;
+    final Color color = event['color'] as Color? ?? AppColors.screenOrange;
     final String? imageUrl = event['image'] as String?;
     final bool isAvailable = event['available'] as bool? ?? true;
     return GestureDetector(
       onTap: () => _showTicketPurchaseDialog(event),
       child: Container(
         decoration: BoxDecoration(
-          color: _kCard,
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+          boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
         ),
         child: Column(
           children: [
@@ -1363,7 +1341,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(event['title'] as String? ?? 'Sans titre',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _kTextPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
                     Row(
                       children: [
@@ -1412,19 +1390,19 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             const SizedBox(height: 8),
             Row(
               children: [
-                IconButton(onPressed: () {}, icon: const Icon(Icons.remove_circle_outline, color: _kOrange)),
+                IconButton(onPressed: () {}, icon: const Icon(Icons.remove_circle_outline, color: AppColors.screenOrange)),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(border: Border.all(color: _kOrange), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(border: Border.all(color: AppColors.screenOrange), borderRadius: BorderRadius.circular(8)),
                   child: const Text('1', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
-                IconButton(onPressed: () {}, icon: const Icon(Icons.add_circle_outline, color: _kOrange)),
+                IconButton(onPressed: () {}, icon: const Icon(Icons.add_circle_outline, color: AppColors.screenOrange)),
               ],
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler', style: TextStyle(color: _kTextSecondary))),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler', style: TextStyle(color: AppColors.screenTextSecondary))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -1436,7 +1414,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 margin: const EdgeInsets.all(16),
               ));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.screenOrange, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             child: const Text('Confirmer'),
           ),
         ],
@@ -1450,7 +1428,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       future: _scolariteFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: _kOrange));
+          return const Center(child: CircularProgressIndicator(color: AppColors.screenOrange));
         }
         if (snapshot.hasError) {
           return _buildTabError(snapshot.error.toString(), () {
@@ -1465,17 +1443,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Frais de scolarité', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: _kTextPrimary)),
+            Text('Frais de scolarité', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: AppColors.screenTextPrimary)),
             const SizedBox(height: 4),
-            const Text('Frais par branche et statut', style: TextStyle(fontSize: 13, color: _kTextSecondary)),
+            const Text('Frais par branche et statut', style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
             const SizedBox(height: 12),
             Container(
-              decoration: BoxDecoration(color: _kSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _kDivider)),
+              decoration: BoxDecoration(color: AppColors.screenSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.screenDivider)),
               child: TextField(
                 onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
                 decoration: InputDecoration(
                   hintText: 'Rechercher un niveau...',
-                  prefixIcon: const Icon(Icons.search_rounded, color: _kOrange, size: 20),
+                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.screenOrange, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(icon: const Icon(Icons.clear_rounded, size: 18), onPressed: () => setState(() => _searchQuery = ''))
                       : null,
@@ -1513,9 +1491,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -1525,7 +1503,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _kOrange.withOpacity(0.08),
+                color: AppColors.screenOrange.withOpacity(0.08),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
                   bottomLeft: isExpanded ? Radius.zero : const Radius.circular(20),
@@ -1538,28 +1516,28 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   Row(
                     children: [
                       Container(width: 40, height: 40,
-                        decoration: BoxDecoration(color: _kOrange, borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: AppColors.screenOrange, borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.school_rounded, color: Colors.white, size: 20)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(branche, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(16), fontWeight: FontWeight.w700, color: _kOrange)),
-                          Text('${scolarites.length} frais', style: const TextStyle(fontSize: 12, color: _kTextSecondary)),
+                          Text(branche, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(16), fontWeight: FontWeight.w700, color: AppColors.screenOrange)),
+                          Text('${scolarites.length} frais', style: const TextStyle(fontSize: 12, color: AppColors.screenTextSecondary)),
                         ]),
                       ),
                       AnimatedRotation(turns: isExpanded ? 0.5 : 0, duration: const Duration(milliseconds: 300),
-                        child: const Icon(Icons.expand_more, color: _kOrange, size: 24)),
+                        child: const Icon(Icons.expand_more, color: AppColors.screenOrange, size: 24)),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: _kOrange.withOpacity(0.05), borderRadius: BorderRadius.circular(10), border: Border.all(color: _kOrange.withOpacity(0.2))),
+                    decoration: BoxDecoration(color: AppColors.screenOrange.withOpacity(0.05), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.screenOrange.withOpacity(0.2))),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildTotalItem('Affectés', totaux['AFF'] ?? 0, const Color(0xFF3B82F6), Icons.check_circle_rounded),
-                        Container(width: 1, height: 30, color: _kDivider),
+                        Container(width: 1, height: 30, color: AppColors.screenDivider),
                         _buildTotalItem('Non Affectés', totaux['NAFF'] ?? 0, const Color(0xFFEF4444), Icons.remove_circle_rounded),
                       ],
                     ),
@@ -1634,7 +1612,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 6),
                 child: Text(entry.key == 'INS' ? 'Inscription' : 'Scolarité',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary)),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
               ),
               ...entry.value.map((s) => _buildScolariteCard(s, color)).toList(),
               const SizedBox(height: 8),
@@ -1649,7 +1627,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 6, left: 8, right: 8),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: AppColors.screenSurface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
@@ -1662,8 +1640,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           child: Icon(scolarite.rubrique == 'INS' ? Icons.how_to_reg_rounded : Icons.menu_book_rounded, color: color, size: 16),
         ),
         title: Text(ScolariteService.formaterMontant(scolarite.totalMontant ?? 0),
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: _kTextPrimary)),
-        subtitle: Text('Date limite: ${scolarite.dateLimiteFormatee}', style: const TextStyle(fontSize: 11, color: _kTextSecondary)),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.screenTextPrimary)),
+        subtitle: Text('Date limite: ${scolarite.dateLimiteFormatee}', style: const TextStyle(fontSize: 11, color: AppColors.screenTextSecondary)),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
@@ -1678,12 +1656,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Notes et Avis', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: _kTextPrimary)),
+        Text('Notes et Avis', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(20), fontWeight: FontWeight.bold, color: AppColors.screenTextPrimary)),
         const SizedBox(height: 4),
-        Text('Avis des parents et élèves sur ${widget.ecole.parametreNom}', style: const TextStyle(fontSize: 13, color: _kTextSecondary)),
+        Text('Avis des parents et élèves sur ${widget.ecole.parametreNom}', style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
         const SizedBox(height: 20),
         if (_isLoadingAvis)
-          const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: _kOrange)))
+          const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: AppColors.screenOrange)))
         else if (_avisError != null)
           _buildTabError(_avisError!, _loadBlogsEventsAndAvis)
         else if (_avis.isEmpty)
@@ -1693,20 +1671,20 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               child: Column(
                 children: [
                   Container(width: 80, height: 80,
-                    decoration: BoxDecoration(color: _kOrangeLight, shape: BoxShape.circle),
-                    child: const Icon(Icons.star_rate_outlined, size: 40, color: _kOrange)),
+                    decoration: BoxDecoration(color: AppColors.screenOrangeLight, shape: BoxShape.circle),
+                    child: const Icon(Icons.star_rate_outlined, size: 40, color: AppColors.screenOrange)),
                   const SizedBox(height: 16),
-                  const Text('Aucun avis', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kTextPrimary)),
+                  const Text('Aucun avis', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary)),
                   const SizedBox(height: 6),
                   const Text('Aucun avis disponible.\nSoyez le premier à donner votre avis !',
-                    style: TextStyle(fontSize: 13, color: _kTextSecondary), textAlign: TextAlign.center),
+                    style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondary), textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () => _showActionBottomSheet('rating', _kActions['rating']!),
                     icon: const Icon(Icons.star_rate_rounded, size: 18),
                     label: const Text('Donner mon avis'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _kOrange, foregroundColor: Colors.white,
+                      backgroundColor: AppColors.screenOrange, foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
@@ -1722,13 +1700,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Widget _buildAvisCard(Map<String, dynamic> avi) {
-    final Color color = avi['color'] as Color? ?? _kOrange;
+    final Color color = avi['color'] as Color? ?? AppColors.screenOrange;
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1749,7 +1727,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Text(avi['auteur'] as String? ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextPrimary))),
+                          Expanded(child: Text(avi['auteur'] as String? ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary))),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
@@ -1765,7 +1743,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         ],
                       ),
                       const SizedBox(height: 3),
-                      Text(avi['date'] as String? ?? '', style: const TextStyle(fontSize: 11, color: _kTextSecondary)),
+                      Text(avi['date'] as String? ?? '', style: const TextStyle(fontSize: 11, color: AppColors.screenTextSecondary)),
                     ],
                   ),
                 ),
@@ -1782,7 +1760,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(avi['content'] as String? ?? '', style: const TextStyle(fontSize: 13, color: _kTextSecondary, height: 1.5)),
+            child: Text(avi['content'] as String? ?? '', style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary, height: 1.5)),
           ),
         ],
       ),
@@ -1873,15 +1851,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   decoration: BoxDecoration(color: const Color(0xFFEF4444), borderRadius: BorderRadius.circular(32)),
                   child: const Icon(Icons.error_rounded, color: Colors.white, size: 32)),
                 const SizedBox(height: 20),
-                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _kTextPrimary), textAlign: TextAlign.center),
+                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary), textAlign: TextAlign.center),
                 const SizedBox(height: 10),
-                Text(message, style: const TextStyle(fontSize: 14, color: _kTextSecondary, height: 1.4), textAlign: TextAlign.center),
+                Text(message, style: const TextStyle(fontSize: 14, color: AppColors.screenTextSecondary, height: 1.4), textAlign: TextAlign.center),
                 if (details != null) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: _kSurface, borderRadius: BorderRadius.circular(10), border: Border.all(color: _kDivider)),
-                    child: Text(details, style: const TextStyle(fontSize: 12, color: _kTextSecondary)),
+                    decoration: BoxDecoration(color: AppColors.screenSurface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.screenDivider)),
+                    child: Text(details, style: const TextStyle(fontSize: 12, color: AppColors.screenTextSecondary)),
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -1889,12 +1867,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   children: [
                     Expanded(child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Fermer', style: TextStyle(color: _kTextSecondary, fontWeight: FontWeight.w600)),
+                      child: const Text('Fermer', style: TextStyle(color: AppColors.screenTextSecondary, fontWeight: FontWeight.w600)),
                     )),
                     const SizedBox(width: 10),
                     Expanded(child: ElevatedButton(
                       onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(backgroundColor: _kOrange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.screenOrange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                       child: const Text('Réessayer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                     )),
                   ],
@@ -1925,19 +1903,19 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   decoration: BoxDecoration(color: Colors.green[500], borderRadius: BorderRadius.circular(32)),
                   child: const Icon(Icons.check_rounded, color: Colors.white, size: 32)),
                 const SizedBox(height: 20),
-                const Text('Demande envoyée avec succès !', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _kTextPrimary), textAlign: TextAlign.center),
+                const Text('Demande envoyée avec succès !', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary), textAlign: TextAlign.center),
                 const SizedBox(height: 10),
                 const Text('Votre demande d\'intégration a été soumise et est en cours de traitement.',
-                  style: TextStyle(fontSize: 14, color: _kTextSecondary, height: 1.4), textAlign: TextAlign.center),
+                  style: TextStyle(fontSize: 14, color: AppColors.screenTextSecondary, height: 1.4), textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: _kSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _kDivider)),
+                  decoration: BoxDecoration(color: AppColors.screenSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.screenDivider)),
                   child: Column(
                     children: [
-                      Row(children: [const Icon(Icons.fingerprint_rounded, color: _kOrange, size: 18), const SizedBox(width: 8), const Text('Numéro de suivi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary))]),
+                      Row(children: [const Icon(Icons.fingerprint_rounded, color: AppColors.screenOrange, size: 18), const SizedBox(width: 8), const Text('Numéro de suivi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary))]),
                       const SizedBox(height: 6),
-                      Text(demandeUid, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kOrange, letterSpacing: 1.2), textAlign: TextAlign.center),
+                      Text(demandeUid, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.screenOrange, letterSpacing: 1.2), textAlign: TextAlign.center),
                     ],
                   ),
                 ),
@@ -1946,7 +1924,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(backgroundColor: _kOrange, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.screenOrange, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                     child: const Text('OK, j\'ai compris', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                   ),
                 ),
@@ -1967,13 +1945,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           children: [
             Icon(Icons.error_outline_rounded, size: 56, color: Colors.red[300]),
             const SizedBox(height: 12),
-            const Text('Erreur de chargement', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kTextPrimary)),
+            const Text('Erreur de chargement', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary)),
             const SizedBox(height: 6),
-            Text(error, style: const TextStyle(fontSize: 12, color: _kTextSecondary), textAlign: TextAlign.center),
+            Text(error, style: const TextStyle(fontSize: 12, color: AppColors.screenTextSecondary), textAlign: TextAlign.center),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onRetry,
-              style: ElevatedButton.styleFrom(backgroundColor: _kOrange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.screenOrange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -1989,12 +1967,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         child: Column(
           children: [
             Container(width: 80, height: 80,
-              decoration: BoxDecoration(color: _kOrangeLight, shape: BoxShape.circle),
-              child: Icon(icon, size: 40, color: _kOrange)),
+              decoration: BoxDecoration(color: AppColors.screenOrangeLight, shape: BoxShape.circle),
+              child: Icon(icon, size: 40, color: AppColors.screenOrange)),
             const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kTextPrimary)),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary)),
             const SizedBox(height: 6),
-            Text(subtitle, style: const TextStyle(fontSize: 13, color: _kTextSecondary), textAlign: TextAlign.center),
+            Text(subtitle, style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary), textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -2010,9 +1988,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     padding: const EdgeInsets.only(bottom: 12),
     child: Row(
       children: [
-        Icon(Icons.circle, size: 6, color: _kOrange),
+        Icon(Icons.circle, size: 6, color: AppColors.screenOrange),
         const SizedBox(width: 8),
-        Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextPrimary, letterSpacing: -0.2)),
+        Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary, letterSpacing: -0.2)),
       ],
     ),
   );
@@ -2028,8 +2006,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       children: [
         Row(
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary)),
-            if (required) const Text(' *', style: TextStyle(color: _kOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
+            if (required) const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 6),
@@ -2037,17 +2015,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: const TextStyle(fontSize: 14, color: _kTextPrimary, fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-            prefixIcon: Icon(icon, color: _kOrange, size: 18),
+            prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
             filled: true,
-            fillColor: _kSurface,
+            fillColor: AppColors.screenSurface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _kDivider)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _kDivider)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _kOrange, width: 1.5)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.screenDivider)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.screenDivider)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.screenOrange, width: 1.5)),
           ),
         ),
       ],
@@ -2065,26 +2043,26 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       children: [
         Row(
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary)),
-            if (required) const Text(' *', style: TextStyle(color: _kOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
+            if (required) const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           value: value,
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(fontSize: 14, color: _kTextPrimary)))).toList(),
+          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(fontSize: 14, color: AppColors.screenTextPrimary)))).toList(),
           onChanged: onChanged,
           dropdownColor: Colors.white,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-            prefixIcon: Icon(icon, color: _kOrange, size: 18),
+            prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
             filled: true,
-            fillColor: _kSurface,
+            fillColor: AppColors.screenSurface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _kDivider)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _kDivider)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _kOrange, width: 1.5)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.screenDivider)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.screenDivider)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.screenOrange, width: 1.5)),
           ),
         ),
       ],
@@ -2095,29 +2073,29 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary)),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
         const SizedBox(height: 6),
         GestureDetector(
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
-              color: _kSurface,
+              color: AppColors.screenSurface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: fileName != null ? _kOrange : _kDivider, width: fileName != null ? 1.5 : 1),
+              border: Border.all(color: fileName != null ? AppColors.screenOrange : AppColors.screenDivider, width: fileName != null ? 1.5 : 1),
             ),
             child: Row(
               children: [
-                Icon(icon, color: _kOrange, size: 18),
+                Icon(icon, color: AppColors.screenOrange, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     fileName ?? hint,
-                    style: TextStyle(fontSize: 13, color: fileName != null ? _kTextPrimary : const Color(0xFFBBBBBB)),
+                    style: TextStyle(fontSize: 13, color: fileName != null ? AppColors.screenTextPrimary : const Color(0xFFBBBBBB)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(Icons.cloud_upload_outlined, color: fileName != null ? _kOrange : _kTextSecondary, size: 18),
+                Icon(Icons.cloud_upload_outlined, color: fileName != null ? AppColors.screenOrange : AppColors.screenTextSecondary, size: 18),
               ],
             ),
           ),
@@ -2130,9 +2108,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2143,15 +2121,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               children: [
                 Container(
                   width: 34, height: 34,
-                  decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(10)),
-                  child: Icon(icon, color: _kOrange, size: 18),
+                  decoration: BoxDecoration(color: AppColors.screenOrangeLight, borderRadius: BorderRadius.circular(10)),
+                  child: Icon(icon, color: AppColors.screenOrange, size: 18),
                 ),
                 const SizedBox(width: 10),
-                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextPrimary)),
+                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary)),
               ],
             ),
           ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), child: Divider(color: _kDivider, height: 1)),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), child: Divider(color: AppColors.screenDivider, height: 1)),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Column(
@@ -2179,9 +2157,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       child: Container(
         width: double.infinity, height: 56,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFFF7A3C), _kOrange], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          gradient: const LinearGradient(colors: [Color(0xFFFF7A3C), AppColors.screenOrange], begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: _kOrange.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
+          boxShadow: [BoxShadow(color: AppColors.screenOrange.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: Center(
           child: isLoading
@@ -2277,7 +2255,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   void _showFilePickerMessage(String fileType) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('Sélection de fichier pour: $fileType'),
-      backgroundColor: _kOrange,
+      backgroundColor: AppColors.screenOrange,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
@@ -2294,9 +2272,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _kCard,
+            color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+            boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2309,7 +2287,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     child: const Icon(Icons.grade_rounded, color: Color(0xFFF59E0B), size: 18),
                   ),
                   const SizedBox(width: 10),
-                  const Text('Votre note', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextPrimary)),
+                  const Text('Votre note', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -2348,23 +2326,23 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _kSurface,
+            color: AppColors.screenSurface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _kDivider),
+            border: Border.all(color: AppColors.screenDivider),
           ),
           child: TextField(
             controller: _commentController,
             maxLines: 5,
-            style: const TextStyle(fontSize: 14, color: _kTextPrimary),
+            style: const TextStyle(fontSize: 14, color: AppColors.screenTextPrimary),
             decoration: InputDecoration(
               labelText: 'Votre commentaire',
               hintText: 'Partagez votre expérience...',
-              labelStyle: const TextStyle(color: _kTextSecondary, fontWeight: FontWeight.w600),
+              labelStyle: const TextStyle(color: AppColors.screenTextSecondary, fontWeight: FontWeight.w600),
               hintStyle: const TextStyle(color: Color(0xFFBBBBBB)),
               border: InputBorder.none,
               prefixIcon: const Padding(
                 padding: EdgeInsets.only(left: 4, right: 8),
-                child: Icon(Icons.comment_rounded, color: _kOrange, size: 20),
+                child: Icon(Icons.comment_rounded, color: AppColors.screenOrange, size: 20),
               ),
             ),
           ),
@@ -2395,7 +2373,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             }
             showDialog(
               context: context, barrierDismissible: false,
-              builder: (_) => const Center(child: CircularProgressIndicator(color: _kOrange)),
+              builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.screenOrange)),
             );
             try {
               final result = await TestimonialService.submitTestimonial(
@@ -2465,28 +2443,28 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_kOrange.withOpacity(0.08), _kOrange.withOpacity(0.03)],
+          colors: [AppColors.screenOrange.withOpacity(0.08), AppColors.screenOrange.withOpacity(0.03)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kOrange.withOpacity(0.15)),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 10, offset: Offset(0, 3))],
+        border: Border.all(color: AppColors.screenOrange.withOpacity(0.15)),
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 10, offset: Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(width: 42, height: 42, decoration: BoxDecoration(color: _kOrange, borderRadius: BorderRadius.circular(12)),
+              Container(width: 42, height: 42, decoration: BoxDecoration(color: AppColors.screenOrange, borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.school_rounded, color: Colors.white, size: 22)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Aperçu', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(18), fontWeight: FontWeight.bold, color: _kOrange)),
+                    Text('Aperçu', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(18), fontWeight: FontWeight.bold, color: AppColors.screenOrange)),
                     Text(widget.ecole.parametreNom ?? 'Établissement',
-                      style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: _kTextSecondary)),
+                      style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: AppColors.screenTextSecondary)),
                   ],
                 ),
               ),
@@ -2503,14 +2481,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: _kCard, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: AppColors.screenCard, borderRadius: BorderRadius.circular(12)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Description', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _kTextPrimary)),
+                const Text('Description', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary)),
                 const SizedBox(height: 6),
                 Text(widget.ecole.parametreNom ?? 'Aucune description disponible',
-                  style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: _kTextSecondary, height: 1.5)),
+                  style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: AppColors.screenTextSecondary, height: 1.5)),
               ],
             ),
           ),
@@ -2523,9 +2501,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _kCard, borderRadius: BorderRadius.circular(12),
+        color: AppColors.screenCard, borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 6, offset: Offset(0, 2))],
       ),
       child: Row(
         children: [
@@ -2537,7 +2515,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(9), color: color.withOpacity(0.8), fontWeight: FontWeight.w500)),
-                Text(value, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(11), fontWeight: FontWeight.bold, color: _kTextPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(value, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(11), fontWeight: FontWeight.bold, color: AppColors.screenTextPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -2557,7 +2535,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.15)),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 10, offset: Offset(0, 3))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 10, offset: Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2571,7 +2549,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Contact', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(18), fontWeight: FontWeight.bold, color: const Color(0xFF3B82F6))),
-                  Text('Informations de contact', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: _kTextSecondary)),
+                  Text('Informations de contact', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: AppColors.screenTextSecondary)),
                 ],
               )),
             ],
@@ -2611,7 +2589,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _kCard, borderRadius: BorderRadius.circular(10),
+        color: AppColors.screenCard, borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
@@ -2623,9 +2601,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(11), fontWeight: FontWeight.w600, color: _kTextSecondary)),
+                Text(title, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(11), fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
                 const SizedBox(height: 2),
-                Text(value, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(12), color: _kTextPrimary, fontWeight: FontWeight.w500)),
+                Text(value, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(12), color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -2645,7 +2623,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.green.withOpacity(0.15)),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 10, offset: Offset(0, 3))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 10, offset: Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2659,7 +2637,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Informations', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(18), fontWeight: FontWeight.bold, color: Colors.green)),
-                  Text('Détails administratifs', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: _kTextSecondary)),
+                  Text('Détails administratifs', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(13), color: AppColors.screenTextSecondary)),
                 ],
               )),
             ],
@@ -2682,7 +2660,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _kCard, borderRadius: BorderRadius.circular(10),
+        color: AppColors.screenCard, borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
@@ -2694,9 +2672,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(11), fontWeight: FontWeight.w600, color: _kTextSecondary)),
+                Text(title, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(11), fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
                 const SizedBox(height: 2),
-                Text(value, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(12), color: _kTextPrimary, fontWeight: FontWeight.w500)),
+                Text(value, style: TextStyle(fontSize: _textSizeService.getScaledFontSize(12), color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -2711,7 +2689,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       future: EcoleApiService.getEcoleDetail(widget.ecole.parametreCode ?? ''),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: _kOrange)));
+          return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: AppColors.screenOrange)));
         }
         if (snapshot.hasError || !snapshot.hasData) return const SizedBox.shrink();
         final detail = snapshot.data!;
@@ -2723,26 +2701,26 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: _kCard, borderRadius: BorderRadius.circular(20),
-                boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+                color: AppColors.screenCard, borderRadius: BorderRadius.circular(20),
+                boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
               ),
               child: Row(
                 children: [
                   if (data.logo != null)
                     ClipRRect(borderRadius: BorderRadius.circular(14),
                       child: Image.network(data.logo!, width: 64, height: 64, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(width: 64, height: 64, color: _kSurface, child: const Icon(Icons.school_rounded, color: _kTextSecondary))))
+                        errorBuilder: (_, __, ___) => Container(width: 64, height: 64, color: AppColors.screenSurface, child: const Icon(Icons.school_rounded, color: AppColors.screenTextSecondary))))
                   else
-                    Container(width: 64, height: 64, decoration: BoxDecoration(color: _kOrangeLight, borderRadius: BorderRadius.circular(14)),
-                      child: const Icon(Icons.school_rounded, color: _kOrange, size: 30)),
+                    Container(width: 64, height: 64, decoration: BoxDecoration(color: AppColors.screenOrangeLight, borderRadius: BorderRadius.circular(14)),
+                      child: const Icon(Icons.school_rounded, color: AppColors.screenOrange, size: 30)),
                   const SizedBox(width: 14),
                   Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(data.nom, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: _kTextPrimary), maxLines: 2),
+                      Text(data.nom, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.screenTextPrimary), maxLines: 2),
                       if (data.slogan != null) ...[
                         const SizedBox(height: 4),
-                        Text(data.slogan!, style: const TextStyle(fontSize: 12, color: _kOrange, fontStyle: FontStyle.italic)),
+                        Text(data.slogan!, style: const TextStyle(fontSize: 12, color: AppColors.screenOrange, fontStyle: FontStyle.italic)),
                       ],
                     ],
                   )),
@@ -2786,9 +2764,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: _kShadow, blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2797,13 +2775,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(
               children: [
-                Container(width: 3, height: 16, decoration: BoxDecoration(color: _kOrange, borderRadius: BorderRadius.circular(2))),
+                Container(width: 3, height: 16, decoration: BoxDecoration(color: AppColors.screenOrange, borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _kTextPrimary)),
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimary)),
               ],
             ),
           ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16), child: Divider(color: _kDivider, height: 1)),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16), child: Divider(color: AppColors.screenDivider, height: 1)),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
             child: Column(children: rows),
@@ -2821,11 +2799,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         children: [
           SizedBox(
             width: 120,
-            child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary)),
+            child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 13, color: _kTextPrimary, fontWeight: FontWeight.w500)),
+            child: Text(value, style: const TextStyle(fontSize: 13, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500)),
           ),
         ],
       ),

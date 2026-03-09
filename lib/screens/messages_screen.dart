@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/database_service.dart';
 import '../services/message_service.dart';
@@ -12,7 +13,9 @@ import '../services/text_size_service.dart';
 import '../widgets/custom_search_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 
-/// Écran de messagerie - Affiche uniquement les notifications FCM reçues
+// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
+
+/// Écran de messagerie - redesigné avec le même langage visuel que CartScreen
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
 
@@ -20,7 +23,8 @@ class MessagesScreen extends StatefulWidget {
   State<MessagesScreen> createState() => _MessagesScreenState();
 }
 
-class _MessagesScreenState extends State<MessagesScreen> {
+class _MessagesScreenState extends State<MessagesScreen>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _notifications = [];
   bool _isLoading = true;
   final TextSizeService _textSizeService = TextSizeService();
@@ -37,19 +41,19 @@ class _MessagesScreenState extends State<MessagesScreen> {
   final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _matriculeController = TextEditingController();
 
-  // Variables pour les pièces jointes
   File? _attachedFile;
-  String? _fileType; // 'image' ou 'audio'
+  String? _fileType;
   bool _isSending = false;
 
-  // Variables pour l'école
   List<Ecole> _ecoles = [];
   String? _selectedEcoleName;
   String? _selectedEcoleCode;
   bool _isLoadingEcoles = false;
   final EcolesApiService _ecolesApiService = EcolesApiService();
 
-  // Variables pour les destinataires
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
   final List<String> _destinataires = [
     'Direction',
     'Secrétariat',
@@ -82,18 +86,23 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnimation =
+        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _loadNotifications();
     _loadEcoles();
     _loadUserInfo();
-    _searchController.addListener(_filterNotifications);
-    _textSizeService.addListener(_onTextSizeChanged);
+    _searchController.addListener(() => setState(() {}));
+    _textSizeService.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_filterNotifications);
+    _fadeController.dispose();
     _searchController.dispose();
-    _textSizeService.removeListener(_onTextSizeChanged);
     _subjectController.dispose();
     _messageController.dispose();
     _recipientController.dispose();
@@ -102,91 +111,60 @@ class _MessagesScreenState extends State<MessagesScreen> {
     super.dispose();
   }
 
-  void _onTextSizeChanged() {
-    setState(() {});
-  }
-
-  /// Charge les informations de l'utilisateur connecté
   void _loadUserInfo() {
     final currentUser = AuthService.instance.getCurrentUser();
     if (currentUser != null) {
       setState(() {
-        // Pré-remplir les champs avec les informations de l'utilisateur
         _phoneNumberController.text = currentUser.phone;
-        // Le nom complet de l'utilisateur comme expéditeur
         _recipientController.text = currentUser.fullName;
       });
-      print('👤 Infos utilisateur chargées: ${currentUser.fullName} (${currentUser.phone})');
-    } else {
-      print('⚠️ Aucun utilisateur connecté trouvé');
     }
   }
 
   Future<void> _loadEcoles() async {
-    print('🔄 _loadEcoles appelé - _isLoadingEcoles: $_isLoadingEcoles, _ecoles.length: ${_ecoles.length}');
-    
-    if (_isLoadingEcoles) {
-      print('⚠️ Chargement déjà en cours, annulation');
-      return;
-    }
-
-    setState(() {
-      _isLoadingEcoles = true;
-    });
-
+    if (_isLoadingEcoles) return;
+    setState(() => _isLoadingEcoles = true);
     try {
       final ecoles = await _ecolesApiService.getAllEcoles();
-      print('🔄 setState appelé avec ${ecoles.length} écoles');
       setState(() {
         _ecoles = ecoles;
         _isLoadingEcoles = false;
       });
     } catch (e) {
-      print('❌ Erreur lors du chargement des écoles: $e');
-      setState(() {
-        _isLoadingEcoles = false;
-      });
+      setState(() => _isLoadingEcoles = false);
     }
   }
 
   List<Map<String, dynamic>> get _filteredItems {
     var items = _notifications;
-
-    if (_selectedFilter != 'Tous') {
-      if (_selectedFilter == 'Non lus') {
-        items = items.where((item) => !(item['isRead'] as bool)).toList();
-      } else if (_selectedFilter == 'Lus') {
-        items = items.where((item) => (item['isRead'] as bool)).toList();
-      }
+    if (_selectedFilter == 'Non lus') {
+      items = items.where((n) => !(n['isRead'] as bool)).toList();
+    } else if (_selectedFilter == 'Lus') {
+      items = items.where((n) => (n['isRead'] as bool)).toList();
     }
-
     if (_searchController.text.isNotEmpty) {
-      final searchQuery = _searchController.text.toLowerCase();
-      items = items.where((item) =>
-        (item['title'] as String).toLowerCase().contains(searchQuery) ||
-        (item['body'] as String).toLowerCase().contains(searchQuery) ||
-        (item['sender'] as String).toLowerCase().contains(searchQuery)
-      ).toList();
+      final q = _searchController.text.toLowerCase();
+      items = items
+          .where((n) =>
+              (n['title'] as String).toLowerCase().contains(q) ||
+              (n['body'] as String).toLowerCase().contains(q) ||
+              (n['sender'] as String).toLowerCase().contains(q))
+          .toList();
     }
-
     return items;
   }
 
   Future<void> _loadNotifications() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      final parentId = 'parent1';
-      final databaseService = DatabaseService.instance;
-      final notifications = await databaseService.getNotificationsByParent(parentId);
-
+      const parentId = 'parent1';
+      final db = DatabaseService.instance;
+      final notifications = await db.getNotificationsByParent(parentId);
       if (notifications.isEmpty) {
         await _addDemoNotifications(parentId);
-        final updatedNotifications = await databaseService.getNotificationsByParent(parentId);
+        final updated = await db.getNotificationsByParent(parentId);
         setState(() {
-          _notifications = updatedNotifications;
+          _notifications = updated;
           _isLoading = false;
         });
       } else {
@@ -195,577 +173,1116 @@ class _MessagesScreenState extends State<MessagesScreen> {
           _isLoading = false;
         });
       }
+      _fadeController.forward();
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
-      }
+      setState(() => _isLoading = false);
+      _showError('Erreur lors du chargement des messages');
     }
   }
 
   Future<void> _addDemoNotifications(String parentId) async {
-    final databaseService = DatabaseService.instance;
+    final db = DatabaseService.instance;
     final now = DateTime.now();
-
-    final demoNotifications = [
+    final demos = [
       {
         'id': 'demo_1',
         'title': 'Réunion parents-professeurs',
-        'body': 'Une réunion parents-professeurs est programmée pour le vendredi 28 février à 18h. Merci de confirmer votre présence.',
-        'timestamp': now.subtract(const Duration(hours: 2)).millisecondsSinceEpoch,
+        'body':
+            'Une réunion est programmée pour le vendredi 28 février à 18h. Merci de confirmer votre présence.',
+        'timestamp':
+            now.subtract(const Duration(hours: 2)).millisecondsSinceEpoch,
         'sender': 'Direction de l\'établissement',
         'isRead': false,
       },
       {
         'id': 'demo_2',
         'title': 'Note de mathématiques',
-        'body': 'Votre enfant a obtenu 15/20 au dernier contrôle de mathématiques. Félicitations !',
-        'timestamp': now.subtract(const Duration(days: 1)).millisecondsSinceEpoch,
+        'body':
+            'Votre enfant a obtenu 15/20 au dernier contrôle de mathématiques. Félicitations !',
+        'timestamp':
+            now.subtract(const Duration(days: 1)).millisecondsSinceEpoch,
         'sender': 'M. Dubois - Professeur de mathématiques',
         'isRead': false,
       },
       {
         'id': 'demo_3',
         'title': 'Sortie scolaire',
-        'body': 'Une sortie au musée est organisée le mercredi prochain. N\'oubliez pas d\'envoyer l\'autorisation signée.',
-        'timestamp': now.subtract(const Duration(days: 2)).millisecondsSinceEpoch,
+        'body':
+            'Une sortie au musée est organisée le mercredi prochain. N\'oubliez pas d\'envoyer l\'autorisation signée.',
+        'timestamp':
+            now.subtract(const Duration(days: 2)).millisecondsSinceEpoch,
         'sender': 'Mme Martin - Professeur d\'histoire',
         'isRead': true,
       },
       {
         'id': 'demo_4',
-        'title': 'Cantine du jour',
-        'body': 'Menu du jour : Poulet rôti, haricots verts, fromage et fruit de saison.',
-        'timestamp': now.subtract(const Duration(days: 3)).millisecondsSinceEpoch,
+        'title': 'Menu de la cantine',
+        'body':
+            'Menu du jour : Poulet rôti, haricots verts, fromage et fruit de saison.',
+        'timestamp':
+            now.subtract(const Duration(days: 3)).millisecondsSinceEpoch,
         'sender': 'Service de cantine',
         'isRead': true,
       },
     ];
-
-    for (final notification in demoNotifications) {
-      await databaseService.saveNotification(
-        id: notification['id'] as String,
-        title: notification['title'] as String,
-        body: notification['body'] as String,
-        timestamp: DateTime.fromMillisecondsSinceEpoch(notification['timestamp'] as int),
-        sender: notification['sender'] as String,
+    for (final n in demos) {
+      await db.saveNotification(
+        id: n['id'] as String,
+        title: n['title'] as String,
+        body: n['body'] as String,
+        timestamp:
+            DateTime.fromMillisecondsSinceEpoch(n['timestamp'] as int),
+        sender: n['sender'] as String,
         parentId: parentId,
       );
     }
   }
 
   Future<void> _markAllAsRead() async {
-    final parentId = 'parent1';
-
     try {
-      final databaseService = DatabaseService.instance;
-      await databaseService.markAllNotificationsAsRead(parentId);
-
+      await DatabaseService.instance.markAllNotificationsAsRead('parent1');
       setState(() {
-        for (var notification in _notifications) {
-          notification['isRead'] = true;
+        for (final n in _notifications) {
+          n['isRead'] = true;
         }
       });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tous les messages ont été marqués comme lus')),
-        );
-      }
+      _showSuccess('Tous les messages ont été marqués comme lus');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
-      }
+      _showError('Erreur: $e');
     }
   }
 
-  void _filterNotifications() {
-    setState(() {});
-  }
-
-  // ─── Méthodes utilitaires pour le formulaire ────────────────────────────────
-
-  Widget _buildLabel(String text, bool isDark) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: _textSizeService.getScaledFontSize(16),
-        fontWeight: FontWeight.w600,
-        color: AppColors.getTextColor(isDark),
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.red[400],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  Widget _buildTextField(
-    TextEditingController controller,
-    String hint,
-    bool isDark, {
-    int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        hintText: hint,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: isDark ? Colors.grey[800] : Colors.grey[50],
-      ),
-      style: TextStyle(
-        color: AppColors.getTextColor(isDark),
-        fontSize: _textSizeService.getScaledFontSize(16),
+  void _showSuccess(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green[500],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  /// Dropdown corrigé : reçoit la valeur sélectionnée et un callback
-  /// pour que le StatefulBuilder du BottomSheet puisse se rebuilder correctement.
-  Widget _buildEcoleDropdownFixed(
-    bool isDark,
-    String? selectedValue,
-    void Function(String name, String code) onSelected,
-  ) {
+  // ─── BUILD PRINCIPAL ──────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark
+          .copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: AppColors.screenSurface,
+        body: _buildBody(),
+        floatingActionButton: _buildFAB(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child:
+            CircularProgressIndicator(color: AppColors.screenOrange, strokeWidth: 2.5),
+      );
+    }
+
+    _notifications.sort((a, b) {
+      final dA =
+          DateTime.fromMillisecondsSinceEpoch(a['timestamp'] as int);
+      final dB =
+          DateTime.fromMillisecondsSinceEpoch(b['timestamp'] as int);
+      return dB.compareTo(dA);
+    });
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          _buildAppBar(),
+          _buildSearchBar(),
+          _buildFilters(),
+          _buildCountRow(),
+          Expanded(child: _buildMessageList()),
+        ],
+      ),
+    );
+  }
+
+  // ─── APP BAR ──────────────────────────────────────────────────────────────
+  Widget _buildAppBar() {
+    final unreadCount =
+        _notifications.where((n) => !(n['isRead'] as bool)).length;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? Colors.grey[600]! : Colors.grey[300]!,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: selectedValue,
-          hint: _isLoadingEcoles
-              ? Row(
+      color: AppColors.screenSurface,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Row(
+            children: [
+              // Back button
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.screenCard,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.screenTextPrimary),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    const Text(
+                      'Messages',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.screenTextPrimary,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Text(
-                      'Chargement des écoles...',
-                      style: TextStyle(
-                        color: AppColors.getTextColor(isDark),
-                        fontSize: _textSizeService.getScaledFontSize(14),
+                      '${_notifications.length} message${_notifications.length > 1 ? 's' : ''}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.screenTextSecondary,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
-                )
-              : Text(
-                  'Sélectionner une école...',
-                  style: TextStyle(
-                    color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                    fontSize: _textSizeService.getScaledFontSize(14),
+                ),
+              ),
+              // Search button
+              GestureDetector(
+                onTap: () => setState(() {
+                  _isSearching = !_isSearching;
+                  if (!_isSearching) _searchController.clear();
+                }),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _isSearching ? AppColors.screenOrangeLight : AppColors.screenCard,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: AppColors.screenShadow,
+                          blurRadius: 8,
+                          offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.search,
+                    size: 18,
+                    color: _isSearching ? AppColors.screenOrange : AppColors.screenTextPrimary,
                   ),
                 ),
-          items: _ecoles.map((ecole) {
-            return DropdownMenuItem<String>(
-              value: ecole.parametreNom,
-              child: Text(
-                ecole.parametreNom,
-                style: TextStyle(
-                  color: AppColors.getTextColor(isDark),
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                ),
-                overflow: TextOverflow.ellipsis,
               ),
-            );
-          }).toList(),
-          onChanged: _isLoadingEcoles
-              ? null
-              : (String? newValue) {
-                  if (newValue != null) {
-                    final ecole = _ecoles.firstWhere(
-                      (e) => e.parametreNom == newValue,
-                    );
-                    onSelected(newValue, ecole.parametreCode);
-                  }
-                },
-          dropdownColor: isDark ? Colors.grey[800] : Colors.grey[50],
-          icon: Icon(
-            Icons.arrow_drop_down,
-            color: AppColors.getTextColor(isDark, type: TextType.secondary),
+              if (unreadCount > 0) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _markAllAsRead,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrangeLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Stack(
+                      children: [
+                        const Center(
+                          child: Icon(Icons.mark_email_read_outlined,
+                              size: 18, color: AppColors.screenOrange),
+                        ),
+                        Positioned(
+                          right: 6,
+                          top: 6,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: AppColors.screenOrange,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '$unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ─── BottomSheet principal ────────────────────────────────────────────────────
+  // ─── SEARCH BAR ───────────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      height: _isSearching ? 60 : 0,
+      child: _isSearching
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.screenCard,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: AppColors.screenShadow,
+                        blurRadius: 8,
+                        offset: Offset(0, 2)),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.screenTextPrimary,
+                      fontWeight: FontWeight.w500),
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un message...',
+                    hintStyle: const TextStyle(
+                        fontSize: 13, color: AppColors.screenTextSecondary),
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.screenOrange, size: 18),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () =>
+                                setState(() => _searchController.clear()),
+                            child: const Icon(Icons.close,
+                                color: AppColors.screenTextSecondary, size: 16),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
 
+  // ─── FILTRES ──────────────────────────────────────────────────────────────
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 0, 4),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _filters.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final filter = _filters[index];
+            final selected = filter == _selectedFilter;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedFilter = filter),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: selected
+                      ? const LinearGradient(
+                          colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: selected ? null : AppColors.screenCard,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.screenOrange.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          )
+                        ]
+                      : [
+                          const BoxShadow(
+                              color: AppColors.screenShadow,
+                              blurRadius: 4,
+                              offset: Offset(0, 1))
+                        ],
+                ),
+                child: Text(
+                  filter,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        selected ? Colors.white : AppColors.screenTextSecondary,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ─── COMPTEUR ─────────────────────────────────────────────────────────────
+  Widget _buildCountRow() {
+    final count = _filteredItems.length;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Row(
+        children: [
+          Text(
+            '$count message${count > 1 ? 's' : ''}',
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── LISTE DES MESSAGES ───────────────────────────────────────────────────
+  Widget _buildMessageList() {
+    final items = _filteredItems;
+    if (items.isEmpty) return _buildEmptyState();
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+      itemCount: items.length,
+      itemBuilder: (context, index) =>
+          _buildMessageCard(items[index], index),
+    );
+  }
+
+  Widget _buildMessageCard(
+      Map<String, dynamic> notification, int index) {
+    final isRead = notification['isRead'] as bool? ?? false;
+    final title = notification['title'] as String? ?? 'Notification';
+    final body = notification['body'] as String? ?? '';
+    final sender =
+        notification['sender'] as String? ?? 'Établissement';
+    final timestamp = DateTime.fromMillisecondsSinceEpoch(
+        notification['timestamp'] as int);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 300 + index * 80),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: child,
+        ),
+      ),
+      child: GestureDetector(
+        onTap: () => _showNotificationDetail(notification),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: AppColors.screenCard,
+            borderRadius: BorderRadius.circular(20),
+            border: isRead
+                ? null
+                : Border.all(
+                    color: AppColors.screenOrange.withOpacity(0.2), width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                  color: AppColors.screenShadow,
+                  blurRadius: 12,
+                  offset: Offset(0, 4)),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Avatar icône
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isRead
+                            ? const Color(0xFFF5F5F5)
+                            : AppColors.screenOrangeLight,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        _getSenderIcon(sender),
+                        size: 20,
+                        color: isRead ? AppColors.screenTextSecondary : AppColors.screenOrange,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Titre + expéditeur
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: isRead
+                                        ? FontWeight.w600
+                                        : FontWeight.w700,
+                                    color: AppColors.screenTextPrimary,
+                                    letterSpacing: -0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (!isRead)
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.screenOrange,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            sender,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.screenTextSecondary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  body,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color:
+                        isRead ? AppColors.screenTextSecondary : AppColors.screenTextPrimary,
+                    height: 1.4,
+                    fontWeight: isRead
+                        ? FontWeight.w400
+                        : FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule_outlined,
+                        size: 13, color: AppColors.screenTextSecondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDate(timestamp),
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.screenTextSecondary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const Spacer(),
+                    if (!isRead)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.screenOrangeLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Non lu',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.screenOrange,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getSenderIcon(String sender) {
+    final s = sender.toLowerCase();
+    if (s.contains('direction') || s.contains('directeur')) {
+      return Icons.account_balance_outlined;
+    } else if (s.contains('professeur') || s.contains('prof')) {
+      return Icons.school_outlined;
+    } else if (s.contains('cantine')) {
+      return Icons.restaurant_outlined;
+    } else if (s.contains('infirmier') || s.contains('médecin')) {
+      return Icons.medical_services_outlined;
+    }
+    return Icons.person_outline;
+  }
+
+  // ─── EMPTY STATE ──────────────────────────────────────────────────────────
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: const BoxDecoration(
+              color: AppColors.screenOrangeLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.mail_outline,
+                size: 48, color: AppColors.screenOrange),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Aucun message',
+            style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.screenTextPrimary),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Vos messages apparaîtront ici',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 14, color: AppColors.screenTextSecondary, height: 1.5),
+          ),
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: _buildOrangeButton(
+              label: 'Nouveau message',
+              onTap: _showComposeMessageBottomSheet,
+              trailing: const Icon(Icons.edit_outlined,
+                  color: Colors.white, size: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── FAB ──────────────────────────────────────────────────────────────────
+  Widget _buildFAB() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: _showComposeMessageBottomSheet,
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.screenOrange.withOpacity(0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.edit_outlined, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text(
+                'Nouveau message',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── ORANGE BUTTON (identique CartScreen) ─────────────────────────────────
+  Widget _buildOrangeButton({
+    required String label,
+    VoidCallback? onTap,
+    bool isLoading = false,
+    Widget? trailing,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.screenOrange.withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    if (trailing != null) ...[
+                      const SizedBox(width: 8),
+                      trailing,
+                    ],
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  // ─── COMPOSE BOTTOM SHEET ─────────────────────────────────────────────────
   void _showComposeMessageBottomSheet() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    print('📋 _showComposeMessageBottomSheet appelé');
-
-    // Variables locales au BottomSheet pour forcer son rebuild indépendamment
     String? localSelectedEcoleName = _selectedEcoleName;
     String? localSelectedEcoleCode = _selectedEcoleCode;
     String? localSelectedDestinataire = _selectedDestinataire;
-    
-    print('📋 Variables locales initialisées - Écoles: ${_ecoles.length}, isLoading: $_isLoadingEcoles');
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
+        builder: (context, setSheetState) {
           return Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            decoration: const BoxDecoration(
+              color: AppColors.screenCard,
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            decoration: BoxDecoration(
-              color: AppColors.getSurfaceColor(isDark),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ── Header ──────────────────────────────────────────────────
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.92,
+              maxChildSize: 0.96,
+              minChildSize: 0.5,
+              expand: false,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    // Header fixe
+                    Padding(
+                      padding:
+                          const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: Column(
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 36,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: AppColors.screenDivider,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AppColors.screenOrangeLight,
+                                  borderRadius:
+                                      BorderRadius.circular(14),
+                                ),
+                                child: const Icon(
+                                    Icons.edit_outlined,
+                                    color: AppColors.screenOrange,
+                                    size: 22),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Nouveau message',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.screenTextPrimary,
+                                        letterSpacing: -0.4,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Remplissez vos informations',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.screenTextSecondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(color: AppColors.screenDivider, height: 1),
+                        ],
+                      ),
+                    ),
+
+                    // Formulaire scrollable
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        padding:
+                            const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _sectionLabel('Vos coordonnées'),
+                            const SizedBox(height: 12),
+
+                            // Nom (read-only)
+                            _buildInfoTile(
+                              icon: Icons.person_outline,
+                              label: 'Nom complet',
+                              value: AuthService.instance
+                                      .getCurrentUser()
+                                      ?.fullName ??
+                                  'Non connecté',
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Téléphone (read-only)
+                            _buildInfoTile(
+                              icon: Icons.phone_outlined,
+                              label: 'Téléphone',
+                              value: AuthService.instance
+                                      .getCurrentUser()
+                                      ?.phone ??
+                                  '-',
+                            ),
+
+                            const SizedBox(height: 24),
+                            _sectionLabel('Destinataire'),
+                            const SizedBox(height: 12),
+
+                            // École
+                            _buildSheetLabel(
+                                'École', required: true),
+                            const SizedBox(height: 6),
+                            _isLoadingEcoles
+                                ? _buildLoadingField(
+                                    'Chargement des écoles...')
+                                : _ecoles.isEmpty
+                                    ? _buildInfoTile(
+                                        icon: Icons.school_outlined,
+                                        label: 'École',
+                                        value:
+                                            'Aucune école disponible')
+                                    : SearchableDropdown(
+                                        key: ValueKey(
+                                            'ecole_${_ecoles.length}'),
+                                        label: 'École *',
+                                        value: localSelectedEcoleName ??
+                                            'Sélectionner une école...',
+                                        items: _ecoles
+                                            .map((e) => e.ecoleclibelle)
+                                            .toList(),
+                                        onChanged: (name) {
+                                          final ecole =
+                                              _ecoles.firstWhere((e) =>
+                                                  e.ecoleclibelle ==
+                                                  name);
+                                          setSheetState(() {
+                                            localSelectedEcoleName =
+                                                name;
+                                            localSelectedEcoleCode =
+                                                ecole.ecolecode;
+                                          });
+                                          setState(() {
+                                            _selectedEcoleName = name;
+                                            _selectedEcoleCode =
+                                                ecole.ecolecode;
+                                          });
+                                        },
+                                        isDarkMode: false,
+                                      ),
+                            const SizedBox(height: 12),
+
+                            // Destinataire
+                            _buildSheetLabel('Destinataire',
+                                required: true),
+                            const SizedBox(height: 6),
+                            SearchableDropdown(
+                              key: ValueKey(
+                                  'dest_$localSelectedDestinataire'),
+                              label: 'Destinataire *',
+                              value: localSelectedDestinataire ??
+                                  'Sélectionner un destinataire...',
+                              items: _destinataires,
+                              onChanged: (dest) {
+                                setSheetState(() =>
+                                    localSelectedDestinataire = dest);
+                                setState(() {
+                                  _selectedDestinataire = dest;
+                                  _recipientController.text = dest;
+                                });
+                              },
+                              isDarkMode: false,
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Matricule
+                            _buildFormTextField(
+                              controller: _matriculeController,
+                              label: 'Matricule élève',
+                              hint: 'Ex: 67894F',
+                              icon: Icons.badge_outlined,
+                              required: true,
+                            ),
+
+                            const SizedBox(height: 24),
+                            _sectionLabel('Votre message'),
+                            const SizedBox(height: 12),
+
+                            _buildFormTextField(
+                              controller: _subjectController,
+                              label: 'Sujet',
+                              hint: 'Objet du message',
+                              icon: Icons.title_outlined,
+                              required: true,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildFormTextField(
+                              controller: _messageController,
+                              label: 'Message',
+                              hint: 'Tapez votre message ici...',
+                              icon: Icons.message_outlined,
+                              required: true,
+                              maxLines: 5,
+                            ),
+
+                            const SizedBox(height: 24),
+                            _sectionLabel('Messages rapides'),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                'Demande de rendez-vous',
+                                'Absence de mon enfant',
+                                'Question sur les devoirs',
+                                'Information médicale',
+                                'Demande de document',
+                              ]
+                                  .map((msg) =>
+                                      _buildQuickMessageChip(msg))
+                                  .toList(),
+                            ),
+
+                            const SizedBox(height: 24),
+                            _sectionLabel('Pièce jointe'),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildAttachmentButton(
+                                    icon: Icons.image_outlined,
+                                    label: 'Image',
+                                    selected: _fileType == 'image',
+                                    onTap: () async {
+                                      await _pickImage();
+                                      setSheetState(() {});
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildAttachmentButton(
+                                    icon: Icons.mic_outlined,
+                                    label: 'Audio',
+                                    selected: _fileType == 'audio',
+                                    onTap: () async {
+                                      await _pickAudio();
+                                      setSheetState(() {});
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_attachedFile != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.screenOrangeLight,
+                                  borderRadius:
+                                      BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _fileType == 'image'
+                                          ? Icons.image_outlined
+                                          : Icons.mic_outlined,
+                                      color: AppColors.screenOrange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _attachedFile!.path
+                                            .split('/')
+                                            .last,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.screenOrange,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow:
+                                            TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        _removeAttachment();
+                                        setSheetState(() {});
+                                      },
+                                      child: const Icon(Icons.close,
+                                          size: 16, color: AppColors.screenOrange),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                          ],
                         ),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: Icon(
-                            Icons.close,
-                            color: AppColors.getTextColor(isDark),
-                          ),
+
+                    // Bouton d'envoi fixe
+                    Container(
+                      padding:
+                          const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      decoration: const BoxDecoration(
+                        color: AppColors.screenCard,
+                        border: Border(
+                            top: BorderSide(color: AppColors.screenDivider)),
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: _buildOrangeButton(
+                          label: 'Envoyer le message',
+                          isLoading: _isSending,
+                          onTap:
+                              _isSending ? null : _sendMessage,
+                          trailing: const Icon(
+                              Icons.send_outlined,
+                              color: Colors.white,
+                              size: 16),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Nouveau message',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(20),
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.getTextColor(isDark),
-                            ),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: _isSending ? null : _sendMessage,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _isSending
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Text('Envoyer'),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-
-                  // ── Formulaire ───────────────────────────────────────────────
-                  Padding(
-                    padding: EdgeInsets.only(
-                      left: 20,
-                      right: 20,
-                      top: 20,
-                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Destinataire
-                        _buildLabel('Votre nom', isDark),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[700] : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.person, color: AppColors.getTextColor(isDark)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  AuthService.instance.getCurrentUser()?.fullName ?? 'Non connecté',
-                                  style: TextStyle(
-                                    color: AppColors.getTextColor(isDark),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // École — avec SearchableDropdown
-                        _buildLabel('École', isDark),
-                        const SizedBox(height: 8),
-                        if (_isLoadingEcoles)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[700] : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Row(
-                              children: [
-                                const CircularProgressIndicator(),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Chargement des écoles...',
-                                  style: TextStyle(
-                                    color: AppColors.getTextColor(isDark),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else if (_ecoles.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[700] : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Text(
-                              'Aucune école disponible',
-                              style: TextStyle(
-                                color: AppColors.getTextColor(isDark),
-                              ),
-                            ),
-                          )
-                        else
-                          SearchableDropdown(
-                            key: ValueKey('ecole_dropdown_${_ecoles.length}'),
-                            label: 'École *',
-                            value: localSelectedEcoleName ?? 'Sélectionner une école...',
-                            items: _ecoles.map((ecole) => ecole.ecoleclibelle).toList(),
-                            onChanged: (String selectedEcoleName) {
-                              print('🎯 École sélectionnée: $selectedEcoleName');
-                              final selectedEcole = _ecoles.firstWhere(
-                                (ecole) => ecole.ecoleclibelle == selectedEcoleName,
-                              );
-                              // Rebuild du BottomSheet
-                              setModalState(() {
-                                localSelectedEcoleName = selectedEcoleName;
-                                localSelectedEcoleCode = selectedEcole.ecolecode;
-                              });
-                              // Sync avec le state parent (pour _sendMessage)
-                              setState(() {
-                                _selectedEcoleName = selectedEcoleName;
-                                _selectedEcoleCode = selectedEcole.ecolecode;
-                              });
-                            },
-                            isDarkMode: isDark,
-                          ),
-                        const SizedBox(height: 20),
-
-                        // Numéro de téléphone
-                        _buildLabel('Votre numéro de téléphone', isDark),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[700] : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.phone, color: AppColors.getTextColor(isDark)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  AuthService.instance.getCurrentUser()?.phone ?? 'Non connecté',
-                                  style: TextStyle(
-                                    color: AppColors.getTextColor(isDark),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Destinataire du message
-                        _buildLabel('Destinataire du message', isDark),
-                        const SizedBox(height: 8),
-                        SearchableDropdown(
-                          key: ValueKey('destinataire_dropdown_${_selectedDestinataire}'),
-                          label: 'Destinataire *',
-                          value: localSelectedDestinataire ?? 'Sélectionner un destinataire...',
-                          items: _destinataires,
-                          onChanged: (String selectedDestinataire) {
-                            print('🎯 Destinataire sélectionné: $selectedDestinataire');
-                            // Rebuild du BottomSheet
-                            setModalState(() {
-                              localSelectedDestinataire = selectedDestinataire;
-                            });
-                            // Sync avec le state parent (pour _sendMessage)
-                            setState(() {
-                              _selectedDestinataire = selectedDestinataire;
-                              _recipientController.text = selectedDestinataire;
-                            });
-                          },
-                          isDarkMode: isDark,
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Matricule
-                        _buildLabel('Matricule', isDark),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          _matriculeController,
-                          'Ex: 67894F',
-                          isDark,
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Sujet
-                        _buildLabel('Sujet', isDark),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          _subjectController,
-                          'Sujet du message',
-                          isDark,
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Message
-                        _buildLabel('Message', isDark),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          _messageController,
-                          'Tapez votre message ici...',
-                          isDark,
-                          maxLines: 8,
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Pièce jointe
-                        _buildLabel('Pièce jointe', isDark),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _pickImage,
-                                icon: const Icon(Icons.image),
-                                label: const Text('Image'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _fileType == 'image' ? AppColors.primary : null,
-                                  foregroundColor: _fileType == 'image' ? Colors.white : null,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _pickAudio,
-                                icon: const Icon(Icons.mic),
-                                label: const Text('Audio'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _fileType == 'audio' ? AppColors.primary : null,
-                                  foregroundColor: _fileType == 'audio' ? Colors.white : null,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_attachedFile != null) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[700] : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _fileType == 'image' ? Icons.image : Icons.mic,
-                                  size: 20,
-                                  color: AppColors.getTextColor(isDark),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _attachedFile!.path.split('/').last,
-                                    style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(12),
-                                      color: AppColors.getTextColor(isDark),
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: _removeAttachment,
-                                  icon: const Icon(Icons.close, size: 20),
-                                  color: Colors.red,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-
-                        // Messages rapides
-                        _buildLabel('Messages rapides', isDark),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _buildQuickMessage('Demande de rendez-vous'),
-                            _buildQuickMessage('Absence de mon enfant'),
-                            _buildQuickMessage('Question sur les devoirs'),
-                            _buildQuickMessage('Information médicale'),
-                            _buildQuickMessage('Demande de document'),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           );
         },
@@ -773,115 +1290,287 @@ class _MessagesScreenState extends State<MessagesScreen> {
     );
   }
 
-  Widget _buildQuickMessage(String message) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  // ─── SHEET HELPERS ────────────────────────────────────────────────────────
+  Widget _sectionLabel(String text) => Text(
+        text,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: AppColors.screenTextPrimary,
+          letterSpacing: -0.3,
+        ),
+      );
 
+  Widget _buildSheetLabel(String text, {bool required = false}) {
+    return Row(
+      children: [
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.screenTextSecondary,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (required)
+          const Text(' *',
+              style: TextStyle(
+                  color: AppColors.screenOrange,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.screenDivider),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.screenOrange, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.screenTextPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool required = false,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextSecondary,
+              letterSpacing: 0.2,
+            ),
+          ),
+          if (required)
+            const Text(' *',
+                style: TextStyle(
+                    color: AppColors.screenOrange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.screenTextPrimary,
+              fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+                fontSize: 13, color: Color(0xFFBBBBBB)),
+            prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
+            filled: true,
+            fillColor: AppColors.screenSurface,
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.screenDivider),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.screenDivider),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: AppColors.screenOrange, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingField(String msg) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.screenDivider),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: AppColors.screenOrange),
+          ),
+          const SizedBox(width: 12),
+          Text(msg,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.screenTextSecondary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickMessageChip(String msg) {
     return GestureDetector(
       onTap: () {
-        _subjectController.text = message;
-        _messageController.text = 'Je vous contacte concernant: $message';
+        _subjectController.text = msg;
+        _messageController.text =
+            'Je vous contacte concernant : $msg';
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[700] : Colors.grey[100],
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.screenDivider),
+          boxShadow: const [
+            BoxShadow(
+                color: AppColors.screenShadow,
+                blurRadius: 4,
+                offset: Offset(0, 1))
+          ],
         ),
-        child: Text(
-          message,
-          style: TextStyle(
-            fontSize: _textSizeService.getScaledFontSize(12),
-            color: AppColors.getTextColor(isDark),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.bolt, size: 12, color: AppColors.screenOrange),
+            const SizedBox(width: 4),
+            Text(
+              msg,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.screenTextPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _sendMessage() async {
-    print('🚀 _sendMessage appelé');
+  Widget _buildAttachmentButton({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.screenOrangeLight : AppColors.screenSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.screenOrange : AppColors.screenDivider,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                size: 16,
+                color: selected ? AppColors.screenOrange : AppColors.screenTextSecondary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? AppColors.screenOrange : AppColors.screenTextSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    // Récupérer l'utilisateur connecté
+  // ─── ACTIONS ──────────────────────────────────────────────────────────────
+  void _sendMessage() async {
     final currentUser = AuthService.instance.getCurrentUser();
     if (currentUser == null) {
-      print('❌ Aucun utilisateur connecté');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez vous connecter pour envoyer un message'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Veuillez vous connecter pour envoyer un message');
       return;
     }
-
     if (_subjectController.text.trim().isEmpty ||
         _messageController.text.trim().isEmpty ||
         _selectedEcoleName == null ||
         _matriculeController.text.trim().isEmpty) {
-      print('❌ Validation échouée - champs vides');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez remplir tous les champs obligatoires'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Veuillez remplir tous les champs obligatoires');
       return;
     }
 
-    print('✅ Validation réussie');
-    print('📝 Sujet: ${_subjectController.text.trim()}');
-    print('📝 Message: ${_messageController.text.trim()}');
-    print('� Utilisateur: ${currentUser.fullName} (${currentUser.phone})');
-    print('🏫 École: $_selectedEcoleName ($_selectedEcoleCode)');
-    print('🆔 Matricule: ${_matriculeController.text.trim()}');
-    print('📎 Fichier attaché: ${_attachedFile != null ? 'Oui (${_fileType})' : 'Non'}');
-
-    setState(() {
-      _isSending = true;
-    });
-
+    setState(() => _isSending = true);
     try {
-      print('📡 Appel du service MessageService...');
       final messageService = MessageService();
-      final userPhoneNumber = currentUser.phone; // Utiliser le téléphone de l'utilisateur connecté
       final codeEcole = _selectedEcoleCode ?? 'gainhs';
       final matricule = _matriculeController.text.trim();
 
-      print('📞 Numéro: $userPhoneNumber');
-      print('🏫 École: $codeEcole');
-      print('🆔 Matricule: $matricule');
-
       Map<String, dynamic> result;
-
       if (_attachedFile != null) {
         if (_fileType == 'image') {
-          print('🖼️ Envoi message avec image...');
           result = await messageService.sendImageMessage(
-            userPhoneNumber: userPhoneNumber,
+            userPhoneNumber: currentUser.phone,
             content: _messageController.text.trim(),
             subject: _subjectController.text.trim(),
             codeEcole: codeEcole,
             matricule: matricule,
             imageFile: _attachedFile!,
           );
-        } else if (_fileType == 'audio') {
-          print('🎤 Envoi message avec audio...');
+        } else {
           result = await messageService.sendVoiceMessage(
-            userPhoneNumber: userPhoneNumber,
+            userPhoneNumber: currentUser.phone,
             content: _messageController.text.trim(),
             subject: _subjectController.text.trim(),
             codeEcole: codeEcole,
             matricule: matricule,
             audioFile: _attachedFile!,
           );
-        } else {
-          print('❌ Type de fichier non supporté: $_fileType');
-          result = {'success': false, 'message': 'Type de fichier non supporté'};
         }
       } else {
-        print('📄 Envoi message texte simple...');
         result = await messageService.sendTextMessage(
-          userPhoneNumber: userPhoneNumber,
+          userPhoneNumber: currentUser.phone,
           content: _messageController.text.trim(),
           subject: _subjectController.text.trim(),
           codeEcole: codeEcole,
@@ -889,24 +1578,18 @@ class _MessagesScreenState extends State<MessagesScreen> {
         );
       }
 
-      print('📥 Résultat reçu: $result');
-
       if (result['success'] == true) {
-        print('✅ Message envoyé avec succès');
-
+        final dest = _recipientController.text.trim();
         final newMessage = {
           'id': 'sent_${DateTime.now().millisecondsSinceEpoch}',
           'title': _subjectController.text,
           'body': _messageController.text,
           'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'sender': '${currentUser.fullName} → ${_recipientController.text.trim().isEmpty ? 'Destinataire' : _recipientController.text}',
+          'sender':
+              '${currentUser.fullName} → ${dest.isEmpty ? 'Destinataire' : dest}',
           'isRead': true,
         };
-
-        setState(() {
-          _notifications.insert(0, newMessage);
-        });
-
+        setState(() => _notifications.insert(0, newMessage));
         _subjectController.clear();
         _messageController.clear();
         _recipientController.clear();
@@ -917,45 +1600,15 @@ class _MessagesScreenState extends State<MessagesScreen> {
           _selectedEcoleCode = null;
         });
         _removeAttachment();
-
         if (mounted) Navigator.of(context).pop();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Message envoyé avec succès'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+        _showSuccess(result['message'] ?? 'Message envoyé avec succès !');
       } else {
-        print('❌ Erreur lors de l\'envoi: ${result['message']}');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Erreur lors de l\'envoi'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        _showError(result['message'] ?? 'Erreur lors de l\'envoi');
       }
     } catch (e) {
-      print('💥 Exception capturée: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError('Erreur: $e');
     } finally {
-      print('🏁 Fin du processus d\'envoi');
-      if (mounted) {
-        setState(() {
-          _isSending = false;
-        });
-      }
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
@@ -965,7 +1618,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
         type: FileType.custom,
         allowedExtensions: ['jpg', 'jpeg', 'png', 'gif'],
       );
-
       if (result != null && result.files.single.path != null) {
         setState(() {
           _attachedFile = File(result.files.single.path!);
@@ -973,12 +1625,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la sélection de l\'image: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Erreur lors de la sélection de l\'image: $e');
     }
   }
 
@@ -988,7 +1635,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
         type: FileType.custom,
         allowedExtensions: ['webm', 'mp3', 'wav', 'm4a'],
       );
-
       if (result != null && result.files.single.path != null) {
         setState(() {
           _attachedFile = File(result.files.single.path!);
@@ -996,12 +1642,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la sélection du fichier audio: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Erreur lors de la sélection du fichier audio: $e');
     }
   }
 
@@ -1012,436 +1653,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
     });
   }
 
-  // ─── Build principal ─────────────────────────────────────────────────────────
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppColors.getPureBackground(isDark),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    _notifications.sort((a, b) {
-      final dateA = DateTime.fromMillisecondsSinceEpoch(a['timestamp'] as int);
-      final dateB = DateTime.fromMillisecondsSinceEpoch(b['timestamp'] as int);
-      return dateB.compareTo(dateA);
-    });
-
-    final filteredItems = _filteredItems;
-
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: AppColors.getPureBackground(isDark),
-      appBar: AppBar(
-        backgroundColor: AppColors.getPureAppBarBackground(isDark),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: Center(
-          child: Text(
-            'Messages',
-            style: AppTypography.appBarTitle.copyWith(
-              color: Theme.of(context).textTheme.titleLarge?.color,
-            ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: Theme.of(context).iconTheme.color),
-            onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) {
-                  _searchController.clear();
-                }
-              });
-            },
-          ),
-          if (_notifications.any((n) => !(n['isRead'] as bool)))
-            IconButton(
-              icon: Icon(
-                Icons.mark_email_read_outlined,
-                color: Theme.of(context).iconTheme.color,
-              ),
-              onPressed: _markAllAsRead,
-              tooltip: 'Marquer tout comme lu',
-            ),
-        ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: FloatingActionButton(
-          onPressed: _showComposeMessageBottomSheet,
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          child: const Icon(Icons.edit),
-        ),
-      ),
-      body: Column(
-        children: [
-          // Barre de recherche animée
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            height: _isSearching ? 56 : 0,
-            margin: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: _isSearching ? 8 : 0,
-            ),
-            child: _isSearching
-                ? CustomSearchBar(
-                    hintText: 'Rechercher un message...',
-                    controller: _searchController,
-                    onChanged: (value) {
-                      setState(() {});
-                    },
-                    onClear: () {
-                      setState(() {
-                        _isSearching = false;
-                        _searchController.clear();
-                      });
-                    },
-                    autoFocus: true,
-                  )
-                : null,
-          ),
-
-          // Filtres
-          Container(
-            height: 35,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _filters.length,
-              itemBuilder: (context, index) {
-                final filter = _filters[index];
-                final isSelected = filter == _selectedFilter;
-                final theme = Theme.of(context);
-                final isDark = theme.brightness == Brightness.dark;
-
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedFilter = filter),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: isSelected ? AppColors.primaryGradient : null,
-                      color: !isSelected ? AppColors.getSurfaceColor(isDark) : null,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: Text(
-                      filter,
-                      style: AppTypography.overline.copyWith(
-                        color: isSelected
-                            ? Colors.white
-                            : AppColors.getTextColor(isDark),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // Compteur de résultats
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              children: [
-                Text(
-                  '${filteredItems.length} message${filteredItems.length > 1 ? 's' : ''}',
-                  style: TextStyle(
-                    fontSize: AppTypography.labelMedium,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Liste des messages
-          if (filteredItems.isEmpty)
-            Expanded(child: _buildEmptyState())
-          else
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: filteredItems.length,
-                itemBuilder: (context, index) {
-                  final notification = filteredItems[index];
-                  final isLast = index == filteredItems.length - 1;
-                  return _buildTimelineItem(notification, isLast);
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.primary.withOpacity(0.15)
-                  : AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Icon(
-              Icons.mail_outline,
-              size: 40,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Aucun message',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(18),
-              fontWeight: FontWeight.w600,
-              color: AppColors.getTextColor(isDark, type: TextType.secondary),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Les messages apparaîtront ici',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              color: AppColors.getTextColor(isDark, type: TextType.secondary)
-                  .withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimelineItem(Map<String, dynamic> notification, bool isLast) {
-    final isRead = notification['isRead'] as bool? ?? false;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Ligne de timeline
-          SizedBox(
-            width: 40,
-            child: Column(
-              children: [
-                Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: isRead
-                        ? (isDark ? Colors.grey[600] : Colors.grey[400])
-                        : AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isRead
-                          ? (isDark ? Colors.grey[500]! : Colors.grey[300]!)
-                          : AppColors.primary.withOpacity(0.3),
-                      width: 3,
-                    ),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: isRead
-                            ? (isDark ? Colors.grey[600] : Colors.grey[400])
-                            : AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: isDark ? Colors.grey[700] : Colors.grey[300],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _buildMessageTimelineCard(notification),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageTimelineCard(Map<String, dynamic> notification) {
-    final title = notification['title'] as String? ?? 'Notification';
-    final body = notification['body'] as String? ?? '';
-    final timestamp = DateTime.fromMillisecondsSinceEpoch(
-        notification['timestamp'] as int);
-    final isRead = notification['isRead'] as bool? ?? false;
-    final sender = notification['sender'] as String? ??
-        'Direction de l\'établissement';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: AppColors.getSurfaceColor(isDark),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.2)
-                : Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _showNotificationDetail(notification),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(16),
-                          fontWeight: FontWeight.w700,
-                          color: isRead
-                              ? AppColors.getTextColor(isDark,
-                                  type: TextType.secondary)
-                              : AppColors.getTextColor(isDark,
-                                  type: TextType.primary),
-                        ),
-                      ),
-                    ),
-                    if (!isRead)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  body,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    color: AppColors.getTextColor(isDark,
-                        type: TextType.secondary),
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.primary.withOpacity(0.08)
-                        : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.schedule_outlined,
-                            size: 16,
-                            color: AppColors.getTextColor(isDark,
-                                type: TextType.secondary),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatDate(timestamp),
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(12),
-                              color: AppColors.getTextColor(isDark,
-                                  type: TextType.secondary),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 16,
-                            color: AppColors.getTextColor(isDark,
-                                type: TextType.secondary),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              sender,
-                              style: TextStyle(
-                                fontSize:
-                                    _textSizeService.getScaledFontSize(12),
-                                color: AppColors.getTextColor(isDark,
-                                    type: TextType.secondary),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showNotificationDetail(Map<String, dynamic> notification) async {
+  // ─── DETAIL BOTTOM SHEET ──────────────────────────────────────────────────
+  void _showNotificationDetail(
+      Map<String, dynamic> notification) async {
     final title = notification['title'] as String? ?? 'Notification';
     final body = notification['body'] as String? ?? '';
     final timestamp = DateTime.fromMillisecondsSinceEpoch(
@@ -1454,83 +1668,140 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
     if (!isRead) {
       try {
-        final databaseService = DatabaseService.instance;
-        await databaseService.markNotificationAsRead(notificationId);
-        setState(() {
-          notification['isRead'] = true;
-        });
-      } catch (e) {
-        print('❌ Erreur lors du marquage: $e');
-      }
+        await DatabaseService.instance
+            .markNotificationAsRead(notificationId);
+        setState(() => notification['isRead'] = true);
+      } catch (_) {}
     }
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.screenCard,
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: SafeArea(
+          top: false,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'De: $sender',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.screenDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-              Text(
-                'Date: ${_formatDate(timestamp)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrangeLight,
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    child: Icon(_getSenderIcon(sender),
+                        color: AppColors.screenOrange, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.screenTextPrimary,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                        Text(
+                          sender,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.screenTextSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.screenSurface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.screenDivider),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.schedule_outlined,
+                        size: 14, color: AppColors.screenTextSecondary),
+                    const SizedBox(width: 6),
+                    Text(
+                      _formatDate(timestamp),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.screenTextSecondary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
-              Text(body),
-              if (data != null && data.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 8),
-                Text(
-                  'Détails:',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+              const Divider(color: AppColors.screenDivider),
+              const SizedBox(height: 12),
+              Text(
+                body,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.screenTextPrimary,
+                  height: 1.6,
                 ),
-                const SizedBox(height: 8),
-                ...data.entries.map((entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '${entry.key}: ${entry.value}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                )),
+              ),
+              if (data != null && data.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Divider(color: AppColors.screenDivider),
+                ...data.entries.map((e) => Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text('${e.key}: ${e.value}',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.screenTextSecondary)),
+                    )),
               ],
+              const SizedBox(height: 24),
+              _buildOrangeButton(
+                label: 'Fermer',
+                onTap: () => Navigator.of(context).pop(),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
-          ),
-        ],
       ),
     );
   }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Aujourd\'hui';
-    } else if (difference.inDays == 1) {
-      return 'Hier';
-    } else if (difference.inDays < 7) {
-      return 'Il y a ${difference.inDays} jours';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
+    final diff = now.difference(date);
+    if (diff.inDays == 0) return 'Aujourd\'hui';
+    if (diff.inDays == 1) return 'Hier';
+    if (diff.inDays < 7) return 'Il y a ${diff.inDays} jours';
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

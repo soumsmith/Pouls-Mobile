@@ -18,17 +18,7 @@ import '../config/app_colors.dart';
 import '../widgets/searchable_dropdown.dart';
 import 'login_screen.dart';
 
-// ─── DESIGN TOKENS (partagés avec CartScreen / HomeScreen) ────────────────
-const _kOrange        = Color(0xFFFF6B2C);
-const _kOrangeLight   = Color(0xFFFFF0E8);
-const _kGreen         = Color(0xFF27AE60);
-const _kGreenLight    = Color(0xFFE8F8EE);
-const _kSurface       = Color(0xFFF8F8F8);
-const _kCard          = Colors.white;
-const _kTextPrimary   = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF8A8A8A);
-const _kDivider       = Color(0xFFF0F0F0);
-const _kShadow        = Color(0x0D000000);
+// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
 /// Écran pour ajouter un élève par matricule
 class AddChildScreen extends StatefulWidget {
@@ -189,7 +179,7 @@ class _AddChildScreenState extends State<AddChildScreen>
   void _showSnackbar(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg, style: const TextStyle(color: Colors.white)),
-      backgroundColor: isError ? Colors.red[400] : _kGreen,
+      backgroundColor: isError ? Colors.red[400] : AppColors.success,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
@@ -207,7 +197,7 @@ class _AddChildScreenState extends State<AddChildScreen>
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fermer')),
           TextButton(
             onPressed: () { Navigator.pop(context); _loadEcoles(); },
-            child: Text('Réessayer', style: TextStyle(color: _kOrange, fontWeight: FontWeight.w700)),
+            child: Text('Réessayer', style: TextStyle(color: AppColors.screenOrange, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -225,7 +215,7 @@ class _AddChildScreenState extends State<AddChildScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Le matricule se trouve sur :', style: TextStyle(color: _kTextSecondary)),
+            const Text('Le matricule se trouve sur :', style: TextStyle(color: AppColors.screenTextSecondary)),
             const SizedBox(height: 12),
             _helpItem('📄', 'Carnet de correspondance'),
             _helpItem('🎓', 'Bulletin scolaire'),
@@ -236,7 +226,7 @@ class _AddChildScreenState extends State<AddChildScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Compris', style: TextStyle(color: _kOrange, fontWeight: FontWeight.w700)),
+            child: Text('Compris', style: TextStyle(color: AppColors.screenOrange, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -248,7 +238,7 @@ class _AddChildScreenState extends State<AddChildScreen>
         child: Row(children: [
           Text(emoji, style: const TextStyle(fontSize: 18)),
           const SizedBox(width: 10),
-          Text(text, style: const TextStyle(fontSize: 14, color: _kTextPrimary)),
+          Text(text, style: const TextStyle(fontSize: 14, color: AppColors.screenTextPrimary)),
         ]),
       );
 
@@ -258,7 +248,7 @@ class _AddChildScreenState extends State<AddChildScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: _kSurface,
+        backgroundColor: AppColors.screenSurface,
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
@@ -280,7 +270,7 @@ class _AddChildScreenState extends State<AddChildScreen>
   // ─── APP BAR ───────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
     return Container(
-      color: _kSurface,
+      color: AppColors.screenSurface,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -294,13 +284,13 @@ class _AddChildScreenState extends State<AddChildScreen>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: _kCard,
+                    color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
-                      BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                      BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new, size: 16, color: _kTextPrimary),
+                  child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.screenTextPrimary),
                 ),
               ),
               const SizedBox(width: 12),
@@ -313,13 +303,13 @@ class _AddChildScreenState extends State<AddChildScreen>
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(18),
                           fontWeight: FontWeight.w800,
-                          color: _kTextPrimary,
+                          color: AppColors.screenTextPrimary,
                           letterSpacing: -0.5,
                         )),
                     Text('Recherche par matricule',
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(12),
-                          color: _kTextSecondary,
+                          color: AppColors.screenTextSecondary,
                         )),
                   ],
                 ),
@@ -331,13 +321,13 @@ class _AddChildScreenState extends State<AddChildScreen>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: _kCard,
+                    color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
-                      BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                      BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
                     ],
                   ),
-                  child: const Icon(Icons.help_outline, size: 18, color: _kOrange),
+                  child: const Icon(Icons.help_outline, size: 18, color: AppColors.screenOrange),
                 ),
               ),
             ],
@@ -375,13 +365,13 @@ class _AddChildScreenState extends State<AddChildScreen>
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF7A3C), _kOrange],
+          colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: _kOrange.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
+          BoxShadow(color: AppColors.screenOrange.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
         ],
       ),
       child: Row(
@@ -426,10 +416,10 @@ class _AddChildScreenState extends State<AddChildScreen>
   Widget _buildSearchPanel() {
     return Container(
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: _kShadow, blurRadius: 16, offset: Offset(0, 4)),
+          BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -443,17 +433,17 @@ class _AddChildScreenState extends State<AddChildScreen>
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: _kOrangeLight,
+                    color: AppColors.screenOrangeLight,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.search_rounded, color: _kOrange, size: 18),
+                  child: const Icon(Icons.search_rounded, color: AppColors.screenOrange, size: 18),
                 ),
                 const SizedBox(width: 12),
                 Text('Recherche',
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(17),
                       fontWeight: FontWeight.w700,
-                      color: _kTextPrimary,
+                      color: AppColors.screenTextPrimary,
                       letterSpacing: -0.3,
                     )),
               ],
@@ -466,7 +456,7 @@ class _AddChildScreenState extends State<AddChildScreen>
               width: 36,
               height: 3,
               margin: const EdgeInsets.only(top: 14, bottom: 4),
-              decoration: BoxDecoration(color: _kDivider, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: AppColors.screenDivider, borderRadius: BorderRadius.circular(2)),
             ),
           ),
 
@@ -546,15 +536,15 @@ class _AddChildScreenState extends State<AddChildScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: AppColors.screenSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kDivider),
+        border: Border.all(color: AppColors.screenDivider),
       ),
       child: Row(children: [
         const SizedBox(width: 16, height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange)),
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.screenOrange)),
         const SizedBox(width: 12),
-        Text(msg, style: const TextStyle(fontSize: 13, color: _kTextSecondary)),
+        Text(msg, style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
       ]),
     );
   }
@@ -571,7 +561,7 @@ class _AddChildScreenState extends State<AddChildScreen>
         Icon(Icons.error_outline, color: Colors.red[400], size: 18),
         const SizedBox(width: 10),
         const Expanded(child: Text('Aucune école disponible',
-            style: TextStyle(fontSize: 13, color: _kTextPrimary))),
+            style: TextStyle(fontSize: 13, color: AppColors.screenTextPrimary))),
       ]),
     );
   }
@@ -582,14 +572,14 @@ class _AddChildScreenState extends State<AddChildScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: _kOrangeLight,
+          color: AppColors.screenOrangeLight,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.refresh_rounded, color: _kOrange, size: 16),
+          const Icon(Icons.refresh_rounded, color: AppColors.screenOrange, size: 16),
           const SizedBox(width: 8),
           Text('Réessayer', style: TextStyle(
-            color: _kOrange,
+            color: AppColors.screenOrange,
             fontWeight: FontWeight.w700,
             fontSize: _textSizeService.getScaledFontSize(13),
           )),
@@ -607,36 +597,36 @@ class _AddChildScreenState extends State<AddChildScreen>
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: _kSurface,
+            color: AppColors.screenSurface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _kDivider),
+            border: Border.all(color: AppColors.screenDivider),
           ),
           child: TextField(
             controller: _matriculeController,
             autofocus: false,
             style: const TextStyle(
               fontSize: 14,
-              color: _kTextPrimary,
+              color: AppColors.screenTextPrimary,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
               hintText: 'Ex: 24047355B',
               hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-              prefixIcon: const Icon(Icons.badge_outlined, color: _kOrange, size: 18),
+              prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.screenOrange, size: 18),
               filled: true,
-              fillColor: _kSurface,
+              fillColor: AppColors.screenSurface,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _kDivider),
+                borderSide: const BorderSide(color: AppColors.screenDivider),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _kDivider),
+                borderSide: const BorderSide(color: AppColors.screenDivider),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _kOrange, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.screenOrange, width: 1.5),
               ),
             ),
             onSubmitted: (_) => _searchEleve(),
@@ -649,9 +639,9 @@ class _AddChildScreenState extends State<AddChildScreen>
   Widget _fieldLabel(String label, {bool required = false}) {
     return Row(children: [
       Text(label, style: const TextStyle(
-          fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary, letterSpacing: 0.2)),
+          fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary, letterSpacing: 0.2)),
       if (required)
-        const Text(' *', style: TextStyle(color: _kOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+        const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
     ]);
   }
 
@@ -680,10 +670,10 @@ class _AddChildScreenState extends State<AddChildScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: _kCard,
+        color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: _kShadow, blurRadius: 16, offset: Offset(0, 4)),
+          BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -692,7 +682,7 @@ class _AddChildScreenState extends State<AddChildScreen>
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: const BoxDecoration(
-              color: _kGreenLight,
+              color: AppColors.successLight,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Row(children: [
@@ -700,17 +690,17 @@ class _AddChildScreenState extends State<AddChildScreen>
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: _kGreen.withOpacity(0.15),
+                  color: AppColors.success.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.check_rounded, color: _kGreen, size: 18),
+                child: const Icon(Icons.check_rounded, color: AppColors.success, size: 18),
               ),
               const SizedBox(width: 10),
               Text('Élève trouvé !',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(15),
                     fontWeight: FontWeight.w700,
-                    color: _kGreen,
+                    color: AppColors.success,
                     letterSpacing: -0.2,
                   )),
             ]),
@@ -733,7 +723,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                           height: 64,
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFFFF7A3C), _kOrange],
+                              colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -759,27 +749,27 @@ class _AddChildScreenState extends State<AddChildScreen>
                               style: TextStyle(
                                 fontSize: _textSizeService.getScaledFontSize(17),
                                 fontWeight: FontWeight.w800,
-                                color: _kTextPrimary,
+                                color: AppColors.screenTextPrimary,
                                 letterSpacing: -0.3,
                               )),
                           const SizedBox(height: 2),
                           Text(eleve.prenomEleve ?? 'Prénom inconnu',
                               style: TextStyle(
                                 fontSize: _textSizeService.getScaledFontSize(14),
-                                color: _kTextSecondary,
+                                color: AppColors.screenTextSecondary,
                                 fontWeight: FontWeight.w500,
                               )),
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: _kOrangeLight,
+                              color: AppColors.screenOrangeLight,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(eleve.classe.isNotEmpty ? eleve.classe : 'Classe inconnue',
                                 style: TextStyle(
                                   fontSize: _textSizeService.getScaledFontSize(11),
-                                  color: _kOrange,
+                                  color: AppColors.screenOrange,
                                   fontWeight: FontWeight.w600,
                                 )),
                           ),
@@ -790,7 +780,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                 ),
 
                 const SizedBox(height: 14),
-                const Divider(color: _kDivider, height: 1),
+                const Divider(color: AppColors.screenDivider, height: 1),
                 const SizedBox(height: 14),
 
                 // Infos détaillées
@@ -806,8 +796,8 @@ class _AddChildScreenState extends State<AddChildScreen>
                   onTap: _isLoading ? null : _handleAddChild,
                   isLoading: _isLoading,
                   icon: Icons.person_add_rounded,
-                  color: _kGreen,
-                  shadowColor: _kGreen,
+                  color: AppColors.success,
+                  shadowColor: AppColors.success,
                 ),
               ],
             ),
@@ -821,7 +811,7 @@ class _AddChildScreenState extends State<AddChildScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: AppColors.screenSurface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(children: [
@@ -829,17 +819,17 @@ class _AddChildScreenState extends State<AddChildScreen>
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: _kOrangeLight,
+            color: AppColors.screenOrangeLight,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: _kOrange, size: 15),
+          child: Icon(icon, color: AppColors.screenOrange, size: 15),
         ),
         const SizedBox(width: 10),
         Text('$label :', style: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: _kTextSecondary)),
+            fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
         const SizedBox(width: 6),
         Expanded(child: Text(value, style: const TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w600, color: _kTextPrimary),
+            fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.screenTextPrimary),
             overflow: TextOverflow.ellipsis)),
       ]),
     );
@@ -851,7 +841,7 @@ class _AddChildScreenState extends State<AddChildScreen>
     VoidCallback? onTap,
     bool isLoading = false,
     IconData? icon,
-    Color color = _kOrange,
+    Color color = AppColors.screenOrange,
     Color? shadowColor,
   }) {
     return GestureDetector(
@@ -862,8 +852,8 @@ class _AddChildScreenState extends State<AddChildScreen>
         height: 54,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: color == _kOrange
-                ? const [Color(0xFFFF7A3C), _kOrange]
+            colors: color == AppColors.screenOrange
+                ? const [Color(0xFFFF7A3C), AppColors.screenOrange]
                 : [color.withOpacity(0.85), color],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

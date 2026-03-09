@@ -219,6 +219,49 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
+  // ================= COULEURS SPÉCIFI AUX ÉCRANS =================
+  
+  // Orange principal (utilisé dans settings/establishment)
+  static const Color screenOrange = Color(0xFFFF6B2C);
+  static const Color screenOrangeLight = Color(0xFFFFF0E8);
+  static const Color screenOrangeDark = Color(0xFFE55A2C);
+  static const Color screenOrangeSurface = Color(0xFFFFF8F5);
+  
+  // Surface spécifique aux écrans
+  static const Color screenSurface = Color(0xFFF8F8F8);
+  static const Color screenCard = Color(0xFFFFFFFF);
+  static const Color screenTextPrimary = Color(0xFF1A1A1A);
+  static const Color screenTextSecondary = Color(0xFF8A8A8A);
+  static const Color screenDivider = Color(0xFFF0F0F0);
+  static const Color screenShadow = Color(0x0D000000);
+  
+  // Couleurs pour icônes de settings
+  static const Color settingsBlue = Color(0xFF3B82F6);
+  static const Color settingsGreen = Color(0xFF4CAF50);
+  static const Color settingsPurple = Color(0xFF9C27B0);
+  static const Color settingsAmber = Color(0xFFF59E0B);
+  static const Color settingsCyan = Color(0xFF00BCD4);
+  static const Color settingsBlueGrey = Color(0xFF607D8B);
+  static const Color settingsRed = Color(0xFFF44336);
+  static const Color settingsBrown = Color(0xFF795548);
+  static const Color settingsGrey = Color(0xFF607D8B);
+  static const Color settingsOrange = Color(0xFFFF6B2C);
+  
+  // Gris supplémentaire
+  static const Color grey666 = Color(0xFF666666);
+  
+  // Ombres et gradients pour les écrans
+  static const List<BoxShadow> screenCardShadow = [
+    BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x06000000), blurRadius: 4, offset: Offset(0, 1)),
+  ];
+  
+  static const LinearGradient screenOrangeGradient = LinearGradient(
+    colors: [Color(0xFFFF7A3C), screenOrange],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   // ================= UTILITAIRES =================
 
   static const Color transparent = Color(0x00000000);

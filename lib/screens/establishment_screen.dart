@@ -10,12 +10,7 @@ import '../utils/image_helper.dart';
 import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const _kOrange      = Color(0xFFFF6B2C);
-const _kOrangeLight = Color(0xFFFFF0E8);
-const _kSurface     = Color(0xFFF8F8F8);
-const _kCard        = Colors.white;
-const _kShadow      = Color(0x0D000000);
+// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
 const _kCardShadow = [
   BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
@@ -23,7 +18,7 @@ const _kCardShadow = [
 ];
 
 const _kOrangeGradient = LinearGradient(
-  colors: [Color(0xFFFF7A3C), _kOrange],
+  colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
 );
@@ -34,7 +29,7 @@ Color _typeColor(String type) {
     case 'primaire':   return const Color(0xFF3B82F6);
     case 'collège':    return const Color(0xFF8B5CF6);
     case 'lycée':      return const Color(0xFF10B981);
-    case 'privé':      return _kOrange;
+    case 'privé':      return AppColors.screenOrange;
     case 'public':     return const Color(0xFF6366F1);
     default:           return const Color(0xFFEF4444);
   }
@@ -145,7 +140,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         textScaler: TextScaler.linear(_currentTextScale),
       ),
       child: Scaffold(
-        backgroundColor: _kSurface,
+        backgroundColor: AppColors.screenSurface,
         body: Column(
           children: [
             _buildHeader(),
@@ -161,7 +156,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Header (sans bouton Événements) ───────────────────────
   Widget _buildHeader() {
     return Container(
-      color: _kCard,
+      color: AppColors.screenCard,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 8,
         left: 20,
@@ -177,9 +172,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _kCard,
+                color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: _kCardShadow,
+                boxShadow: AppColors.screenCardShadow,
               ),
               child: const Icon(Icons.arrow_back_ios_new_rounded,
                   size: 18, color: Color(0xFF1A1A1A)),
@@ -221,9 +216,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: _kCard,
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: _kCardShadow,
+          boxShadow: AppColors.screenCardShadow,
         ),
         child: Icon(icon, size: 20, color: const Color(0xFF1A1A1A)),
       ),
@@ -236,18 +231,18 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       height: _isSearching ? 60 : 0,
-      color: _kCard,
+      color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: _isSearching
           ? Container(
               height: 44,
               decoration: BoxDecoration(
-                color: _kSurface,
+                color: AppColors.screenSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _kOrange.withOpacity(0.4)),
+                border: Border.all(color: AppColors.screenOrange.withOpacity(0.4)),
                 boxShadow: [
                   BoxShadow(
-                    color: _kOrange.withOpacity(0.08),
+                    color: AppColors.screenOrange.withOpacity(0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -261,7 +256,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   hintText: 'Rechercher un établissement...',
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                   prefixIcon: const Icon(Icons.search_rounded,
-                      size: 18, color: _kOrange),
+                      size: 18, color: AppColors.screenOrange),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? GestureDetector(
                           onTap: () =>
@@ -283,7 +278,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Filter Row ─────────────────────────────────────────────
   Widget _buildFilterRow() {
     return Container(
-      color: _kCard,
+      color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: SizedBox(
         height: 36,
@@ -305,13 +300,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    gradient: selected ? _kOrangeGradient : null,
-                    color: selected ? null : _kSurface,
+                    gradient: selected ? AppColors.screenOrangeGradient : null,
+                    color: selected ? null : AppColors.screenSurface,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: selected
                         ? [
                             BoxShadow(
-                              color: _kOrange.withOpacity(0.30),
+                              color: AppColors.screenOrange.withOpacity(0.30),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             )
@@ -354,13 +349,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: _kOrangeLight,
+              color: AppColors.screenOrangeLight,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Padding(
               padding: EdgeInsets.all(14),
               child: CircularProgressIndicator(
-                color: _kOrange,
+                color: AppColors.screenOrange,
                 strokeWidth: 2.5,
               ),
             ),
@@ -418,11 +413,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 padding: const EdgeInsets.symmetric(
                     horizontal: 24, vertical: 14),
                 decoration: BoxDecoration(
-                  gradient: _kOrangeGradient,
+                  gradient: AppColors.screenOrangeGradient,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: _kOrange.withOpacity(0.3),
+                      color: AppColors.screenOrange.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -480,7 +475,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: _kOrange,
+                                color: AppColors.screenOrange,
                               ),
                             ),
                             const TextSpan(
@@ -511,7 +506,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: _kOrangeLight,
+                              color: AppColors.screenOrangeLight,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -522,12 +517,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: _kOrange,
+                                    color: AppColors.screenOrange,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 const Icon(Icons.close_rounded,
-                                    size: 12, color: _kOrange),
+                                    size: 12, color: AppColors.screenOrange),
                               ],
                             ),
                           ),
@@ -549,11 +544,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: _kOrangeLight,
+                            color: AppColors.screenOrangeLight,
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: const Icon(Icons.business_outlined,
-                              size: 40, color: _kOrange),
+                              size: 40, color: AppColors.screenOrange),
                         ),
                         const SizedBox(height: 20),
                         const Text(
@@ -582,11 +577,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 12),
                             decoration: BoxDecoration(
-                              gradient: _kOrangeGradient,
+                              gradient: AppColors.screenOrangeGradient,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _kOrange.withOpacity(0.3),
+                                  color: AppColors.screenOrange.withOpacity(0.3),
                                   blurRadius: 6,
                                   offset: const Offset(0, 3),
                                 ),
@@ -661,7 +656,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0x00F8F8F8), _kSurface],
+                  colors: [Color(0x00F8F8F8), AppColors.screenSurface],
                 ),
               ),
             ),
@@ -687,7 +682,7 @@ class _EventsBannerCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: _kOrange.withOpacity(0.25),
+              color: AppColors.screenOrange.withOpacity(0.25),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -869,9 +864,9 @@ class _EcoleCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: _kCard,
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: _kCardShadow,
+          boxShadow: AppColors.screenCardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

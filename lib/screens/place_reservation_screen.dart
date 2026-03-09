@@ -107,7 +107,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur: $e', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14))),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -179,14 +179,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Réservation soumise avec succès'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Erreur lors de la soumission'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -194,7 +194,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -229,7 +229,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Confirmer'),
           ),
         ],
@@ -245,14 +245,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Réservation annulée'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Erreur lors de l\'annulation'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -260,7 +260,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -282,7 +282,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
               'Données exportées dans le presse-papiers',
               style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14)),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -291,7 +291,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors de l\'export: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -796,14 +796,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                   Icon(
                     Icons.schedule,
                     size: 16,
-                    color: reservation.isOverdue ? Colors.red : Colors.orange,
+                    color: reservation.isOverdue ? AppColors.error : AppColors.warning,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'Limite: ${reservation.formattedDeadline}',
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(12),
-                      color: reservation.isOverdue ? Colors.red : Colors.orange,
+                      color: reservation.isOverdue ? AppColors.error : AppColors.warning,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -832,7 +832,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                       '${reservation.documentsCompletionPercentage.toStringAsFixed(0)}%',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(12),
-                        color: reservation.areAllDocumentsSubmitted ? Colors.green : Colors.orange,
+                        color: reservation.areAllDocumentsSubmitted ? AppColors.success : AppColors.warning,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -843,7 +843,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                   value: reservation.documentsCompletionPercentage / 100,
                   backgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    reservation.areAllDocumentsSubmitted ? Colors.green : Colors.orange,
+                    reservation.areAllDocumentsSubmitted ? AppColors.success : AppColors.warning,
                   ),
                 ),
               ],
@@ -857,14 +857,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                 Icon(
                   Icons.payment,
                   size: 16,
-                  color: reservation.isDepositPaid ? Colors.green : Colors.orange,
+                  color: reservation.isDepositPaid ? AppColors.success : AppColors.warning,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   reservation.paymentStatus,
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
-                    color: reservation.isDepositPaid ? Colors.green : Colors.orange,
+                    color: reservation.isDepositPaid ? AppColors.success : AppColors.warning,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -873,14 +873,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                   Icon(
                     Icons.people,
                     size: 16,
-                    color: Colors.blue,
+                    color: AppColors.info,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'Liste d\'attente: #${reservation.waitlistPosition}',
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(12),
-                      color: Colors.blue,
+                      color: AppColors.info,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -916,14 +916,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                     child: OutlinedButton(
                       onPressed: () => _cancelReservation(reservation.id),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
+                        side: const BorderSide(color: AppColors.error),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
                       child: Text(
                         'Annuler',
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(12),
-                          color: Colors.red,
+                          color: AppColors.error,
                         ),
                       ),
                     ),
@@ -1043,7 +1043,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(18),
                           fontWeight: FontWeight.w600,
-                          color: availability.hasAvailablePlaces ? Colors.green : Colors.red,
+                          color: availability.hasAvailablePlaces ? AppColors.success : AppColors.error,
                         ),
                       ),
                     ],
@@ -1065,7 +1065,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(18),
                           fontWeight: FontWeight.w600,
-                          color: availability.waitlistCount > 0 ? Colors.orange : Colors.green,
+                          color: availability.waitlistCount > 0 ? AppColors.warning : AppColors.success,
                         ),
                       ),
                     ],
@@ -1081,7 +1081,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
               value: availability.availabilityPercentage / 100,
               backgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
               valueColor: AlwaysStoppedAnimation<Color>(
-                availability.hasAvailablePlaces ? Colors.green : Colors.red,
+                availability.hasAvailablePlaces ? AppColors.success : AppColors.error,
               ),
             ),
             
@@ -1093,14 +1093,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                 Icon(
                   Icons.schedule,
                   size: 16,
-                  color: availability.isDeadlinePassed ? Colors.red : Colors.orange,
+                  color: availability.isDeadlinePassed ? AppColors.error : AppColors.warning,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'Date limite: ${availability.applicationDeadline.day}/${availability.applicationDeadline.month}/${availability.applicationDeadline.year}',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
-                    color: availability.isDeadlinePassed ? Colors.red : Colors.orange,
+                    color: availability.isDeadlinePassed ? AppColors.error : AppColors.warning,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1215,14 +1215,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                     'Taux de confirmation',
                     '${_stats!.confirmationRate.toStringAsFixed(1)}%',
                     Icons.check_circle,
-                    Colors.green,
+                    AppColors.success,
                   ),
                   const SizedBox(height: 12),
                   _buildStatItem(
                     'Taux de rejet',
                     '${_stats!.rejectionRate.toStringAsFixed(1)}%',
                     Icons.cancel,
-                    Colors.red,
+                    AppColors.error,
                   ),
                 ],
               ),
@@ -1263,14 +1263,14 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                     'Revenus totaux',
                     '${_stats!.totalRevenue.toStringAsFixed(0)} FCFA',
                     Icons.attach_money,
-                    Colors.green,
+                    AppColors.success,
                   ),
                   const SizedBox(height: 12),
                   _buildStatItem(
                     'Revenus en attente',
                     '${_stats!.pendingRevenue.toStringAsFixed(0)} FCFA',
                     Icons.pending,
-                    Colors.orange,
+                    AppColors.warning,
                   ),
                 ],
               ),
@@ -1476,7 +1476,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Fonctionnalité de création à implémenter'),
-                          backgroundColor: Colors.blue,
+                          backgroundColor: AppColors.info,
                         ),
                       );
                     },
@@ -1598,17 +1598,17 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
       case ReservationStatus.draft:
         return Colors.grey;
       case ReservationStatus.submitted:
-        return Colors.blue;
+        return AppColors.info;
       case ReservationStatus.pending:
-        return Colors.orange;
+        return AppColors.warning;
       case ReservationStatus.underReview:
         return Colors.purple;
       case ReservationStatus.waitlist:
         return Colors.indigo;
       case ReservationStatus.confirmed:
-        return Colors.green;
+        return AppColors.success;
       case ReservationStatus.rejected:
-        return Colors.red;
+        return AppColors.error;
       case ReservationStatus.cancelled:
         return Colors.grey;
       case ReservationStatus.completed:
@@ -1619,28 +1619,28 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
   Color _getTypeColor(ReservationType type) {
     switch (type) {
       case ReservationType.newAdmission:
-        return Colors.blue;
+        return AppColors.info;
       case ReservationType.reEnrollment:
-        return Colors.green;
+        return AppColors.success;
       case ReservationType.transfer:
-        return Colors.orange;
+        return AppColors.warning;
       case ReservationType.siblingAdmission:
         return Colors.purple;
       case ReservationType.specialProgram:
-        return Colors.red;
+        return AppColors.error;
     }
   }
 
   Color _getAvailabilityStatusColor(String status) {
     switch (status) {
       case 'Disponible':
-        return Colors.green;
+        return AppColors.success;
       case 'Complet':
-        return Colors.red;
+        return AppColors.error;
       case 'Fermé':
         return Colors.grey;
       case 'Date limite dépassée':
-        return Colors.orange;
+        return AppColors.warning;
       default:
         return Colors.grey;
     }

@@ -105,7 +105,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur: $e', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14))),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -173,7 +173,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez remplir tous les champs'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -183,7 +183,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez sélectionner la catégorie, le type et la priorité'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -217,7 +217,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Suggestion créée avec succès'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         
@@ -232,7 +232,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Erreur lors de la création de la suggestion'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -240,7 +240,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -259,7 +259,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors du vote: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -280,7 +280,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
               'Données exportées dans le presse-papiers',
               style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14)),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -289,7 +289,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors de l\'export: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -719,10 +719,10 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
                   icon: Icon(
                     Icons.thumb_up,
                     size: 20,
-                    color: Colors.green,
+                    color: AppColors.success,
                   ),
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.green.withOpacity(0.1),
+                    backgroundColor: AppColors.success.withOpacity(0.1),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
@@ -730,7 +730,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
                   '${suggestion.upvotes ?? 0}',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
-                    color: Colors.green,
+                    color: AppColors.success,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -740,10 +740,10 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
                   icon: Icon(
                     Icons.thumb_down,
                     size: 20,
-                    color: Colors.red,
+                    color: AppColors.error,
                   ),
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.red.withOpacity(0.1),
+                    backgroundColor: AppColors.error.withOpacity(0.1),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
@@ -751,7 +751,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
                   '${suggestion.downvotes ?? 0}',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
-                    color: Colors.red,
+                    color: AppColors.error,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -821,14 +821,14 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
                     'Taux d\'approbation',
                     '${_stats!.approvalRate.toStringAsFixed(1)}%',
                     Icons.check_circle,
-                    Colors.green,
+                    AppColors.success,
                   ),
                   const SizedBox(height: 12),
                   _buildStatItem(
                     'Taux d\'implémentation',
                     '${_stats!.implementationRate.toStringAsFixed(1)}%',
                     Icons.build,
-                    Colors.blue,
+                    AppColors.info,
                   ),
                 ],
               ),
@@ -942,7 +942,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
                           Icon(
                             Icons.trending_up,
                             size: 16,
-                            color: Colors.green,
+                            color: AppColors.success,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -959,7 +959,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
                             '+${suggestion.voteScore}',
                             style: TextStyle(
                               fontSize: _textSizeService.getScaledFontSize(12),
-                              color: Colors.green,
+                              color: AppColors.success,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1407,13 +1407,13 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
   Color _getStatusColor(SuggestionStatus status) {
     switch (status) {
       case SuggestionStatus.pending:
-        return Colors.orange;
+        return AppColors.warning;
       case SuggestionStatus.underReview:
-        return Colors.blue;
+        return AppColors.info;
       case SuggestionStatus.approved:
-        return Colors.green;
+        return AppColors.success;
       case SuggestionStatus.rejected:
-        return Colors.red;
+        return AppColors.error;
       case SuggestionStatus.implemented:
         return Colors.purple;
       case SuggestionStatus.closed:
@@ -1424,17 +1424,17 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
   Color _getCategoryColor(SuggestionCategory category) {
     switch (category) {
       case SuggestionCategory.academic:
-        return Colors.blue;
+        return AppColors.info;
       case SuggestionCategory.infrastructure:
         return Colors.brown;
       case SuggestionCategory.security:
-        return Colors.red;
+        return AppColors.error;
       case SuggestionCategory.communication:
-        return Colors.green;
+        return AppColors.success;
       case SuggestionCategory.activities:
         return Colors.purple;
       case SuggestionCategory.nutrition:
-        return Colors.orange;
+        return AppColors.warning;
       case SuggestionCategory.technology:
         return Colors.indigo;
       case SuggestionCategory.staff:
@@ -1449,11 +1449,11 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
   Color _getPriorityColor(SuggestionPriority priority) {
     switch (priority) {
       case SuggestionPriority.low:
-        return Colors.green;
+        return AppColors.success;
       case SuggestionPriority.medium:
-        return Colors.orange;
+        return AppColors.warning;
       case SuggestionPriority.high:
-        return Colors.red;
+        return AppColors.error;
       case SuggestionPriority.urgent:
         return Colors.purple;
     }

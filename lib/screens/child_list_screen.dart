@@ -34,16 +34,9 @@ import '../services/access_log_service.dart';
 import '../models/access_log.dart';
 import '../services/place_reservation_service.dart';
 import '../models/place_reservation.dart';
+import '../models/student_class_info.dart';
 
-// ─── DESIGN TOKENS MODERNES INSPIRÉS DU PANIER ───────────────────────────────────
-const _kSurface = Color(0xFFF8F8F8);
-const _kCard = Colors.white;
-const _kTextPrimary = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF8A8A8A);
-const _kDivider = Color(0xFFF0F0F0);
-const _kShadow = Color(0x0D000000);
-const _kOrange = Color(0xFFFF6B2C);
-const _kOrangeLight = Color(0xFFFFF0E8);
+// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
 /// Écran de détail d'un enfant avec menu cartes
 class ChildListScreen extends StatefulWidget {
@@ -122,6 +115,9 @@ class _ChildListScreenState extends State<ChildListScreen>
   int? _classeId;
   String? _matricule;
   int? _anneeId;
+  
+  // Informations supplémentaires de la classe/école
+  StudentClassInfo? _studentClassInfo;
 
   @override
   void initState() {
@@ -320,36 +316,42 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('📊 Étape 3: Lancement du chargement des données de notes globales...');
       await _loadGlobalNotesData();
       
-      // Étape 4: Charger les fournitures scolaires
-      print('📚 Étape 4: Lancement du chargement des fournitures scolaires...');
+      // Étape 4: Charger les informations détaillées de la classe/école
+      print('🏫 Étape 4: Chargement des informations détaillées de la classe/école...');
+      if (_studentClassInfo == null && _matricule != null && _anneeId != null && _classeId != null) {
+        await _loadStudentClassInfo();
+      }
+      
+      // Étape 5: Charger les fournitures scolaires
+      print('📚 Étape 5: Lancement du chargement des fournitures scolaires...');
       await _loadSchoolSupplies();
 
-      // Étape 5: Précharger l'emploi du temps
-      print('📅 Étape 5: Préchargement de l\'emploi du temps...');
+      // Étape 6: Précharger l'emploi du temps
+      print('📅 Étape 6: Préchargement de l\'emploi du temps...');
       await _loadTimetableData();
       
-      // Étape 6: Précharger le contrôle d'accès
-      print('🔒 Étape 6: Préchargement du contrôle d\'accès...');
+      // Étape 7: Précharger le contrôle d'accès
+      print('🔒 Étape 7: Préchargement du contrôle d\'accès...');
       await _loadAccessControlData();
       
-      // Étape 7: Précharger les messages
-      print('💬 Étape 7: Préchargement des messages...');
+      // Étape 8: Précharger les messages
+      print('💬 Étape 8: Préchargement des messages...');
       await _loadMessagesData();
       
-      // Étape 8: Précharger les scolarités
-      print('💰 Étape 8: Préchargement des scolarités...');
+      // Étape 9: Précharger les scolarités
+      print('💰 Étape 9: Préchargement des scolarités...');
       await _loadScolariteData();
       
-      // Étape 9: Précharger les suggestions
-      print('💡 Étape 9: Préchargement des suggestions...');
+      // Étape 10: Précharger les suggestions
+      print('💡 Étape 10: Préchargement des suggestions...');
       await _loadSuggestionsData();
       
-      // Étape 10: Précharger les logs d'accès
-      print('📋 Étape 10: Préchargement des logs d\'accès...');
+      // Étape 11: Précharger les logs d'accès
+      print('📋 Étape 11: Préchargement des logs d\'accès...');
       await _loadAccessLogsData();
       
-      // Étape 11: Précharger les réservations
-      print('🪑 Étape 11: Préchargement des réservations...');
+      // Étape 12: Précharger les réservations
+      print('🪑 Étape 12: Préchargement des réservations...');
       await _loadReservationsData();
       
     } catch (e) {
@@ -397,6 +399,11 @@ class _ChildListScreenState extends State<ChildListScreen>
             print('❌ Erreur lors du chargement de l\'année scolaire: $e');
           }
         }
+        
+        // Charger les informations détaillées de la classe/école avec la nouvelle API
+        if (_matricule != null && _anneeId != null && _classeId != null) {
+          await _loadStudentClassInfo();
+        }
       } else {
         print('❌ Aucune information trouvée pour l\'enfant ${widget.child.id}');
       }
@@ -405,12 +412,42 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
+  Future<void> _loadStudentClassInfo() async {
+    if (_matricule == null || _anneeId == null || _classeId == null) {
+      print('⚠️ Informations manquantes pour charger les infos classe/école');
+      return;
+    }
+    
+    try {
+      print('🏫 Chargement des informations détaillées de la classe/école...');
+      final studentClassInfo = await _poulsApiService.getStudentClassInfo(
+        _matricule!,
+        _anneeId!,
+        _classeId!,
+      );
+      
+      setState(() {
+        _studentClassInfo = studentClassInfo;
+      });
+      
+      print('✅ Informations classe/école chargées:');
+      print('   🏫 École: ${_studentClassInfo!.ecole.libelle}');
+      print('   📚 Classe: ${_studentClassInfo!.classe.libelle}');
+      print('   👤 Élève: ${_studentClassInfo!.eleve.fullName}');
+      print('   🏷️ ID Vie École: ${_studentClassInfo!.identifiantVieEcole}');
+      
+    } catch (e) {
+      print('❌ Erreur lors du chargement des informations classe/école: $e');
+      // Ne pas bloquer le processus si cette API échoue
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = _themeService.isDarkMode;
     
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey[900] : _kSurface,
+      backgroundColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
       body: CustomScrollView(
         slivers: [
           _buildModernSliverAppBar(),
@@ -422,8 +459,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                   _buildModernProfileHeader(),
                   const SizedBox(height: 20),
                   _buildModernSummaryCards(),
+                  const SizedBox(height: 16),
+                  _buildPaymentBannerCard(),
                   const SizedBox(height: 24),
                   _buildStudentMenuCards(),
+                  const SizedBox(height: 150),
                 ],
               ),
             ),
@@ -871,17 +911,20 @@ class _ChildListScreenState extends State<ChildListScreen>
       expandedHeight: 80,
       floating: false,
       pinned: true,
-      backgroundColor: isDarkMode ? Colors.grey[900] : _kSurface,
+      leadingWidth: 60,
+      automaticallyImplyLeading: false,
+      backgroundColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
       elevation: 0,
       forceElevated: false,
       surfaceTintColor: Colors.transparent,
+      titleSpacing: 0,
       leading: Container(
         margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
         decoration: BoxDecoration(
-          color: _kCard,
+          color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
-            BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+            BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
           ],
         ),
         child: IconButton(
@@ -899,10 +942,10 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
           decoration: BoxDecoration(
-            color: _kCard,
+            color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(12),
             boxShadow: const [
-              BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+              BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
             ],
           ),
           child: IconButton(
@@ -913,10 +956,10 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
           decoration: BoxDecoration(
-            color: _kCard,
+            color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(12),
             boxShadow: const [
-              BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+              BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
             ],
           ),
           child: IconButton(
@@ -925,32 +968,34 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         ),
       ],
-      flexibleSpace: FlexibleSpaceBar(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
+      title: Padding(
+        padding: const EdgeInsets.only(left: 10.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.child.fullName,
-              style: TextStyle(
-                color: theme.textTheme.titleLarge?.color,
-                fontWeight: FontWeight.w700,
-                fontSize: _textSizeService.getScaledFontSize(20),
-                letterSpacing: -0.5,
-              ),
+          Text(
+            widget.child.fullName,
+            style: TextStyle(
+              color: theme.textTheme.titleLarge?.color,
+              fontWeight: FontWeight.w700,
+              fontSize: _textSizeService.getScaledFontSize(16),
+              letterSpacing: -0.5,
             ),
-            const SizedBox(height: 4),
-            Text(
-              widget.child.grade,
-              style: TextStyle(
-                color: _kTextSecondary,
-                fontSize: _textSizeService.getScaledFontSize(13),
-                fontWeight: FontWeight.w500,
-              ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            widget.child.grade,
+            style: TextStyle(
+              color: AppColors.screenTextSecondary,
+              fontSize: _textSizeService.getScaledFontSize(13),
+              fontWeight: FontWeight.w500,
             ),
-          ],
+          ),
+        ],
         ),
-        titlePadding: const EdgeInsets.only(left: 76, bottom: 16),
       ),
     );
   }
@@ -961,14 +1006,14 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFFFF7A3C), _kOrange],
+          colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: _kOrange.withOpacity(0.3),
+            color: AppColors.screenOrange.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1046,44 +1091,186 @@ class _ChildListScreenState extends State<ChildListScreen>
               _buildModernStatusBadge('📈 Progression', Colors.white),
             ],
           ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: _showPaiementBottomSheet,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
+        ],
+      ),
+    );
+  }
+
+  // ─── PAYMENT BANNER CARD ───────────────────────────────────────────────────────
+  Widget _buildPaymentBannerCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: GestureDetector(
+        onTap: _showPaiementBottomSheet,
+        child: Container(
+          height: 110,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.payment_outlined,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Paiement en ligne',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: _textSizeService.getScaledFontSize(14),
-                      fontWeight: FontWeight.w700,
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // ── Fond dégradé principal ──────────────────────
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white,
-                    size: 12,
+                ),
+
+                // ── Cercles décoratifs translucides ────────────
+                Positioned(
+                  right: -28,
+                  top: -28,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.10),
+                    ),
                   ),
-                ],
-              ),
+                ),
+                Positioned(
+                  right: 48,
+                  bottom: -40,
+                  child: Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.07),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -16,
+                  bottom: -20,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.06),
+                    ),
+                  ),
+                ),
+
+                // ── Points décoratifs ───────────────────────────
+                Positioned(
+                  top: 18,
+                  right: 110,
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white30,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 22,
+                  right: 88,
+                  child: Container(
+                    width: 3,
+                    height: 3,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white24,
+                    ),
+                  ),
+                ),
+
+                // ── Contenu ─────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 16),
+                  child: Row(
+                    children: [
+                      // Icône dans un cercle blanc
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.22),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.35),
+                              width: 1.5),
+                        ),
+                        child: const Icon(
+                          Icons.payments_rounded,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      const SizedBox(width: 16),
+
+                      // Textes
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Paiement en ligne',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.3,
+                                height: 1.1,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Effectuez vos paiements\nde scolarité en toute sécurité',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white70,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Flèche droite
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.20),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1128,11 +1315,11 @@ class _ChildListScreenState extends State<ChildListScreen>
           builder: (context, setState) {
             return Container(
               decoration: BoxDecoration(
-                color: _kCard,
+                color: AppColors.screenCard,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: const [
                   BoxShadow(
-                    color: _kShadow,
+                    color: AppColors.screenShadow,
                     blurRadius: 20,
                     offset: Offset(0, -4),
                   ),
@@ -1157,7 +1344,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 height: 4,
                                 margin: const EdgeInsets.only(bottom: 18),
                                 decoration: BoxDecoration(
-                                  color: _kDivider,
+                                  color: AppColors.screenDivider,
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
@@ -1169,7 +1356,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   height: 44,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
-                                      colors: [const Color(0xFFFF7A3C), _kOrange],
+                                      colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
@@ -1190,7 +1377,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w800,
-                                        color: _kTextPrimary,
+                                        color: AppColors.screenTextPrimary,
                                         letterSpacing: -0.4,
                                       ),
                                     ),
@@ -1198,7 +1385,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       'Entrez le montant à payer pour ${widget.child.firstName}',
                                       style: const TextStyle(
                                         fontSize: 13,
-                                        color: _kTextSecondary,
+                                        color: AppColors.screenTextSecondary,
                                       ),
                                     ),
                                   ],
@@ -1208,13 +1395,13 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   onPressed: () => Navigator.of(context).pop(),
                                   icon: const Icon(
                                     Icons.close,
-                                    color: _kTextSecondary,
+                                    color: AppColors.screenTextSecondary,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 16),
-                            const Divider(color: _kDivider, height: 1),
+                            const Divider(color: AppColors.screenDivider, height: 1),
                           ],
                         ),
                       ),
@@ -1233,28 +1420,28 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: _kTextPrimary,
+                                  color: AppColors.screenTextPrimary,
                                 ),
                               ),
                               const SizedBox(height: 12),
                               Container(
                                 decoration: BoxDecoration(
-                                  color: _kSurface,
+                                  color: AppColors.screenSurface,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: _kDivider),
+                                  border: Border.all(color: AppColors.screenDivider),
                                 ),
                                 child: TextField(
                                   controller: montantController,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
                                     hintText: 'Ex: 10000',
-                                    prefixIcon: const Icon(Icons.attach_money, color: _kTextSecondary),
+                                    prefixIcon: const Icon(Icons.attach_money, color: AppColors.screenTextSecondary),
                                     border: InputBorder.none,
                                     contentPadding: const EdgeInsets.all(16),
                                   ),
                                   style: const TextStyle(
                                     fontSize: 16,
-                                    color: _kTextPrimary,
+                                    color: AppColors.screenTextPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -1277,20 +1464,20 @@ class _ChildListScreenState extends State<ChildListScreen>
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: _kOrangeLight.withOpacity(0.3),
+                                  color: AppColors.screenOrangeLight.withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: _kOrange.withOpacity(0.2)),
+                                  border: Border.all(color: AppColors.screenOrange.withOpacity(0.2)),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.info_outline, color: _kOrange, size: 20),
+                                    Icon(Icons.info_outline, color: AppColors.screenOrange, size: 20),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         'Le paiement sera traité via notre partenaire WicPay',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: _kOrange,
+                                          color: AppColors.screenOrange,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -1393,14 +1580,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         height: 56,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [const Color(0xFFFF7A3C), _kOrange],
+            colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: _kOrange.withOpacity(0.35),
+              color: AppColors.screenOrange.withOpacity(0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -1453,10 +1640,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _kOrangeLight,
+                  color: AppColors.screenOrangeLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.analytics_outlined, color: _kOrange, size: 20),
+                child: const Icon(Icons.analytics_outlined, color: AppColors.screenOrange, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -1464,63 +1651,53 @@ class _ChildListScreenState extends State<ChildListScreen>
                 style: TextStyle(
                   fontSize: _textSizeService.getScaledFontSize(18),
                   fontWeight: FontWeight.w800,
-                  color: _kTextPrimary,
+                  color: AppColors.screenTextPrimary,
                   letterSpacing: -0.5,
                 ),
               ),
             ],
           ),
         ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildModernSummaryCard(
-                      'Moyenne', 
-                      _globalAverage != null 
-                        ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
-                        : '--',
-                      Colors.green, 
-                      Icons.trending_up,
-                      isLoading: _isLoadingNotes,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildModernSummaryCard(
-                      'Rang', 
-                      _globalAverage != null && _globalAverage!.trimesterRank > 0
-                        ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
-                        : '--',
-                      Colors.blue, 
-                      Icons.emoji_events,
-                      isLoading: _isLoadingNotes,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _buildModernSummaryCard('Présence', '95%', AppColors.success, Icons.check_circle)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildModernSummaryCard(
-                      'Appréciation', 
-                      _globalAverage != null 
-                        ? _globalAverage!.trimesterMention
-                        : '--',
-                      AppColors.secondary, 
-                      Icons.star,
-                      isLoading: _isLoadingNotes,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        SizedBox(
+          height: 120,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                _buildModernSummaryCard(
+                  'Moyenne', 
+                  _globalAverage != null 
+                    ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
+                    : '--',
+                  Colors.green, 
+                  Icons.trending_up,
+                  isLoading: _isLoadingNotes,
+                ),
+                const SizedBox(width: 12),
+                _buildModernSummaryCard(
+                  'Rang', 
+                  _globalAverage != null && _globalAverage!.trimesterRank > 0
+                    ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
+                    : '--',
+                  Colors.blue, 
+                  Icons.emoji_events,
+                  isLoading: _isLoadingNotes,
+                ),
+                const SizedBox(width: 12),
+                _buildModernSummaryCard('Présence', '95%', AppColors.success, Icons.check_circle),
+                const SizedBox(width: 12),
+                _buildModernSummaryCard(
+                  'Appréciation', 
+                  _globalAverage != null 
+                    ? _globalAverage!.trimesterMention
+                    : '--',
+                  AppColors.secondary, 
+                  Icons.star,
+                  isLoading: _isLoadingNotes,
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1541,88 +1718,91 @@ class _ChildListScreenState extends State<ChildListScreen>
           child: child,
         ),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDarkMode ? Colors.grey[800] : _kCard,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+      child: SizedBox(
+        width: 140,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey[800] : AppColors.screenCard,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(
+              color: color.withOpacity(0.1),
+              width: 1,
             ),
-          ],
-          border: Border.all(
-            color: color.withOpacity(0.1),
-            width: 1,
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: color, size: 24),
-                ),
-                const Spacer(),
-                if (isLoading)
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                    ),
-                  )
-                else
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 32,
+                    height: 32,
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Icon(icon, color: color, size: 18),
                   ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (isLoading)
-              Container(
-                height: 24,
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey[700] : _kDivider,
-                  borderRadius: BorderRadius.circular(6),
+                  const Spacer(),
+                  if (isLoading)
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (isLoading)
+                Container(
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.grey[700] : AppColors.screenDivider,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                )
+              else
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                    letterSpacing: -0.8,
+                  ),
                 ),
-              )
-            else
+              const SizedBox(height: 2),
               Text(
-                value,
+                title,
                 style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(20),
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                  letterSpacing: -0.8,
+                  fontSize: _textSizeService.getScaledFontSize(11),
+                  color: isDarkMode ? Colors.grey[400] : AppColors.screenTextSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(13),
-                color: isDarkMode ? Colors.grey[400] : _kTextSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

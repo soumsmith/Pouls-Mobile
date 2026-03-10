@@ -127,6 +127,24 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     return items;
   }
 
+  // ── Responsive Grid Methods ───────────────────────────
+  int _getCrossAxisCount(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tablet detection: width > 600px
+    if (screenWidth > 600) {
+      return 5; // 5 elements per row on tablet
+    }
+    return 2; // 2 elements per row on mobile
+  }
+
+  double _getChildAspectRatio(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth > 600) {
+      return 0.85; // Slightly wider for tablet layout
+    }
+    return 0.78; // Original aspect ratio for mobile
+  }
+
   // ── Build ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -606,12 +624,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                   sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _getCrossAxisCount(context),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.78,
+                      childAspectRatio: _getChildAspectRatio(context),
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (_, i) => TweenAnimationBuilder<double>(

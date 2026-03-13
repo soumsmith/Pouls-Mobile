@@ -6,20 +6,43 @@ import '../models/ecole_detail.dart';
 class EcoleApiService {
   static const String baseUrl = 'https://api2.vie-ecoles.com/api/ecoles/list';
 
-  /// Récupère la liste des écoles depuis l'API
-  static Future<List<Ecole>> getEcoles({int page = 1}) async {
+  /// Récupère la liste des écoles depuis l'API avec filtres optionnels
+  static Future<List<Ecole>> getEcoles({
+    int page = 1, 
+    int perPage = 50,
+    String? pays,
+    String? ville,
+    String? quartier,
+    String? nomEtablissement,
+    String? categorie,
+    String? codepays,
+  }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
-    print('🏫 CHARGEMENT DES ÉCOLES (PAGE $page)');
+    print('🏫 CHARGEMENT DES ÉCOLES (PAGE $page - $perPage ÉLÉMENTS/PAGE)');
     print('═══════════════════════════════════════════════════════════');
     
-    final url = '$baseUrl?page=$page';
-    print('🔗 URL: $url');
+    // Construction des paramètres de requête
+    final Map<String, String> queryParams = {
+      'page': page.toString(),
+      'per_page': perPage.toString(),
+    };
+    
+    // Ajout des filtres s'ils sont fournis
+    if (pays != null && pays.isNotEmpty) queryParams['pays'] = pays;
+    if (ville != null && ville.isNotEmpty) queryParams['ville'] = ville;
+    if (quartier != null && quartier.isNotEmpty) queryParams['quartier'] = quartier;
+    if (nomEtablissement != null && nomEtablissement.isNotEmpty) queryParams['nomEtablissement'] = nomEtablissement;
+    if (categorie != null && categorie.isNotEmpty) queryParams['categorie'] = categorie;
+    if (codepays != null && codepays.isNotEmpty) queryParams['codepays'] = codepays;
+    
+    final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
+    print('🔗 URL: $uri');
     print('📡 Envoi de la requête...');
     
     try {
       final response = await http.get(
-        Uri.parse(url),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

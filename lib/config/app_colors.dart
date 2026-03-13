@@ -219,13 +219,24 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
-  // ================= COULEURS SPÉCIFI AUX ÉCRANS =================
+  // ================= COULEURS SPÉCIFIQUES AUX ÉCRANS =================
   
   // Orange principal (utilisé dans settings/establishment)
   static const Color screenOrange = Color(0xFFFF6B2C);
   static const Color screenOrangeLight = Color(0xFFFFF0E8);
   static const Color screenOrangeDark = Color(0xFFE55A2C);
   static const Color screenOrangeSurface = Color(0xFFFFF8F5);
+  
+  // Couleurs pour les écrans de boutique (verts et bleus)
+  static const Color shopGreen = Color(0xFF4CAF50);
+  static const Color shopGreenLight = Color(0xFF81C784);
+  static const Color shopGreenDark = Color(0xFF388E3C);
+  static const Color shopGreenSurface = Color(0xFFE8F5E8);
+  
+  static const Color shopBlue = Color(0xFF03A9F4);
+  static const Color shopBlueLight = Color(0xFF29B6F6);
+  static const Color shopBlueDark = Color(0xFF0288D1);
+  static const Color shopBlueSurface = Color(0xFFE1F5FE);
   
   // Surface spécifique aux écrans
   static const Color screenSurface = Color(0xFFF8F8F8);
@@ -258,6 +269,26 @@ class AppColors {
   
   static const LinearGradient screenOrangeGradient = LinearGradient(
     colors: [Color(0xFFFF7A3C), screenOrange],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // ================= GRADIENTS POUR LES ÉCRANS DE BOUTIQUE =================
+
+  static const LinearGradient shopGreenGradient = LinearGradient(
+    colors: [shopGreen, shopGreenDark],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient shopBlueGradient = LinearGradient(
+    colors: [shopBlue, shopBlueDark],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient shopMixedGradient = LinearGradient(
+    colors: [shopBlue, shopGreen],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

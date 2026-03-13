@@ -7,7 +7,7 @@ import '../models/product.dart';
 import '../services/cart_service.dart';
 import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
-import '../widgets/custom_button.dart';
+import '../widgets/custom_loader.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
 
@@ -104,10 +104,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       child: Scaffold(
         backgroundColor: AppColors.screenSurface,
         body: _isDetailLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.screenOrangeLight,
-                    strokeWidth: 2.5),
+            ? Center(
+                child: CustomLoader(
+                  message: 'Chargement du produit...',
+                  loaderColor: AppColors.shopGreen,
+                  backgroundColor: AppColors.screenSurface,
+                  showBackground: false,
+                ),
               )
             : FadeTransition(
                 opacity: _fadeAnimation,
@@ -362,7 +365,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.screenOrange,
+                  color: AppColors.shopGreen,
                   letterSpacing: -1,
                 ),
               ),
@@ -398,7 +401,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         children: [
           Row(
             children: const [
-              Icon(Icons.info_outline_rounded, size: 16, color: AppColors.screenOrange),
+              Icon(Icons.info_outline_rounded, size: 16, color: AppColors.shopGreen),
               SizedBox(width: 8),
               Text(
                 'Description',
@@ -550,7 +553,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 34,
                   decoration: BoxDecoration(
                     color: _quantity < product.stockQuantity
-                        ? AppColors.screenOrange
+                        ? AppColors.shopGreen
                         : const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(10),
                   ),

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
 import '../services/ecole_api_service.dart';
 import '../models/ecole.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/see_more_card.dart';
 import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
+import '../widgets/custom_loader.dart';
 import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
 
@@ -14,7 +19,7 @@ import 'establishment_detail_screen.dart';
 
 const _kCardShadow = [
   BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
-  BoxShadow(color: Color(0x06000000), blurRadius: 4,  offset: Offset(0, 1)),
+  BoxShadow(color: Color(0x06000000), blurRadius: 4, offset: Offset(0, 1)),
 ];
 
 const _kOrangeGradient = LinearGradient(
@@ -26,23 +31,35 @@ const _kOrangeGradient = LinearGradient(
 // ─── Color per school type ────────────────────────────────────────────────────
 Color _typeColor(String type) {
   switch (type.toLowerCase()) {
-    case 'primaire':   return const Color(0xFF3B82F6);
-    case 'collège':    return const Color(0xFF8B5CF6);
-    case 'lycée':      return const Color(0xFF10B981);
-    case 'privé':      return AppColors.screenOrange;
-    case 'public':     return const Color(0xFF6366F1);
-    default:           return const Color(0xFFEF4444);
+    case 'primaire':
+      return const Color(0xFF3B82F6);
+    case 'collège':
+      return const Color(0xFF8B5CF6);
+    case 'lycée':
+      return const Color(0xFF10B981);
+    case 'privé':
+      return AppColors.screenOrange;
+    case 'public':
+      return const Color(0xFF6366F1);
+    default:
+      return const Color(0xFFEF4444);
   }
 }
 
 IconData _typeIcon(String type) {
   switch (type.toLowerCase()) {
-    case 'primaire':   return Icons.child_care_rounded;
-    case 'collège':    return Icons.menu_book_rounded;
-    case 'lycée':      return Icons.school_rounded;
-    case 'privé':      return Icons.star_rounded;
-    case 'public':     return Icons.account_balance_rounded;
-    default:           return Icons.business_rounded;
+    case 'primaire':
+      return Icons.child_care_rounded;
+    case 'collège':
+      return Icons.menu_book_rounded;
+    case 'lycée':
+      return Icons.school_rounded;
+    case 'privé':
+      return Icons.star_rounded;
+    case 'public':
+      return Icons.account_balance_rounded;
+    default:
+      return Icons.business_rounded;
   }
 }
 
@@ -58,19 +75,50 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     with TickerProviderStateMixin {
   // ── State ──────────────────────────────────────────────────
   String _selectedFilter = 'Tous';
-  bool   _isSearching    = false;
-  final  _searchController = TextEditingController();
-  final  _textSizeService  = TextSizeService();
+  bool _isSearching = false;
+  final _searchController = TextEditingController();
+  final _textSizeService = TextSizeService();
   double _currentTextScale = 1.0;
-  List<Ecole> _ecoles    = [];
-  bool        _isLoading = true;
-  String?     _error;
+  List<Ecole> _ecoles = [];
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMoreEcoles = true;
+  int _currentPage = 1;
+  int _ecolesPerPage =
+      6; // Valeur par défaut, sera mise à jour dans didChangeDependencies
+  String? _error;
+
+  // ── Paramètres de recherche dynamique ──────────────────────────────
+  String? _pays;
+  String? _ville;
+  String? _quartier;
+  String? _nomEtablissement;
+  String? _categorie;
+  String? _codepays;
+
+  // Controllers pour les champs de recherche
+  final _paysController = TextEditingController();
+  final _villeController = TextEditingController();
+  final _quartierController = TextEditingController();
+  final _nomEtablissementController = TextEditingController();
+  final _categorieController = TextEditingController();
+  final _codepaysController = TextEditingController();
+
+  // ── Timer pour debounce ───────────────────────────────────────
+  Timer? _searchTimer;
 
   // ── Animations ─────────────────────────────────────────────
   late AnimationController _fadeController;
-  late Animation<double>   _fadeAnim;
+  late Animation<double> _fadeAnim;
 
-  final List<String> _filters = ['Tous', 'Primaire', 'Collège', 'Lycée', 'Privé', 'Public'];
+  final List<String> _filters = [
+    'Tous',
+    'Primaire',
+    'Collège',
+    'Lycée',
+    'Privé',
+    'Public',
+  ];
 
   // ── Lifecycle ──────────────────────────────────────────────
   @override
@@ -89,9 +137,23 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize responsive pagination after context is available
+    _ecolesPerPage = AppDimensions.getEcolesPerPage(context);
+  }
+
+  @override
   void dispose() {
+    _searchTimer?.cancel(); // Annuler le timer
     _textSizeService.removeListener(_onTextSizeChanged);
     _searchController.dispose();
+    _paysController.dispose();
+    _villeController.dispose();
+    _quartierController.dispose();
+    _nomEtablissementController.dispose();
+    _categorieController.dispose();
+    _codepaysController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -101,40 +163,158 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
   // ── Data ───────────────────────────────────────────────────
   Future<void> _loadEcoles() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _ecoles.clear();
+      _currentPage = 1;
+      _hasMoreEcoles =
+          true; // Toujours true au début pour permettre le chargement
+    });
     try {
-      final ecoles = await EcoleApiService.getAllEcoles();
-      setState(() { _ecoles = ecoles; _isLoading = false; });
+      final ecoles = await EcoleApiService.getEcoles(
+        page: _currentPage,
+        perPage: _ecolesPerPage,
+        pays: _pays,
+        ville: _ville,
+        quartier: _quartier,
+        nomEtablissement: _nomEtablissement,
+        categorie: _categorie,
+        codepays: _codepays,
+      );
+      setState(() {
+        _ecoles = ecoles;
+        _isLoading = false;
+        // Considérer qu'il y a plus d'écoles si on a reçu le nombre demandé OU si c'est la première page
+        _hasMoreEcoles =
+            ecoles.length >= _ecolesPerPage ||
+            (_currentPage == 1 && ecoles.length > 0);
+      });
       _fadeController.forward(from: 0);
     } catch (e) {
-      setState(() { _error = e.toString(); _isLoading = false; });
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  // ── Load more ecoles ───────────────────────────────────────────
+  Future<void> _loadMoreEcoles() async {
+    if (!_hasMoreEcoles) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      _currentPage++;
+      final newEcoles = await EcoleApiService.getEcoles(
+        page: _currentPage,
+        perPage: _ecolesPerPage,
+        pays: _pays,
+        ville: _ville,
+        quartier: _quartier,
+        nomEtablissement: _nomEtablissement,
+        categorie: _categorie,
+        codepays: _codepays,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _ecoles.addAll(newEcoles);
+        _isLoadingMore = false;
+        // Considérer qu'il y a plus d'écoles si on a reçu le nombre demandé
+        _hasMoreEcoles = newEcoles.length >= _ecolesPerPage;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingMore = false;
+        _currentPage--; // Revert page number on error
+      });
     }
   }
 
   List<Ecole> get _filteredItems {
-    var items = _ecoles;
-    if (_selectedFilter != 'Tous') {
-      items = items.where((e) => e.typePrincipal == _selectedFilter).toList();
+    // Plus besoin de filtrer localement car l'API fait le filtrage
+    return _ecoles;
+  }
+
+  // ── Méthodes de recherche avancée ───────────────────────────────
+  void _updateSearchParameters() {
+    setState(() {
+      _pays = _paysController.text.trim().isEmpty
+          ? null
+          : _paysController.text.trim();
+      _ville = _villeController.text.trim().isEmpty
+          ? null
+          : _villeController.text.trim();
+      _quartier = _quartierController.text.trim().isEmpty
+          ? null
+          : _quartierController.text.trim();
+      _nomEtablissement = _nomEtablissementController.text.trim().isEmpty
+          ? null
+          : _nomEtablissementController.text.trim();
+      _categorie = _categorieController.text.trim().isEmpty
+          ? null
+          : _categorieController.text.trim();
+      _codepays = _codepaysController.text.trim().isEmpty
+          ? null
+          : _codepaysController.text.trim();
+    });
+  }
+
+  // ── Recherche avec debounce ───────────────────────────────────
+  void _onSearchChanged(String query) {
+    _searchTimer?.cancel(); // Annuler le timer précédent
+
+    setState(() {
+      _nomEtablissement = query.trim().isEmpty ? null : query.trim();
+    });
+
+    // Créer un nouveau timer de 800ms
+    _searchTimer = Timer(const Duration(milliseconds: 800), () {
+      _loadEcoles();
+    });
+  }
+
+  void _applyAdvancedSearch() {
+    _updateSearchParameters();
+    // Synchroniser la barre de recherche principale avec le nom d'établissement
+    if (_nomEtablissement != null && _nomEtablissement!.isNotEmpty) {
+      _searchController.text = _nomEtablissement!;
+    } else {
+      _searchController.clear();
     }
-    if (_searchController.text.isNotEmpty) {
-      final q = _searchController.text.toLowerCase();
-      items = items.where((e) =>
-        (e.parametreNom?.toLowerCase().contains(q) ?? false) ||
-        e.ville.toLowerCase().contains(q) ||
-        e.adresse.toLowerCase().contains(q)
-      ).toList();
-    }
-    return items;
+    _loadEcoles();
+  }
+
+  void _clearAdvancedSearch() {
+    setState(() {
+      _paysController.clear();
+      _villeController.clear();
+      _quartierController.clear();
+      _nomEtablissementController.clear();
+      _categorieController.clear();
+      _codepaysController.clear();
+      _pays = null;
+      _ville = null;
+      _quartier = null;
+      _nomEtablissement = null;
+      _categorie = null;
+      _codepays = null;
+      _searchController
+          .clear(); // Effacer aussi la barre de recherche principale
+    });
+    _loadEcoles();
   }
 
   // ── Responsive Grid Methods ───────────────────────────
   int _getCrossAxisCount(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    // Tablet detection: width > 600px
-    if (screenWidth > 600) {
-      return 5; // 5 elements per row on tablet
-    }
-    return 2; // 2 elements per row on mobile
+    return AppDimensions.getEcolesGridColumns(context);
   }
 
   double _getChildAspectRatio(BuildContext context) {
@@ -148,15 +328,17 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Build ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
 
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(_currentTextScale),
-      ),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(_currentTextScale)),
       child: Scaffold(
         backgroundColor: AppColors.screenSurface,
         body: Column(
@@ -194,8 +376,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: AppColors.screenCardShadow,
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded,
-                  size: 18, color: Color(0xFF1A1A1A)),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: Color(0xFF1A1A1A),
+              ),
             ),
           ),
 
@@ -214,7 +399,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             ),
           ),
 
-          // Search button seulement
+          // Search button et advanced search
           _buildHeaderAction(
             icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
             onTap: () => setState(() {
@@ -222,12 +407,20 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               if (!_isSearching) _searchController.clear();
             }),
           ),
+          const SizedBox(width: 8),
+          _buildHeaderAction(
+            icon: Icons.tune,
+            onTap: _showAdvancedSearchBottomSheet,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderAction({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildHeaderAction({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -257,7 +450,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               decoration: BoxDecoration(
                 color: AppColors.screenSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.screenOrange.withOpacity(0.4)),
+                border: Border.all(
+                  color: AppColors.screenOrange.withOpacity(0.4),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.screenOrange.withOpacity(0.08),
@@ -269,27 +464,261 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                onChanged: (_) => setState(() {}),
+                onChanged: _onSearchChanged,
                 decoration: InputDecoration(
                   hintText: 'Rechercher un établissement...',
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      size: 18, color: AppColors.screenOrange),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: AppColors.screenOrange,
+                  ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? GestureDetector(
-                          onTap: () =>
-                              setState(() => _searchController.clear()),
-                          child: Icon(Icons.cancel_rounded,
-                              size: 18, color: Colors.grey[400]),
+                          onTap: () {
+                            _searchTimer?.cancel(); // Annuler le timer
+                            setState(() {
+                              _searchController.clear();
+                              _nomEtablissement = null;
+                            });
+                            _loadEcoles();
+                          },
+                          child: Icon(
+                            Icons.cancel_rounded,
+                            size: 18,
+                            color: Colors.grey[400],
+                          ),
                         )
                       : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
             )
           : null,
+    );
+  }
+
+  // ── Advanced Search BottomSheet ─────────────────────────────────
+  void _showAdvancedSearchBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildAdvancedSearchBottomSheet(),
+    );
+  }
+
+  Widget _buildAdvancedSearchBottomSheet() {
+    return IntrinsicHeight(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: const BoxDecoration(
+          color: AppColors.screenSurface,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: AppColors.screenOrange,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Recherche avancée',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _clearAdvancedSearch,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.screenOrangeLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Effacer',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.screenOrange,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Champs de recherche avec le même style que les formulaires d'intégration
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  // Première ligne
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Pays',
+                          hint: 'Entrez le pays',
+                          icon: Icons.public_rounded,
+                          controller: _paysController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Ville',
+                          hint: 'Entrez la ville',
+                          icon: Icons.location_city_rounded,
+                          controller: _villeController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Deuxième ligne
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Quartier',
+                          hint: 'Entrez le quartier',
+                          icon: Icons.location_on_rounded,
+                          controller: _quartierController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Nom établissement',
+                          hint: 'Entrez le nom',
+                          icon: Icons.business_rounded,
+                          controller: _nomEtablissementController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Troisième ligne
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Catégorie',
+                          hint: 'Ex: Primaire, Collège...',
+                          icon: Icons.category_rounded,
+                          controller: _categorieController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Code pays',
+                          hint: 'Entrez le code',
+                          icon: Icons.code_rounded,
+                          controller: _codepaysController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Bouton appliquer
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    _applyAdvancedSearch();
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.screenOrange,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Appliquer les filtres',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -316,7 +745,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     gradient: selected ? AppColors.screenOrangeGradient : null,
                     color: selected ? null : AppColors.screenSurface,
@@ -327,7 +758,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                               color: AppColors.screenOrange.withOpacity(0.30),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
-                            )
+                            ),
                           ]
                         : [],
                   ),
@@ -335,11 +766,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                     f,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected
-                          ? Colors.white
-                          : const Color(0xFF666666),
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? Colors.white : const Color(0xFF666666),
                     ),
                   ),
                 ),
@@ -359,36 +787,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.screenOrangeLight,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(14),
-              child: CircularProgressIndicator(
-                color: AppColors.screenOrange,
-                strokeWidth: 2.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Chargement des établissements...',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF999999),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+    return CustomLoader(
+      message: 'Chargement des établissements...',
+      loaderColor: AppColors.screenOrange,
+      backgroundColor: AppColors.screenSurface,
+      showBackground: false,
     );
   }
 
@@ -406,8 +809,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 color: const Color(0xFFFFECEC),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.error_outline_rounded,
-                  size: 36, color: Color(0xFFEF4444)),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                size: 36,
+                color: Color(0xFFEF4444),
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -429,7 +835,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               onTap: _loadEcoles,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
+                  horizontal: 24,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   gradient: AppColors.screenOrangeGradient,
                   borderRadius: BorderRadius.circular(14),
@@ -473,7 +881,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   child: _EventsBannerCard(
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                          builder: (_) => const AllEventsScreen()),
+                        builder: (_) => const AllEventsScreen(),
+                      ),
                     ),
                   ),
                 ),
@@ -518,11 +927,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       if (_selectedFilter != 'Tous') ...[
                         const SizedBox(width: 8),
                         GestureDetector(
-                          onTap: () =>
-                              setState(() => _selectedFilter = 'Tous'),
+                          onTap: () => setState(() => _selectedFilter = 'Tous'),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.screenOrangeLight,
                               borderRadius: BorderRadius.circular(8),
@@ -539,8 +949,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                const Icon(Icons.close_rounded,
-                                    size: 12, color: AppColors.screenOrange),
+                                const Icon(
+                                  Icons.close_rounded,
+                                  size: 12,
+                                  color: AppColors.screenOrange,
+                                ),
                               ],
                             ),
                           ),
@@ -565,8 +978,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             color: AppColors.screenOrangeLight,
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          child: const Icon(Icons.business_outlined,
-                              size: 40, color: AppColors.screenOrange),
+                          child: const Icon(
+                            Icons.business_outlined,
+                            size: 40,
+                            color: AppColors.screenOrange,
+                          ),
                         ),
                         const SizedBox(height: 20),
                         const Text(
@@ -593,13 +1009,17 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           }),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               gradient: AppColors.screenOrangeGradient,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.screenOrange.withOpacity(0.3),
+                                  color: AppColors.screenOrange.withOpacity(
+                                    0.3,
+                                  ),
                                   blurRadius: 6,
                                   offset: const Offset(0, 3),
                                 ),
@@ -626,35 +1046,53 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: _getCrossAxisCount(context),
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                      crossAxisSpacing: AppDimensions.getEcoleCardSpacing(
+                        context,
+                      ),
+                      mainAxisSpacing: AppDimensions.getEcoleCardSpacing(
+                        context,
+                      ),
                       childAspectRatio: _getChildAspectRatio(context),
                     ),
-                    delegate: SliverChildBuilderDelegate(
-                      (_, i) => TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: 1),
-                        duration: Duration(
-                            milliseconds: 400 + (i % 6) * 60),
-                        curve: Curves.easeOutCubic,
-                        builder: (_, v, child) => Opacity(
-                          opacity: v,
-                          child: Transform.translate(
-                            offset: Offset(0, 20 * (1 - v)),
-                            child: child,
-                          ),
-                        ),
-                        child: _EcoleCard(
-                          ecole: items[i],
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  EstablishmentDetailScreen(ecole: items[i]),
+                    delegate: SliverChildBuilderDelegate((_, i) {
+                      // ── "Voir plus" card intégrée à la fin ──
+                      if (i == items.length && _hasMoreEcoles) {
+                        return SeeMoreCard(
+                          cardColor: AppColors.screenCard,
+                          borderColor: AppColors.screenOrange.withOpacity(0.3),
+                          iconColor: AppColors.screenOrange,
+                          textColor: AppColors.screenOrange,
+                          subtitleColor: AppColors.screenOrange.withOpacity(0.5),
+                          title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
+                          subtitle: _isLoadingMore ? '' : 'établissements',
+                          onTap: _isLoadingMore ? () {} : _loadMoreEcoles,
+                        );
+                      }
+                      if (i < items.length) {
+                        return TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: 1),
+                          duration: Duration(milliseconds: 400 + (i % 6) * 60),
+                          curve: Curves.easeOutCubic,
+                          builder: (_, v, child) => Opacity(
+                            opacity: v,
+                            child: Transform.translate(
+                              offset: Offset(0, 20 * (1 - v)),
+                              child: child,
                             ),
                           ),
-                        ),
-                      ),
-                      childCount: items.length,
-                    ),
+                          child: _EcoleCard(
+                            ecole: items[i],
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    EstablishmentDetailScreen(ecole: items[i]),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }, childCount: items.length + (_hasMoreEcoles ? 1 : 0)),
                   ),
                 ),
             ],
@@ -666,7 +1104,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           bottom: 0,
           left: 0,
           right: 0,
-          height: 100,
+          height: 60,
           child: IgnorePointer(
             child: Container(
               decoration: const BoxDecoration(
@@ -714,7 +1152,11 @@ class _EventsBannerCard extends StatelessWidget {
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFFFF5A1F), Color(0xFFFF8C42), Color(0xFFFFB347)],
+                    colors: [
+                      Color(0xFFFF5A1F),
+                      Color(0xFFFF8C42),
+                      Color(0xFFFFB347),
+                    ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
@@ -788,7 +1230,9 @@ class _EventsBannerCard extends StatelessWidget {
               // ── Contenu ─────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 16),
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: Row(
                   children: [
                     // Icône dans un cercle blanc
@@ -799,8 +1243,9 @@ class _EventsBannerCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: Colors.white.withOpacity(0.22),
                         border: Border.all(
-                            color: Colors.white.withOpacity(0.35),
-                            width: 1.5),
+                          color: Colors.white.withOpacity(0.35),
+                          width: 1.5,
+                        ),
                       ),
                       child: const Icon(
                         Icons.event_rounded,
@@ -892,8 +1337,9 @@ class _EcoleCard extends StatelessWidget {
             Expanded(
               flex: 3,
               child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(18),
+                ),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -927,7 +1373,9 @@ class _EcoleCard extends StatelessWidget {
                       right: 10,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: color,
                           borderRadius: BorderRadius.circular(8),
@@ -1007,8 +1455,7 @@ class _EcoleCard extends StatelessWidget {
                     const Spacer(),
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded,
-                            size: 11, color: color),
+                        Icon(Icons.location_on_rounded, size: 11, color: color),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(

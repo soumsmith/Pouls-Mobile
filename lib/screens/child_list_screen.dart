@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parents_responsable/screens/inscription_screen.dart';
 import '../models/child.dart';
 import '../models/note.dart';
 import '../models/timetable_entry.dart';
@@ -35,6 +36,199 @@ import '../models/access_log.dart';
 import '../services/place_reservation_service.dart';
 import '../models/place_reservation.dart';
 import '../models/student_class_info.dart';
+import '../widgets/custom_loader.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../widgets/student_menu_cards.dart';
+import '../screens/notes_screen_json.dart';
+import '../services/student_timetable_service.dart';
+import '../models/student_timetable.dart';
+import '../services/school_service.dart';
+import '../models/child.dart';
+import '../screens/notes_screen.dart';
+import '../screens/timetable_screen.dart';
+import '../screens/fees_screen.dart';
+import '../models/student_class_info.dart';
+import '../services/access_log_service.dart';
+import '../models/access_log.dart';
+// ─── MODÈLES POUR INSCRIPTION ────────────────────────────────────────────────────────
+class Service {
+  final String iddetail;
+  final String service;
+  final String? zoneId;
+  final String designation;
+  final String description;
+  final int prix;
+  final int prix2;
+  final String? createdAt;
+  final String? updatedAt;
+  final String maitre;
+  bool selectionnee;
+
+  Service({
+    required this.iddetail,
+    required this.service,
+    this.zoneId,
+    required this.designation,
+    required this.description,
+    required this.prix,
+    required this.prix2,
+    this.createdAt,
+    this.updatedAt,
+    required this.maitre,
+    this.selectionnee = false,
+  });
+
+  Echeance toEcheance() {
+    return Echeance(
+      echId: DateTime.now().millisecondsSinceEpoch,
+      uid: iddetail,
+      branche: "*",
+      statut: "*",
+      rubrique: service,
+      pecheance: iddetail,
+      montant: prix,
+      montant2: prix2,
+      dateLimite: DateTime.now().add(const Duration(days: 30)).toString().split(' ')[0], // Date par défaut
+      libelle: designation,
+      ordre: 0,
+      rubriqueObligatoire: 1,
+    );
+  }
+
+  factory Service.fromJson(Map<String, dynamic> json) {
+    return Service(
+      iddetail: json['iddetail'],
+      service: json['service'],
+      zoneId: json['zone_id'],
+      designation: json['designation'],
+      description: json['description'],
+      prix: json['prix'],
+      prix2: json['prix2'],
+      createdAt: json['created_at'],
+      updatedAt: json['updated_at'],
+      maitre: json['maitre'],
+    );
+  }
+}
+
+class Echeance {
+  final int echId;
+  final String uid;
+  final String branche;
+  final String statut;
+  final String rubrique;
+  final String pecheance;
+  final int montant;
+  final int montant2;
+  final String dateLimite;
+  final String libelle;
+  final int ordre;
+  final int rubriqueObligatoire;
+  bool selectionnee;
+
+  Echeance({
+    required this.echId,
+    required this.uid,
+    required this.branche,
+    required this.statut,
+    required this.rubrique,
+    required this.pecheance,
+    required this.montant,
+    required this.montant2,
+    required this.dateLimite,
+    required this.libelle,
+    required this.ordre,
+    required this.rubriqueObligatoire,
+    this.selectionnee = true,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'ech_id': echId,
+      'uid': uid,
+      'branche': branche,
+      'statut': statut,
+      'rubrique': rubrique,
+      'pecheance': pecheance,
+      'montant': montant,
+      'montant2': montant2,
+      'datelimite': dateLimite,
+      'libelle': libelle,
+      'ordre': ordre,
+      'rubrique_obligatoire': rubriqueObligatoire,
+    };
+  }
+
+  factory Echeance.fromJson(Map<String, dynamic> json) {
+    return Echeance(
+      echId: json['ech_id'],
+      uid: json['uid'],
+      branche: json['branche'],
+      statut: json['statut'],
+      rubrique: json['rubrique'],
+      pecheance: json['pecheance'],
+      montant: json['montant'],
+      montant2: json['montant2'],
+      dateLimite: json['datelimite'],
+      libelle: json['libelle'],
+      ordre: json['ordre'],
+      rubriqueObligatoire: json['rubrique_obligatoire'],
+    );
+  }
+}
+
+class InscriptionItem {
+  final String id;
+  final String service;
+  final int montant;
+  final bool reservation;
+  List<Echeance> echeancesSelectionnees;
+
+  InscriptionItem({
+    required this.id,
+    required this.service,
+    required this.montant,
+    required this.reservation,
+    required this.echeancesSelectionnees,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'service': service,
+      'montant': montant,
+      'reservation': reservation,
+      'echeancesSelectionnees': echeancesSelectionnees.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+class InscriptionRequest {
+  final List<InscriptionItem> ids;
+  final Map<String, dynamic> engagement;
+  final String type;
+  final int separationFlux;
+  final int systemeEducatif;
+
+  InscriptionRequest({
+    required this.ids,
+    required this.engagement,
+    required this.type,
+    required this.separationFlux,
+    required this.systemeEducatif,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'ids': ids.map((item) => item.toJson()).toList(),
+      'engagement': engagement,
+      'type': type,
+      'separation_flux': separationFlux,
+      'systeme_educatif': systemeEducatif,
+    };
+  }
+}
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -1096,181 +1290,350 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  // ─── PAYMENT BANNER CARD ───────────────────────────────────────────────────────
+  // ─── PAYMENT AND INSCRIPTION BANNER CARDS ──────────────────────────────────────────
   Widget _buildPaymentBannerCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GestureDetector(
-        onTap: _showPaiementBottomSheet,
-        child: Container(
-          height: 110,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.green.withOpacity(0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // ── Fond dégradé principal ──────────────────────
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+      child: Row(
+        children: [
+          // Bouton Paiement en ligne
+          Expanded(
+            child: GestureDetector(
+              onTap: _showPaiementBottomSheet,
+              child: Container(
+                height: 110,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.25),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
-                  ),
+                  ],
                 ),
-
-                // ── Cercles décoratifs translucides ────────────
-                Positioned(
-                  right: -28,
-                  top: -28,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.10),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 48,
-                  bottom: -40,
-                  child: Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.07),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -16,
-                  bottom: -20,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.06),
-                    ),
-                  ),
-                ),
-
-                // ── Points décoratifs ───────────────────────────
-                Positioned(
-                  top: 18,
-                  right: 110,
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white30,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 22,
-                  right: 88,
-                  child: Container(
-                    width: 3,
-                    height: 3,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white24,
-                    ),
-                  ),
-                ),
-
-                // ── Contenu ─────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 16),
-                  child: Row(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      // Icône dans un cercle blanc
+                      // ── Fond dégradé principal ──────────────────────
                       Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.22),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.35),
-                              width: 1.5),
-                        ),
-                        child: const Icon(
-                          Icons.payments_rounded,
-                          size: 26,
-                          color: Colors.white,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
                         ),
                       ),
 
-                      const SizedBox(width: 16),
+                      // ── Cercles décoratifs translucides ────────────
+                      Positioned(
+                        right: -28,
+                        top: -28,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.10),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 48,
+                        bottom: -40,
+                        left: -16,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.06),
+                          ),
+                        ),
+                      ),
 
-                      // Textes
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      // ── Points décoratifs ───────────────────────────
+                      Positioned(
+                        top: 18,
+                        right: 110,
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white30,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 22,
+                        right: 88,
+                        child: Container(
+                          width: 3,
+                          height: 3,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white24,
+                          ),
+                        ),
+                      ),
+
+                      // ── Contenu ─────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 16),
+                        child: Row(
                           children: [
-                            Text(
-                              'Paiement en ligne',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
+                            // Icône dans un cercle blanc
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.22),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.35),
+                                    width: 1.5),
+                              ),
+                              child: const Icon(
+                                Icons.payments_rounded,
+                                size: 26,
                                 color: Colors.white,
-                                letterSpacing: -0.3,
-                                height: 1.1,
                               ),
                             ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Effectuez vos paiements\nde scolarité en toute sécurité',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.white70,
-                                height: 1.4,
+
+                            const SizedBox(width: 16),
+
+                            // Textes
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Paiement en ligne',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.3,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Effectuez vos paiements\nde scolarité en toute sécurité',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.white70,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Flèche droite
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.20),
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 18,
+                                color: Colors.white,
                               ),
                             ),
                           ],
                         ),
                       ),
-
-                      // Flèche droite
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          // Bouton Inscription
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => InscriptionScreen(child: widget.child),
+                  ),
+                );
+              },
+              child: Container(
+                height: 110,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.25),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // ── Fond dégradé principal ──────────────────────
                       Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.20),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF3B82F6), Color(0xFF60A5FA), Color(0xFF93C5FD)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 18,
-                          color: Colors.white,
+                      ),
+
+                      // ── Cercles décoratifs translucides ────────────
+                      Positioned(
+                        right: -28,
+                        top: -28,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.10),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 48,
+                        bottom: -40,
+                        left: -16,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.06),
+                          ),
+                        ),
+                      ),
+
+                      // ── Points décoratifs ───────────────────────────
+                      Positioned(
+                        top: 18,
+                        right: 110,
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white30,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 22,
+                        right: 88,
+                        child: Container(
+                          width: 3,
+                          height: 3,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white24,
+                          ),
+                        ),
+                      ),
+
+                      // ── Contenu ─────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 16),
+                        child: Row(
+                          children: [
+                            // Icône dans un cercle blanc
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.22),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.35),
+                                    width: 1.5),
+                              ),
+                              child: const Icon(
+                                Icons.app_registration_rounded,
+                                size: 26,
+                                color: Colors.white,
+                              ),
+                            ),
+
+                            const SizedBox(width: 16),
+
+                            // Textes
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Inscription',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.3,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Gérez les inscriptions\net réinscriptions',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.white70,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Flèche droite
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.20),
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1500,6 +1863,213 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  Future<List<Service>> _loadServices() async {
+    try {
+      const String ecoleCode = "gainhs";
+      final String url = "https://api2.vie-ecoles.com/api/preinscription/services?ecole=$ecoleCode";
+
+      print('🔄 Chargement des services...');
+      print('   URL: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('📡 Réponse de l\'API:');
+      print('   Status Code: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = jsonDecode(response.body);
+        final services = jsonData.map((json) => Service.fromJson(json)).toList();
+        
+        print('✅ Services chargés: ${services.length} items');
+        for (var service in services) {
+          print('   - ${service.designation} (${service.service}): ${service.prix} FCFA');
+        }
+        
+        return services;
+      } else {
+        print('❌ Erreur HTTP ${response.statusCode}: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des services: $e');
+      return [];
+    }
+  }
+
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  Future<void> _effectuerInscription(List<Echeance> echeances, StateSetter setState, VoidCallback setLoading, VoidCallback setLoadingFalse) async {
+    // Filtrer les échéances sélectionnées
+    final echeancesSelectionnees = echeances.where((e) => e.selectionnee).toList();
+    
+    if (echeancesSelectionnees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez sélectionner au moins une échéance'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Créer la requête d'inscription
+      final inscriptionRequest = InscriptionRequest(
+        ids: [
+          InscriptionItem(
+            id: "SCO",
+            service: "Scolarité",
+            montant: echeancesSelectionnees.fold(0, (sum, e) => sum + e.montant),
+            reservation: false,
+            echeancesSelectionnees: echeancesSelectionnees,
+          ),
+        ],
+        engagement: {},
+        type: "préinscription",
+        separationFlux: 0,
+        systemeEducatif: 1,
+      );
+
+      // URL de l'API
+      final String matricule = _matricule ?? "10307"; // Valeur par défaut si null
+      final String ecoleCode = _ecoleCode ?? "gainhs"; // Valeur par défaut si null
+      final String url = "https://api2.vie-ecoles.com/api/vie-ecoles/inscription-eleve/$matricule?ecole=$ecoleCode";
+
+      print('🔄 Envoi de la requête d\'inscription...');
+      print('   URL: $url');
+      print('   Matricule: $matricule');
+      print('   École: $ecoleCode');
+      print('   Données: ${jsonEncode(inscriptionRequest.toJson())}');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(inscriptionRequest.toJson()),
+      );
+
+      print('📡 Réponse de l\'API:');
+      print('   Status Code: ${response.statusCode}');
+      print('   Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Inscription de ${widget.child.firstName} enregistrée avec succès!'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        // Gérer les erreurs de l'API
+        String errorMessage = 'Erreur lors de l\'inscription';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = 'Erreur HTTP ${response.statusCode}: ${response.body}';
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur lors de l\'inscription: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur réseau: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      setLoadingFalse();
+    }
+  }
+
+  Widget _buildModernInscriptionButton({
+    required String label,
+    required VoidCallback? onTap,
+    required bool isLoading,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: onTap != null 
+              ? [const Color(0xFF3B82F6), const Color(0xFF60A5FA)]
+              : [Colors.grey.shade400, Colors.grey.shade300],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: onTap != null ? [
+          BoxShadow(
+            color: const Color(0xFF3B82F6).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ] : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _effectuerPaiement(String montantStr, StateSetter setState, VoidCallback setLoading, VoidCallback setLoadingFalse) async {
     if (montantStr.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1598,9 +2168,11 @@ class _ChildListScreenState extends State<ChildListScreen>
               ? const SizedBox(
                   width: 22,
                   height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  child: CustomLoader(
+                    message: '',
+                    loaderColor: Colors.white,
+                    size: 22,
+                    showBackground: false,
                   ),
                 )
               : Row(
@@ -1757,9 +2329,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                     SizedBox(
                       width: 14,
                       height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      child: CustomLoader(
+                        message: '',
+                        loaderColor: color,
+                        size: 14,
+                        showBackground: false,
                       ),
                     )
                   else
@@ -1833,7 +2407,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          child: CustomLoader(
+            message: 'Chargement de l\'emploi du temps...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
+          ),
         ),
       );
     }
@@ -1962,7 +2540,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          child: CustomLoader(
+            message: 'Chargement du contrôle d\'accès...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
+          ),
         ),
       );
     }
@@ -2166,7 +2748,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          child: CustomLoader(
+            message: 'Chargement de la scolarité...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
+          ),
         ),
       );
     }
@@ -2367,23 +2953,11 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         ),
         const SizedBox(height: 16),
-        // Liste des échéances récentes (limitées à 5 pour le bottom sheet)
-        ..._scolariteEntries.take(5).map((entry) => Padding(
+        // Liste de toutes les échéances
+        ..._scolariteEntries.map((entry) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: _buildScolariteCard(entry),
         )).toList(),
-        if (_scolariteEntries.length > 5)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              '... et ${_scolariteEntries.length - 5} autres échéances',
-              style: TextStyle(
-                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
       ],
     );
   }
@@ -2672,7 +3246,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          child: CustomLoader(
+            message: 'Chargement des suggestions...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
+          ),
         ),
       );
     }
@@ -3022,7 +3600,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          child: CustomLoader(
+            message: 'Chargement des logs d\'accès...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
+          ),
         ),
       );
     }
@@ -3326,7 +3908,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          child: CustomLoader(
+            message: 'Chargement des réservations...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
+          ),
         ),
       );
     }
@@ -3719,7 +4305,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          child: CustomLoader(
+            message: 'Chargement des messages...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
+          ),
         ),
       );
     }
@@ -4513,6 +5103,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     try {
+      // S'assurer que les données de l'école sont chargées
+      if (!_schoolService.isSchoolDataLoaded) {
+        print('🏫 Chargement des données de l\'école...');
+        await _schoolService.loadSchoolData();
+        print('✅ Données de l\'école chargées');
+      }
+      
       print('📡 Appel du service StudentScolariteService...');
       final entries = await _scolariteService.getScolariteEntriesForStudent(studentMatricule);
       print('✅ Réponse reçue: ${entries.length} échéances');
@@ -5466,12 +6063,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32.0),
-          child: Column(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Chargement des fournitures...'),
-            ],
+          child: CustomLoader(
+            message: 'Chargement des fournitures...',
+            loaderColor: AppColors.screenOrange,
+            showBackground: false,
           ),
         ),
       );

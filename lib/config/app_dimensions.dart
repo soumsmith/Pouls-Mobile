@@ -293,4 +293,164 @@ class AppDimensions {
       return 22.0;
     }
   }
+
+  // ── DIMENSIONS POUR LA PAGINATION ───────────────────────────────────
+  
+  /// Nombre d'éléments par page selon le type d'appareil
+  static int getEventsPerPage(BuildContext context) {
+    if (isMobile(context)) {
+      return 4; // Mobile : moins d'éléments pour optimiser l'espace
+    } else if (isSmallTablet(context)) {
+      return 6; // iPad Mini : équilibre performance/visibilité
+    } else if (isTablet(context)) {
+      return 8; // iPad : écran plus grand, plus d'éléments
+    } else {
+      return 12; // Desktop : écran large, maximum d'éléments
+    }
+  }
+
+  /// Taille de l'image des événements selon l'appareil
+  static double getEventImageSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 70.0; // Mobile : plus petit pour économiser l'espace
+    } else if (isSmallTablet(context)) {
+      return 80.0; // iPad Mini : taille intermédiaire
+    } else if (isTablet(context)) {
+      return 90.0; // iPad : taille standard
+    } else {
+      return 100.0; // Desktop : taille plus grande
+    }
+  }
+
+  /// Padding interne des cartes d'événements selon l'appareil
+  static double getEventCardPadding(BuildContext context) {
+    if (isMobile(context)) {
+      return 12.0; // Mobile : plus compact
+    } else if (isSmallTablet(context)) {
+      return 14.0; // iPad Mini : padding intermédiaire
+    } else if (isTablet(context)) {
+      return 16.0; // iPad : padding standard
+    } else {
+      return 20.0; // Desktop : padding plus généreux
+    }
+  }
+
+  /// Espacement entre les cartes d'événements selon l'appareil
+  static double getEventCardSpacing(BuildContext context) {
+    if (isMobile(context)) {
+      return 6.0; // Mobile : très compact
+    } else if (isSmallTablet(context)) {
+      return 8.0; // iPad Mini : espacement standard
+    } else if (isTablet(context)) {
+      return 10.0; // iPad : espacement plus généreux
+    } else {
+      return 12.0; // Desktop : espacement maximum
+    }
+  }
+
+  /// Taille de police pour le titre des événements selon l'appareil
+  static double getEventTitleFontSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 14.0; // Mobile : plus petit
+    } else if (isSmallTablet(context)) {
+      return 15.0; // iPad Mini : taille intermédiaire
+    } else if (isTablet(context)) {
+      return 16.0; // iPad : taille standard
+    } else {
+      return 18.0; // Desktop : taille plus grande
+    }
+  }
+
+  /// Taille de police pour le sous-titre des événements selon l'appareil
+  static double getEventSubtitleFontSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 11.0; // Mobile : très petit
+    } else if (isSmallTablet(context)) {
+      return 12.0; // iPad Mini : petit
+    } else if (isTablet(context)) {
+      return 13.0; // iPad : standard
+    } else {
+      return 14.0; // Desktop : taille normale
+    }
+  }
+
+  // ── DIMENSIONS POUR LA PAGINATION DES ÉCOLES ────────────────────────
+  
+  /// Nombre d'écoles par page selon le type d'appareil
+  static int getEcolesPerPage(BuildContext context) {
+    if (isMobile(context)) {
+      return 6; // Mobile : optimisé pour performance et espace
+    } else if (isSmallTablet(context)) {
+      return 9; // iPad Mini : équilibre performance/visibilité
+    } else if (isTablet(context)) {
+      return 12; // iPad : écran plus grand, plus d'écoles
+    } else {
+      return 16; // Desktop : écran large, maximum d'écoles
+    }
+  }
+
+  /// Espacement entre les cartes d'écoles selon l'appareil
+  static double getEcoleCardSpacing(BuildContext context) {
+    if (isMobile(context)) {
+      return 8.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 10.0; // iPad Mini : espacement standard
+    } else if (isTablet(context)) {
+      return 12.0; // iPad : espacement plus généreux
+    } else {
+      return 16.0; // Desktop : espacement maximum
+    }
+  }
+
+  /// Padding interne des cartes d'écoles selon l'appareil
+  static double getEcoleCardPadding(BuildContext context) {
+    if (isMobile(context)) {
+      return 12.0; // Mobile : plus compact
+    } else if (isSmallTablet(context)) {
+      return 14.0; // iPad Mini : padding intermédiaire
+    } else if (isTablet(context)) {
+      return 16.0; // iPad : padding standard
+    } else {
+      return 20.0; // Desktop : padding plus généreux
+    }
+  }
+
+  /// Taille de police pour le nom des écoles selon l'appareil
+  static double getEcoleTitleFontSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 14.0; // Mobile : plus petit
+    } else if (isSmallTablet(context)) {
+      return 15.0; // iPad Mini : taille intermédiaire
+    } else if (isTablet(context)) {
+      return 16.0; // iPad : taille standard
+    } else {
+      return 18.0; // Desktop : taille plus grande
+    }
+  }
+
+  /// Taille de police pour le type des écoles selon l'appareil
+  static double getEcoleTypeFontSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 11.0; // Mobile : très petit
+    } else if (isSmallTablet(context)) {
+      return 12.0; // iPad Mini : petit
+    } else if (isTablet(context)) {
+      return 13.0; // iPad : standard
+    } else {
+      return 14.0; // Desktop : taille normale
+    }
+  }
+
+  /// Nombre de colonnes pour la grille d'écoles selon l'appareil
+  static int getEcolesGridColumns(BuildContext context) {
+    if (isMobile(context)) {
+      return 2; // Mobile : 2 colonnes
+    } else if (isSmallTablet(context)) {
+      return 3; // iPad Mini : 3 colonnes
+    } else if (isTablet(context)) {
+      return 4; // iPad : 4 colonnes
+    } else {
+      return 5; // Desktop : 5 colonnes
+    }
+  }
 }

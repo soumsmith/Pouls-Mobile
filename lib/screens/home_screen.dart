@@ -6,9 +6,10 @@ import '../models/child.dart';
 import '../services/database_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/text_size_service.dart';
+import '../services/integration_request_service.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/custom_loader.dart';
 import '../config/app_colors.dart';
-import '../config/app_dimensions.dart';
 import 'add_child_screen.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
@@ -26,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _error;
   final TextSizeService _textSizeService = TextSizeService();
+  final TextEditingController _matriculeController = TextEditingController();
 
   @override
   void initState() {
@@ -37,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _textSizeService.removeListener(() {});
+    _matriculeController.dispose();
     super.dispose();
   }
 
@@ -257,6 +260,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              // Consultation demandes button
+              _appBarIconButton(
+                icon: Icons.search_rounded,
+                onTap: _showIntegrationRequestBottomSheet,
+                backgroundColor: AppColors.screenOrange,
+                iconColor: Colors.white,
+              ),
+              const SizedBox(width: 8),
               // Share button
               _appBarIconButton(
                 icon: Icons.share_outlined,
@@ -277,20 +288,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _appBarIconButton(
-      {required IconData icon, required VoidCallback onTap}) {
+      {required IconData icon, 
+      required VoidCallback onTap,
+      Color? backgroundColor,
+      Color? iconColor}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
-          ],
+        padding: const EdgeInsets.all(8),
+        decoration: backgroundColor != null ? BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+        ) : null,
+        child: Icon(
+          icon,
+          size: 22,
+          color: iconColor ?? AppColors.screenTextSecondary,
         ),
-        child: Icon(icon, size: 18, color: AppColors.screenOrange),
       ),
     );
   }
@@ -527,8 +541,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── CHILDREN CONTENT ──────────────────────────────────────────────────────
   Widget _buildChildrenContent() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.screenOrange, strokeWidth: 2.5),
+      return CustomLoader(
+        message: 'Chargement de vos enfants...',
+        loaderColor: AppColors.screenOrange,
+        backgroundColor: AppColors.screenSurface,
+        showBackground: false,
       );
     }
 
@@ -870,5 +887,238 @@ class _HomeScreenState extends State<HomeScreen> {
     if (avg <= 10) return 'Collège';
     if (avg <= 11) return 'Première';
     return 'Lycée';
+  }
+
+  // ─── INTEGRATION REQUEST BOTTOM SHEET ───────────────────────────────────────
+  void _showIntegrationRequestBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.4,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Title
+              const Text(
+                'Consulter ma demande',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A2E),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Entrez votre matricule pour vérifier le statut de votre demande d\'intégration',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF8A8A9A),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Matricule field
+              TextField(
+                controller: _matriculeController,
+                decoration: InputDecoration(
+                  labelText: 'Matricule',
+                  hintText: 'Ex: 1234RTFGHJ',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.screenOrange),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Submit button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submitIntegrationRequest,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.screenOrange,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Consulter',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── SUBMIT INTEGRATION REQUEST ───────────────────────────────────────────────
+  Future<void> _submitIntegrationRequest() async {
+    if (_matriculeController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez entrer un matricule'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Close bottom sheet
+    Navigator.of(context).pop();
+
+    // Show loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const CustomLoader(
+        message: 'Consultation en cours...',
+        loaderColor: AppColors.screenOrange,
+      ),
+    );
+
+    try {
+      // Pour le moment, utiliser un code d'école par défaut
+      // TODO: Récupérer le code de l'école actuelle dynamiquement
+      final schoolCode = 'gainhs';
+
+      final result = await IntegrationRequestService.consultIntegrationRequest(
+        ecoleCode: schoolCode,
+        matricule: _matriculeController.text,
+      );
+
+      // Close loader
+      Navigator.of(context).pop();
+
+      if (result['success'] == true) {
+        _showIntegrationResultDialog(result['data']);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['error'] ?? 'Erreur lors de la consultation'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loader
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ─── SHOW INTEGRATION RESULT DIALOG ───────────────────────────────────────────
+  void _showIntegrationResultDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: data['statut'] == 2 ? Colors.green : Colors.orange,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Icon(
+                  data['statut'] == 2 ? Icons.check_rounded : Icons.info_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Title
+              const Text(
+                'Résultat de votre demande',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A2E),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Message
+              Text(
+                data['message'] ?? 'Aucun message disponible',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF8A8A9A),
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // Close button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.screenOrange,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

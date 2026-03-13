@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import '../config/app_colors.dart';
 import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
@@ -12,6 +13,9 @@ import '../services/order_service.dart';
 import '../services/text_size_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_search_bar.dart';
+import '../widgets/custom_loader.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/see_more_card.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -38,8 +42,41 @@ class _LibraryScreenState extends State<LibraryScreen>
   List<Product> _products = [];
   List<Product> _filteredProducts = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMoreProducts = true;
+  int _currentPage = 1;
+  int _productsPerPage = 10;
   int _cartItemCount = 0;
   int _ordersCount = 0;
+  String? _error;
+
+  // ── Paramètres de recherche dynamique ──────────────────────────────
+  String? _pays;
+  String? _ville;
+  String? _quartier;
+  String? _nomEtablissement;
+  String? _nomProduit;
+  String? _type;
+
+  // Controllers pour les champs de recherche
+  final _paysController = TextEditingController();
+  final _villeController = TextEditingController();
+  final _quartierController = TextEditingController();
+  final _nomEtablissementController = TextEditingController();
+  final _nomProduitController = TextEditingController();
+  final _typeController = TextEditingController();
+
+  // ── Responsive Grid Methods ───────────────────────────
+  int _getCrossAxisCount(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth > 600) {
+      return 4; // 4 produits par ligne sur tablette
+    }
+    return 2; // 2 produits par ligne sur mobile
+  }
+
+  // ── Timer pour debounce ───────────────────────────────────────
+  Timer? _searchTimer;
 
   final List<String> _filters = ['Tous', 'Papeterie', 'Livres', 'Services'];
 
@@ -69,24 +106,49 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   @override
   void dispose() {
+    _searchTimer?.cancel(); // Annuler le timer
     _searchController.dispose();
+    _paysController.dispose();
+    _villeController.dispose();
+    _quartierController.dispose();
+    _nomEtablissementController.dispose();
+    _nomProduitController.dispose();
+    _typeController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
 
   Future<void> _loadProducts() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _products.clear();
+      _currentPage = 1;
+      _hasMoreProducts = true;
+    });
     try {
-      final products = await _produitService.getProduits();
+      final products = await _produitService.getProduits(
+        page: _currentPage,
+        perPage: _productsPerPage,
+        pays: _pays,
+        ville: _ville,
+        quartier: _quartier,
+        nomEtablissement: _nomEtablissement,
+        nomProduit: _nomProduit,
+        type: _type,
+      );
       setState(() {
         _products = products;
         _filteredProducts = products;
         _isLoading = false;
+        _hasMoreProducts = products.length >= _productsPerPage;
       });
-      _applyFilters();
       _fadeController.forward(from: 0);
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
       _showError('Erreur lors du chargement des produits: $e');
     }
   }
@@ -110,22 +172,122 @@ class _LibraryScreenState extends State<LibraryScreen>
     }
   }
 
+  // ── Load more products ───────────────────────────────────────────
+  Future<void> _loadMoreProducts() async {
+    if (!_hasMoreProducts) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      _currentPage++;
+      final newProducts = await _produitService.getProduits(
+        page: _currentPage,
+        perPage: _productsPerPage,
+        pays: _pays,
+        ville: _ville,
+        quartier: _quartier,
+        nomEtablissement: _nomEtablissement,
+        nomProduit: _nomProduit,
+        type: _type,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _products.addAll(newProducts);
+        _filteredProducts = _products;
+        _isLoadingMore = false;
+        _hasMoreProducts = newProducts.length >= _productsPerPage;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingMore = false;
+        _currentPage--; // Revert page number on error
+      });
+    }
+  }
+
+  // ── Méthodes de recherche avancée ───────────────────────────────
+  void _updateSearchParameters() {
+    setState(() {
+      _pays = _paysController.text.trim().isEmpty
+          ? null
+          : _paysController.text.trim();
+      _ville = _villeController.text.trim().isEmpty
+          ? null
+          : _villeController.text.trim();
+      _quartier = _quartierController.text.trim().isEmpty
+          ? null
+          : _quartierController.text.trim();
+      _nomEtablissement = _nomEtablissementController.text.trim().isEmpty
+          ? null
+          : _nomEtablissementController.text.trim();
+      _nomProduit = _nomProduitController.text.trim().isEmpty
+          ? null
+          : _nomProduitController.text.trim();
+      _type = _typeController.text.trim().isEmpty
+          ? null
+          : _typeController.text.trim();
+    });
+  }
+
+  // ── Recherche avec debounce ───────────────────────────────────
+  void _onSearchChanged(String query) {
+    _searchTimer?.cancel(); // Annuler le timer précédent
+
+    setState(() {
+      _nomProduit = query.trim().isEmpty ? null : query.trim();
+    });
+
+    // Créer un nouveau timer de 800ms
+    _searchTimer = Timer(const Duration(milliseconds: 800), () {
+      _loadProducts();
+    });
+  }
+
+  void _applyAdvancedSearch() {
+    _updateSearchParameters();
+    // Synchroniser la barre de recherche principale avec le nom du produit
+    if (_nomProduit != null && _nomProduit!.isNotEmpty) {
+      _searchController.text = _nomProduit!;
+    } else {
+      _searchController.clear();
+    }
+    _loadProducts();
+  }
+
+  void _clearAdvancedSearch() {
+    setState(() {
+      _paysController.clear();
+      _villeController.clear();
+      _quartierController.clear();
+      _nomEtablissementController.clear();
+      _nomProduitController.clear();
+      _typeController.clear();
+      _pays = null;
+      _ville = null;
+      _quartier = null;
+      _nomEtablissement = null;
+      _nomProduit = null;
+      _type = null;
+      _searchController.clear(); // Effacer aussi la barre de recherche principale
+    });
+    _loadProducts();
+  }
+
   void _applyFilters() {
+    // Avec la pagination, le filtrage est maintenant géré par l'API
+    // Cette méthode ne fait que synchroniser les filtres locaux
     setState(() {
       _filteredProducts = _products;
       if (_selectedFilter != 'Tous') {
         _filteredProducts = _filteredProducts
             .where((p) =>
                 p.category.toLowerCase() == _selectedFilter.toLowerCase())
-            .toList();
-      }
-      if (_searchController.text.isNotEmpty) {
-        final q = _searchController.text.toLowerCase();
-        _filteredProducts = _filteredProducts
-            .where((p) =>
-                p.title.toLowerCase().contains(q) ||
-                p.subtitle.toLowerCase().contains(q) ||
-                p.description.toLowerCase().contains(q))
             .toList();
       }
     });
@@ -222,17 +384,28 @@ class _LibraryScreenState extends State<LibraryScreen>
               // Search button
               _appBarIconButton(
                 icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
-                color: _isSearching ? AppColors.screenOrange : AppColors.screenTextPrimary,
-                bgColor: _isSearching ? AppColors.screenOrangeLight : AppColors.screenCard,
+                color: _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimary,
+                bgColor: _isSearching ? AppColors.shopBlueSurface : AppColors.screenCard,
                 onTap: () {
                   setState(() {
                     _isSearching = !_isSearching;
                     if (!_isSearching) {
+                      _searchTimer?.cancel();
                       _searchController.clear();
-                      _applyFilters();
+                      _nomProduit = null;
+                      _loadProducts();
                     }
                   });
                 },
+              ),
+              const SizedBox(width: 8),
+
+              // Advanced search button
+              _appBarIconButton(
+                icon: Icons.tune,
+                color: AppColors.screenTextPrimary,
+                bgColor: AppColors.screenCard,
+                onTap: _showAdvancedSearchBottomSheet,
               ),
               const SizedBox(width: 8),
 
@@ -242,7 +415,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 color: AppColors.screenTextPrimary,
                 bgColor: AppColors.screenCard,
                 badge: _cartItemCount > 0 ? '$_cartItemCount' : null,
-                badgeColor: AppColors.screenOrange,
+                badgeColor: AppColors.shopGreen,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -310,7 +483,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: badgeColor ?? AppColors.screenOrange,
+                  color: badgeColor ?? AppColors.shopGreen,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.screenSurface, width: 1.5),
                 ),
@@ -345,10 +518,10 @@ class _LibraryScreenState extends State<LibraryScreen>
             decoration: BoxDecoration(
               color: AppColors.screenCard,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.screenOrange, width: 1.5),
+              border: Border.all(color: AppColors.shopGreen, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.screenOrange.withOpacity(0.12),
+                  color: AppColors.shopGreen.withOpacity(0.12),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -357,7 +530,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             child: TextField(
               controller: _searchController,
               autofocus: _isSearching,
-              onChanged: (_) => _applyFilters(),
+              onChanged: _onSearchChanged,
               style: const TextStyle(
                   fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
@@ -365,12 +538,16 @@ class _LibraryScreenState extends State<LibraryScreen>
                 hintStyle: const TextStyle(
                     fontSize: 13, color: Color(0xFFBBBBBB)),
                 prefixIcon:
-                    const Icon(Icons.search_rounded, color: AppColors.screenOrange, size: 18),
+                    const Icon(Icons.search_rounded, color: AppColors.shopBlue, size: 18),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? GestureDetector(
                         onTap: () {
-                          _searchController.clear();
-                          _applyFilters();
+                          _searchTimer?.cancel(); // Annuler le timer
+                          setState(() {
+                            _searchController.clear();
+                            _nomProduit = null;
+                          });
+                          _loadProducts();
                         },
                         child: const Icon(Icons.close_rounded,
                             color: AppColors.screenTextSecondary, size: 18),
@@ -416,13 +593,13 @@ class _LibraryScreenState extends State<LibraryScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    gradient: selected ? AppColors.screenOrangeGradient : null,
+                    gradient: selected ? AppColors.shopGreenGradient : null,
                     color: selected ? null : AppColors.screenSurface,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: selected
                         ? [
                             BoxShadow(
-                              color: AppColors.screenOrange.withOpacity(0.30),
+                              color: AppColors.shopGreen.withOpacity(0.30),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             )
@@ -449,6 +626,226 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
+  // ─── Advanced Search BottomSheet ─────────────────────────────────
+  void _showAdvancedSearchBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildAdvancedSearchBottomSheet(),
+    );
+  }
+
+  Widget _buildAdvancedSearchBottomSheet() {
+    return IntrinsicHeight(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: const BoxDecoration(
+          color: AppColors.screenSurface,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: AppColors.shopBlue,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Recherche avancée',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _clearAdvancedSearch,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.shopBlueSurface,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Effacer',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.shopBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Champs de recherche
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  // Première ligne
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Pays',
+                          hint: 'Entrez le pays',
+                          icon: Icons.public_rounded,
+                          controller: _paysController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Ville',
+                          hint: 'Entrez la ville',
+                          icon: Icons.location_city_rounded,
+                          controller: _villeController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Deuxième ligne
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Quartier',
+                          hint: 'Entrez le quartier',
+                          icon: Icons.location_on_rounded,
+                          controller: _quartierController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Nom établissement',
+                          hint: 'Entrez le nom',
+                          icon: Icons.business_rounded,
+                          controller: _nomEtablissementController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Troisième ligne
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Nom produit',
+                          hint: 'Entrez le nom du produit',
+                          icon: Icons.shopping_bag_rounded,
+                          controller: _nomProduitController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Type',
+                          hint: 'Ex: Papeterie, Livres...',
+                          icon: Icons.category_rounded,
+                          controller: _typeController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Bouton appliquer
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    _applyAdvancedSearch();
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.shopBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Appliquer les filtres',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── RESULTS HEADER ────────────────────────────────────────────────────────
   Widget _buildResultsHeader() {
     return Padding(
@@ -469,7 +866,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: AppColors.screenOrangeLight,
+                color: AppColors.shopGreenSurface,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -479,7 +876,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                     _selectedFilter,
                     style: const TextStyle(
                       fontSize: 11,
-                      color: AppColors.screenOrange,
+                      color: AppColors.shopGreen,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -492,7 +889,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       });
                     },
                     child: const Icon(Icons.close_rounded,
-                        size: 12, color: AppColors.screenOrange),
+                        size: 12, color: AppColors.shopGreen),
                   ),
                 ],
               ),
@@ -506,9 +903,16 @@ class _LibraryScreenState extends State<LibraryScreen>
   // ─── GRID ──────────────────────────────────────────────────────────────────
   Widget _buildGrid() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.screenOrange, strokeWidth: 2.5),
+      return CustomLoader(
+        message: 'Chargement des produits...',
+        loaderColor: AppColors.shopGreen,
+        backgroundColor: AppColors.screenSurface,
+        showBackground: false,
       );
+    }
+
+    if (_error != null) {
+      return _buildErrorState();
     }
 
     if (_filteredProducts.isEmpty) {
@@ -517,49 +921,41 @@ class _LibraryScreenState extends State<LibraryScreen>
 
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: Stack(
-        children: [
-          Padding(
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
-                return GridView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 100),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: _filteredProducts.length,
-                  itemBuilder: (context, index) {
-                    return _buildProductCard(_filteredProducts[index], index);
-                  },
-                );
-              },
-            ),
-          ),
-          // Gradient fade at bottom
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 80,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.screenSurface.withOpacity(0),
-                      AppColors.screenSurface,
-                    ],
-                  ),
-                ),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _getCrossAxisCount(context),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.75,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  // Si c'est le dernier élément et qu'il y a plus de produits
+                  if (index == _filteredProducts.length && _hasMoreProducts) {
+                    return SeeMoreCard(
+                      cardColor: AppColors.screenCard,
+                      borderColor: AppColors.shopGreen.withOpacity(0.3),
+                      iconColor: AppColors.shopGreen,
+                      textColor: AppColors.shopGreen,
+                      subtitleColor: const Color(0xFF999999),
+                      title: 'Voir plus',
+                      subtitle: 'produits',
+                      onTap: _loadMoreProducts,
+                    );
+                  }
+                  return _buildProductCard(_filteredProducts[index], index);
+                },
+                childCount: _filteredProducts.length + (_hasMoreProducts ? 1 : 0),
               ),
             ),
+          ),
+          // Espace en bas pour éviter que le bouton soit collé en bas
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 100),
           ),
         ],
       ),
@@ -576,11 +972,11 @@ class _LibraryScreenState extends State<LibraryScreen>
             width: 90,
             height: 90,
             decoration: const BoxDecoration(
-              color: AppColors.screenOrangeLight,
+              color: AppColors.shopBlueSurface,
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.search_off_rounded,
-                size: 44, color: AppColors.screenOrange),
+                size: 44, color: AppColors.shopBlue),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -607,7 +1003,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               setState(() {
                 _selectedFilter = 'Tous';
                 _searchController.clear();
-                _applyFilters();
+                _clearAdvancedSearch();
               });
             },
             child: Container(
@@ -615,14 +1011,14 @@ class _LibraryScreenState extends State<LibraryScreen>
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+                  colors: [AppColors.shopBlueLight, AppColors.shopBlue],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.screenOrange.withOpacity(0.3),
+                    color: AppColors.shopBlue.withOpacity(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -639,6 +1035,81 @@ class _LibraryScreenState extends State<LibraryScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ─── ERROR STATE ───────────────────────────────────────────────────────────
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFECEC),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                size: 36,
+                color: Color(0xFFEF4444),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Erreur de chargement',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.screenTextPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? 'Une erreur est survenue',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: _loadProducts,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.shopBlueLight, AppColors.shopBlue],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.shopBlue.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Réessayer',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -778,7 +1249,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                               '${product.price.toStringAsFixed(0)} F',
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: AppColors.screenOrange,
+                                color: AppColors.shopGreen,
                                 fontWeight: FontWeight.w800,
                               ),
                             )

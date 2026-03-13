@@ -5,20 +5,51 @@ import '../models/product.dart';
 class ProduitService {
   static const String baseUrl = 'https://api2.vie-ecoles.com/api';
   
-  Future<List<Product>> getProduits({int page = 1}) async {
+  Future<List<Product>> getProduits({
+    int page = 1,
+    int perPage = 10,
+    String? pays,
+    String? ville,
+    String? quartier,
+    String? nomEtablissement,
+    String? nomProduit,
+    String? type,
+  }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🛍️ CHARGEMENT DES PRODUITS');
     print('═══════════════════════════════════════════════════════════');
     print('📄 Page: $page');
+    print('📄 Per page: $perPage');
+    print('🔍 Filtres:');
+    if (pays != null) print('   - Pays: $pays');
+    if (ville != null) print('   - Ville: $ville');
+    if (quartier != null) print('   - Quartier: $quartier');
+    if (nomEtablissement != null) print('   - Nom établissement: $nomEtablissement');
+    if (nomProduit != null) print('   - Nom produit: $nomProduit');
+    if (type != null) print('   - Type: $type');
     
-    final url = '$baseUrl/produits/list?page=$page';
+    // Construction des paramètres de requête
+    final Map<String, String> queryParams = {
+      'page': page.toString(),
+      'per_page': perPage.toString(),
+    };
+    
+    if (pays != null && pays.isNotEmpty) queryParams['pays'] = pays;
+    if (ville != null && ville.isNotEmpty) queryParams['ville'] = ville;
+    if (quartier != null && quartier.isNotEmpty) queryParams['quartier'] = quartier;
+    if (nomEtablissement != null && nomEtablissement.isNotEmpty) queryParams['nomEtablissement'] = nomEtablissement;
+    if (nomProduit != null && nomProduit.isNotEmpty) queryParams['nomProduit'] = nomProduit;
+    if (type != null && type.isNotEmpty) queryParams['type'] = type;
+    
+    final uri = Uri.parse('$baseUrl/produits/list').replace(queryParameters: queryParams);
+    final url = uri.toString();
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
     
     try {
       final response = await http.get(
-        Uri.parse(url),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

@@ -74,13 +74,27 @@ class EventsService {
     String? nomEtablissement,
   }) async {
     try {
+      print('🔄 [EventsService] Début de getEventsForUI - Page: $page, PerPage: $perPage');
       final eventsResponse = await getEvents(
         page: page, 
         perPage: perPage, 
         nomEtablissement: nomEtablissement
       );
-      return eventsResponse.data.map((event) => event.toUiMap()).toList();
+      print('📊 [EventsService] ${eventsResponse.data.length} événements bruts reçus (Page ${eventsResponse.currentPage}/${eventsResponse.totalPages})');
+      
+      final uiEvents = eventsResponse.data.map((event) {
+        try {
+          return event.toUiMap();
+        } catch (e) {
+          print('❌ [EventsService] Erreur conversion événement ${event.slug}: $e');
+          rethrow;
+        }
+      }).toList();
+      
+      print('✅ [EventsService] ${uiEvents.length} événements convertis avec succès');
+      return uiEvents;
     } catch (e) {
+      print('❌ [EventsService] Erreur globale dans getEventsForUI: $e');
       throw Exception('Erreur lors de la conversion des événements: $e');
     }
   }

@@ -7,6 +7,7 @@ import '../screens/help_support_screen.dart';
 import '../screens/new_settings_screen.dart';
 import '../screens/messages_screen.dart';
 import '../screens/orders_screen.dart';
+import '../screens/cart_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
@@ -245,17 +246,9 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
           badgeCount: _cartItemCount,
           onTap: () {
             Navigator.of(context).pop();
-            final wrapper = MainScreenWrapper.maybeOf(context);
-            if (wrapper != null) {
-              wrapper.updateCurrentIndex(1);
-            } else {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (_) => const MainScreenWrapper(initialIndex: 1),
-                ),
-                (r) => false,
-              );
-            }
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CartScreen()),
+            );
           },
         ),
         _MenuItem(

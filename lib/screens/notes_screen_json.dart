@@ -6,6 +6,7 @@ import '../services/text_size_service.dart';
 import '../services/school_service.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
+import '../widgets/custom_loader.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -209,8 +210,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       children: [
         _buildAppBar(),
         Expanded(
-          child: Center(
-            child: CircularProgressIndicator(color: AppColors.screenOrange, strokeWidth: 2.5),
+          child: CustomLoader(
+            message: 'Chargement des notes...',
+            loaderColor: AppColors.screenOrange,
+            backgroundColor: AppColors.screenSurface,
+            showBackground: false,
           ),
         ),
       ],

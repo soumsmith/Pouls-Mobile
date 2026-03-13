@@ -93,7 +93,7 @@ class _MessagesScreenState extends State<MessagesScreen>
     _fadeAnimation =
         CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _loadNotifications();
-    _loadEcoles();
+    _loadEcoles(); // Préchargement au démarrage (sans sheetSetState)
     _loadUserInfo();
     _searchController.addListener(() => setState(() {}));
     _textSizeService.addListener(() => setState(() {}));
@@ -121,17 +121,25 @@ class _MessagesScreenState extends State<MessagesScreen>
     }
   }
 
-  Future<void> _loadEcoles() async {
+  // ─── FIX : _loadEcoles accepte un sheetSetState optionnel ────────────────
+  Future<void> _loadEcoles({StateSetter? sheetSetState}) async {
     if (_isLoadingEcoles) return;
-    setState(() => _isLoadingEcoles = true);
+
+    // Met à jour à la fois le widget parent ET le bottom sheet si fourni
+    void updateState(VoidCallback fn) {
+      if (mounted) setState(fn);
+      sheetSetState?.call(fn);
+    }
+
+    updateState(() => _isLoadingEcoles = true);
     try {
       final ecoles = await _ecolesApiService.getAllEcoles();
-      setState(() {
+      updateState(() {
         _ecoles = ecoles;
         _isLoadingEcoles = false;
       });
     } catch (e) {
-      setState(() => _isLoadingEcoles = false);
+      updateState(() => _isLoadingEcoles = false);
     }
   }
 
@@ -947,6 +955,23 @@ class _MessagesScreenState extends State<MessagesScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
+          // ─── FIX : Si les écoles ne sont pas chargées, lancer le chargement
+          // en passant setSheetState pour que le sheet se rebuilde au retour
+          if (_ecoles.isEmpty && !_isLoadingEcoles) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadEcoles(sheetSetState: setSheetState);
+            });
+          } else if (_isLoadingEcoles) {
+            // Un chargement est déjà en cours (lancé par initState) :
+            // on attend sa fin puis on notifie le sheet
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              while (_isLoadingEcoles) {
+                await Future.delayed(const Duration(milliseconds: 100));
+              }
+              if (mounted) setSheetState(() {});
+            });
+          }
+
           return Container(
             decoration: const BoxDecoration(
               color: AppColors.screenCard,

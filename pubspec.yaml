@@ -56,6 +56,9 @@ dependencies:
   
   # File picker
   file_picker: ^8.1.2
+  
+  # Loading animations
+  loading_animation_widget: ^1.2.0
 
   # Versions Firebase plus récentes avec meilleur support Swift 5
   firebase_auth: ^5.7.0

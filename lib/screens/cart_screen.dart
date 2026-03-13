@@ -124,7 +124,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.screenOrange, strokeWidth: 2.5),
+        child: CircularProgressIndicator(color: AppColors.shopGreen, strokeWidth: 2.5),
       );
     }
     if (_cart?.isEmpty == true) return _buildEmptyCart();
@@ -230,10 +230,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: AppColors.screenOrangeLight,
+                      color: AppColors.shopBlueSurface,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.shopping_bag_outlined, size: 48, color: AppColors.screenOrange),
+                    child: const Icon(Icons.shopping_bag_outlined, size: 48, color: AppColors.shopBlue),
                   ),
                   const SizedBox(height: 24),
                   const Text(
@@ -382,7 +382,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                           '${item.product.price.toStringAsFixed(0)} FCFA',
                           style: const TextStyle(
                             fontSize: 15,
-                            color: AppColors.screenOrange,
+                            color: AppColors.shopGreen,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -440,8 +440,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             width: 30,
             height: 30,
             decoration: BoxDecoration(
-              color: AppColors.screenOrange,
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.shopGreen,
             ),
             child: const Icon(Icons.add, size: 15, color: Colors.white),
           ),
@@ -507,14 +506,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.screenOrangeLight,
+                      color: AppColors.shopBlueSurface,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '${_cart!.totalItems} article${_cart!.totalItems > 1 ? 's' : ''}',
                       style: const TextStyle(
                         fontSize: 13,
-                        color: AppColors.screenOrange,
+                        color: AppColors.shopBlue,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -553,14 +552,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+            colors: [AppColors.shopBlueLight, AppColors.shopBlue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.35),
+              color: AppColors.shopBlue.withOpacity(0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -742,10 +741,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: AppColors.screenOrangeLight,
+                                color: AppColors.shopBlueSurface,
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: const Icon(Icons.receipt_long_outlined, color: AppColors.screenOrange, size: 22),
+                              child: const Icon(Icons.receipt_long_outlined, color: AppColors.shopBlue, size: 22),
                             ),
                             const SizedBox(width: 12),
                             Column(

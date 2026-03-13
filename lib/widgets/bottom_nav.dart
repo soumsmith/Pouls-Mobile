@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/cart_service.dart';
+import '../config/app_colors.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange      = Color(0xFFFF6B2C);
@@ -13,6 +14,16 @@ const _kTextSecondary = Color(0xFF8A8A8A);
 
 const _kOrangeGradient = LinearGradient(
   colors: [Color(0xFFFF7A3C), _kOrange],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+// ─── Couleurs spécifiques pour la boutique ───────────────────────────────────
+const _kShopGreen = Color(0xFF4CAF50);
+const _kShopGreenLight = Color(0xFF81C784);
+
+const _kShopGreenGradient = LinearGradient(
+  colors: [_kShopGreenLight, _kShopGreen],
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
 );
@@ -147,8 +158,8 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
 
     return Container(
       // Hauteur fixe + padding système en bas
-      height: 72 + bottomPadding,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      height: 72,
+      margin: EdgeInsets.fromLTRB(16, 20 + bottomPadding, 16, 20 + bottomPadding),
       decoration: BoxDecoration(
         color: _kCard.withOpacity(0.92),
         borderRadius: BorderRadius.circular(24),
@@ -175,9 +186,9 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: bottomPadding),
-            child: Row(
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: List.generate(
                 _navItems.length,
                 (i) => Expanded(
@@ -190,7 +201,6 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
                     onTap: () => _handleTap(i),
                   ),
                 ),
-              ),
             ),
           ),
         ),
@@ -238,20 +248,24 @@ class _NavItemWidget extends StatelessWidget {
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
-                  // Fond animé (pill orange quand actif)
+                  // Fond animé (pill orange quand actif, vert pour boutique)
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
                     width: isSelected ? 52 : 40,
                     height: 36,
                     decoration: BoxDecoration(
-                      gradient: isSelected ? _kOrangeGradient : null,
+                      gradient: isSelected 
+                          ? (item.label == 'Boutique' ? _kShopGreenGradient : _kOrangeGradient) 
+                          : null,
                       color: isSelected ? null : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: _kOrange.withOpacity(0.35),
+                                color: item.label == 'Boutique' 
+                                    ? _kShopGreen.withOpacity(0.35)
+                                    : _kOrange.withOpacity(0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -284,7 +298,9 @@ class _NavItemWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? _kOrange : _kTextSecondary,
+                color: isSelected 
+                    ? (item.label == 'Boutique' ? _kShopGreen : _kOrange) 
+                    : _kTextSecondary,
                 letterSpacing: isSelected ? 0.1 : 0,
               ),
               child: Text(item.label, maxLines: 1),
@@ -298,7 +314,9 @@ class _NavItemWidget extends StatelessWidget {
               width: isSelected ? 16 : 0,
               height: isSelected ? 3 : 0,
               decoration: BoxDecoration(
-                gradient: isSelected ? _kOrangeGradient : null,
+                gradient: isSelected 
+                    ? (item.label == 'Boutique' ? _kShopGreenGradient : _kOrangeGradient) 
+                    : null,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

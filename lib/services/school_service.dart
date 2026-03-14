@@ -22,6 +22,64 @@ class SchoolService {
   /// Vérifie si les données de l'école sont chargées
   bool get isSchoolDataLoaded => _schoolData != null;
 
+  /// Charge les données de l'école depuis le JSON et les met en cache (version silencieuse)
+  Future<void> loadSchoolDataSilent() async {
+    try {
+      // Vérifier si les données sont déjà chargées
+      if (_schoolData != null) return;
+      
+      // Essayer de charger depuis le cache d'abord
+      await _loadCachedSchoolDataSilent();
+      
+      // Si le cache est vide, charger depuis le fichier JSON
+      if (_schoolData == null) {
+        final String jsonString = await rootBundle.loadString('assets/services/jsonOptimise.json');
+        final Map<String, dynamic> data = json.decode(jsonString);
+        
+        final bulletin = data['bulletin'] as Map<String, dynamic>?;
+        if (bulletin != null) {
+          final classe = bulletin['classe'] as Map<String, dynamic>?;
+          if (classe != null) {
+            final ecole = classe['ecole'] as Map<String, dynamic>?;
+            if (ecole != null) {
+              _schoolData = Map<String, dynamic>.from(ecole);
+              await _cacheSchoolDataSilent();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // En cas d'erreur, essayer de charger depuis le cache
+      await _loadCachedSchoolDataSilent();
+    }
+  }
+
+  /// Sauvegarde les données de l'école en cache (version silencieuse)
+  Future<void> _cacheSchoolDataSilent() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_schoolData != null) {
+        await prefs.setString(_schoolDataKey, json.encode(_schoolData));
+      }
+    } catch (e) {
+      // Erreur silencieuse
+    }
+  }
+
+  /// Charge les données de l'école depuis le cache (version silencieuse)
+  Future<void> _loadCachedSchoolDataSilent() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(_schoolDataKey);
+      
+      if (cachedData != null) {
+        _schoolData = json.decode(cachedData) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      // Erreur silencieuse
+    }
+  }
+
   /// Charge les données de l'école depuis le JSON et les met en cache
   Future<void> loadSchoolData() async {
     print('');

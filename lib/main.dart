@@ -4,6 +4,8 @@ import 'screens/splash_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/orders_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/inscription_screen.dart';
+import 'models/child.dart';
 import 'services/theme_service.dart';
 import 'services/database_service.dart';
 import 'services/auth_service.dart';
@@ -61,6 +63,17 @@ class _MyAppState extends State<MyApp> {
               darkTheme: _themeService.darkTheme,
               themeMode: _themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
               home: const SplashScreen(),
+              // home: InscriptionWizardScreen(
+              //   child: Child(
+              //     id: '1',
+              //     firstName: 'Test',
+              //     lastName: 'Enfant',
+              //     establishment: 'École Test',
+              //     grade: 'Classe Test',
+              //     parentId: 'parent1',
+              //     matricule: '10307',
+              //   ),
+              // ),
               routes: {
                 '/login': (context) => const LoginScreen(),
                 '/cart': (context) => const CartScreen(),

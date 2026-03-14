@@ -31,7 +31,7 @@ class AppConfig {
   
   // URL alternative pour le service Pouls Scolaire (utilisée par PoulsScolaireApiService)
   // Cette URL est utilisée pour les endpoints spécifiques à Pouls Scolaire
-  static const String POULS_SCOLAIRE_API_URL = 'https://api-pro.pouls-scolaire.net/api';
+  static const String POULS_SCOLAIRE_API_URL = 'https://api-pouls-scolaire.vie-ecoles.com/api';//https://api-pro.pouls-scolaire.net/api';
   //static const String POULS_SCOLAIRE_API_URL = 'http://10.0.2.2:8889/api';
   
   // Pour Chrome/Windows Desktop, décommentez cette ligne et commentez celle du dessus :

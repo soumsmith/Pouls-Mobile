@@ -7,6 +7,7 @@ import '../services/database_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/text_size_service.dart';
 import '../services/integration_request_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
 import '../config/app_colors.dart';
@@ -28,12 +29,17 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   final TextSizeService _textSizeService = TextSizeService();
   final TextEditingController _matriculeController = TextEditingController();
+  
+  // Variables pour les notifications
+  int _unreadNotificationsCount = 0;
+  bool _notificationsLoading = false;
 
   @override
   void initState() {
     super.initState();
     _textSizeService.addListener(() { if (mounted) setState(() {}); });
     _loadChildren();
+    _loadUnreadNotificationsCount();
   }
 
   @override
@@ -43,6 +49,38 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // Charge le nombre de notifications non lues
+  Future<void> _loadUnreadNotificationsCount() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _notificationsLoading = true;
+    });
+
+    try {
+      final authService = AuthService.instance;
+      final currentUser = authService.getCurrentUser();
+      
+      if (currentUser != null) {
+        final databaseService = DatabaseService.instance;
+        final unreadCount = await databaseService.getUnreadNotificationsCount(currentUser.id);
+        
+        if (mounted) {
+          setState(() {
+            _unreadNotificationsCount = unreadCount;
+            _notificationsLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur lors du chargement des notifications: $e');
+      if (mounted) {
+        setState(() {
+          _notificationsLoading = false;
+        });
+      }
+    }
+  }
 
   Future<void> _loadChildren() async {
     setState(() {
@@ -278,6 +316,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _appBarIconButton(
                 icon: Icons.notifications_outlined,
                 onTap: () {/* TODO: Notifications */},
+                showBadge: true,
+                badgeCount: _unreadNotificationsCount,
               ),
               const SizedBox(width: 4),
             ],
@@ -291,21 +331,52 @@ class _HomeScreenState extends State<HomeScreen> {
       {required IconData icon, 
       required VoidCallback onTap,
       Color? backgroundColor,
-      Color? iconColor}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: backgroundColor != null ? BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(8),
-        ) : null,
-        child: Icon(
-          icon,
-          size: 22,
-          color: iconColor ?? AppColors.screenTextSecondary,
+      Color? iconColor,
+      bool showBadge = false,
+      int badgeCount = 0}) {
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: backgroundColor != null ? BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(8),
+            ) : null,
+            child: Icon(
+              icon,
+              size: 22,
+              color: iconColor ?? AppColors.screenTextSecondary,
+            ),
+          ),
         ),
-      ),
+        if (showBadge && badgeCount > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 16,
+                minHeight: 16,
+              ),
+              child: Text(
+                badgeCount > 99 ? '99+' : badgeCount.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

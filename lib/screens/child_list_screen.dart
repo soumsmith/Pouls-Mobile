@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parents_responsable/screens/inscription_screen.dart';
+import 'package:parents_responsable/screens/inscription_screen.dart'
+    as inscription;
 import '../models/child.dart';
 import '../models/note.dart';
 import '../models/timetable_entry.dart';
@@ -36,21 +37,15 @@ import '../models/access_log.dart';
 import '../services/place_reservation_service.dart';
 import '../models/place_reservation.dart';
 import '../models/student_class_info.dart';
+import '../models/group_message.dart';
+import '../services/group_message_service.dart';
 import '../widgets/custom_loader.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../widgets/student_menu_cards.dart';
-import '../screens/notes_screen_json.dart';
-import '../services/student_timetable_service.dart';
-import '../models/student_timetable.dart';
-import '../services/school_service.dart';
-import '../models/child.dart';
 import '../screens/notes_screen.dart';
 import '../screens/timetable_screen.dart';
 import '../screens/fees_screen.dart';
-import '../models/student_class_info.dart';
-import '../services/access_log_service.dart';
-import '../models/access_log.dart';
+
 // ─── MODÈLES POUR INSCRIPTION ────────────────────────────────────────────────────────
 class Service {
   final String iddetail;
@@ -89,7 +84,10 @@ class Service {
       pecheance: iddetail,
       montant: prix,
       montant2: prix2,
-      dateLimite: DateTime.now().add(const Duration(days: 30)).toString().split(' ')[0], // Date par défaut
+      dateLimite: DateTime.now()
+          .add(const Duration(days: 30))
+          .toString()
+          .split(' ')[0], // Date par défaut
       libelle: designation,
       ordre: 0,
       rubriqueObligatoire: 1,
@@ -199,7 +197,9 @@ class InscriptionItem {
       'service': service,
       'montant': montant,
       'reservation': reservation,
-      'echeancesSelectionnees': echeancesSelectionnees.map((e) => e.toJson()).toList(),
+      'echeancesSelectionnees': echeancesSelectionnees
+          .map((e) => e.toJson())
+          .toList(),
     };
   }
 }
@@ -236,17 +236,15 @@ class InscriptionRequest {
 class ChildListScreen extends StatefulWidget {
   final Child child;
 
-  const ChildListScreen({
-    super.key,
-    required this.child,
-  });
+  const ChildListScreen({super.key, required this.child});
 
   @override
   State<ChildListScreen> createState() => _ChildListScreenState();
 }
 
 class _ChildListScreenState extends State<ChildListScreen>
-    with TickerProviderStateMixin implements MainScreenChild {
+    with TickerProviderStateMixin
+    implements MainScreenChild {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -266,50 +264,61 @@ class _ChildListScreenState extends State<ChildListScreen>
   final AccessControlService _accessControlService = AccessControlService();
   final StudentMessageService _messageService = StudentMessageService();
   final StudentScolariteService _scolariteService = StudentScolariteService();
-  final MockParentSuggestionService _suggestionService = MockParentSuggestionService();
+  final MockParentSuggestionService _suggestionService =
+      MockParentSuggestionService();
   final MockAccessLogService _accessLogService = MockAccessLogService();
-  final MockPlaceReservationService _reservationService = MockPlaceReservationService();
-  
+  final MockPlaceReservationService _reservationService =
+      MockPlaceReservationService();
+
   // Variables pour l'emploi du temps dynamique
   StudentTimetableResponse? _timetableResponse;
   bool _isLoadingTimetable = false;
-  
+
   // Variables pour le contrôle d'accès
   List<AccessControlEntry> _accessEntries = [];
   bool _isLoadingAccessControl = false;
-  
+
   // Variables pour les messages
   List<StudentMessage> _studentMessages = [];
   bool _isLoadingMessages = false;
-  
+
   // Variables pour les scolarités
   List<StudentScolariteEntry> _scolariteEntries = [];
   bool _isLoadingScolarite = false;
-  
+
   // Variables pour les suggestions
   List<ParentSuggestion> _suggestions = [];
   bool _isLoadingSuggestions = false;
-  
+
   // Variables pour les logs d'accès
   List<AccessLog> _accessLogs = [];
   bool _isLoadingAccessLogs = false;
-  
+
   // Variables pour les réservations
   List<PlaceReservation> _reservations = [];
   bool _isLoadingReservations = false;
-  
+
+  // Variables pour les notifications
+  List<GroupMessage> _notifications = [];
+  bool _isLoadingNotifications = false;
+  bool _notificationsLoaded = false; // ✅ AJOUT ICI
+
+  // Compter les notifications non lues
+  int get unreadNotificationsCount =>
+      _notifications.where((notification) => !notification.estLu).length;
+
   // Variables pour les données de notes globales
   GlobalAverage? _globalAverage;
   bool _isLoadingNotes = false;
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
-  
+
   // Informations de l'enfant pour l'API
   int? _ecoleId;
   String? _ecoleCode;
   int? _classeId;
   String? _matricule;
   int? _anneeId;
-  
+
   // Informations supplémentaires de la classe/école
   StudentClassInfo? _studentClassInfo;
 
@@ -320,23 +329,19 @@ class _ChildListScreenState extends State<ChildListScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-    
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
     _loadData();
     _animationController.forward();
   }
@@ -345,90 +350,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   void dispose() {
     _animationController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadGlobalNotesData() async {
-    print('📊 Chargement des notes globales - DÉMARRAGE');
-    
-    if (_ecoleId == null || _classeId == null || _matricule == null || _anneeId == null) {
-      print('⚠️ Impossible de charger les notes: informations manquantes');
-      print('   ecoleId: $_ecoleId, classeId: $_classeId, matricule: $_matricule, anneeId: $_anneeId');
-      setState(() {
-        _isLoadingNotes = false;
-      });
-      return;
-    }
-    
-    setState(() {
-      _isLoadingNotes = true;
-    });
-    
-    try {
-      // Récupérer les périodes
-      final periodes = await _poulsApiService.getAllPeriodes();
-      if (periodes.isEmpty) {
-        print('⚠️ Aucune période disponible');
-        setState(() {
-          _isLoadingNotes = false;
-        });
-        return;
-      }
-      
-      // Utiliser la première période (Trimestre 1) par défaut
-      final periodeId = periodes.first.id;
-      print('📅 Utilisation de la période: ${periodes.first.libelle} (ID: $periodeId)');
-      
-      // Charger les notes depuis l'API
-      print('🔄 Appel API avec:');
-      print('   anneeId: $_anneeId');
-      print('   classeId: $_classeId');
-      print('   periodeId: $periodeId');
-      print('   matricule: $_matricule');
-      
-      final notesResult = await _poulsApiService.getNotesByEleveMatricule(
-        _anneeId!,
-        _classeId!,
-        periodeId,
-        _matricule!,
-      );
-      
-      print('✅ Notes reçues de l\'API:');
-      print('   📝 Nombre de notes: ${notesResult.notes.length}');
-      print('   📊 Moyenne globale: ${notesResult.moyenneGlobale ?? "N/A"}');
-      print('   🏆 Rang global: ${notesResult.rangGlobal ?? "N/A"}');
-      
-      setState(() {
-        _globalAverage = GlobalAverage(
-          trimesterAverage: notesResult.moyenneGlobale ?? 0.0,
-          trimesterRank: notesResult.rangGlobal ?? 0,
-          trimesterMention: _getMention(notesResult.moyenneGlobale ?? 0.0),
-          annualAverage: 0.0,
-          annualRank: 0,
-          annualMention: '',
-        );
-        _isLoadingNotes = false;
-      });
-      
-      print('✅ DONNÉES APPLIQUÉES:');
-      print('   📊 Moyenne: ${_globalAverage!.trimesterAverage}');
-      print('   🏆 Rang: ${_globalAverage!.trimesterRank}');
-      print('   🎖️ Mention: ${_globalAverage!.trimesterMention}');
-      
-    } catch (e) {
-      print('❌ Erreur lors du chargement des notes: $e');
-      print('Stack trace: ${StackTrace.current}');
-      setState(() {
-        _isLoadingNotes = false;
-      });
-    }
-  }
-
-  String _getMention(double moyenne) {
-    if (moyenne >= 16) return 'Très Bien';
-    if (moyenne >= 14) return 'Bien';
-    if (moyenne >= 12) return 'Assez Bien';
-    if (moyenne >= 10) return 'Passable';
-    return 'Insuffisant';
   }
 
   String _getOrdinalSuffix(int number) {
@@ -448,47 +369,55 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       print('📚 Chargement des fournitures pour le matricule: $_matricule');
-      final suppliesResponse = await _schoolSupplyService.getSchoolSupplies(_matricule!);
-      
+      final suppliesResponse = await _schoolSupplyService.getSchoolSupplies(
+        _matricule!,
+      );
+
       setState(() {
         _schoolSupplies = suppliesResponse.data;
         _isLoadingSupplies = false;
       });
-      
+
       print('✅ Fournitures chargées: ${_schoolSupplies.length} items');
     } catch (e) {
       print('❌ Erreur lors du chargement des fournitures: $e');
       setState(() {
         _isLoadingSupplies = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du chargement des fournitures: $e')),
+          SnackBar(
+            content: Text('Erreur lors du chargement des fournitures: $e'),
+          ),
         );
       }
     }
   }
 
   Future<void> _loadData() async {
-    print('📋 Début du chargement des données pour l\'enfant: ${widget.child.id}');
+    print(
+      '📋 Début du chargement des données pour l\'enfant: ${widget.child.id}',
+    );
     setState(() {
       _isLoading = true;
     });
 
     try {
       final apiService = MainScreenWrapper.of(context).apiService;
-      
+
       // Étape 1: Charger les informations de l'enfant d'abord
       print('📂 Étape 1: Récupération des informations de l\'enfant...');
       await _loadChildInfo();
-      
+
       // Étape 2: Charger les autres données (timetable, messages, fees)
       print('📊 Étape 2: Chargement des données de base...');
       final results = await Future.wait([
         apiService.getNotesForChild(widget.child.id),
         apiService.getTimetableForChild(widget.child.id),
-        apiService.getMessages(MainScreenWrapper.of(context).currentUserId ?? 'parent1'),
+        apiService.getMessages(
+          MainScreenWrapper.of(context).currentUserId ?? 'parent1',
+        ),
         apiService.getFeesForChild(widget.child.id),
       ]);
 
@@ -499,55 +428,26 @@ class _ChildListScreenState extends State<ChildListScreen>
         _fees = results[3] as List<Fee>;
         _isLoading = false;
       });
-      
+
       print('✅ Données de base chargées');
       print('   📝 Notes: ${_notes.length}');
       print('   📅 Timetable: ${_timetable.length}');
       print('   💬 Messages: ${_messages.length}');
       print('   💰 Fees: ${_fees.length}');
-      
-      // Étape 3: Charger les données de notes globales
-      print('📊 Étape 3: Lancement du chargement des données de notes globales...');
-      await _loadGlobalNotesData();
-      
+
+      // Étape 3: Plus de chargement des données de notes globales (API supprimée)
+      print('📊 Étape 3: Chargement des notes désactivé');
+
       // Étape 4: Charger les informations détaillées de la classe/école
-      print('🏫 Étape 4: Chargement des informations détaillées de la classe/école...');
-      if (_studentClassInfo == null && _matricule != null && _anneeId != null && _classeId != null) {
+      print(
+        '🏫 Étape 4: Chargement des informations détaillées de la classe/école...',
+      );
+      if (_studentClassInfo == null &&
+          _matricule != null &&
+          _anneeId != null &&
+          _classeId != null) {
         await _loadStudentClassInfo();
       }
-      
-      // Étape 5: Charger les fournitures scolaires
-      print('📚 Étape 5: Lancement du chargement des fournitures scolaires...');
-      await _loadSchoolSupplies();
-
-      // Étape 6: Précharger l'emploi du temps
-      print('📅 Étape 6: Préchargement de l\'emploi du temps...');
-      await _loadTimetableData();
-      
-      // Étape 7: Précharger le contrôle d'accès
-      print('🔒 Étape 7: Préchargement du contrôle d\'accès...');
-      await _loadAccessControlData();
-      
-      // Étape 8: Précharger les messages
-      print('💬 Étape 8: Préchargement des messages...');
-      await _loadMessagesData();
-      
-      // Étape 9: Précharger les scolarités
-      print('💰 Étape 9: Préchargement des scolarités...');
-      await _loadScolariteData();
-      
-      // Étape 10: Précharger les suggestions
-      print('💡 Étape 10: Préchargement des suggestions...');
-      await _loadSuggestionsData();
-      
-      // Étape 11: Précharger les logs d'accès
-      print('📋 Étape 11: Préchargement des logs d\'accès...');
-      await _loadAccessLogsData();
-      
-      // Étape 12: Précharger les réservations
-      print('🪑 Étape 12: Préchargement des réservations...');
-      await _loadReservationsData();
-      
     } catch (e) {
       print('❌ Erreur lors du chargement des données: $e');
       print('Stack trace: ${StackTrace.current}');
@@ -555,18 +455,22 @@ class _ChildListScreenState extends State<ChildListScreen>
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
     }
   }
 
   Future<void> _loadChildInfo() async {
     try {
-      print('📂 Récupération des informations de l\'enfant depuis la base de données...');
-      final childInfo = await DatabaseService.instance.getChildInfoById(widget.child.id);
-      
+      print(
+        '📂 Récupération des informations de l\'enfant depuis la base de données...',
+      );
+      final childInfo = await DatabaseService.instance.getChildInfoById(
+        widget.child.id,
+      );
+
       if (childInfo != null) {
         setState(() {
           _ecoleId = childInfo['ecoleId'] as int?;
@@ -574,17 +478,18 @@ class _ChildListScreenState extends State<ChildListScreen>
           _classeId = childInfo['classeId'] as int?;
           _matricule = childInfo['matricule'] as String?;
         });
-        
+
         print('✅ Informations de l\'enfant récupérées:');
         print('   🏫 École ID: $_ecoleId');
         print('   🏫 École Code: $_ecoleCode');
         print('   📚 Classe ID: $_classeId');
         print('   🎫 Matricule: $_matricule');
-        
+
         // Charger l'année scolaire ouverte
         if (_ecoleId != null) {
           try {
-            final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(_ecoleId!);
+            final anneeScolaire = await _poulsApiService
+                .getAnneeScolaireOuverte(_ecoleId!);
             setState(() {
               _anneeId = anneeScolaire.anneeOuverteCentraleId;
             });
@@ -593,7 +498,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             print('❌ Erreur lors du chargement de l\'année scolaire: $e');
           }
         }
-        
+
         // Charger les informations détaillées de la classe/école avec la nouvelle API
         if (_matricule != null && _anneeId != null && _classeId != null) {
           await _loadStudentClassInfo();
@@ -611,7 +516,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('⚠️ Informations manquantes pour charger les infos classe/école');
       return;
     }
-    
+
     try {
       print('🏫 Chargement des informations détaillées de la classe/école...');
       final studentClassInfo = await _poulsApiService.getStudentClassInfo(
@@ -619,17 +524,16 @@ class _ChildListScreenState extends State<ChildListScreen>
         _anneeId!,
         _classeId!,
       );
-      
+
       setState(() {
         _studentClassInfo = studentClassInfo;
       });
-      
+
       print('✅ Informations classe/école chargées:');
       print('   🏫 École: ${_studentClassInfo!.ecole.libelle}');
       print('   📚 Classe: ${_studentClassInfo!.classe.libelle}');
       print('   👤 Élève: ${_studentClassInfo!.eleve.fullName}');
       print('   🏷️ ID Vie École: ${_studentClassInfo!.identifiantVieEcole}');
-      
     } catch (e) {
       print('❌ Erreur lors du chargement des informations classe/école: $e');
       // Ne pas bloquer le processus si cette API échoue
@@ -639,7 +543,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   @override
   Widget build(BuildContext context) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
       body: CustomScrollView(
@@ -668,84 +572,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildStudentMenuCards() {
-    return StudentMenuCardsFull(
-      onNotes: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const NotesScreenJson(),
-        ),
-      ),
-      onBulletins: () => _showStudentMenuBottomSheet('bulletins', _getStudentMenuCardItem('bulletins')),
-      onTimetable: () async {
-        // Précharger si nécessaire avant d'ouvrir le bottom sheet
-        if (_timetableResponse == null && !_isLoadingTimetable) {
-          await _loadTimetableData();
-        }
-        if (mounted) {
-          _showStudentMenuBottomSheet('timetable', _getStudentMenuCardItem('timetable'));
-        }
-      },
-      onHomework: () => _showStudentMenuBottomSheet('homework', _getStudentMenuCardItem('homework')),
-      onAttendance: () => _showStudentMenuBottomSheet('attendance', _getStudentMenuCardItem('attendance')),
-      onAccessControl: () async {
-        // Précharger si nécessaire avant d'ouvrir le bottom sheet
-        if (_accessEntries.isEmpty && !_isLoadingAccessControl) {
-          await _loadAccessControlData();
-        }
-        if (mounted) {
-          _showStudentMenuBottomSheet('accessControl', _getStudentMenuCardItem('accessControl'));
-        }
-      },
-      onSanctions: () => _showStudentMenuBottomSheet('sanctions', _getStudentMenuCardItem('sanctions')),
-      onMessages: () async {
-        // Précharger si nécessaire avant d'ouvrir le bottom sheet
-        if (_studentMessages.isEmpty && !_isLoadingMessages) {
-          await _loadMessagesData();
-        }
-        if (mounted) {
-          _showStudentMenuBottomSheet('messages', _getStudentMenuCardItem('messages'));
-        }
-      },
-      onFees: () async {
-        // Précharger si nécessaire avant d'ouvrir le bottom sheet
-        if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
-          await _loadScolariteData();
-        }
-        if (mounted) {
-          _showStudentMenuBottomSheet('fees', _getStudentMenuCardItem('fees'));
-        }
-      },
-      onDifficulties: () => _showStudentMenuBottomSheet('difficulties', _getStudentMenuCardItem('difficulties')),
-      onEvents: () => _showStudentMenuBottomSheet('events', _getStudentMenuCardItem('events')),
-      onSuggestions: () async {
-        // Précharger si nécessaire avant d'ouvrir le bottom sheet
-        if (_suggestions.isEmpty && !_isLoadingSuggestions) {
-          await _loadSuggestionsData();
-        }
-        if (mounted) {
-          _showStudentMenuBottomSheet('suggestions', _getStudentMenuCardItem('suggestions'));
-        }
-      },
-      onReservations: () async {
-        // Précharger si nécessaire avant d'ouvrir le bottom sheet
-        if (_reservations.isEmpty && !_isLoadingReservations) {
-          await _loadReservationsData();
-        }
-        if (mounted) {
-          _showStudentMenuBottomSheet('reservations', _getStudentMenuCardItem('reservations'));
-        }
-      },
-      onAccessLogs: () async {
-        // Précharger si nécessaire avant d'ouvrir le bottom sheet
-        if (_accessLogs.isEmpty && !_isLoadingAccessLogs) {
-          await _loadAccessLogsData();
-        }
-        if (mounted) {
-          _showStudentMenuBottomSheet('accessLogs', _getStudentMenuCardItem('accessLogs'));
-        }
-      },
-      onSupplies: () => _showStudentMenuBottomSheet('supplies', _getStudentMenuCardItem('supplies')),
-      onOrders: () => _showStudentMenuBottomSheet('orders', _getStudentMenuCardItem('orders')),
-    );
+    return StudentMenuCardsFull();
   }
 
   StudentMenuCardItem _getStudentMenuCardItem(String menuType) {
@@ -903,10 +730,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  void _showStudentMenuBottomSheet(String menuType, StudentMenuCardItem cardItem) {
+  void _showStudentMenuBottomSheet(
+    String menuType,
+    StudentMenuCardItem cardItem,
+  ) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -919,7 +749,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
             decoration: BoxDecoration(
               color: isDark ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -937,8 +769,12 @@ class _ChildListScreenState extends State<ChildListScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: cardItem.backgroundColor ?? (isDark ? Colors.grey[800] : Colors.grey[50]),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    color:
+                        cardItem.backgroundColor ??
+                        (isDark ? Colors.grey[800] : Colors.grey[50]),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
                     border: Border(
                       bottom: BorderSide(
                         color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
@@ -950,7 +786,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: cardItem.backgroundColor?.withOpacity(0.3) ?? Colors.grey.withOpacity(0.1),
+                          color:
+                              cardItem.backgroundColor?.withOpacity(0.3) ??
+                              Colors.grey.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
@@ -967,17 +805,25 @@ class _ChildListScreenState extends State<ChildListScreen>
                             Text(
                               cardItem.label,
                               style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(20),
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  20,
+                                ),
                                 fontWeight: FontWeight.bold,
-                                color: cardItem.titleColor ?? (isDark ? Colors.white : Colors.black),
+                                color:
+                                    cardItem.titleColor ??
+                                    (isDark ? Colors.white : Colors.black),
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _getStudentMenuDescription(menuType),
                               style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(14),
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  14,
+                                ),
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                               ),
                             ),
                           ],
@@ -987,13 +833,15 @@ class _ChildListScreenState extends State<ChildListScreen>
                         onPressed: () => Navigator.of(context).pop(),
                         icon: Icon(
                           Icons.close,
-                          color: cardItem.titleColor ?? (isDark ? Colors.white : Colors.black),
+                          color:
+                              cardItem.titleColor ??
+                              (isDark ? Colors.white : Colors.black),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Content
                 Expanded(
                   child: SingleChildScrollView(
@@ -1007,6 +855,395 @@ class _ChildListScreenState extends State<ChildListScreen>
         },
       ),
     );
+  }
+
+  void _showNotificationsBottomSheet() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            // ✅ Déclencher le chargement UNE SEULE FOIS à l'intérieur du modal
+            if (!_notificationsLoaded && !_isLoadingNotifications) {
+              _isLoadingNotifications = true;
+              final matricule = _matricule ?? widget.child.matricule;
+              if (matricule != null && matricule.isNotEmpty) {
+                GroupMessageService.getGroupMessages(matricule)
+                    .then((notifications) {
+                      if (mounted) {
+                        setModalState(() {
+                          _notifications = notifications;
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                        setState(() {
+                          _notifications = notifications;
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                      }
+                    })
+                    .catchError((e) {
+                      print('❌ Erreur notifications: $e');
+                      if (mounted) {
+                        setModalState(() {
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                        setState(() {
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                      }
+                    });
+              } else {
+                _isLoadingNotifications = false;
+                _notificationsLoaded = true;
+              }
+            }
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[900] : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.notifications_rounded,
+                            color: Color(0xFF1976D2),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Notifications',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    20,
+                                  ),
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF0D47A1),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _isLoadingNotifications
+                                    ? 'Chargement en cours...'
+                                    : _notifications.isEmpty
+                                    ? 'Aucun message disponible'
+                                    : '${_notifications.length} message${_notifications.length > 1 ? 's' : ''}',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    14,
+                                  ),
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Color(0xFF0D47A1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Content
+                  Expanded(
+                    child: _isLoadingNotifications
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32),
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF1976D2),
+                              ),
+                            ),
+                          )
+                        : _notifications.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.notifications_off_outlined,
+                                    size: 64,
+                                    color: isDark
+                                        ? Colors.grey[600]
+                                        : Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Aucune notification',
+                                    style: TextStyle(
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(16),
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Vous n\'avez pas encore reçu de messages',
+                                    style: TextStyle(
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(14),
+                                      color: isDark
+                                          ? Colors.grey[600]
+                                          : Colors.grey[400],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _notifications.length,
+                            itemBuilder: (context, index) {
+                              final notification = _notifications[index];
+                              return _buildNotificationCard(
+                                notification,
+                                setModalState,
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationCard(
+    GroupMessage notification,
+    StateSetter setModalState,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: notification.estLu
+            ? (isDark ? Colors.grey[800] : Colors.grey[50])
+            : (isDark ? const Color(0xFF1E3A5F) : const Color(0xFFE3F2FD)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: notification.estLu
+              ? (isDark ? Colors.grey[700]! : Colors.grey[200]!)
+              : (isDark ? const Color(0xFF1976D2) : const Color(0xFF1976D2)),
+          width: notification.estLu ? 1 : 2,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            if (!notification.estLu) {
+              _markNotificationAsRead(notification.id, setModalState);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            notification.titre,
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(16),
+                              fontWeight: notification.estLu
+                                  ? FontWeight.w500
+                                  : FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            notification.expediteurDisplay,
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(12),
+                              color: isDark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!notification.estLu)
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  notification.contenu,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    color: isDark ? Colors.grey[300] : Colors.grey[700],
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      notification.formattedDate,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(11),
+                        color: isDark ? Colors.grey[500] : Colors.grey[500],
+                      ),
+                    ),
+                    if (!notification.estLu)
+                      TextButton(
+                        onPressed: () => _markNotificationAsRead(
+                          notification.id,
+                          setModalState,
+                        ),
+                        child: Text(
+                          'Marquer comme lu',
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(12),
+                            color: const Color(0xFF1976D2),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _markNotificationAsRead(
+    String messageId,
+    StateSetter setModalState,
+  ) async {
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) {
+      print('❌ Matricule non disponible pour marquer le message comme lu');
+      return;
+    }
+
+    try {
+      print('📝 Marquage du message $messageId comme lu...');
+      final success = await GroupMessageService.markMessageAsRead(
+        messageId,
+        matricule,
+      );
+
+      if (success) {
+        // Mettre à jour l'état local
+        setModalState(() {
+          final index = _notifications.indexWhere((n) => n.id == messageId);
+          if (index != -1) {
+            _notifications[index] = _notifications[index].copyWith(estLu: true);
+          }
+        });
+
+        // Mettre à jour l'état du widget
+        if (mounted) {
+          setState(() {
+            final index = _notifications.indexWhere((n) => n.id == messageId);
+            if (index != -1) {
+              _notifications[index] = _notifications[index].copyWith(
+                estLu: true,
+              );
+            }
+          });
+        }
+
+        print('✅ Message marqué comme lu avec succès');
+      } else {
+        print('❌ Échec du marquage du message comme lu');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du marquage du message: $e');
+    }
   }
 
   String _getStudentMenuDescription(String menuType) {
@@ -1089,7 +1326,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             child: Text(
               'Contenu en cours de développement...',
               style: TextStyle(
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
           ),
@@ -1100,7 +1339,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildModernSliverAppBar() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SliverAppBar(
       expandedHeight: 80,
       floating: false,
@@ -1118,11 +1357,19 @@ class _ChildListScreenState extends State<ChildListScreen>
           color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
-            BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+            BoxShadow(
+              color: AppColors.screenShadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
         child: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, size: 16, color: theme.iconTheme.color),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            size: 16,
+            color: theme.iconTheme.color,
+          ),
           onPressed: () {
             if (MainScreenWrapper.maybeOf(context) != null) {
               MainScreenWrapper.of(context).navigateToHome();
@@ -1133,18 +1380,59 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
       ),
       actions: [
+        // Icône de notifications avec badge
         Container(
           margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
           decoration: BoxDecoration(
             color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(12),
             boxShadow: const [
-              BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+              BoxShadow(
+                color: AppColors.screenShadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
             ],
           ),
-          child: IconButton(
-            icon: Icon(Icons.notifications_outlined, color: theme.iconTheme.color),
-            onPressed: () {},
+          child: Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_outlined,
+                  color: theme.iconTheme.color,
+                ),
+                onPressed: () => _showNotificationsBottomSheet(),
+              ),
+              // Badge pour les notifications non lues
+              if (unreadNotificationsCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.screenCard, width: 2),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      unreadNotificationsCount > 99
+                          ? '99+'
+                          : unreadNotificationsCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
         Container(
@@ -1153,7 +1441,11 @@ class _ChildListScreenState extends State<ChildListScreen>
             color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(12),
             boxShadow: const [
-              BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+              BoxShadow(
+                color: AppColors.screenShadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
             ],
           ),
           child: IconButton(
@@ -1168,27 +1460,27 @@ class _ChildListScreenState extends State<ChildListScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Text(
-            widget.child.fullName,
-            style: TextStyle(
-              color: theme.textTheme.titleLarge?.color,
-              fontWeight: FontWeight.w700,
-              fontSize: _textSizeService.getScaledFontSize(16),
-              letterSpacing: -0.5,
+            Text(
+              widget.child.fullName,
+              style: TextStyle(
+                color: theme.textTheme.titleLarge?.color,
+                fontWeight: FontWeight.w700,
+                fontSize: _textSizeService.getScaledFontSize(16),
+                letterSpacing: -0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            widget.child.grade,
-            style: TextStyle(
-              color: AppColors.screenTextSecondary,
-              fontSize: _textSizeService.getScaledFontSize(13),
-              fontWeight: FontWeight.w500,
+            const SizedBox(height: 2),
+            Text(
+              widget.child.grade,
+              style: TextStyle(
+                color: AppColors.screenTextSecondary,
+                fontSize: _textSizeService.getScaledFontSize(13),
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -1223,7 +1515,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withOpacity(0.2),
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2,
+                  ),
                 ),
                 child: widget.child.photoUrl != null
                     ? ClipOval(
@@ -1292,358 +1587,2060 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // ─── PAYMENT AND INSCRIPTION BANNER CARDS ──────────────────────────────────────────
   Widget _buildPaymentBannerCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        children: [
-          // Bouton Paiement en ligne
-          Expanded(
-            child: GestureDetector(
-              onTap: _showPaiementBottomSheet,
-              child: Container(
-                height: 110,
+    return Column(
+      children: [
+        // Section Header - Paiement
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withOpacity(0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.payments_rounded,
+                  color: Colors.green,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Paiement en ligne',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Paiement en ligne
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: _showPaiementBottomSheet,
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF10B981),
+                            Color(0xFF34D399),
+                            Color(0xFF6EE7B7),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Points décoratifs ───────────────────────────
+                    Positioned(
+                      top: 18,
+                      right: 110,
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white30,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 22,
+                      right: 88,
+                      child: Container(
+                        width: 3,
+                        height: 3,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white24,
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu ─────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          // Icône dans un cercle blanc
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.22),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.35),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.payments_rounded,
+                              size: 26,
+                              color: Colors.white,
+                            ),
+                          ),
+
+                          const SizedBox(width: 16),
+
+                          // Textes
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Effectuez vos paiements',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'de scolarité en toute sécurité',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // ── Fond dégradé principal ──────────────────────
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                        ),
-                      ),
-
-                      // ── Cercles décoratifs translucides ────────────
-                      Positioned(
-                        right: -28,
-                        top: -28,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.10),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: 48,
-                        bottom: -40,
-                        left: -16,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.06),
-                          ),
-                        ),
-                      ),
-
-                      // ── Points décoratifs ───────────────────────────
-                      Positioned(
-                        top: 18,
-                        right: 110,
-                        child: Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white30,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 22,
-                        right: 88,
-                        child: Container(
-                          width: 3,
-                          height: 3,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white24,
-                          ),
-                        ),
-                      ),
-
-                      // ── Contenu ─────────────────────────────────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                        child: Row(
-                          children: [
-                            // Icône dans un cercle blanc
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.22),
-                                border: Border.all(
-                                    color: Colors.white.withOpacity(0.35),
-                                    width: 1.5),
-                              ),
-                              child: const Icon(
-                                Icons.payments_rounded,
-                                size: 26,
-                                color: Colors.white,
-                              ),
-                            ),
-
-                            const SizedBox(width: 16),
-
-                            // Textes
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Paiement en ligne',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -0.3,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Effectuez vos paiements\nde scolarité en toute sécurité',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w400,
-                                      color: Colors.white70,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Flèche droite
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.20),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
           ),
-          
-          const SizedBox(width: 12),
-          
-          // Bouton Inscription
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Inscription
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.app_registration_rounded,
+                  color: Colors.blue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Inscription',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Inscription
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => inscription.InscriptionWizardScreen(
+                    child: widget.child,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF3B82F6),
+                            Color(0xFF60A5FA),
+                            Color(0xFF93C5FD),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Points décoratifs ───────────────────────────
+                    Positioned(
+                      top: 18,
+                      right: 110,
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white30,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 22,
+                      right: 88,
+                      child: Container(
+                        width: 3,
+                        height: 3,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white24,
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu ─────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          // Icône dans un cercle blanc
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.22),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.35),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.app_registration_rounded,
+                              size: 26,
+                              color: Colors.white,
+                            ),
+                          ),
+
+                          const SizedBox(width: 16),
+
+                          // Textes
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Gérez les inscriptions',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et réinscriptions',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Mes Notes
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1976D2).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.bar_chart_rounded,
+                  color: Color(0xFF1976D2),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Mes Notes',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Mes Notes
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () {
+              if (_matricule != null && _anneeId != null && _classeId != null) {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => InscriptionScreen(child: widget.child),
+                    builder: (context) => NotesScreenJson(
+                      matricule: _matricule!,
+                      anneeId: _anneeId!.toString(),
+                      classeId: _classeId!.toString(),
+                      anneeLibelle: 'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+                    ),
                   ),
                 );
-              },
-              child: Container(
-                height: 110,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Informations élève non disponibles')),
+                );
+              }
+            },
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1976D2).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF1976D2),
+                            Color(0xFF42A5F5),
+                            Color(0xFF64B5F6),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Consulter les notes',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et bulletins de notes',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // ── Fond dégradé principal ──────────────────────
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF3B82F6), Color(0xFF60A5FA), Color(0xFF93C5FD)],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                        ),
-                      ),
-
-                      // ── Cercles décoratifs translucides ────────────
-                      Positioned(
-                        right: -28,
-                        top: -28,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.10),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: 48,
-                        bottom: -40,
-                        left: -16,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.06),
-                          ),
-                        ),
-                      ),
-
-                      // ── Points décoratifs ───────────────────────────
-                      Positioned(
-                        top: 18,
-                        right: 110,
-                        child: Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white30,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 22,
-                        right: 88,
-                        child: Container(
-                          width: 3,
-                          height: 3,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white24,
-                          ),
-                        ),
-                      ),
-
-                      // ── Contenu ─────────────────────────────────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                        child: Row(
-                          children: [
-                            // Icône dans un cercle blanc
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.22),
-                                border: Border.all(
-                                    color: Colors.white.withOpacity(0.35),
-                                    width: 1.5),
-                              ),
-                              child: const Icon(
-                                Icons.app_registration_rounded,
-                                size: 26,
-                                color: Colors.white,
-                              ),
-                            ),
-
-                            const SizedBox(width: 16),
-
-                            // Textes
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Inscription',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -0.3,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Gérez les inscriptions\net réinscriptions',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w400,
-                                      color: Colors.white70,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Flèche droite
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.20),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Bulletins
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E7D32).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Color(0xFF2E7D32),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Bulletins',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Bulletins
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () => _showStudentMenuBottomSheet(
+              'bulletins',
+              _getStudentMenuCardItem('bulletins'),
+            ),
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2E7D32).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF2E7D32),
+                            Color(0xFF43A047),
+                            Color(0xFF66BB6A),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir les bulletins',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et relevés de notes',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Emploi du temps
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF57C00).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.calendar_today_rounded,
+                  color: Color(0xFFF57C00),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Emploi du temps',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Emploi du temps
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () async {
+              // Précharger si nécessaire avant d'ouvrir le bottom sheet
+              if (_timetableResponse == null && !_isLoadingTimetable) {
+                await _loadTimetableData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'timetable',
+                  _getStudentMenuCardItem('timetable'),
+                );
+              }
+            },
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF57C00).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFF57C00),
+                            Color(0xFFFF9800),
+                            Color(0xFFFFB74D),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Consulter l\'emploi',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'du temps de la classe',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Devoirs
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.edit_note_rounded,
+                  color: Color(0xFF7B1FA2),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Devoirs',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Devoirs
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () => _showStudentMenuBottomSheet(
+              'homework',
+              _getStudentMenuCardItem('homework'),
+            ),
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF7B1FA2).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF7B1FA2),
+                            Color(0xFF9C27B0),
+                            Color(0xFFBA68C8),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir les devoirs',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et exercices à faire',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Présence
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00796B).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.person_off_rounded,
+                  color: Color(0xFF00796B),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Présence & Conduite',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Présence
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () => _showStudentMenuBottomSheet(
+              'attendance',
+              _getStudentMenuCardItem('attendance'),
+            ),
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00796B).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF00796B),
+                            Color(0xFF00897B),
+                            Color(0xFF26A69A),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir la présence',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et le comportement',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Contrôle d'accès
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC2185B).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.fingerprint_rounded,
+                  color: Color(0xFFC2185B),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Contrôle d\'accès',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Contrôle d'accès
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () async {
+              // Précharger si nécessaire avant d'ouvrir le bottom sheet
+              if (_accessEntries.isEmpty && !_isLoadingAccessControl) {
+                await _loadAccessControlData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'accessControl',
+                  _getStudentMenuCardItem('accessControl'),
+                );
+              }
+            },
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFC2185B).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFC2185B),
+                            Color(0xFFE91E63),
+                            Color(0xFFF06292),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir les accès',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et pointages',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Sanctions
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD32F2F).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.warning_rounded,
+                  color: Color(0xFFD32F2F),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Sanctions',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Sanctions
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () => _showStudentMenuBottomSheet(
+              'sanctions',
+              _getStudentMenuCardItem('sanctions'),
+            ),
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFD32F2F).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFD32F2F),
+                            Color(0xFFE53935),
+                            Color(0xFFEF5350),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir les sanctions',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et avertissements',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Difficultés
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF9C27B0).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.psychology_rounded,
+                  color: Color(0xFF9C27B0),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Difficultés',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Difficultés
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () => _showStudentMenuBottomSheet(
+              'difficulties',
+              _getStudentMenuCardItem('difficulties'),
+            ),
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF9C27B0).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Fond dégradé principal ──────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF9C27B0),
+                            Color(0xFFAB47BC),
+                            Color(0xFFBA68C8),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+
+                    // ── Cercles décoratifs translucides ────────────
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+
+                    // ── Contenu principal ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Icône et texte à gauche
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir les difficultés',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et soutien scolaire',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Flèche droite
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Messages
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0288D1).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.message_rounded,
+                  color: Color(0xFF0288D1),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Messages',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Messages
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () async {
+              // Précharger si nécessaire avant d'ouvrir le bottom sheet
+              if (_studentMessages.isEmpty && !_isLoadingMessages) {
+                await _loadMessagesData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'messages',
+                  _getStudentMenuCardItem('messages'),
+                );
+              }
+            },
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0288D1).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF0288D1),
+                            Color(0xFF039BE5),
+                            Color(0xFF29B6F6),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir les messages',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et communications',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header - Scolarité
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBC02D).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.payments_rounded,
+                  color: Color(0xFFFBC02D),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Scolarité & Paiements',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Bouton Scolarité
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GestureDetector(
+            onTap: () async {
+              // Précharger si nécessaire avant d'ouvrir le bottom sheet
+              if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
+                await _loadScolariteData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet('fees', _getStudentMenuCardItem('fees'));
+              }
+            },
+            child: Container(
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFBC02D).withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFFBC02D),
+                            Color(0xFFFDD835),
+                            Color(0xFFFFEE58),
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: -28,
+                      top: -28,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 48,
+                      bottom: -40,
+                      left: -16,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.06),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Voir la scolarité',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'et les paiements',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white70,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildDefaultAvatar() {
-    return const Icon(
-      Icons.person,
-      size: 30,
-      color: Colors.white,
-    );
+    return const Icon(Icons.person, size: 30, color: Colors.white);
   }
 
   Widget _buildModernStatusBadge(String text, Color color) {
@@ -1679,7 +3676,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             return Container(
               decoration: BoxDecoration(
                 color: AppColors.screenCard,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
                 boxShadow: const [
                   BoxShadow(
                     color: AppColors.screenShadow,
@@ -1719,7 +3718,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   height: 44,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
-                                      colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
+                                      colors: [
+                                        const Color(0xFFFF7A3C),
+                                        AppColors.screenOrange,
+                                      ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
@@ -1764,7 +3766,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                               ],
                             ),
                             const SizedBox(height: 16),
-                            const Divider(color: AppColors.screenDivider, height: 1),
+                            const Divider(
+                              color: AppColors.screenDivider,
+                              height: 1,
+                            ),
                           ],
                         ),
                       ),
@@ -1791,14 +3796,19 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 decoration: BoxDecoration(
                                   color: AppColors.screenSurface,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.screenDivider),
+                                  border: Border.all(
+                                    color: AppColors.screenDivider,
+                                  ),
                                 ),
                                 child: TextField(
                                   controller: montantController,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
                                     hintText: 'Ex: 10000',
-                                    prefixIcon: const Icon(Icons.attach_money, color: AppColors.screenTextSecondary),
+                                    prefixIcon: const Icon(
+                                      Icons.attach_money,
+                                      color: AppColors.screenTextSecondary,
+                                    ),
                                     border: InputBorder.none,
                                     contentPadding: const EdgeInsets.all(16),
                                   ),
@@ -1812,28 +3822,44 @@ class _ChildListScreenState extends State<ChildListScreen>
                               const SizedBox(height: 24),
                               _buildModernPaymentButton(
                                 label: isLoading ? '' : 'Procéder au paiement',
-                                onTap: isLoading ? null : () => _effectuerPaiement(montantController.text, setState, () {
-                                  setState(() {
-                                    isLoading = true;
-                                  });
-                                }, () {
-                                  setState(() {
-                                    isLoading = false;
-                                  });
-                                }),
+                                onTap: isLoading
+                                    ? null
+                                    : () => _effectuerPaiement(
+                                        montantController.text,
+                                        setState,
+                                        () {
+                                          setState(() {
+                                            isLoading = true;
+                                          });
+                                        },
+                                        () {
+                                          setState(() {
+                                            isLoading = false;
+                                          });
+                                        },
+                                      ),
                                 isLoading: isLoading,
                               ),
                               const SizedBox(height: 16),
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: AppColors.screenOrangeLight.withOpacity(0.3),
+                                  color: AppColors.screenOrangeLight
+                                      .withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: AppColors.screenOrange.withOpacity(0.2)),
+                                  border: Border.all(
+                                    color: AppColors.screenOrange.withOpacity(
+                                      0.2,
+                                    ),
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.info_outline, color: AppColors.screenOrange, size: 20),
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: AppColors.screenOrange,
+                                      size: 20,
+                                    ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -1866,7 +3892,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   Future<List<Service>> _loadServices() async {
     try {
       const String ecoleCode = "gainhs";
-      final String url = "https://api2.vie-ecoles.com/api/preinscription/services?ecole=$ecoleCode";
+      final String url =
+          "https://api2.vie-ecoles.com/api/preinscription/services?ecole=$ecoleCode";
 
       print('🔄 Chargement des services...');
       print('   URL: $url');
@@ -1884,13 +3911,17 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = jsonDecode(response.body);
-        final services = jsonData.map((json) => Service.fromJson(json)).toList();
-        
+        final services = jsonData
+            .map((json) => Service.fromJson(json))
+            .toList();
+
         print('✅ Services chargés: ${services.length} items');
         for (var service in services) {
-          print('   - ${service.designation} (${service.service}): ${service.prix} FCFA');
+          print(
+            '   - ${service.designation} (${service.service}): ${service.prix} FCFA',
+          );
         }
-        
+
         return services;
       } else {
         print('❌ Erreur HTTP ${response.statusCode}: ${response.body}');
@@ -1902,7 +3933,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
@@ -1912,10 +3942,17 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Future<void> _effectuerInscription(List<Echeance> echeances, StateSetter setState, VoidCallback setLoading, VoidCallback setLoadingFalse) async {
+  Future<void> _effectuerInscription(
+    List<Echeance> echeances,
+    StateSetter setState,
+    VoidCallback setLoading,
+    VoidCallback setLoadingFalse,
+  ) async {
     // Filtrer les échéances sélectionnées
-    final echeancesSelectionnees = echeances.where((e) => e.selectionnee).toList();
-    
+    final echeancesSelectionnees = echeances
+        .where((e) => e.selectionnee)
+        .toList();
+
     if (echeancesSelectionnees.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1933,7 +3970,10 @@ class _ChildListScreenState extends State<ChildListScreen>
           InscriptionItem(
             id: "SCO",
             service: "Scolarité",
-            montant: echeancesSelectionnees.fold(0, (sum, e) => sum + e.montant),
+            montant: echeancesSelectionnees.fold(
+              0,
+              (sum, e) => sum + e.montant,
+            ),
             reservation: false,
             echeancesSelectionnees: echeancesSelectionnees,
           ),
@@ -1945,9 +3985,12 @@ class _ChildListScreenState extends State<ChildListScreen>
       );
 
       // URL de l'API
-      final String matricule = _matricule ?? "10307"; // Valeur par défaut si null
-      final String ecoleCode = _ecoleCode ?? "gainhs"; // Valeur par défaut si null
-      final String url = "https://api2.vie-ecoles.com/api/vie-ecoles/inscription-eleve/$matricule?ecole=$ecoleCode";
+      final String matricule =
+          _matricule ?? "10307"; // Valeur par défaut si null
+      final String ecoleCode =
+          _ecoleCode ?? "gainhs"; // Valeur par défaut si null
+      final String url =
+          "https://api2.vie-ecoles.com/api/vie-ecoles/inscription-eleve/$matricule?ecole=$ecoleCode";
 
       print('🔄 Envoi de la requête d\'inscription...');
       print('   URL: $url');
@@ -1973,7 +4016,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Inscription de ${widget.child.firstName} enregistrée avec succès!'),
+              content: Text(
+                'Inscription de ${widget.child.firstName} enregistrée avec succès!',
+              ),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 4),
             ),
@@ -1984,11 +4029,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         String errorMessage = 'Erreur lors de l\'inscription';
         try {
           final errorData = jsonDecode(response.body);
-          errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+          errorMessage =
+              errorData['message'] ?? errorData['error'] ?? errorMessage;
         } catch (e) {
           errorMessage = 'Erreur HTTP ${response.statusCode}: ${response.body}';
         }
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -2025,20 +4071,22 @@ class _ChildListScreenState extends State<ChildListScreen>
       height: 56,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: onTap != null 
+          colors: onTap != null
               ? [const Color(0xFF3B82F6), const Color(0xFF60A5FA)]
               : [Colors.grey.shade400, Colors.grey.shade300],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: onTap != null ? [
-          BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ] : null,
+        boxShadow: onTap != null
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF3B82F6).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -2070,7 +4118,12 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Future<void> _effectuerPaiement(String montantStr, StateSetter setState, VoidCallback setLoading, VoidCallback setLoadingFalse) async {
+  Future<void> _effectuerPaiement(
+    String montantStr,
+    StateSetter setState,
+    VoidCallback setLoading,
+    VoidCallback setLoadingFalse,
+  ) async {
     if (montantStr.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez entrer un montant')),
@@ -2096,13 +4149,18 @@ class _ChildListScreenState extends State<ChildListScreen>
     setLoading();
 
     try {
-      print('💳 Initialisation du paiement: $montant FCFA pour matricule $_matricule');
-      
-      final paiementResponse = await _paiementService.initierPaiementEnLigne(_matricule!, montant);
-      
+      print(
+        '💳 Initialisation du paiement: $montant FCFA pour matricule $_matricule',
+      );
+
+      final paiementResponse = await _paiementService.initierPaiementEnLigne(
+        _matricule!,
+        montant,
+      );
+
       if (paiementResponse.success && paiementResponse.url.isNotEmpty) {
         Navigator.of(context).pop(); // Fermer le bottomsheet
-        
+
         // Afficher un message de succès
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2110,13 +4168,17 @@ class _ChildListScreenState extends State<ChildListScreen>
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Rediriger vers l'URL de paiement
-        final launched = await _paiementService.lancerUrlPaiement(paiementResponse.url);
+        final launched = await _paiementService.lancerUrlPaiement(
+          paiementResponse.url,
+        );
         if (!launched) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Impossible d\'ouvrir la page de paiement. Veuillez réessayer.'),
+              content: Text(
+                'Impossible d\'ouvrir la page de paiement. Veuillez réessayer.',
+              ),
               backgroundColor: Colors.orange,
             ),
           );
@@ -2215,7 +4277,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                   color: AppColors.screenOrangeLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.analytics_outlined, color: AppColors.screenOrange, size: 20),
+                child: const Icon(
+                  Icons.analytics_outlined,
+                  color: AppColors.screenOrange,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -2238,33 +4304,38 @@ class _ChildListScreenState extends State<ChildListScreen>
             child: Row(
               children: [
                 _buildModernSummaryCard(
-                  'Moyenne', 
-                  _globalAverage != null 
-                    ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
-                    : '--',
-                  Colors.green, 
+                  'Moyenne',
+                  _globalAverage != null
+                      ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
+                      : '--',
+                  Colors.green,
                   Icons.trending_up,
                   isLoading: _isLoadingNotes,
                 ),
                 const SizedBox(width: 12),
                 _buildModernSummaryCard(
-                  'Rang', 
+                  'Rang',
                   _globalAverage != null && _globalAverage!.trimesterRank > 0
-                    ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
-                    : '--',
-                  Colors.blue, 
+                      ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
+                      : '--',
+                  Colors.blue,
                   Icons.emoji_events,
                   isLoading: _isLoadingNotes,
                 ),
                 const SizedBox(width: 12),
-                _buildModernSummaryCard('Présence', '95%', AppColors.success, Icons.check_circle),
+                _buildModernSummaryCard(
+                  'Présence',
+                  '95%',
+                  AppColors.success,
+                  Icons.check_circle,
+                ),
                 const SizedBox(width: 12),
                 _buildModernSummaryCard(
-                  'Appréciation', 
-                  _globalAverage != null 
-                    ? _globalAverage!.trimesterMention
-                    : '--',
-                  AppColors.secondary, 
+                  'Appréciation',
+                  _globalAverage != null
+                      ? _globalAverage!.trimesterMention
+                      : '--',
+                  AppColors.secondary,
                   Icons.star,
                   isLoading: _isLoadingNotes,
                 ),
@@ -2276,9 +4347,15 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildModernSummaryCard(String title, String value, Color color, IconData icon, {bool isLoading = false}) {
+  Widget _buildModernSummaryCard(
+    String title,
+    String value,
+    Color color,
+    IconData icon, {
+    bool isLoading = false,
+  }) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 600),
@@ -2304,10 +4381,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(
-              color: color.withOpacity(0.1),
-              width: 1,
-            ),
+            border: Border.all(color: color.withOpacity(0.1), width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2352,7 +4426,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Container(
                   height: 18,
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[700] : AppColors.screenDivider,
+                    color: isDarkMode
+                        ? Colors.grey[700]
+                        : AppColors.screenDivider,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 )
@@ -2371,7 +4447,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 title,
                 style: TextStyle(
                   fontSize: _textSizeService.getScaledFontSize(11),
-                  color: isDarkMode ? Colors.grey[400] : AppColors.screenTextSecondary,
+                  color: isDarkMode
+                      ? Colors.grey[400]
+                      : AppColors.screenTextSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -2384,7 +4462,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSimpleTimetableTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2423,11 +4501,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.red.withOpacity(0.3),
-            ),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
           ),
           child: Column(
             children: [
@@ -2450,7 +4528,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  color: _themeService.isDarkMode
+                      ? Colors.grey[400]
+                      : Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -2458,29 +4538,31 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         );
       }
-      
+
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            color: _themeService.isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[200]!,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.schedule_outlined,
-              size: 48,
-              color: Colors.orange[400],
-            ),
+            Icon(Icons.schedule_outlined, size: 48, color: Colors.orange[400]),
             const SizedBox(height: 12),
             Text(
               'Aucun emploi du temps disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 16),
@@ -2499,7 +4581,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     final coursesByDay = _timetableResponse!.coursesByDay;
     final days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
-    
+
     return Column(
       children: days.map((day) {
         if (coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty) {
@@ -2517,7 +4599,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   // inutilement le chargement et empêchait l'affichage au premier rendu.
   Widget _buildSimpleAccessControlTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2556,11 +4638,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.red.withOpacity(0.3),
-            ),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
           ),
           child: Column(
             children: [
@@ -2583,7 +4665,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  color: _themeService.isDarkMode
+                      ? Colors.grey[400]
+                      : Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -2591,29 +4675,31 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         );
       }
-      
+
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            color: _themeService.isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[200]!,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.fingerprint,
-              size: 48,
-              color: Colors.purple[400],
-            ),
+            Icon(Icons.fingerprint, size: 48, color: Colors.purple[400]),
             const SizedBox(height: 12),
             Text(
               'Aucun pointage disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 16),
@@ -2642,10 +4728,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+              color: _themeService.isDarkMode
+                  ? Colors.grey[700]!
+                  : Colors.grey[200]!,
             ),
           ),
           child: Column(
@@ -2664,7 +4754,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                      color: _themeService.isDarkMode
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ],
@@ -2673,15 +4765,27 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Total', totalEntries.toString(), Colors.purple),
+                    child: _buildStatItem(
+                      'Total',
+                      totalEntries.toString(),
+                      Colors.purple,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Entrées', entrees.toString(), Colors.green),
+                    child: _buildStatItem(
+                      'Entrées',
+                      entrees.toString(),
+                      Colors.green,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Sorties', sorties.toString(), Colors.orange),
+                    child: _buildStatItem(
+                      'Sorties',
+                      sorties.toString(),
+                      Colors.orange,
+                    ),
                   ),
                 ],
               ),
@@ -2689,11 +4793,19 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('OK', statusOk.toString(), Colors.green),
+                    child: _buildStatItem(
+                      'OK',
+                      statusOk.toString(),
+                      Colors.green,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('KO', (totalEntries - statusOk).toString(), Colors.red),
+                    child: _buildStatItem(
+                      'KO',
+                      (totalEntries - statusOk).toString(),
+                      Colors.red,
+                    ),
                   ),
                   const Expanded(child: SizedBox()),
                 ],
@@ -2703,17 +4815,24 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         const SizedBox(height: 16),
         // Liste des pointages récents (limités à 5 pour le bottom sheet)
-        ..._accessEntries.take(5).map((entry) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildAccessControlCard(entry),
-        )).toList(),
+        ..._accessEntries
+            .take(5)
+            .map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildAccessControlCard(entry),
+              ),
+            )
+            .toList(),
         if (_accessEntries.length > 5)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '... et ${_accessEntries.length - 5} autres pointages',
               style: TextStyle(
-                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.grey[400]
+                    : Colors.grey[600],
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -2725,7 +4844,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSimpleFeesTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2764,11 +4883,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.red.withOpacity(0.3),
-            ),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
           ),
           child: Column(
             children: [
@@ -2791,7 +4910,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  color: _themeService.isDarkMode
+                      ? Colors.grey[400]
+                      : Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -2799,29 +4920,31 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         );
       }
-      
+
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            color: _themeService.isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[200]!,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.school,
-              size: 48,
-              color: Colors.amber[400],
-            ),
+            Icon(Icons.school, size: 48, color: Colors.amber[400]),
             const SizedBox(height: 12),
             Text(
               'Aucune échéance disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 16),
@@ -2839,10 +4962,21 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     // Statistiques
-    final totalMontant = _scolariteEntries.fold<int>(0, (sum, entry) => sum + entry.montant);
-    final totalPaye = _scolariteEntries.fold<int>(0, (sum, entry) => sum + entry.paye);
-    final totalRapayer = _scolariteEntries.fold<int>(0, (sum, entry) => sum + entry.rapayer);
-    final paymentPercentage = totalMontant > 0 ? (totalPaye / totalMontant) * 100 : 0.0;
+    final totalMontant = _scolariteEntries.fold<int>(
+      0,
+      (sum, entry) => sum + entry.montant,
+    );
+    final totalPaye = _scolariteEntries.fold<int>(
+      0,
+      (sum, entry) => sum + entry.paye,
+    );
+    final totalRapayer = _scolariteEntries.fold<int>(
+      0,
+      (sum, entry) => sum + entry.rapayer,
+    );
+    final paymentPercentage = totalMontant > 0
+        ? (totalPaye / totalMontant) * 100
+        : 0.0;
     final overdueCount = _scolariteEntries.where((e) => e.isOverdue).length;
 
     return Column(
@@ -2851,10 +4985,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+              color: _themeService.isDarkMode
+                  ? Colors.grey[700]!
+                  : Colors.grey[200]!,
             ),
           ),
           child: Column(
@@ -2862,18 +5000,16 @@ class _ChildListScreenState extends State<ChildListScreen>
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.analytics_outlined,
-                    color: Colors.amber,
-                    size: 24,
-                  ),
+                  Icon(Icons.analytics_outlined, color: Colors.amber, size: 24),
                   const SizedBox(width: 12),
                   Text(
                     'Résumé de la scolarité',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                      color: _themeService.isDarkMode
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ],
@@ -2882,15 +5018,27 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Total', _formatAmount(totalMontant), Colors.amber),
+                    child: _buildStatItem(
+                      'Total',
+                      _formatAmount(totalMontant),
+                      Colors.amber,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Payé', _formatAmount(totalPaye), Colors.green),
+                    child: _buildStatItem(
+                      'Payé',
+                      _formatAmount(totalPaye),
+                      Colors.green,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Restant', _formatAmount(totalRapayer), Colors.red),
+                    child: _buildStatItem(
+                      'Restant',
+                      _formatAmount(totalRapayer),
+                      Colors.red,
+                    ),
                   ),
                 ],
               ),
@@ -2904,7 +5052,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       Text(
                         'Progression: ${paymentPercentage.toStringAsFixed(1)}%',
                         style: TextStyle(
-                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          color: _themeService.isDarkMode
+                              ? Colors.white
+                              : Colors.black,
                           fontSize: _textSizeService.getScaledFontSize(12),
                           fontWeight: FontWeight.w500,
                         ),
@@ -2912,7 +5062,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                       if (overdueCount > 0) ...[
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -2933,7 +5086,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                   Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color: (_themeService.isDarkMode ? Colors.grey[600] : Colors.grey[300])!.withOpacity(0.3),
+                      color:
+                          (_themeService.isDarkMode
+                                  ? Colors.grey[600]
+                                  : Colors.grey[300])!
+                              .withOpacity(0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: FractionallySizedBox(
@@ -2941,7 +5098,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       widthFactor: paymentPercentage / 100,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: paymentPercentage == 100 ? Colors.green : Colors.amber,
+                          color: paymentPercentage == 100
+                              ? Colors.green
+                              : Colors.amber,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -2954,28 +5113,34 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         const SizedBox(height: 16),
         // Liste de toutes les échéances
-        ..._scolariteEntries.map((entry) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildScolariteCard(entry),
-        )).toList(),
+        ..._scolariteEntries
+            .map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildScolariteCard(entry),
+              ),
+            )
+            .toList(),
       ],
     );
   }
 
   Widget _buildScolariteCard(StudentScolariteEntry entry) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: entry.statusColor == 'green' 
+          color: entry.statusColor == 'green'
               ? Colors.green.withOpacity(0.3)
               : entry.statusColor == 'orange'
-                  ? Colors.orange.withOpacity(0.3)
-                  : Colors.red.withOpacity(0.3),
+              ? Colors.orange.withOpacity(0.3)
+              : Colors.red.withOpacity(0.3),
           width: 2,
         ),
         boxShadow: [
@@ -3003,7 +5168,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       child: Text(
                         entry.libelle,
                         style: TextStyle(
-                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          color: _themeService.isDarkMode
+                              ? Colors.white
+                              : Colors.black,
                           fontSize: _textSizeService.getScaledFontSize(16),
                           fontWeight: FontWeight.w600,
                         ),
@@ -3012,23 +5179,26 @@ class _ChildListScreenState extends State<ChildListScreen>
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: entry.statusColor == 'green' 
+                        color: entry.statusColor == 'green'
                             ? Colors.green.withOpacity(0.1)
                             : entry.statusColor == 'orange'
-                                ? Colors.orange.withOpacity(0.1)
-                                : Colors.red.withOpacity(0.1),
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         entry.formattedStatus,
                         style: TextStyle(
-                          color: entry.statusColor == 'green' 
+                          color: entry.statusColor == 'green'
                               ? Colors.green
                               : entry.statusColor == 'orange'
-                                  ? Colors.orange
-                                  : Colors.red,
+                              ? Colors.orange
+                              : Colors.red,
                           fontSize: _textSizeService.getScaledFontSize(12),
                           fontWeight: FontWeight.w600,
                         ),
@@ -3043,13 +5213,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.account_balance_wallet,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Montant: ${entry.formattedMontant}',
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                        color: _themeService.isDarkMode
+                            ? Colors.white
+                            : Colors.black,
                         fontSize: _textSizeService.getScaledFontSize(14),
                         fontWeight: FontWeight.w500,
                       ),
@@ -3059,11 +5233,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(
-                      Icons.check_circle,
-                      size: 16,
-                      color: Colors.green,
-                    ),
+                    Icon(Icons.check_circle, size: 16, color: Colors.green),
                     const SizedBox(width: 4),
                     Text(
                       'Payé: ${entry.formattedPaye}',
@@ -3097,20 +5267,27 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Date limite: ${entry.formattedDateLimite}',
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(14),
                       ),
                     ),
                     if (entry.isOverdue) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -3137,11 +5314,13 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showScolariteEntryDetails(StudentScolariteEntry entry) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         title: Text(
           entry.libelle,
           style: TextStyle(
@@ -3164,21 +5343,23 @@ class _ChildListScreenState extends State<ChildListScreen>
               _buildDetailRow('Restant à payer', _formatAmount(entry.rapayer)),
               _buildDetailRow('Date limite', entry.formattedDateLimite),
               _buildDetailRow('Statut', entry.formattedStatus),
-              _buildDetailRow('Date d\'enregistrement', entry.formattedDateenreg),
+              _buildDetailRow(
+                'Date d\'enregistrement',
+                entry.formattedDateenreg,
+              ),
               if (entry.isOverdue)
-                _buildDetailRow('Retard', 'Oui - ${entry.daysUntilDeadline.abs()} jours', Colors.red),
+                _buildDetailRow(
+                  'Retard',
+                  'Oui - ${entry.daysUntilDeadline.abs()} jours',
+                  Colors.red,
+                ),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Fermer',
-              style: TextStyle(
-                color: AppColors.primary,
-              ),
-            ),
+            child: Text('Fermer', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -3187,7 +5368,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildDetailRow(String label, String value, [Color? color]) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -3196,7 +5377,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           Text(
             label,
             style: TextStyle(
-              color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              color: _themeService.isDarkMode
+                  ? Colors.grey[400]
+                  : Colors.grey[600],
               fontSize: _textSizeService.getScaledFontSize(12),
               fontWeight: FontWeight.w600,
             ),
@@ -3205,7 +5388,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           Text(
             value,
             style: TextStyle(
-              color: color ?? (_themeService.isDarkMode ? Colors.white : Colors.black),
+              color:
+                  color ??
+                  (_themeService.isDarkMode ? Colors.white : Colors.black),
               fontSize: _textSizeService.getScaledFontSize(14),
             ),
           ),
@@ -3215,15 +5400,12 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   String _formatAmount(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
+    return '${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA';
   }
 
   Widget _buildSimpleSuggestionsTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -3259,25 +5441,27 @@ class _ChildListScreenState extends State<ChildListScreen>
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            color: _themeService.isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[200]!,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.lightbulb_outline,
-              size: 48,
-              color: Colors.purple[400],
-            ),
+            Icon(Icons.lightbulb_outline, size: 48, color: Colors.purple[400]),
             const SizedBox(height: 12),
             Text(
               'Aucune suggestion disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 16),
@@ -3300,10 +5484,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+              color: _themeService.isDarkMode
+                  ? Colors.grey[700]!
+                  : Colors.grey[200]!,
             ),
           ),
           child: Column(
@@ -3322,7 +5510,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                      color: _themeService.isDarkMode
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ],
@@ -3331,19 +5521,33 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Total', _suggestions.length.toString(), Colors.purple),
+                    child: _buildStatItem(
+                      'Total',
+                      _suggestions.length.toString(),
+                      Colors.purple,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('En attente', 
-                      _suggestions.where((s) => s.status == SuggestionStatus.pending).length.toString(), 
-                      Colors.orange),
+                    child: _buildStatItem(
+                      'En attente',
+                      _suggestions
+                          .where((s) => s.status == SuggestionStatus.pending)
+                          .length
+                          .toString(),
+                      Colors.orange,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Approuvées', 
-                      _suggestions.where((s) => s.status == SuggestionStatus.approved).length.toString(), 
-                      Colors.green),
+                    child: _buildStatItem(
+                      'Approuvées',
+                      _suggestions
+                          .where((s) => s.status == SuggestionStatus.approved)
+                          .length
+                          .toString(),
+                      Colors.green,
+                    ),
                   ),
                 ],
               ),
@@ -3352,17 +5556,24 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         const SizedBox(height: 16),
         // Liste des suggestions récentes (limitées à 5 pour le bottom sheet)
-        ..._suggestions.take(5).map((suggestion) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildSuggestionCard(suggestion),
-        )).toList(),
+        ..._suggestions
+            .take(5)
+            .map(
+              (suggestion) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildSuggestionCard(suggestion),
+              ),
+            )
+            .toList(),
         if (_suggestions.length > 5)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '... et ${_suggestions.length - 5} autres suggestions',
               style: TextStyle(
-                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.grey[400]
+                    : Colors.grey[600],
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -3374,11 +5585,13 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSuggestionCard(ParentSuggestion suggestion) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _getStatusColor(suggestion.status).withOpacity(0.3),
@@ -3409,7 +5622,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       child: Text(
                         suggestion.title,
                         style: TextStyle(
-                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          color: _themeService.isDarkMode
+                              ? Colors.white
+                              : Colors.black,
                           fontSize: _textSizeService.getScaledFontSize(16),
                           fontWeight: FontWeight.w600,
                         ),
@@ -3419,9 +5634,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(suggestion.status).withOpacity(0.1),
+                        color: _getStatusColor(
+                          suggestion.status,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -3440,7 +5660,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Text(
                   suggestion.description,
                   style: TextStyle(
-                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
                     fontSize: _textSizeService.getScaledFontSize(14),
                   ),
                   maxLines: 3,
@@ -3453,13 +5675,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.person,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       suggestion.displayName,
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(12),
                       ),
                     ),
@@ -3467,13 +5693,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       suggestion.formattedCreatedAt,
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(12),
                       ),
                     ),
@@ -3484,9 +5714,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(suggestion.category).withOpacity(0.1),
+                        color: _getCategoryColor(
+                          suggestion.category,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -3500,9 +5735,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: _getPriorityColor(suggestion.priority).withOpacity(0.1),
+                        color: _getPriorityColor(
+                          suggestion.priority,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -3526,11 +5766,13 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showSuggestionDetails(ParentSuggestion suggestion) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         title: Text(
           suggestion.title,
           style: TextStyle(
@@ -3554,21 +5796,28 @@ class _ChildListScreenState extends State<ChildListScreen>
               const SizedBox(height: 16),
               _buildDetailRow('Auteur', suggestion.displayName),
               _buildDetailRow('Date', suggestion.formattedCreatedAt),
-              _buildDetailRow('Catégorie', suggestion.category.displayName, _getCategoryColor(suggestion.category)),
-              _buildDetailRow('Priorité', suggestion.priority.displayName, _getPriorityColor(suggestion.priority)),
-              _buildDetailRow('Statut', suggestion.status.displayName, _getStatusColor(suggestion.status)),
+              _buildDetailRow(
+                'Catégorie',
+                suggestion.category.displayName,
+                _getCategoryColor(suggestion.category),
+              ),
+              _buildDetailRow(
+                'Priorité',
+                suggestion.priority.displayName,
+                _getPriorityColor(suggestion.priority),
+              ),
+              _buildDetailRow(
+                'Statut',
+                suggestion.status.displayName,
+                _getStatusColor(suggestion.status),
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Fermer',
-              style: TextStyle(
-                color: AppColors.primary,
-              ),
-            ),
+            child: Text('Fermer', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -3577,7 +5826,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSimpleAccessLogsTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -3613,25 +5862,27 @@ class _ChildListScreenState extends State<ChildListScreen>
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            color: _themeService.isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[200]!,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.history,
-              size: 48,
-              color: Colors.teal[400],
-            ),
+            Icon(Icons.history, size: 48, color: Colors.teal[400]),
             const SizedBox(height: 12),
             Text(
               'Aucun log d\'accès disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 16),
@@ -3654,10 +5905,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+              color: _themeService.isDarkMode
+                  ? Colors.grey[700]!
+                  : Colors.grey[200]!,
             ),
           ),
           child: Column(
@@ -3665,18 +5920,16 @@ class _ChildListScreenState extends State<ChildListScreen>
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.analytics_outlined,
-                    color: Colors.teal,
-                    size: 24,
-                  ),
+                  Icon(Icons.analytics_outlined, color: Colors.teal, size: 24),
                   const SizedBox(width: 12),
                   Text(
                     'Statistiques des accès',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                      color: _themeService.isDarkMode
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ],
@@ -3685,19 +5938,33 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Total', _accessLogs.length.toString(), Colors.teal),
+                    child: _buildStatItem(
+                      'Total',
+                      _accessLogs.length.toString(),
+                      Colors.teal,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Entrées', 
-                      _accessLogs.where((l) => l.accessType == AccessType.entry).length.toString(), 
-                      Colors.green),
+                    child: _buildStatItem(
+                      'Entrées',
+                      _accessLogs
+                          .where((l) => l.accessType == AccessType.entry)
+                          .length
+                          .toString(),
+                      Colors.green,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Sorties', 
-                      _accessLogs.where((l) => l.accessType == AccessType.exit).length.toString(), 
-                      Colors.orange),
+                    child: _buildStatItem(
+                      'Sorties',
+                      _accessLogs
+                          .where((l) => l.accessType == AccessType.exit)
+                          .length
+                          .toString(),
+                      Colors.orange,
+                    ),
                   ),
                 ],
               ),
@@ -3706,17 +5973,24 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         const SizedBox(height: 16),
         // Liste des logs récents (limités à 5 pour le bottom sheet)
-        ..._accessLogs.take(5).map((log) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildAccessLogCard(log),
-        )).toList(),
+        ..._accessLogs
+            .take(5)
+            .map(
+              (log) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildAccessLogCard(log),
+              ),
+            )
+            .toList(),
         if (_accessLogs.length > 5)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '... et ${_accessLogs.length - 5} autres logs',
               style: TextStyle(
-                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.grey[400]
+                    : Colors.grey[600],
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -3728,14 +6002,16 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildAccessLogCard(AccessLog log) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: log.accessType == AccessType.entry 
+          color: log.accessType == AccessType.entry
               ? Colors.green.withOpacity(0.3)
               : Colors.orange.withOpacity(0.3),
           width: 2,
@@ -3762,30 +6038,45 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Row(
                   children: [
                     Icon(
-                      log.accessType == AccessType.entry ? Icons.login : Icons.logout,
-                      color: log.accessType == AccessType.entry ? Colors.green : Colors.orange,
+                      log.accessType == AccessType.entry
+                          ? Icons.login
+                          : Icons.logout,
+                      color: log.accessType == AccessType.entry
+                          ? Colors.green
+                          : Colors.orange,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       log.accessType == AccessType.entry ? 'Entrée' : 'Sortie',
                       style: TextStyle(
-                        color: log.accessType == AccessType.entry ? Colors.green : Colors.orange,
+                        color: log.accessType == AccessType.entry
+                            ? Colors.green
+                            : Colors.orange,
                         fontSize: _textSizeService.getScaledFontSize(16),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: (log.accessType == AccessType.entry ? Colors.green : Colors.orange).withOpacity(0.1),
+                        color:
+                            (log.accessType == AccessType.entry
+                                    ? Colors.green
+                                    : Colors.orange)
+                                .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         log.formattedTime,
                         style: TextStyle(
-                          color: log.accessType == AccessType.entry ? Colors.green : Colors.orange,
+                          color: log.accessType == AccessType.entry
+                              ? Colors.green
+                              : Colors.orange,
                           fontSize: _textSizeService.getScaledFontSize(12),
                           fontWeight: FontWeight.w600,
                         ),
@@ -3800,13 +6091,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       log.formattedDate,
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(14),
                       ),
                     ),
@@ -3819,13 +6114,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                       Icon(
                         Icons.location_on,
                         size: 16,
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                       ),
                       const SizedBox(width: 4),
                       Text(
                         log.location!,
                         style: TextStyle(
-                          color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          color: _themeService.isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
                           fontSize: _textSizeService.getScaledFontSize(14),
                         ),
                       ),
@@ -3842,13 +6141,17 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showAccessLogDetails(AccessLog log) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         title: Text(
-          log.accessType == AccessType.entry ? 'Détails de l\'entrée' : 'Détails de la sortie',
+          log.accessType == AccessType.entry
+              ? 'Détails de l\'entrée'
+              : 'Détails de la sortie',
           style: TextStyle(
             color: _themeService.isDarkMode ? Colors.white : Colors.black,
             fontSize: _textSizeService.getScaledFontSize(18),
@@ -3860,10 +6163,14 @@ class _ChildListScreenState extends State<ChildListScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailRow('Type', log.accessType == AccessType.entry ? 'Entrée' : 'Sortie'),
+              _buildDetailRow(
+                'Type',
+                log.accessType == AccessType.entry ? 'Entrée' : 'Sortie',
+              ),
               _buildDetailRow('Date', log.formattedDate),
               _buildDetailRow('Heure', log.formattedTime),
-              if (log.location?.isNotEmpty == true) _buildDetailRow('Lieu', log.location!),
+              if (log.location?.isNotEmpty == true)
+                _buildDetailRow('Lieu', log.location!),
               _buildDetailRow('Enfant', widget.child.fullName),
             ],
           ),
@@ -3871,12 +6178,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Fermer',
-              style: TextStyle(
-                color: AppColors.primary,
-              ),
-            ),
+            child: Text('Fermer', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -3885,7 +6187,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSimpleReservationsTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -3921,25 +6223,27 @@ class _ChildListScreenState extends State<ChildListScreen>
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            color: _themeService.isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[200]!,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.event_seat,
-              size: 48,
-              color: Colors.indigo[400],
-            ),
+            Icon(Icons.event_seat, size: 48, color: Colors.indigo[400]),
             const SizedBox(height: 12),
             Text(
               'Aucune réservation disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 16),
@@ -3962,10 +6266,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+              color: _themeService.isDarkMode
+                  ? Colors.grey[700]!
+                  : Colors.grey[200]!,
             ),
           ),
           child: Column(
@@ -3984,7 +6292,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                      color: _themeService.isDarkMode
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ],
@@ -3993,19 +6303,33 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Total', _reservations.length.toString(), Colors.indigo),
+                    child: _buildStatItem(
+                      'Total',
+                      _reservations.length.toString(),
+                      Colors.indigo,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Confirmées', 
-                      _reservations.where((r) => r.status == ReservationStatus.confirmed).length.toString(), 
-                      Colors.green),
+                    child: _buildStatItem(
+                      'Confirmées',
+                      _reservations
+                          .where((r) => r.status == ReservationStatus.confirmed)
+                          .length
+                          .toString(),
+                      Colors.green,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('En attente', 
-                      _reservations.where((r) => r.status == ReservationStatus.pending).length.toString(), 
-                      Colors.orange),
+                    child: _buildStatItem(
+                      'En attente',
+                      _reservations
+                          .where((r) => r.status == ReservationStatus.pending)
+                          .length
+                          .toString(),
+                      Colors.orange,
+                    ),
                   ),
                 ],
               ),
@@ -4014,17 +6338,24 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         const SizedBox(height: 16),
         // Liste des réservations récentes (limitées à 5 pour le bottom sheet)
-        ..._reservations.take(5).map((reservation) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildReservationCard(reservation),
-        )).toList(),
+        ..._reservations
+            .take(5)
+            .map(
+              (reservation) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildReservationCard(reservation),
+              ),
+            )
+            .toList(),
         if (_reservations.length > 5)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '... et ${_reservations.length - 5} autres réservations',
               style: TextStyle(
-                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.grey[400]
+                    : Colors.grey[600],
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -4036,14 +6367,18 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildReservationCard(PlaceReservation reservation) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getReservationStatusColor(reservation.status).withOpacity(0.3),
+          color: _getReservationStatusColor(
+            reservation.status,
+          ).withOpacity(0.3),
           width: 2,
         ),
         boxShadow: [
@@ -4071,7 +6406,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       child: Text(
                         reservation.establishmentName,
                         style: TextStyle(
-                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          color: _themeService.isDarkMode
+                              ? Colors.white
+                              : Colors.black,
                           fontSize: _textSizeService.getScaledFontSize(16),
                           fontWeight: FontWeight.w600,
                         ),
@@ -4081,9 +6418,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: _getReservationStatusColor(reservation.status).withOpacity(0.1),
+                        color: _getReservationStatusColor(
+                          reservation.status,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -4104,13 +6446,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       reservation.formattedCreatedAt,
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(14),
                       ),
                     ),
@@ -4118,13 +6464,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.access_time,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${reservation.createdAt.hour.toString().padLeft(2, '0')}:${reservation.createdAt.minute.toString().padLeft(2, '0')}',
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(14),
                       ),
                     ),
@@ -4137,13 +6487,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.event_seat,
                       size: 16,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       reservation.type.displayName,
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(14),
                       ),
                     ),
@@ -4159,11 +6513,13 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showReservationDetails(PlaceReservation reservation) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         title: Text(
           reservation.establishmentName,
           style: TextStyle(
@@ -4180,8 +6536,15 @@ class _ChildListScreenState extends State<ChildListScreen>
               _buildDetailRow('Lieu', reservation.establishmentName),
               _buildDetailRow('Type', reservation.type.displayName),
               _buildDetailRow('Date', reservation.formattedCreatedAt),
-              _buildDetailRow('Heure', '${reservation.createdAt.hour.toString().padLeft(2, '0')}:${reservation.createdAt.minute.toString().padLeft(2, '0')}'),
-              _buildDetailRow('Statut', reservation.status.displayName, _getReservationStatusColor(reservation.status)),
+              _buildDetailRow(
+                'Heure',
+                '${reservation.createdAt.hour.toString().padLeft(2, '0')}:${reservation.createdAt.minute.toString().padLeft(2, '0')}',
+              ),
+              _buildDetailRow(
+                'Statut',
+                reservation.status.displayName,
+                _getReservationStatusColor(reservation.status),
+              ),
               _buildDetailRow('Enfant', widget.child.fullName),
             ],
           ),
@@ -4189,12 +6552,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Fermer',
-              style: TextStyle(
-                color: AppColors.primary,
-              ),
-            ),
+            child: Text('Fermer', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -4277,12 +6635,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         return Colors.brown;
       case ReservationStatus.completed:
         return Colors.teal;
+      default:
+        return Colors.grey;
     }
   }
 
   Widget _buildSimpleMessagesTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -4321,11 +6681,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.red.withOpacity(0.3),
-            ),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
           ),
           child: Column(
             children: [
@@ -4348,7 +6708,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  color: _themeService.isDarkMode
+                      ? Colors.grey[400]
+                      : Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -4356,29 +6718,31 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         );
       }
-      
+
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+            color: _themeService.isDarkMode
+                ? Colors.grey[700]!
+                : Colors.grey[200]!,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.mail_outline,
-              size: 48,
-              color: Colors.blue[400],
-            ),
+            Icon(Icons.mail_outline, size: 48, color: Colors.blue[400]),
             const SizedBox(height: 12),
             Text(
               'Aucun message disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 16),
@@ -4406,10 +6770,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            color: _themeService.isDarkMode
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+              color: _themeService.isDarkMode
+                  ? Colors.grey[700]!
+                  : Colors.grey[200]!,
             ),
           ),
           child: Column(
@@ -4417,18 +6785,16 @@ class _ChildListScreenState extends State<ChildListScreen>
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.analytics_outlined,
-                    color: Colors.blue,
-                    size: 24,
-                  ),
+                  Icon(Icons.analytics_outlined, color: Colors.blue, size: 24),
                   const SizedBox(width: 12),
                   Text(
                     'Statistiques des messages',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                      color: _themeService.isDarkMode
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ],
@@ -4437,15 +6803,27 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatItem('Total', totalMessages.toString(), Colors.blue),
+                    child: _buildStatItem(
+                      'Total',
+                      totalMessages.toString(),
+                      Colors.blue,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Non lus', unreadMessages.toString(), Colors.orange),
+                    child: _buildStatItem(
+                      'Non lus',
+                      unreadMessages.toString(),
+                      Colors.orange,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatItem('Lus', readMessages.toString(), Colors.green),
+                    child: _buildStatItem(
+                      'Lus',
+                      readMessages.toString(),
+                      Colors.green,
+                    ),
                   ),
                 ],
               ),
@@ -4454,17 +6832,24 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         const SizedBox(height: 16),
         // Liste des messages récents (limités à 5 pour le bottom sheet)
-        ..._studentMessages.take(5).map((message) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildMessageCard(message),
-        )).toList(),
+        ..._studentMessages
+            .take(5)
+            .map(
+              (message) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildMessageCard(message),
+              ),
+            )
+            .toList(),
         if (_studentMessages.length > 5)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '... et ${_studentMessages.length - 5} autres messages',
               style: TextStyle(
-                color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.grey[400]
+                    : Colors.grey[600],
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -4476,16 +6861,20 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildMessageCard(StudentMessage message) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: message.isUnread 
+          color: message.isUnread
               ? AppColors.primary.withOpacity(0.3)
-              : _themeService.isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+              : _themeService.isDarkMode
+              ? Colors.grey[700]!
+              : Colors.grey[200]!,
           width: message.isUnread ? 2 : 1,
         ),
         boxShadow: [
@@ -4512,10 +6901,12 @@ class _ChildListScreenState extends State<ChildListScreen>
                       child: Text(
                         message.titre,
                         style: TextStyle(
-                          color: _themeService.isDarkMode ? Colors.white : Colors.black,
+                          color: _themeService.isDarkMode
+                              ? Colors.white
+                              : Colors.black,
                           fontSize: _textSizeService.getScaledFontSize(16),
-                          fontWeight: message.isUnread 
-                              ? FontWeight.w600 
+                          fontWeight: message.isUnread
+                              ? FontWeight.w600
                               : FontWeight.w500,
                         ),
                         maxLines: 2,
@@ -4524,7 +6915,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                     if (message.isUnread)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(12),
@@ -4544,7 +6938,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Text(
                   message.description,
                   style: TextStyle(
-                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
                     fontSize: _textSizeService.getScaledFontSize(14),
                   ),
                   maxLines: 3,
@@ -4556,21 +6952,28 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Icon(
                       Icons.access_time,
                       size: 14,
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
                     Text(
                       message.formattedDate,
                       style: TextStyle(
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontSize: _textSizeService.getScaledFontSize(12),
                       ),
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: message.isUnread 
+                        color: message.isUnread
                             ? Colors.orange.withOpacity(0.1)
                             : Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
@@ -4578,7 +6981,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       child: Text(
                         message.formattedStatut,
                         style: TextStyle(
-                          color: message.isUnread 
+                          color: message.isUnread
                               ? Colors.orange
                               : Colors.green,
                           fontSize: _textSizeService.getScaledFontSize(10),
@@ -4598,11 +7001,13 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showMessageDetails(StudentMessage message) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: _themeService.isDarkMode
+            ? const Color(0xFF1E1E1E)
+            : Colors.white,
         title: Text(
           message.titre,
           style: TextStyle(
@@ -4629,13 +7034,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                   Icon(
                     Icons.access_time,
                     size: 16,
-                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Envoyé le: ${message.formattedDate}',
                     style: TextStyle(
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                       fontSize: _textSizeService.getScaledFontSize(12),
                     ),
                   ),
@@ -4647,13 +7056,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                   Icon(
                     Icons.mark_email_read,
                     size: 16,
-                    color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Statut: ${message.formattedStatut}',
                     style: TextStyle(
-                      color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: _themeService.isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                       fontSize: _textSizeService.getScaledFontSize(12),
                     ),
                   ),
@@ -4665,12 +7078,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Fermer',
-              style: TextStyle(
-                color: AppColors.primary,
-              ),
-            ),
+            child: Text('Fermer', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -4679,16 +7087,13 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildStatItem(String label, String value, Color color) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
         children: [
@@ -4716,14 +7121,14 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildAccessControlCard(AccessControlEntry entry) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: entry.isStatusOk 
+          color: entry.isStatusOk
               ? Colors.green.withOpacity(0.2)
               : Colors.red.withOpacity(0.2),
           width: 1,
@@ -4737,7 +7142,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: entry.isStatusOk 
+                  color: entry.isStatusOk
                       ? Colors.green.withOpacity(0.1)
                       : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -4774,12 +7179,12 @@ class _ChildListScreenState extends State<ChildListScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: entry.isStatusOk 
+                  color: entry.isStatusOk
                       ? Colors.green.withOpacity(0.1)
                       : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: entry.isStatusOk 
+                    color: entry.isStatusOk
                         ? Colors.green.withOpacity(0.3)
                         : Colors.red.withOpacity(0.3),
                     width: 1,
@@ -4799,11 +7204,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(
-                Icons.calendar_today,
-                size: 16,
-                color: Colors.purple,
-              ),
+              Icon(Icons.calendar_today, size: 16, color: Colors.purple),
               const SizedBox(width: 6),
               Text(
                 entry.formattedDate,
@@ -4814,11 +7215,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
               ),
               const SizedBox(width: 16),
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: Colors.purple,
-              ),
+              Icon(Icons.access_time, size: 16, color: Colors.purple),
               const SizedBox(width: 6),
               Text(
                 entry.formattedTime,
@@ -4835,9 +7232,12 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildDynamicDaySchedule(String day, List<StudentTimetableEntry> courses) {
+  Widget _buildDynamicDaySchedule(
+    String day,
+    List<StudentTimetableEntry> courses,
+  ) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
@@ -4854,7 +7254,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.orange.withOpacity(0.1),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
             ),
             child: Text(
               day,
@@ -4874,7 +7276,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildDynamicCourseItem(StudentTimetableEntry course) {
     final isDarkMode = _themeService.isDarkMode;
     final color = _getSubjectColor(course.matiere);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -4946,16 +7348,20 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadTimetableData() async {
     if (_isLoadingTimetable) return;
-    
+
     final matricule = widget.child.matricule;
-    print('🔄 Début du chargement de l\'emploi du temps pour: ${widget.child.fullName}');
+    print(
+      '🔄 Début du chargement de l\'emploi du temps pour: ${widget.child.fullName}',
+    );
     print('📋 Matricule: $matricule');
-    
+
     if (matricule == null || matricule.isEmpty) {
-      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      print(
+        '❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}',
+      );
       return;
     }
-    
+
     print('✅ Matricule valide, début du chargement...');
     if (mounted) {
       setState(() {
@@ -4965,17 +7371,19 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       print('📡 Appel du service StudentTimetableService...');
-      
+
       // S'assurer que les données de l'école sont chargées
       if (!_schoolService.isSchoolDataLoaded) {
         print('🏫 Chargement des données de l\'école...');
         await _schoolService.loadSchoolData();
         print('✅ Données de l\'école chargées');
       }
-      
-      final response = await _timetableService.getTimetableForStudent(matricule);
+
+      final response = await _timetableService.getTimetableForStudent(
+        matricule,
+      );
       print('✅ Réponse reçue: ${response.data.length} créneaux');
-      
+
       if (mounted) {
         setState(() {
           _timetableResponse = response;
@@ -4995,16 +7403,20 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadAccessControlData() async {
     if (_isLoadingAccessControl) return;
-    
+
     final matricule = widget.child.matricule ?? widget.child.id;
-    print('🔄 Début du chargement du contrôle d\'accès pour: ${widget.child.fullName}');
+    print(
+      '🔄 Début du chargement du contrôle d\'accès pour: ${widget.child.fullName}',
+    );
     print('📋 Matricule: $matricule');
-    
+
     if (matricule == null || matricule.isEmpty) {
-      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      print(
+        '❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}',
+      );
       return;
     }
-    
+
     print('✅ Matricule valide, début du chargement...');
     if (mounted) {
       setState(() {
@@ -5014,17 +7426,18 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       print('📡 Appel du service AccessControlService...');
-      
+
       // S'assurer que les données de l'école sont chargées
       if (!_schoolService.isSchoolDataLoaded) {
         print('🏫 Chargement des données de l\'école...');
         await _schoolService.loadSchoolData();
         print('✅ Données de l\'école chargées');
       }
-      
-      final entries = await _accessControlService.getAccessControlEntriesForStudent(matricule);
+
+      final entries = await _accessControlService
+          .getAccessControlEntriesForStudent(matricule);
       print('✅ Réponse reçue: ${entries.length} pointages');
-      
+
       if (mounted) {
         setState(() {
           _accessEntries = entries;
@@ -5044,16 +7457,18 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadMessagesData() async {
     if (_isLoadingMessages) return;
-    
+
     final studentMatricule = widget.child.matricule ?? widget.child.id;
     print('🔄 Début du chargement des messages pour: ${widget.child.fullName}');
     print('📋 Matricule: $studentMatricule');
-    
+
     if (studentMatricule == null || studentMatricule.isEmpty) {
-      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      print(
+        '❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}',
+      );
       return;
     }
-    
+
     print('✅ Matricule valide, début du chargement...');
     if (mounted) {
       setState(() {
@@ -5063,9 +7478,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       print('📡 Appel du service StudentMessageService...');
-      final messages = await _messageService.getMessagesForStudent(studentMatricule);
+      final messages = await _messageService.getMessagesForStudent(
+        studentMatricule,
+      );
       print('✅ Réponse reçue: ${messages.length} messages');
-      
+
       if (mounted) {
         setState(() {
           _studentMessages = messages;
@@ -5085,16 +7502,20 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadScolariteData() async {
     if (_isLoadingScolarite) return;
-    
+
     final studentMatricule = widget.child.matricule ?? widget.child.id;
-    print('🔄 Début du chargement de la scolarité pour: ${widget.child.fullName}');
+    print(
+      '🔄 Début du chargement de la scolarité pour: ${widget.child.fullName}',
+    );
     print('📋 Matricule: $studentMatricule');
-    
+
     if (studentMatricule == null || studentMatricule.isEmpty) {
-      print('❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}');
+      print(
+        '❌ Matricule non disponible pour l\'enfant: ${widget.child.fullName}',
+      );
       return;
     }
-    
+
     print('✅ Matricule valide, début du chargement...');
     if (mounted) {
       setState(() {
@@ -5109,11 +7530,13 @@ class _ChildListScreenState extends State<ChildListScreen>
         await _schoolService.loadSchoolData();
         print('✅ Données de l\'école chargées');
       }
-      
+
       print('📡 Appel du service StudentScolariteService...');
-      final entries = await _scolariteService.getScolariteEntriesForStudent(studentMatricule);
+      final entries = await _scolariteService.getScolariteEntriesForStudent(
+        studentMatricule,
+      );
       print('✅ Réponse reçue: ${entries.length} échéances');
-      
+
       if (mounted) {
         setState(() {
           _scolariteEntries = entries;
@@ -5133,9 +7556,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadSuggestionsData() async {
     if (_isLoadingSuggestions) return;
-    
-    print('🔄 Début du chargement des suggestions pour: ${widget.child.fullName}');
-    
+
+    print(
+      '🔄 Début du chargement des suggestions pour: ${widget.child.fullName}',
+    );
+
     if (mounted) {
       setState(() {
         _isLoadingSuggestions = true;
@@ -5146,7 +7571,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('📡 Appel du service ParentSuggestionService...');
       final suggestions = await _suggestionService.getRecentSuggestions(10);
       print('✅ Réponse reçue: ${suggestions.length} suggestions');
-      
+
       if (mounted) {
         setState(() {
           _suggestions = suggestions;
@@ -5166,16 +7591,18 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadAccessLogsData() async {
     if (_isLoadingAccessLogs) return;
-    
+
     final childId = widget.child.id;
-    print('🔄 Début du chargement des logs d\'accès pour: ${widget.child.fullName}');
+    print(
+      '🔄 Début du chargement des logs d\'accès pour: ${widget.child.fullName}',
+    );
     print('📋 ID Enfant: $childId');
-    
+
     if (childId == null || childId.isEmpty) {
       print('❌ ID enfant non disponible');
       return;
     }
-    
+
     print('✅ ID valide, début du chargement...');
     if (mounted) {
       setState(() {
@@ -5187,7 +7614,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('📡 Appel du service AccessLogService...');
       final logs = await _accessLogService.getAccessLogsForChild(childId);
       print('✅ Réponse reçue: ${logs.length} logs');
-      
+
       if (mounted) {
         setState(() {
           _accessLogs = logs;
@@ -5207,16 +7634,18 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadReservationsData() async {
     if (_isLoadingReservations) return;
-    
+
     final childId = widget.child.id;
-    print('🔄 Début du chargement des réservations pour: ${widget.child.fullName}');
+    print(
+      '🔄 Début du chargement des réservations pour: ${widget.child.fullName}',
+    );
     print('📋 ID Enfant: $childId');
-    
+
     if (childId == null || childId.isEmpty) {
       print('❌ ID enfant non disponible');
       return;
     }
-    
+
     print('✅ ID valide, début du chargement...');
     if (mounted) {
       setState(() {
@@ -5228,7 +7657,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('📡 Appel du service PlaceReservationService...');
       final reservations = await _reservationService.getRecentReservations(10);
       print('✅ Réponse reçue: ${reservations.length} réservations');
-      
+
       if (mounted) {
         setState(() {
           _reservations = reservations;
@@ -5241,6 +7670,44 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (mounted) {
         setState(() {
           _isLoadingReservations = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadNotificationsData() async {
+    if (_isLoadingNotifications) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) {
+      print('❌ Matricule non disponible');
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingNotifications = true;
+      });
+    }
+
+    try {
+      final notifications = await GroupMessageService.getGroupMessages(
+        matricule,
+      );
+      if (mounted) {
+        setState(() {
+          _notifications = notifications;
+          _isLoadingNotifications = false;
+          _notificationsLoaded = true; // ✅ Marquer comme chargé
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des notifications: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingNotifications = false;
+          _notificationsLoaded =
+              true; // ✅ Même en cas d'erreur, ne pas reboucler
         });
       }
     }
@@ -5268,7 +7735,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (s.contains('histoir')) return Icons.public_rounded;
     if (s.contains('phys') || s.contains('chim')) return Icons.science_rounded;
     if (s.contains('angl')) return Icons.language_rounded;
-    if (s.contains('sport') || s.contains('eps')) return Icons.sports_soccer_rounded;
+    if (s.contains('sport') || s.contains('eps'))
+      return Icons.sports_soccer_rounded;
     if (s.contains('mus')) return Icons.music_note_rounded;
     if (s.contains('art')) return Icons.palette_rounded;
     if (s.contains('svt')) return Icons.biotech_rounded;
@@ -5278,7 +7746,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSimpleNotesTab() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -5347,19 +7815,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     Color color,
   ) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : color.withOpacity(0.05),
             blurRadius: 8,
@@ -5375,11 +7840,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -5517,19 +7978,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     Color color,
   ) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : color.withOpacity(0.05),
             blurRadius: 8,
@@ -5545,11 +8003,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -5676,19 +8130,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     Color color,
   ) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : color.withOpacity(0.05),
             blurRadius: 8,
@@ -5707,11 +8158,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -5772,10 +8219,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -5862,19 +8306,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     Color color,
   ) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : color.withOpacity(0.05),
             blurRadius: 8,
@@ -5890,11 +8331,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -5920,11 +8357,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 14,
-                      color: color,
-                    ),
+                    Icon(Icons.calendar_today_rounded, size: 14, color: color),
                     const SizedBox(width: 4),
                     Text(
                       date,
@@ -5935,11 +8368,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Icon(
-                      Icons.access_time_rounded,
-                      size: 14,
-                      color: color,
-                    ),
+                    Icon(Icons.access_time_rounded, size: 14, color: color),
                     const SizedBox(width: 4),
                     Text(
                       time,
@@ -5976,15 +8405,13 @@ class _ChildListScreenState extends State<ChildListScreen>
             Colors.green,
           ),
           const SizedBox(height: 20),
-          
+
           // Carte d'accès à la boutique
           GestureDetector(
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const LibraryScreen(),
-                ),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LibraryScreen()));
             },
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -6027,7 +8454,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                           style: TextStyle(
                             fontSize: _textSizeService.getScaledFontSize(16),
                             fontWeight: FontWeight.bold,
-                            color: AppColors.getTextColor(_themeService.isDarkMode),
+                            color: AppColors.getTextColor(
+                              _themeService.isDarkMode,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -6035,22 +8464,21 @@ class _ChildListScreenState extends State<ChildListScreen>
                           'Achetez des fournitures et articles scolaires pour ${widget.child.firstName}',
                           style: TextStyle(
                             fontSize: _textSizeService.getScaledFontSize(14),
-                            color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),
+                            color: AppColors.getTextColor(
+                              _themeService.isDarkMode,
+                              type: TextType.secondary,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
+                  Icon(Icons.chevron_right, color: AppColors.primary, size: 20),
                 ],
               ),
             ),
           ),
-          
+
           const SizedBox(height: 20),
           _buildSuppliesList(),
         ],
@@ -6076,26 +8504,24 @@ class _ChildListScreenState extends State<ChildListScreen>
       return Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color: _themeService.isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.2),
-          ),
+          border: Border.all(color: Colors.grey.withOpacity(0.2)),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: 48,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'Aucune fourniture trouvée',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 8),
@@ -6104,7 +8530,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: _themeService.isDarkMode ? Colors.white54 : Colors.grey[500],
+                color: _themeService.isDarkMode
+                    ? Colors.white54
+                    : Colors.grey[500],
               ),
             ),
           ],
@@ -6128,7 +8556,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           padding: const EdgeInsets.only(bottom: 16),
           child: _buildSupplyCategory(
             entry.key,
-            entry.value.map((supply) => _buildSupplyItemFromApi(supply)).toList(),
+            entry.value
+                .map((supply) => _buildSupplyItemFromApi(supply))
+                .toList(),
           ),
         );
       }).toList(),
@@ -6137,7 +8567,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSupplyCategory(String title, List<Widget> items) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
@@ -6148,7 +8578,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : Colors.grey.withOpacity(0.05),
             blurRadius: 8,
@@ -6186,13 +8616,13 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildSupplyItemFromApi(SchoolSupply supply) {
     final isDarkMode = _themeService.isDarkMode;
-    
-    Color statusColor = supply.statut.toLowerCase() == 'disponible' 
-        ? Colors.green 
+
+    Color statusColor = supply.statut.toLowerCase() == 'disponible'
+        ? Colors.green
         : Colors.orange;
-    
-    String statusText = supply.statut.toLowerCase() == 'disponible' 
-        ? 'Disponible' 
+
+    String statusText = supply.statut.toLowerCase() == 'disponible'
+        ? 'Disponible'
         : 'Indisponible';
 
     return Padding(
@@ -6238,10 +8668,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 6,
-              vertical: 3,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
               color: statusColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(4),
@@ -6258,11 +8685,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           const SizedBox(width: 6),
           GestureDetector(
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const LibraryScreen(),
-                ),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LibraryScreen()));
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -6350,19 +8775,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     Color color,
   ) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : color.withOpacity(0.05),
             blurRadius: 8,
@@ -6381,11 +8803,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -6417,10 +8835,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -6496,20 +8911,17 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildInfoCard(String title, String content, Color color) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : color.withOpacity(0.05),
             blurRadius: 8,
@@ -6527,11 +8939,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              Icons.info_outline,
-              color: color,
-              size: 18,
-            ),
+            child: Icon(Icons.info_outline, color: color, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -6552,7 +8960,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   content,
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(13),
-                    color: isDarkMode ? Colors.grey[300] : const Color(0xFF6B7280),
+                    color: isDarkMode
+                        ? Colors.grey[300]
+                        : const Color(0xFF6B7280),
                     height: 1.4,
                   ),
                 ),
@@ -6566,7 +8976,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildHomeworkCategories() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -6600,7 +9010,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'EXERCICES',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isDarkMode ? Colors.grey[400] : const Color(0xFF6B7280),
+                  color: isDarkMode
+                      ? Colors.grey[400]
+                      : const Color(0xFF6B7280),
                   fontWeight: FontWeight.w600,
                   fontSize: _textSizeService.getScaledFontSize(14),
                 ),
@@ -6614,7 +9026,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'CORRIGÉS',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isDarkMode ? Colors.grey[400] : const Color(0xFF6B7280),
+                  color: isDarkMode
+                      ? Colors.grey[400]
+                      : const Color(0xFF6B7280),
                   fontWeight: FontWeight.w600,
                   fontSize: _textSizeService.getScaledFontSize(14),
                 ),
@@ -6656,9 +9070,15 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildHomeworkItem(String subject, String task, String deadline, IconData icon, Color color) {
+  Widget _buildHomeworkItem(
+    String subject,
+    String task,
+    String deadline,
+    IconData icon,
+    Color color,
+  ) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -6666,7 +9086,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode 
+            color: isDarkMode
                 ? Colors.black.withOpacity(0.3)
                 : Colors.black.withOpacity(0.05),
             blurRadius: 10,
@@ -6702,7 +9122,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   task,
                   style: TextStyle(
                     fontSize: 14,
-                    color: isDarkMode ? Colors.grey[300] : const Color(0xFF6B7280),
+                    color: isDarkMode
+                        ? Colors.grey[300]
+                        : const Color(0xFF6B7280),
                   ),
                 ),
               ],
@@ -6908,9 +9330,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               Expanded(
                 child: _buildBehaviorItem('Excellent', '⭐', Colors.green),
               ),
-              Expanded(
-                child: _buildBehaviorItem('Bon', '👍', Colors.blue),
-              ),
+              Expanded(child: _buildBehaviorItem('Bon', '👍', Colors.blue)),
               Expanded(
                 child: _buildBehaviorItem('À améliorer', '📈', Colors.orange),
               ),
@@ -6932,10 +9352,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             borderRadius: BorderRadius.circular(30),
           ),
           child: Center(
-            child: Text(
-              emoji,
-              style: const TextStyle(fontSize: 24),
-            ),
+            child: Text(emoji, style: const TextStyle(fontSize: 24)),
           ),
         ),
         const SizedBox(height: 8),

@@ -11,7 +11,18 @@ import '../widgets/custom_loader.dart';
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
 class NotesScreenJson extends StatefulWidget {
-  const NotesScreenJson({super.key});
+  final String matricule;
+  final String anneeId;
+  final String classeId;
+  final String anneeLibelle;
+
+  const NotesScreenJson({
+    super.key,
+    required this.matricule,
+    required this.anneeId,
+    required this.classeId,
+    required this.anneeLibelle,
+  });
 
   @override
   State<NotesScreenJson> createState() => _NotesScreenJsonState();
@@ -40,7 +51,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   late Animation<double> _fadeAnimation;
 
   @override
-  void initState() {
+void initState() {
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
@@ -49,10 +60,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     _fadeAnimation =
         CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
-    _studentMatricule = '24294819Z';
-    _anneeId = '226';
-    _classeId = '27159';
-    _selectedYear = 'Année 2025 - 2026';
+    _studentMatricule = widget.matricule;
+    _anneeId = widget.anneeId;
+    _classeId = widget.classeId;
+    _selectedYear = widget.anneeLibelle;
   }
 
   @override
@@ -69,19 +80,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   void _initializeParameters() {
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (args != null) {
-      _studentMatricule = args['matricule'] ?? '24294819Z';
-      _anneeId = args['anneeId'] ?? '226';
-      _classeId = args['classeId'] ?? '27159';
-      _selectedYear = args['anneeLibelle'] ?? 'Année 2025 - 2026';
-    }
+    // Les paramètres sont déjà initialisés dans initState() depuis le widget
   }
 
   Future<void> _loadApiData() async {
     try {
-      await _schoolService.loadSchoolData();
+      await _schoolService.loadSchoolDataSilent();
       final periode = _getPeriodeNumberFromString(_selectedTrimester);
       final apiData = await _notesApiService.getNotesForStudent(
         matricule: _studentMatricule!,

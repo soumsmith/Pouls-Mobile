@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class NotesApiService {
-  static const String baseUrl = 'http://api-pro.pouls-scolaire.net/api';
+  static const String baseUrl = 'https://api-pouls-scolaire.vie-ecoles.com/api';//http://api-pro.pouls-scolaire.net/api';
   
   Future<Map<String, dynamic>?> getNotesForStudent({
     required String matricule,

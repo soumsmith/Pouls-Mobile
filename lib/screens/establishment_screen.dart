@@ -158,11 +158,15 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     super.dispose();
   }
 
-  void _onTextSizeChanged() =>
+  void _onTextSizeChanged() {
+    if (mounted) {
       setState(() => _currentTextScale = _textSizeService.getScale());
+    }
+  }
 
   // ── Data ───────────────────────────────────────────────────
   Future<void> _loadEcoles() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -182,26 +186,30 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         categorie: _categorie,
         codepays: _codepays,
       );
-      setState(() {
-        _ecoles = ecoles;
-        _isLoading = false;
-        // Considérer qu'il y a plus d'écoles si on a reçu le nombre demandé OU si c'est la première page
-        _hasMoreEcoles =
-            ecoles.length >= _ecolesPerPage ||
-            (_currentPage == 1 && ecoles.length > 0);
-      });
-      _fadeController.forward(from: 0);
+      if (mounted) {
+        setState(() {
+          _ecoles = ecoles;
+          _isLoading = false;
+          // Considérer qu'il y a plus d'écoles si on a reçu le nombre demandé OU si c'est la première page
+          _hasMoreEcoles =
+              ecoles.length >= _ecolesPerPage ||
+              (_currentPage == 1 && ecoles.length > 0);
+        });
+        _fadeController.forward(from: 0);
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
   // ── Load more ecoles ───────────────────────────────────────────
   Future<void> _loadMoreEcoles() async {
-    if (!_hasMoreEcoles) return;
+    if (!_hasMoreEcoles || !mounted) return;
 
     setState(() {
       _isLoadingMore = true;
@@ -1062,7 +1070,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           borderColor: AppColors.screenOrange.withOpacity(0.3),
                           iconColor: AppColors.screenOrange,
                           textColor: AppColors.screenOrange,
-                          subtitleColor: AppColors.screenOrange.withOpacity(0.5),
+                          subtitleColor: AppColors.screenOrange.withOpacity(
+                            0.5,
+                          ),
                           title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
                           subtitle: _isLoadingMore ? '' : 'établissements',
                           onTap: _isLoadingMore ? () {} : _loadMoreEcoles,

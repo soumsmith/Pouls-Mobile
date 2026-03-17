@@ -19,7 +19,7 @@ import '../services/text_size_service.dart';
 class MainScreenWrapper extends StatefulWidget {
   final Widget? child;
   final int initialIndex;
-  
+
   const MainScreenWrapper({super.key, this.child, this.initialIndex = 0});
 
   @override
@@ -55,9 +55,8 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
 
   void _setupNotificationListener() {
     try {
-      _notificationSubscription = NotificationService().notificationStream.listen(
-        (notificationData) => _handleNotification(notificationData),
-      );
+      _notificationSubscription = NotificationService().notificationStream
+          .listen((notificationData) => _handleNotification(notificationData));
     } catch (e) {
       print('⚠️ NotificationService non disponible: $e');
     }
@@ -78,7 +77,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title, 
+                title,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors.getTextColor(isDark),
@@ -87,7 +86,10 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
               Text(
                 body,
                 style: TextStyle(
-                  color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                  color: AppColors.getTextColor(
+                    isDark,
+                    type: TextType.secondary,
+                  ),
                 ),
               ),
             ],
@@ -132,6 +134,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   void navigateToChildDetail(dynamic child) {
     setState(() {
       _currentChildDetailScreen = ChildListScreen(child: child);
+      _currentIndex = -1; // Désactive tous les onglets du bottom nav
     });
   }
 
@@ -149,7 +152,8 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
     } else {
       setState(() {
         _currentIndex = index;
-        _currentChildDetailScreen = null; // Retour à l'écran principal si on change d'onglet
+        _currentChildDetailScreen =
+            null; // Retour à l'écran principal si on change d'onglet
       });
     }
   }
@@ -158,12 +162,16 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
     if (_currentChildDetailScreen != null) {
       return _currentChildDetailScreen!;
     }
-    
+
     switch (_currentIndex) {
-      case 0: return const HomeScreen();
-      case 1: return const LibraryScreen();
-      case 2: return const EstablishmentScreen();
-      default: return const HomeScreen();
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const LibraryScreen();
+      case 2:
+        return const EstablishmentScreen();
+      default:
+        return const HomeScreen();
     }
   }
 
@@ -172,17 +180,21 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
     return Scaffold(
       body: Stack(
         children: [
-          if (widget.child != null && widget.child is MainScreenChild) 
-            widget.child! 
-          else 
+          if (widget.child != null && widget.child is MainScreenChild)
+            widget.child!
+          else
             _getCurrentScreen(),
+          // Bottom navigation with SafeArea to handle system padding
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: BottomNav(
-              currentIndex: _currentIndex,
-              onTap: _onTabTapped,
+            child: SafeArea(
+              top: false,
+              child: BottomNav(
+                currentIndex: _currentIndex,
+                onTap: _onTabTapped,
+              ),
             ),
           ),
         ],
@@ -197,21 +209,20 @@ abstract class MainScreenChild {
 }
 
 /// Écran placeholder pour les notes
-class NotesPlaceholderScreen extends StatelessWidget implements MainScreenChild {
+class NotesPlaceholderScreen extends StatelessWidget
+    implements MainScreenChild {
   const NotesPlaceholderScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Notes',
-          style: TextStyle(
-            color: AppColors.getTextColor(isDark),
-          ),
+          style: TextStyle(color: AppColors.getTextColor(isDark)),
         ),
         backgroundColor: AppColors.getSurfaceColor(isDark),
         elevation: 0,
@@ -228,8 +239,8 @@ class NotesPlaceholderScreen extends StatelessWidget implements MainScreenChild 
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.grade, 
-                size: 64, 
+                Icons.grade,
+                size: 64,
                 color: AppColors.getTextColor(isDark, type: TextType.secondary),
               ),
               const SizedBox(height: 16),

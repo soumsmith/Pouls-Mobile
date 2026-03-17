@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
+import 'package:parents_responsable/widgets/image_menu_card.dart';
 import '../models/child.dart';
 import '../models/note.dart';
 import '../models/timetable_entry.dart';
@@ -13,17 +14,13 @@ import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../widgets/main_screen_wrapper.dart';
-import '../widgets/student_menu_cards.dart';
 import '../screens/notes_screen_json.dart';
 import '../services/student_timetable_service.dart';
 import '../models/student_timetable.dart';
 import '../services/school_service.dart';
+import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
-import '../screens/shop_screen.dart';
-import '../screens/access_log_screen.dart';
-import '../screens/parent_suggestion_screen.dart';
-import '../screens/place_reservation_screen.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
 import '../services/student_message_service.dart';
@@ -42,9 +39,29 @@ import '../services/group_message_service.dart';
 import '../widgets/custom_loader.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../screens/notes_screen.dart';
-import '../screens/timetable_screen.dart';
-import '../screens/fees_screen.dart';
+
+// ─── MODÈLE POUR CARTE DE MENU D'ÉLÈVE ────────────────────────────────────────
+class StudentMenuCardItem {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? backgroundColor;
+  final Color? iconColor;
+  final Color? titleColor;
+  final Color? descriptionColor;
+  final String? badge;
+
+  const StudentMenuCardItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.backgroundColor,
+    this.iconColor,
+    this.titleColor,
+    this.descriptionColor,
+    this.badge,
+  });
+}
 
 // ─── MODÈLES POUR INSCRIPTION ────────────────────────────────────────────────────────
 class Service {
@@ -560,7 +577,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                   const SizedBox(height: 16),
                   _buildPaymentBannerCard(),
                   const SizedBox(height: 24),
-                  _buildStudentMenuCards(),
                   const SizedBox(height: 150),
                 ],
               ),
@@ -569,10 +585,6 @@ class _ChildListScreenState extends State<ChildListScreen>
         ],
       ),
     );
-  }
-
-  Widget _buildStudentMenuCards() {
-    return StudentMenuCardsFull();
   }
 
   StudentMenuCardItem _getStudentMenuCardItem(String menuType) {
@@ -1585,468 +1597,154 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  // ─── PAYMENT AND INSCRIPTION BANNER CARDS ──────────────────────────────────────────
-  Widget _buildPaymentBannerCard() {
-    return Column(
-      children: [
-        // Section Header - Paiement
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.payments_rounded,
-                  color: Colors.green,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Paiement en ligne',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Paiement en ligne
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
-            onTap: _showPaiementBottomSheet,
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.green.withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF10B981),
-                            Color(0xFF34D399),
-                            Color(0xFF6EE7B7),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Points décoratifs ───────────────────────────
-                    Positioned(
-                      top: 18,
-                      right: 110,
-                      child: Container(
-                        width: 5,
-                        height: 5,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white30,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 22,
-                      right: 88,
-                      child: Container(
-                        width: 3,
-                        height: 3,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white24,
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu ─────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          // Icône dans un cercle blanc
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.22),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.35),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.payments_rounded,
-                              size: 26,
-                              color: Colors.white,
-                            ),
-                          ),
-
-                          const SizedBox(width: 16),
-
-                          // Textes
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Effectuez vos paiements',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'de scolarité en toute sécurité',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+  // ─── Helper : En-tête de section (barre colorée + titre) ──────────────────
+  Widget _buildSectionHeader(String title, Color accentColor) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 22,
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Section Header - Inscription
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.app_registration_rounded,
-                  color: Colors.blue,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Inscription',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(18),
+              fontWeight: FontWeight.w800,
+              color: _themeService.isDarkMode
+                  ? Colors.white
+                  : AppColors.screenTextPrimary,
+              letterSpacing: -0.5,
+            ),
           ),
-        ),
-        
-        // Bouton Inscription
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+        ],
+      ),
+    );
+  }
+
+  // ─── Helper : Rangée horizontale scrollable de ImageMenuCard ──────────────
+  Widget _buildHorizontalCards(List<Widget> cards) {
+    return SizedBox(
+      height: 140,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 16, right: 4),
+        children: cards,
+      ),
+    );
+  }
+
+  // ─── NOUVEAU _buildPaymentBannerCard() ─────────────────────────────────────
+  Widget _buildPaymentBannerCard() {
+    final isDark = _themeService.isDarkMode;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ════════════════════════════════════════════════════════════════
+        // SECTION 1 : Paiements & Inscription
+        // ════════════════════════════════════════════════════════════════
+        _buildSectionHeader('Paiements & Inscription', const Color(0xFF10B981)),
+        _buildHorizontalCards([
+          ImageMenuCard(
+            index: 0,
+            cardKey: 'paiement',
+            title: 'Paiement en ligne',
+            iconData: Icons.payments_rounded,
+            isDark: isDark,
+            color: const Color(0xFF10B981),
+            backgroundColor: isDark
+                ? const Color(0xFF0D2E20)
+                : const Color(0xFFECFDF5),
+            textColor: isDark
+                ? const Color(0xFF6EE7B7)
+                : const Color(0xFF065F46),
+            actionText: 'Payer maintenant',
+            actionTextColor: const Color(0xFF10B981),
+            onTap: _showPaiementBottomSheet,
+          ),
+          ImageMenuCard(
+            index: 1,
+            cardKey: 'inscription',
+            title: 'Inscription',
+            isDark: isDark,
+            imagePath: 'assets/images/intro_background.jpg',
+            color: const Color(0xFF3B82F6),
+            backgroundColor: isDark
+                ? const Color(0xFF0D1B35)
+                : const Color(0xFFEFF6FF),
+            textColor: isDark
+                ? const Color(0xFF93C5FD)
+                : const Color(0xFF1E40AF),
+            actionText: 'Gérer',
+            actionTextColor: const Color(0xFF3B82F6),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => inscription.InscriptionWizardScreen(
-                    child: widget.child,
-                  ),
+                  builder: (context) =>
+                      inscription.InscriptionWizardScreen(child: widget.child),
                 ),
               );
             },
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF3B82F6),
-                            Color(0xFF60A5FA),
-                            Color(0xFF93C5FD),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Points décoratifs ───────────────────────────
-                    Positioned(
-                      top: 18,
-                      right: 110,
-                      child: Container(
-                        width: 5,
-                        height: 5,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white30,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 22,
-                      right: 88,
-                      child: Container(
-                        width: 3,
-                        height: 3,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white24,
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu ─────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          // Icône dans un cercle blanc
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.22),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.35),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.app_registration_rounded,
-                              size: 26,
-                              color: Colors.white,
-                            ),
-                          ),
-
-                          const SizedBox(width: 16),
-
-                          // Textes
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Gérez les inscriptions',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et réinscriptions',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
+          ImageMenuCard(
+            index: 2,
+            cardKey: 'scolarite',
+            title: 'Scolarité',
+            iconData: Icons.account_balance_wallet_rounded,
+            isDark: isDark,
+            //imagePath: 'assets/images/intro_background.jpg',
+            color: const Color(0xFFF59E0B),
+            backgroundColor: isDark
+                ? const Color(0xFF2D1E00)
+                : const Color(0xFFFFFBEB),
+            textColor: isDark
+                ? const Color(0xFFFCD34D)
+                : const Color(0xFF92400E),
+            actionText: 'Voir échéances',
+            actionTextColor: const Color(0xFFF59E0B),
+            onTap: () async {
+              if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
+                await _loadScolariteData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'fees',
+                  _getStudentMenuCardItem('fees'),
+                );
+              }
+            },
+          ),
+        ]),
 
         const SizedBox(height: 24),
 
-        // Section Header - Mes Notes
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1976D2).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.bar_chart_rounded,
-                  color: Color(0xFF1976D2),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Mes Notes',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Mes Notes
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+        // ════════════════════════════════════════════════════════════════
+        // SECTION 2 : Suivi scolaire
+        // ════════════════════════════════════════════════════════════════
+        _buildSectionHeader('Suivi scolaire', const Color(0xFF1976D2)),
+        _buildHorizontalCards([
+          ImageMenuCard(
+            index: 0,
+            cardKey: 'notes',
+            title: 'Mes Notes',
+            iconData: Icons.bar_chart_rounded,
+            isDark: isDark,
+            color: const Color(0xFF1976D2),
+            backgroundColor: isDark
+                ? const Color(0xFF0D1A2E)
+                : const Color(0xFFE3F2FD),
+            textColor: isDark
+                ? const Color(0xFF90CAF9)
+                : const Color(0xFF0D47A1),
+            actionText: 'Consulter',
+            actionTextColor: const Color(0xFF1976D2),
             onTap: () {
               if (_matricule != null && _anneeId != null && _classeId != null) {
                 Navigator.of(context).push(
@@ -2055,334 +1753,56 @@ class _ChildListScreenState extends State<ChildListScreen>
                       matricule: _matricule!,
                       anneeId: _anneeId!.toString(),
                       classeId: _classeId!.toString(),
-                      anneeLibelle: 'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+                      anneeLibelle:
+                          'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
                     ),
                   ),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Informations élève non disponibles')),
+                  const SnackBar(
+                    content: Text('Informations élève non disponibles'),
+                  ),
                 );
               }
             },
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1976D2).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF1976D2),
-                            Color(0xFF42A5F5),
-                            Color(0xFF64B5F6),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Consulter les notes',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et bulletins de notes',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Section Header - Bulletins
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2E7D32).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.description_rounded,
-                  color: Color(0xFF2E7D32),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Bulletins',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Bulletins
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+          ImageMenuCard(
+            index: 1,
+            cardKey: 'bulletins',
+            title: 'Bulletins',
+            iconData: Icons.description_rounded,
+            isDark: isDark,
+            color: const Color(0xFF2E7D32),
+            backgroundColor: isDark
+                ? const Color(0xFF0D2010)
+                : const Color(0xFFE8F5E9),
+            textColor: isDark
+                ? const Color(0xFFA5D6A7)
+                : const Color(0xFF1B5E20),
+            actionText: 'Voir bulletins',
+            actionTextColor: const Color(0xFF2E7D32),
             onTap: () => _showStudentMenuBottomSheet(
               'bulletins',
               _getStudentMenuCardItem('bulletins'),
             ),
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2E7D32).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF2E7D32),
-                            Color(0xFF43A047),
-                            Color(0xFF66BB6A),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir les bulletins',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et relevés de notes',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Section Header - Emploi du temps
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF57C00).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.calendar_today_rounded,
-                  color: Color(0xFFF57C00),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Emploi du temps',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Emploi du temps
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+          ImageMenuCard(
+            index: 2,
+            cardKey: 'timetable',
+            title: 'Emploi du temps',
+            iconData: Icons.calendar_today_rounded,
+            isDark: isDark,
+            color: const Color(0xFFF57C00),
+            backgroundColor: isDark
+                ? const Color(0xFF2D1600)
+                : const Color(0xFFFFF3E0),
+            textColor: isDark
+                ? const Color(0xFFFFCC80)
+                : const Color(0xFFE65100),
+            actionText: 'Voir emploi',
+            actionTextColor: const Color(0xFFF57C00),
             onTap: () async {
-              // Précharger si nécessaire avant d'ouvrir le bottom sheet
               if (_timetableResponse == null && !_isLoadingTimetable) {
                 await _loadTimetableData();
               }
@@ -2393,484 +1813,92 @@ class _ChildListScreenState extends State<ChildListScreen>
                 );
               }
             },
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFF57C00).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFF57C00),
-                            Color(0xFFFF9800),
-                            Color(0xFFFFB74D),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Consulter l\'emploi',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'du temps de la classe',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Section Header - Devoirs
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7B1FA2).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.edit_note_rounded,
-                  color: Color(0xFF7B1FA2),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Devoirs',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Devoirs
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+          ImageMenuCard(
+            index: 3,
+            cardKey: 'homework',
+            title: 'Devoirs',
+            iconData: Icons.edit_note_rounded,
+            isDark: isDark,
+            color: const Color(0xFF7B1FA2),
+            backgroundColor: isDark
+                ? const Color(0xFF1E0A2E)
+                : const Color(0xFFF3E5F5),
+            textColor: isDark
+                ? const Color(0xFFCE93D8)
+                : const Color(0xFF4A148C),
+            actionText: 'Voir devoirs',
+            actionTextColor: const Color(0xFF7B1FA2),
             onTap: () => _showStudentMenuBottomSheet(
               'homework',
               _getStudentMenuCardItem('homework'),
             ),
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF7B1FA2).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF7B1FA2),
-                            Color(0xFF9C27B0),
-                            Color(0xFFBA68C8),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir les devoirs',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et exercices à faire',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          ),
+          ImageMenuCard(
+            index: 4,
+            cardKey: 'difficulties',
+            title: 'Difficultés',
+            iconData: Icons.psychology_rounded,
+            isDark: isDark,
+            color: const Color(0xFF9C27B0),
+            backgroundColor: isDark
+                ? const Color(0xFF1E0A2E)
+                : const Color(0xFFF3E5F5),
+            textColor: isDark
+                ? const Color(0xFFCE93D8)
+                : const Color(0xFF6A1B9A),
+            actionText: 'Voir suivi',
+            actionTextColor: const Color(0xFF9C27B0),
+            onTap: () => _showStudentMenuBottomSheet(
+              'difficulties',
+              _getStudentMenuCardItem('difficulties'),
             ),
           ),
-        ),
+        ]),
 
         const SizedBox(height: 24),
 
-        // Section Header - Présence
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00796B).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.person_off_rounded,
-                  color: Color(0xFF00796B),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Présence & Conduite',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Présence
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+        // ════════════════════════════════════════════════════════════════
+        // SECTION 3 : Vie scolaire
+        // ════════════════════════════════════════════════════════════════
+        _buildSectionHeader('Vie scolaire', const Color(0xFF00796B)),
+        _buildHorizontalCards([
+          ImageMenuCard(
+            index: 0,
+            cardKey: 'attendance',
+            title: 'Présence & Conduite',
+            iconData: Icons.person_off_rounded,
+            isDark: isDark,
+            color: const Color(0xFF00796B),
+            backgroundColor: isDark
+                ? const Color(0xFF00201A)
+                : const Color(0xFFE0F2F1),
+            textColor: isDark
+                ? const Color(0xFF80CBC4)
+                : const Color(0xFF004D40),
+            actionText: 'Voir présence',
+            actionTextColor: const Color(0xFF00796B),
             onTap: () => _showStudentMenuBottomSheet(
               'attendance',
               _getStudentMenuCardItem('attendance'),
             ),
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00796B).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF00796B),
-                            Color(0xFF00897B),
-                            Color(0xFF26A69A),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir la présence',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et le comportement',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Section Header - Contrôle d'accès
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC2185B).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.fingerprint_rounded,
-                  color: Color(0xFFC2185B),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Contrôle d\'accès',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Contrôle d'accès
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+          ImageMenuCard(
+            index: 1,
+            cardKey: 'accessControl',
+            title: 'Contrôle accès',
+            iconData: Icons.fingerprint_rounded,
+            isDark: isDark,
+            color: const Color(0xFFC2185B),
+            backgroundColor: isDark
+                ? const Color(0xFF2E0618)
+                : const Color(0xFFFCE4EC),
+            textColor: isDark
+                ? const Color(0xFFF48FB1)
+                : const Color(0xFF880E4F),
+            actionText: 'Voir accès',
+            actionTextColor: const Color(0xFFC2185B),
             onTap: () async {
-              // Précharger si nécessaire avant d'ouvrir le bottom sheet
               if (_accessEntries.isEmpty && !_isLoadingAccessControl) {
                 await _loadAccessControlData();
               }
@@ -2881,760 +1909,216 @@ class _ChildListScreenState extends State<ChildListScreen>
                 );
               }
             },
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFC2185B).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFC2185B),
-                            Color(0xFFE91E63),
-                            Color(0xFFF06292),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir les accès',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et pointages',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Section Header - Sanctions
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD32F2F).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.warning_rounded,
-                  color: Color(0xFFD32F2F),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Sanctions',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Sanctions
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+          ImageMenuCard(
+            index: 2,
+            cardKey: 'sanctions',
+            title: 'Sanctions',
+            iconData: Icons.warning_rounded,
+            isDark: isDark,
+            color: const Color(0xFFD32F2F),
+            backgroundColor: isDark
+                ? const Color(0xFF2E0000)
+                : const Color(0xFFFFEBEE),
+            textColor: isDark
+                ? const Color(0xFFEF9A9A)
+                : const Color(0xFFB71C1C),
+            actionText: 'Voir sanctions',
+            actionTextColor: const Color(0xFFD32F2F),
             onTap: () => _showStudentMenuBottomSheet(
               'sanctions',
               _getStudentMenuCardItem('sanctions'),
             ),
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFD32F2F).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFD32F2F),
-                            Color(0xFFE53935),
-                            Color(0xFFEF5350),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir les sanctions',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et avertissements',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Section Header - Difficultés
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF9C27B0).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.psychology_rounded,
-                  color: Color(0xFF9C27B0),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Difficultés',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Difficultés
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+          ImageMenuCard(
+            index: 3,
+            cardKey: 'school_events',
+            title: 'Événements',
+            iconData: Icons.event_rounded,
+            isDark: isDark,
+            color: const Color(0xFF3F51B5),
+            backgroundColor: isDark
+                ? const Color(0xFF0D1024)
+                : const Color(0xFFE8EAF6),
+            textColor: isDark
+                ? const Color(0xFF9FA8DA)
+                : const Color(0xFF283593),
+            actionText: 'Voir events',
+            actionTextColor: const Color(0xFF3F51B5),
             onTap: () => _showStudentMenuBottomSheet(
-              'difficulties',
-              _getStudentMenuCardItem('difficulties'),
-            ),
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF9C27B0).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ── Fond dégradé principal ──────────────────────
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF9C27B0),
-                            Color(0xFFAB47BC),
-                            Color(0xFFBA68C8),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-
-                    // ── Cercles décoratifs translucides ────────────
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-
-                    // ── Contenu principal ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          // Icône et texte à gauche
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir les difficultés',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et soutien scolaire',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flèche droite
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              'events',
+              _getStudentMenuCardItem('events'),
             ),
           ),
-        ),
+        ]),
 
         const SizedBox(height: 24),
 
-        // Section Header - Messages
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0288D1).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.message_rounded,
-                  color: Color(0xFF0288D1),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Messages',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Messages
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
+        // ════════════════════════════════════════════════════════════════
+        // SECTION 4 : Communications
+        // ════════════════════════════════════════════════════════════════
+        _buildSectionHeader('Communications', const Color(0xFF0288D1)),
+        _buildHorizontalCards([
+          ImageMenuCard(
+            index: 0,
+            cardKey: 'communication',
+            title: 'Messages',
+            iconData: Icons.message_rounded,
+            isDark: isDark,
+            color: const Color(0xFF0288D1),
+            backgroundColor: isDark
+                ? const Color(0xFF001A2E)
+                : const Color(0xFFE1F5FE),
+            textColor: isDark
+                ? const Color(0xFF81D4FA)
+                : const Color(0xFF01579B),
+            actionText: 'Voir messages',
+            actionTextColor: const Color(0xFF0288D1),
             onTap: () async {
-              // Précharger si nécessaire avant d'ouvrir le bottom sheet
               if (_studentMessages.isEmpty && !_isLoadingMessages) {
                 await _loadMessagesData();
               }
               if (mounted) {
-                _showStudentMenuBottomSheet(
-                  'messages',
-                  _getStudentMenuCardItem('messages'),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MessagesScreen(),
+                  ),
                 );
               }
             },
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0288D1).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF0288D1),
-                            Color(0xFF039BE5),
-                            Color(0xFF29B6F6),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir les messages',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et communications',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
+          ImageMenuCard(
+            index: 1,
+            cardKey: 'voir_les_avis',
+            title: 'Suggestions',
+            iconData: Icons.lightbulb_rounded,
+            isDark: isDark,
+            color: const Color(0xFFFFB300),
+            backgroundColor: isDark
+                ? const Color(0xFF2A1E00)
+                : const Color(0xFFFFF8E1),
+            textColor: isDark
+                ? const Color(0xFFFFE082)
+                : const Color(0xFFFF6F00),
+            actionText: 'Voir suggestions',
+            actionTextColor: const Color(0xFFFFB300),
+            onTap: () async {
+              if (_suggestions.isEmpty && !_isLoadingSuggestions) {
+                await _loadSuggestionsData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'suggestions',
+                  _getStudentMenuCardItem('suggestions'),
+                );
+              }
+            },
+          ),
+        ]),
 
         const SizedBox(height: 24),
 
-        // Section Header - Scolarité
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFBC02D).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.payments_rounded,
-                  color: Color(0xFFFBC02D),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Scolarité & Paiements',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Bouton Scolarité
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
-            onTap: () async {
-              // Précharger si nécessaire avant d'ouvrir le bottom sheet
-              if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
-                await _loadScolariteData();
-              }
-              if (mounted) {
-                _showStudentMenuBottomSheet('fees', _getStudentMenuCardItem('fees'));
-              }
-            },
-            child: Container(
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFBC02D).withOpacity(0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFFBC02D),
-                            Color(0xFFFDD835),
-                            Color(0xFFFFEE58),
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: -28,
-                      top: -28,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 48,
-                      bottom: -40,
-                      left: -16,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Voir la scolarité',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'et les paiements',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        // ════════════════════════════════════════════════════════════════
+        // SECTION 5 : Services
+        // ════════════════════════════════════════════════════════════════
+        _buildSectionHeader('Services', const Color(0xFF795548)),
+        _buildHorizontalCards([
+          ImageMenuCard(
+            index: 0,
+            cardKey: 'niveaux',
+            title: 'Fournitures',
+            iconData: Icons.inventory_2_rounded,
+            isDark: isDark,
+            color: const Color(0xFF795548),
+            backgroundColor: isDark
+                ? const Color(0xFF1A0E08)
+                : const Color(0xFFEFEBE9),
+            textColor: isDark
+                ? const Color(0xFFBCAAA4)
+                : const Color(0xFF4E342E),
+            actionText: 'Voir liste',
+            actionTextColor: const Color(0xFF795548),
+            onTap: () => _showStudentMenuBottomSheet(
+              'supplies',
+              _getStudentMenuCardItem('supplies'),
             ),
           ),
-        ),
+          ImageMenuCard(
+            index: 1,
+            cardKey: 'consult_requests',
+            title: 'Commandes',
+            iconData: Icons.shopping_cart_rounded,
+            isDark: isDark,
+            color: const Color(0xFF00ACC1),
+            backgroundColor: isDark
+                ? const Color(0xFF00202A)
+                : const Color(0xFFE0F7FA),
+            textColor: isDark
+                ? const Color(0xFF80DEEA)
+                : const Color(0xFF00838F),
+            actionText: 'Voir commandes',
+            actionTextColor: const Color(0xFF00ACC1),
+            onTap: () => _showStudentMenuBottomSheet(
+              'orders',
+              _getStudentMenuCardItem('orders'),
+            ),
+          ),
+          ImageMenuCard(
+            index: 2,
+            cardKey: 'informations',
+            title: 'Réservations',
+            iconData: Icons.event_seat_rounded,
+            isDark: isDark,
+            color: const Color(0xFF4CAF50),
+            backgroundColor: isDark
+                ? const Color(0xFF0D2010)
+                : const Color(0xFFE8F5E9),
+            textColor: isDark
+                ? const Color(0xFFA5D6A7)
+                : const Color(0xFF2E7D32),
+            actionText: 'Voir réservations',
+            actionTextColor: const Color(0xFF4CAF50),
+            onTap: () async {
+              if (_reservations.isEmpty && !_isLoadingReservations) {
+                await _loadReservationsData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'reservations',
+                  _getStudentMenuCardItem('reservations'),
+                );
+              }
+            },
+          ),
+          ImageMenuCard(
+            index: 3,
+            cardKey: 'niveaux',
+            title: "Logs d'accès",
+            iconData: Icons.security_rounded,
+            isDark: isDark,
+            color: const Color(0xFF616161),
+            backgroundColor: isDark
+                ? const Color(0xFF1A1A1A)
+                : const Color(0xFFEEEEEE),
+            textColor: isDark
+                ? const Color(0xFFBDBDBD)
+                : const Color(0xFF212121),
+            actionText: 'Voir logs',
+            actionTextColor: const Color(0xFF616161),
+            onTap: () async {
+              if (_accessLogs.isEmpty && !_isLoadingAccessLogs) {
+                await _loadAccessLogsData();
+              }
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'accessLogs',
+                  _getStudentMenuCardItem('accessLogs'),
+                );
+              }
+            },
+          ),
+        ]),
       ],
     );
   }
@@ -4464,7 +2948,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -4846,16 +3330,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '💰 Scolarité & Paiements',
-            'Consultez les échéances de scolarité et l\'état des paiements.',
-            Colors.amber,
-          ),
-          const SizedBox(height: 20),
+          // _buildInfoCard(
+          //   '💰 Scolarité & Paiements',
+          //   'Consultez les échéances de scolarité et l\'état des paiements.',
+          //   Colors.amber,
+          // ),
+          // const SizedBox(height: 20),
           _buildDynamicScolarite(),
         ],
       ),
@@ -5231,33 +3715,52 @@ class _ChildListScreenState extends State<ChildListScreen>
                   ],
                 ),
                 const SizedBox(height: 4),
-                Row(
+                // Montant payé et montant restant
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.check_circle, size: 16, color: Colors.green),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Payé: ${entry.formattedPaye}',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: _textSizeService.getScaledFontSize(14),
-                        fontWeight: FontWeight.w500,
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle, size: 16, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Payé: ${entry.formattedPaye}',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: _textSizeService.getScaledFontSize(14),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // N'afficher le montant restant que s'il est supérieur à 0
+                    if (entry.rapayer > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            entry.rapayer > 0
+                                ? Icons.warning
+                                : Icons.check_circle,
+                            size: 16,
+                            color: entry.rapayer > 0
+                                ? Colors.red
+                                : Colors.green,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Restant: ${entry.formattedRapayer}',
+                            style: TextStyle(
+                              color: entry.rapayer > 0
+                                  ? Colors.red
+                                  : Colors.green,
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(
-                      entry.rapayer > 0 ? Icons.warning : Icons.check_circle,
-                      size: 16,
-                      color: entry.rapayer > 0 ? Colors.red : Colors.green,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Restant: ${entry.formattedRapayer}',
-                      style: TextStyle(
-                        color: entry.rapayer > 0 ? Colors.red : Colors.green,
-                        fontSize: _textSizeService.getScaledFontSize(14),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -7096,22 +5599,26 @@ class _ChildListScreenState extends State<ChildListScreen>
         border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
               fontSize: 12,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -7920,7 +6427,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildBulletinsTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -7980,7 +6487,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -8409,9 +6916,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           // Carte d'accès à la boutique
           GestureDetector(
             onTap: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const LibraryScreen()));
+              // TODO: Implémenter LibraryScreen quand disponible
+              // Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LibraryScreen()));
             },
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -8685,9 +7191,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           const SizedBox(width: 6),
           GestureDetector(
             onTap: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const LibraryScreen()));
+              // TODO: Implémenter LibraryScreen quand disponible
+              // Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LibraryScreen()));
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),

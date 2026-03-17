@@ -90,8 +90,10 @@ class _LibraryScreenState extends State<LibraryScreen>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _fadeAnimation =
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
     _loadProducts();
     _updateCartItemCount();
     _updateOrdersCount();
@@ -119,6 +121,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Future<void> _loadProducts() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -137,44 +140,58 @@ class _LibraryScreenState extends State<LibraryScreen>
         nomProduit: _nomProduit,
         type: _type,
       );
-      setState(() {
-        _products = products;
-        _filteredProducts = products;
-        _isLoading = false;
-        _hasMoreProducts = products.length >= _productsPerPage;
-      });
-      _fadeController.forward(from: 0);
+      if (mounted) {
+        setState(() {
+          _products = products;
+          _filteredProducts = products;
+          _isLoading = false;
+          _hasMoreProducts = products.length >= _productsPerPage;
+        });
+        _fadeController.forward(from: 0);
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-      _showError('Erreur lors du chargement des produits: $e');
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+        _showError('Erreur lors du chargement des produits: $e');
+      }
     }
   }
 
   Future<void> _updateCartItemCount() async {
+    if (!mounted) return;
     final cart = await _cartService.getCurrentCart();
-    setState(() => _cartItemCount = cart.totalItems);
+    if (mounted) {
+      setState(() => _cartItemCount = cart.totalItems);
+    }
   }
 
   Future<void> _updateOrdersCount() async {
+    if (!mounted) return;
     try {
       final currentUser = AuthService().getCurrentUser();
       if (currentUser == null) {
-        setState(() => _ordersCount = 0);
+        if (mounted) {
+          setState(() => _ordersCount = 0);
+        }
         return;
       }
       final orders = await OrderService().getUserOrders(currentUser.phone);
-      setState(() => _ordersCount = orders.length);
+      if (mounted) {
+        setState(() => _ordersCount = orders.length);
+      }
     } catch (_) {
-      setState(() => _ordersCount = 0);
+      if (mounted) {
+        setState(() => _ordersCount = 0);
+      }
     }
   }
 
   // ── Load more products ───────────────────────────────────────────
   Future<void> _loadMoreProducts() async {
-    if (!_hasMoreProducts) return;
+    if (!_hasMoreProducts || !mounted) return;
 
     setState(() {
       _isLoadingMore = true;
@@ -274,7 +291,8 @@ class _LibraryScreenState extends State<LibraryScreen>
       _nomEtablissement = null;
       _nomProduit = null;
       _type = null;
-      _searchController.clear(); // Effacer aussi la barre de recherche principale
+      _searchController
+          .clear(); // Effacer aussi la barre de recherche principale
     });
     _loadProducts();
   }
@@ -286,8 +304,9 @@ class _LibraryScreenState extends State<LibraryScreen>
       _filteredProducts = _products;
       if (_selectedFilter != 'Tous') {
         _filteredProducts = _filteredProducts
-            .where((p) =>
-                p.category.toLowerCase() == _selectedFilter.toLowerCase())
+            .where(
+              (p) => p.category.toLowerCase() == _selectedFilter.toLowerCase(),
+            )
             .toList();
       }
     });
@@ -357,13 +376,17 @@ class _LibraryScreenState extends State<LibraryScreen>
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
                       BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 2)),
+                        color: AppColors.screenShadow,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      size: 16, color: AppColors.screenTextPrimary),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 16,
+                    color: AppColors.screenTextPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -383,9 +406,15 @@ class _LibraryScreenState extends State<LibraryScreen>
 
               // Search button
               _appBarIconButton(
-                icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
-                color: _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimary,
-                bgColor: _isSearching ? AppColors.shopBlueSurface : AppColors.screenCard,
+                icon: _isSearching
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: _isSearching
+                    ? AppColors.shopBlue
+                    : AppColors.screenTextPrimary,
+                bgColor: _isSearching
+                    ? AppColors.shopBlueSurface
+                    : AppColors.screenCard,
                 onTap: () {
                   setState(() {
                     _isSearching = !_isSearching;
@@ -419,8 +448,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const CartScreen()),
+                    MaterialPageRoute(builder: (_) => const CartScreen()),
                   ).then((_) => _updateCartItemCount());
                 },
               ),
@@ -438,8 +466,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const OrdersScreen()),
+                    MaterialPageRoute(builder: (_) => const OrdersScreen()),
                   ).then((_) => _updateOrdersCount());
                 },
               ),
@@ -471,7 +498,10 @@ class _LibraryScreenState extends State<LibraryScreen>
               borderRadius: BorderRadius.circular(12),
               boxShadow: const [
                 BoxShadow(
-                    color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+                  color: AppColors.screenShadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
               ],
             ),
             child: Icon(icon, size: 18, color: color),
@@ -485,7 +515,10 @@ class _LibraryScreenState extends State<LibraryScreen>
                 decoration: BoxDecoration(
                   color: badgeColor ?? AppColors.shopGreen,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.screenSurface, width: 1.5),
+                  border: Border.all(
+                    color: AppColors.screenSurface,
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   badge,
@@ -532,13 +565,21 @@ class _LibraryScreenState extends State<LibraryScreen>
               autofocus: _isSearching,
               onChanged: _onSearchChanged,
               style: const TextStyle(
-                  fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
+                fontSize: 14,
+                color: AppColors.screenTextPrimary,
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
                 hintText: 'Rechercher un produit...',
                 hintStyle: const TextStyle(
-                    fontSize: 13, color: Color(0xFFBBBBBB)),
-                prefixIcon:
-                    const Icon(Icons.search_rounded, color: AppColors.shopBlue, size: 18),
+                  fontSize: 13,
+                  color: Color(0xFFBBBBBB),
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.shopBlue,
+                  size: 18,
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? GestureDetector(
                         onTap: () {
@@ -549,8 +590,11 @@ class _LibraryScreenState extends State<LibraryScreen>
                           });
                           _loadProducts();
                         },
-                        child: const Icon(Icons.close_rounded,
-                            color: AppColors.screenTextSecondary, size: 18),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: AppColors.screenTextSecondary,
+                          size: 18,
+                        ),
                       )
                     : null,
                 border: InputBorder.none,
@@ -591,7 +635,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     gradient: selected ? AppColors.shopGreenGradient : null,
                     color: selected ? null : AppColors.screenSurface,
@@ -602,7 +648,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                               color: AppColors.shopGreen.withOpacity(0.30),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
-                            )
+                            ),
                           ]
                         : [],
                   ),
@@ -610,11 +656,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                     f,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected
-                          ? Colors.white
-                          : const Color(0xFF666666),
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? Colors.white : const Color(0xFF666666),
                     ),
                   ),
                 ),
@@ -863,8 +906,7 @@ class _LibraryScreenState extends State<LibraryScreen>
           if (_selectedFilter != 'Tous') ...[
             const SizedBox(width: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: AppColors.shopGreenSurface,
                 borderRadius: BorderRadius.circular(8),
@@ -888,8 +930,11 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _applyFilters();
                       });
                     },
-                    child: const Icon(Icons.close_rounded,
-                        size: 12, color: AppColors.shopGreen),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 12,
+                      color: AppColors.shopGreen,
+                    ),
                   ),
                 ],
               ),
@@ -949,14 +994,13 @@ class _LibraryScreenState extends State<LibraryScreen>
                   }
                   return _buildProductCard(_filteredProducts[index], index);
                 },
-                childCount: _filteredProducts.length + (_hasMoreProducts ? 1 : 0),
+                childCount:
+                    _filteredProducts.length + (_hasMoreProducts ? 1 : 0),
               ),
             ),
           ),
           // Espace en bas pour éviter que le bouton soit collé en bas
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 100),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
@@ -975,8 +1019,11 @@ class _LibraryScreenState extends State<LibraryScreen>
               color: AppColors.shopBlueSurface,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.search_off_rounded,
-                size: 44, color: AppColors.shopBlue),
+            child: const Icon(
+              Icons.search_off_rounded,
+              size: 44,
+              color: AppColors.shopBlue,
+            ),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -1007,8 +1054,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               });
             },
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [AppColors.shopBlueLight, AppColors.shopBlue],
@@ -1073,7 +1119,10 @@ class _LibraryScreenState extends State<LibraryScreen>
             Text(
               _error ?? 'Une erreur est survenue',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextSecondary,
+              ),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -1134,8 +1183,8 @@ class _LibraryScreenState extends State<LibraryScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(
-                  product: product, produitUid: product.id),
+              builder: (_) =>
+                  ProductDetailScreen(product: product, produitUid: product.id),
             ),
           ).then((_) => _updateCartItemCount());
         },
@@ -1144,7 +1193,11 @@ class _LibraryScreenState extends State<LibraryScreen>
             color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(18),
             boxShadow: const [
-              BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
+              BoxShadow(
+                color: AppColors.screenShadow,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -1157,7 +1210,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(18)),
+                        top: Radius.circular(18),
+                      ),
                       child: ImageHelper.buildNetworkImage(
                         imageUrl: product.imageUrl,
                         placeholder: product.title,
@@ -1181,9 +1235,10 @@ class _LibraryScreenState extends State<LibraryScreen>
                           border: Border.all(color: Colors.white, width: 1.5),
                           boxShadow: const [
                             BoxShadow(
-                                color: AppColors.screenShadow,
-                                blurRadius: 4,
-                                offset: Offset(0, 1)),
+                              color: AppColors.screenShadow,
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
                           ],
                         ),
                       ),
@@ -1228,7 +1283,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                           // Type badge
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: accent.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),

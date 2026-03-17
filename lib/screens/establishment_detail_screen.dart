@@ -30,9 +30,8 @@ import '../models/ecole_detail.dart';
 import '../widgets/color_card_grid.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/establishment_header_card.dart';
-import '../widgets/section_title.dart';
 import '../config/app_typography.dart';
-import '../utils/image_helper.dart';
+import '../widgets/image_menu_card.dart';
 import 'all_events_screen.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
@@ -245,7 +244,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   final TextSizeService _textSizeService = TextSizeService();
 
   EcoleDetail? _ecoleDetail;
-  late Future<ScolariteResponse> _scolariteFuture;
+  Future<ScolariteResponse>? _scolariteFuture;
 
   final _avisNotifier = ValueNotifier<int>(0);
   final _eventsNotifier = ValueNotifier<int>(0);
@@ -554,7 +553,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     });
     try {
       final results = await Future.wait([
-        _blogService.getBlogsForUI(nom).catchError((e) {
+        _blogService.getBlogsForUI('grand', code).catchError((e) {
           setState(() {
             _blogsError = e.toString();
             _isLoadingBlogs = false;
@@ -593,7 +592,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     });
     try {
       final results = await Future.wait([
-        _blogService.getBlogsForUI(nom).catchError((e) {
+        _blogService.getBlogsForUI('grand', code).catchError((e) {
           setState(() {
             _blogsError = e.toString();
             _isLoadingBlogs = false;
@@ -1104,92 +1103,27 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       'share',
     ];
     return SizedBox(
-      height: 96,
+      height: 140,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 0),
         itemCount: actions.length,
         itemBuilder: (context, i) {
           final def = _kActions[actions[i]]!;
-          return _buildActionChip(def, actions[i], isDark, i);
+          return ImageMenuCard(
+            index: i,
+            cardKey: actions[i],
+            title: def.label,
+            iconData: def.icon,
+            isDark: isDark,
+            color: def.color,
+            onTap: () => _showActionBottomSheet(actions[i], def),
+            actionText: def.subtitle,
+            actionTextColor: def.color,
+            backgroundColor: def.color.withOpacity(0.1),
+            textColor: isDark ? Colors.white : AppColors.screenTextPrimary,
+          );
         },
-      ),
-    );
-  }
-
-  Widget _buildActionChip(_ActionDef def, String key, bool isDark, int index) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 250 + index * 60),
-      curve: Curves.easeOutCubic,
-      builder: (context, v, child) => Opacity(
-        opacity: v,
-        child: Transform.translate(
-          offset: Offset(20 * (1 - v), 0),
-          child: child,
-        ),
-      ),
-      child: GestureDetector(
-        onTap: () => _showActionBottomSheet(key, def),
-        child: Container(
-          width: 180,
-          margin: const EdgeInsets.only(right: 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                def.color.withOpacity(0.15),
-                def.color.withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: def.color.withOpacity(0.25)),
-            boxShadow: [
-              BoxShadow(
-                color: def.color.withOpacity(0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: def.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(def.icon, color: def.color, size: 22),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                def.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : AppColors.screenTextPrimary,
-                  letterSpacing: -0.2,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                def.subtitle,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: def.color,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1198,21 +1132,41 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildMenuCards(bool isDark) {
     // Section École (pédagogique)
     final ecoleSection = [
-      ['informations', 'Informations de l\'école'],
-      ['niveaux', 'Niveaux scolaire'],
-      ['communication', 'Communication'],
+      [
+        'informations',
+        'Informations de l\'école',
+        'assets/images/intro_background.jpg',
+      ],
+      ['niveaux', 'Niveaux scolaire', 'assets/images/intro_background.png'],
+      ['communication', 'Communication', 'assets/images/logo-app.png'],
     ];
 
     // Section Vie école (opérationnel)
     final vieEcoleSection = [
-      ['school_events', ' Evénements scolaires'],
-      ['consult_requests', 'Mes demandes'],
-      ['scolarite', 'Scolarité'],
+      [
+        'school_events',
+        ' Événements scolaires',
+        'assets/images/ChatGPT Image 24 janv. 2026, 19_36_47.png',
+      ],
+      [
+        'consult_requests',
+        'Mes demandes',
+        'assets/images/ChatGPT Image 24 janv. 2026, 19_36_51.png',
+      ],
+      [
+        'scolarite',
+        'Scolarité',
+        'assets/images/ChatGPT Image 24 janv. 2026, 19_36_56.png',
+      ],
     ];
 
     // Section Communauté
     final communauteSection = [
-      ['voir_les_avis', 'Voir les avis'],
+      [
+        'voir_les_avis',
+        'Voir les avis',
+        'assets/images/ChatGPT Image 24 janv. 2026, 19_37_01.png',
+      ],
     ];
 
     return Column(
@@ -1220,122 +1174,67 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       children: [
         _buildSectionHeader('École', isDark),
         const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildMenuSection('École', ecoleSection, isDark),
-        ),
+        _buildHorizontalMenuCards(ecoleSection, isDark),
         const SizedBox(height: 24),
         _buildSectionHeader('Vie école', isDark),
         const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildMenuSection('Vie école', vieEcoleSection, isDark),
-        ),
+        _buildHorizontalMenuCards(vieEcoleSection, isDark),
         const SizedBox(height: 24),
         _buildSectionHeader('Communauté', isDark),
         const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildMenuSection('Communauté', communauteSection, isDark),
-        ),
+        _buildHorizontalMenuCards(communauteSection, isDark),
       ],
     );
   }
 
-  Widget _buildMenuSection(
-    String title,
-    List<List<String>> items,
-    bool isDark,
-  ) {
-    return _buildMenuRow(items, isDark);
-  }
-
-  Widget _buildMenuRow(List<List<String>> menuItems, bool isDark) {
-    // Diviser en rangées de 4 éléments maximum
-    final rows = <List<List<String>>>[];
-    for (int i = 0; i < menuItems.length; i += 4) {
-      final end = (i + 4 < menuItems.length) ? i + 4 : menuItems.length;
-      rows.add(menuItems.sublist(i, end));
-    }
-
-    return Column(
-      children: rows.map((row) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            children: row
-                .asMap()
-                .entries
-                .map(
-                  (e) => _buildMenuCard(e.key, e.value[0], e.value[1], isDark),
-                )
-                .toList(),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildMenuCard(int index, String key, String title, bool isDark) {
-    final def = _kActions[key]!;
-    return Expanded(
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: 1),
-        duration: Duration(milliseconds: 350 + index * 80),
-        curve: Curves.easeOutCubic,
-        builder: (context, v, child) => Opacity(
-          opacity: v,
-          child: Transform.translate(
-            offset: Offset(0, 20 * (1 - v)),
-            child: child,
-          ),
-        ),
-        child: GestureDetector(
-          onTap: () => _showActionBottomSheet(key, def),
-          child: Container(
-            margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
-            height: 100,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.screenShadow,
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: def.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(def.icon, color: def.color, size: 24),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(12),
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.screenTextPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
+  Widget _buildHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
+    return SizedBox(
+      height: 160,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: menuItems.length,
+        itemBuilder: (context, index) {
+          final item = menuItems[index];
+          final def = _kActions[item[0]]!;
+          return ImageMenuCard(
+            index: index,
+            cardKey: item[0],
+            title: item[1],
+            imagePath: item[2],
+            isDark: isDark,
+            icon: def.icon,
+            color: def.color,
+            onTap: () => _showActionBottomSheet(item[0], def),
+            location: _getSchoolLocation(),
+            backgroundColor: def.color.withOpacity(0.1),
+            textColor: def.color,
+          );
+        },
       ),
     );
+  }
+
+  String _getSchoolLocation() {
+    // Essayer de récupérer la ville depuis les détails de l'école
+    String? location = _ecoleDetail?.data.ville;
+
+    // Si pas trouvé, essayer depuis l'adresse
+    if (location == null || location.isEmpty) {
+      final address = _ecoleDetail?.data.adresse ?? widget.ecole.adresse ?? '';
+      // Extraire la ville de l'adresse (généralement à la fin)
+      final parts = address.split(',');
+      if (parts.isNotEmpty) {
+        location = parts.last.trim();
+      }
+    }
+
+    // Valeur par défaut si toujours pas trouvé
+    if (location == null || location.isEmpty) {
+      location = 'Côte d\'Ivoire';
+    }
+
+    return location.toUpperCase();
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1522,7 +1421,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final authService = AuthService();
     final currentUser = authService.getCurrentUser();
     final isDark = _themeService.isDarkMode;
-    
+
     // Pré-remplir le numéro de téléphone de l'utilisateur connecté
     if (currentUser?.phone != null && _parentTelephoneController.text.isEmpty) {
       _parentTelephoneController.text = currentUser!.phone;
@@ -1545,7 +1444,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               hasError: _parentTelephoneError,
               iconColor: actionColor,
               focusBorderColor: actionColor,
-              readOnly: currentUser?.phone != null, // Lecture seule si déjà pré-rempli
+              readOnly:
+                  currentUser?.phone !=
+                  null, // Lecture seule si déjà pré-rempli
             ),
             const SizedBox(height: 12),
             Text(
@@ -1586,20 +1487,25 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
             try {
               // Récupérer les infos de parrainage directement avec le numéro de téléphone
-              final infoResult = await ParrainageService.getInfoParrainage(_parentTelephoneController.text);
-              
+              final infoResult = await ParrainageService.getInfoParrainage(
+                _parentTelephoneController.text,
+              );
+
               Navigator.of(context).pop(); // ferme le loader
 
               if (infoResult['success'] == true && infoResult['data'] != null) {
                 Navigator.of(context).pop(); // ferme le bottom sheet
-                
+
                 // Afficher le modal avec le code de parrainage
-                _showParrainageCodeModal(infoResult['data']['code_parrainage'] ?? 'Non disponible');
+                _showParrainageCodeModal(
+                  infoResult['data']['code_parrainage'] ?? 'Non disponible',
+                );
               } else {
                 _scaffoldMessengerKey.currentState?.showSnackBar(
                   SnackBar(
                     content: Text(
-                      infoResult['message'] ?? 'Impossible de récupérer les informations de parrainage',
+                      infoResult['message'] ??
+                          'Impossible de récupérer les informations de parrainage',
                     ),
                     backgroundColor: Colors.red[400],
                     behavior: SnackBarBehavior.floating,
@@ -1728,7 +1634,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         codeParrainage,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(48), // Très grand
+                          fontSize: _textSizeService.getScaledFontSize(
+                            48,
+                          ), // Très grand
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF3B82F6), // Bleu vif
                           letterSpacing: 4, // Espacement large
@@ -1748,9 +1656,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     icon: Icons.copy_rounded,
                     onPressed: () {
                       // Copier le code dans le presse-papiers
-                      Clipboard.setData(
-                        ClipboardData(text: codeParrainage),
-                      );
+                      Clipboard.setData(ClipboardData(text: codeParrainage));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: const Text(
@@ -2138,6 +2044,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildBlogCard(Map<String, dynamic> blog) {
     final Color color = blog['color'] as Color? ?? AppColors.screenOrange;
     final String? imageUrl = blog['image'] as String?;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -2159,12 +2066,45 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
               ),
-              child: ImageHelper.buildNetworkImage(
-                imageUrl: imageUrl,
-                placeholder: blog['title'] ?? '',
+              child: Image.network(
+                imageUrl,
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: double.infinity,
+                    height: 180,
+                    color: isDark
+                        ? const Color(0xFF2A2A2A)
+                        : AppColors.screenCard,
+                    child: Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: isDark
+                            ? Colors.white54
+                            : AppColors.screenTextSecondary,
+                        size: 40,
+                      ),
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: double.infinity,
+                    height: 180,
+                    color: isDark
+                        ? const Color(0xFF2A2A2A)
+                        : AppColors.screenCard,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.screenOrange,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                },
               ),
             )
           else
@@ -3128,6 +3068,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Scolarité tab ──────────────────────────────────────────────────────────
   Widget _buildScolariteTab() {
+    if (_scolariteFuture == null) {
+      return const Center(
+        child: CustomLoader(
+          message: 'Chargement de la scolarité...',
+          loaderColor: AppColors.screenOrange,
+          size: 56.0,
+          showBackground: false,
+        ),
+      );
+    }
+
     return FutureBuilder<ScolariteResponse>(
       future: _scolariteFuture,
       builder: (context, snapshot) {
@@ -3753,6 +3704,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildAvisCard(Map<String, dynamic> avi) {
     final Color color = avi['color'] as Color? ?? AppColors.screenOrange;
     final int statut = avi['statut'] as int? ?? 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -3833,12 +3785,46 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: ImageHelper.buildNetworkImage(
-                              imageUrl: avi['image'] as String,
-                              placeholder: '',
+                            child: Image.network(
+                              avi['image'] as String,
                               width: double.infinity,
                               height: 180,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: double.infinity,
+                                  height: 180,
+                                  color: isDark
+                                      ? const Color(0xFF2A2A2A)
+                                      : AppColors.screenCard,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      color: isDark
+                                          ? Colors.white54
+                                          : AppColors.screenTextSecondary,
+                                      size: 40,
+                                    ),
+                                  ),
+                                );
+                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: double.infinity,
+                                      height: 180,
+                                      color: isDark
+                                          ? const Color(0xFF2A2A2A)
+                                          : AppColors.screenCard,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.screenOrange,
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  },
                             ),
                           ),
                         ),

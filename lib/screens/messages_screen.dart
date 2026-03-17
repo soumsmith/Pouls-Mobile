@@ -2,15 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
-import '../services/database_service.dart';
 import '../services/message_service.dart';
 import '../services/ecoles_api_service.dart';
 import '../services/auth_service.dart';
+import '../services/message_api_service.dart';
 import '../models/ecole.dart';
+import '../models/conversation.dart';
 import '../config/app_colors.dart';
-import '../config/app_typography.dart';
 import '../services/text_size_service.dart';
-import '../widgets/custom_search_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 
 // ─── ENUM : types de message ──────────────────────────────────────────────────
@@ -50,12 +49,13 @@ class MessagesScreen extends StatefulWidget {
 
 class _MessagesScreenState extends State<MessagesScreen>
     with SingleTickerProviderStateMixin {
-  List<Map<String, dynamic>> _notifications = [];
+  List<Conversation> _conversations = [];
   bool _isLoading = true;
   final TextSizeService _textSizeService = TextSizeService();
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'Tous';
   bool _isSearching = false;
+  final MessageApiService _messageApiService = MessageApiService();
 
   final List<String> _filters = ['Tous', 'Non lus', 'Lus'];
 
@@ -118,8 +118,10 @@ class _MessagesScreenState extends State<MessagesScreen>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _fadeAnimation =
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
     _loadNotifications();
     _loadEcoles();
     _loadUserInfo();
@@ -169,20 +171,22 @@ class _MessagesScreenState extends State<MessagesScreen>
     }
   }
 
-  List<Map<String, dynamic>> get _filteredItems {
-    var items = _notifications;
+  List<Conversation> get _filteredItems {
+    var items = _conversations;
     if (_selectedFilter == 'Non lus') {
-      items = items.where((n) => !(n['isRead'] as bool)).toList();
+      items = items.where((c) => c.hasUnreadMessages).toList();
     } else if (_selectedFilter == 'Lus') {
-      items = items.where((n) => (n['isRead'] as bool)).toList();
+      items = items.where((c) => !c.hasUnreadMessages).toList();
     }
     if (_searchController.text.isNotEmpty) {
       final q = _searchController.text.toLowerCase();
       items = items
-          .where((n) =>
-              (n['title'] as String).toLowerCase().contains(q) ||
-              (n['body'] as String).toLowerCase().contains(q) ||
-              (n['sender'] as String).toLowerCase().contains(q))
+          .where(
+            (c) =>
+                c.subject.toLowerCase().contains(q) ||
+                c.student.fullName.toLowerCase().contains(q) ||
+                c.school.nom.toLowerCase().contains(q),
+          )
           .toList();
     }
     return items;
@@ -191,93 +195,25 @@ class _MessagesScreenState extends State<MessagesScreen>
   Future<void> _loadNotifications() async {
     setState(() => _isLoading = true);
     try {
-      const parentId = 'parent1';
-      final db = DatabaseService.instance;
-      final notifications = await db.getNotificationsByParent(parentId);
-      if (notifications.isEmpty) {
-        await _addDemoNotifications(parentId);
-        final updated = await db.getNotificationsByParent(parentId);
-        setState(() {
-          _notifications = updated;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _notifications = notifications;
-          _isLoading = false;
-        });
-      }
+      final conversations = await _messageApiService.getCurrentUserMessages();
+      setState(() {
+        _conversations = conversations;
+        _isLoading = false;
+      });
       _fadeController.forward();
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('Erreur lors du chargement des messages');
-    }
-  }
-
-  Future<void> _addDemoNotifications(String parentId) async {
-    final db = DatabaseService.instance;
-    final now = DateTime.now();
-    final demos = [
-      {
-        'id': 'demo_1',
-        'title': 'Réunion parents-professeurs',
-        'body':
-            'Une réunion est programmée pour le vendredi 28 février à 18h. Merci de confirmer votre présence.',
-        'timestamp':
-            now.subtract(const Duration(hours: 2)).millisecondsSinceEpoch,
-        'sender': 'Direction de l\'établissement',
-        'isRead': false,
-      },
-      {
-        'id': 'demo_2',
-        'title': 'Note de mathématiques',
-        'body':
-            'Votre enfant a obtenu 15/20 au dernier contrôle de mathématiques. Félicitations !',
-        'timestamp':
-            now.subtract(const Duration(days: 1)).millisecondsSinceEpoch,
-        'sender': 'M. Dubois - Professeur de mathématiques',
-        'isRead': false,
-      },
-      {
-        'id': 'demo_3',
-        'title': 'Sortie scolaire',
-        'body':
-            'Une sortie au musée est organisée le mercredi prochain. N\'oubliez pas d\'envoyer l\'autorisation signée.',
-        'timestamp':
-            now.subtract(const Duration(days: 2)).millisecondsSinceEpoch,
-        'sender': 'Mme Martin - Professeur d\'histoire',
-        'isRead': true,
-      },
-      {
-        'id': 'demo_4',
-        'title': 'Menu de la cantine',
-        'body':
-            'Menu du jour : Poulet rôti, haricots verts, fromage et fruit de saison.',
-        'timestamp':
-            now.subtract(const Duration(days: 3)).millisecondsSinceEpoch,
-        'sender': 'Service de cantine',
-        'isRead': true,
-      },
-    ];
-    for (final n in demos) {
-      await db.saveNotification(
-        id: n['id'] as String,
-        title: n['title'] as String,
-        body: n['body'] as String,
-        timestamp: DateTime.fromMillisecondsSinceEpoch(n['timestamp'] as int),
-        sender: n['sender'] as String,
-        parentId: parentId,
-      );
+      _showError('Erreur lors du chargement des messages: $e');
     }
   }
 
   Future<void> _markAllAsRead() async {
     try {
-      await DatabaseService.instance.markAllNotificationsAsRead('parent1');
+      // Pour l'instant, nous allons juste mettre à jour l'interface localement
+      // TODO: Implémenter l'appel API pour marquer toutes les conversations comme lues
       setState(() {
-        for (final n in _notifications) {
-          n['isRead'] = true;
-        }
+        // Mettre à jour localement - en réalité, il faudrait appeler l'API
+        // pour chaque conversation ou utiliser un endpoint bulk
       });
       _showSuccess('Tous les messages ont été marqués comme lus');
     } catch (e) {
@@ -313,10 +249,11 @@ class _MessagesScreenState extends State<MessagesScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark
-          .copyWith(statusBarColor: Colors.transparent),
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: Colors.white,
         body: _buildBody(),
         floatingActionButton: _buildFAB(),
       ),
@@ -327,14 +264,14 @@ class _MessagesScreenState extends State<MessagesScreen>
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
-            color: AppColors.screenOrange, strokeWidth: 2.5),
+          color: const Color(0xFF0288D1),
+          strokeWidth: 2.5,
+        ),
       );
     }
 
-    _notifications.sort((a, b) {
-      final dA = DateTime.fromMillisecondsSinceEpoch(a['timestamp'] as int);
-      final dB = DateTime.fromMillisecondsSinceEpoch(b['timestamp'] as int);
-      return dB.compareTo(dA);
+    _conversations.sort((a, b) {
+      return b.lastMessageAt.compareTo(a.lastMessageAt);
     });
 
     return FadeTransition(
@@ -353,8 +290,7 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   // ─── APP BAR ──────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
-    final unreadCount =
-        _notifications.where((n) => !(n['isRead'] as bool)).length;
+    final unreadCount = _conversations.where((c) => c.hasUnreadMessages).length;
 
     return Container(
       color: AppColors.screenSurface,
@@ -374,13 +310,17 @@ class _MessagesScreenState extends State<MessagesScreen>
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
                       BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 2)),
+                        color: AppColors.screenShadow,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      size: 16, color: AppColors.screenTextPrimary),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 16,
+                    color: AppColors.screenTextPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -398,7 +338,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                       ),
                     ),
                     Text(
-                      '${_notifications.length} message${_notifications.length > 1 ? 's' : ''}',
+                      '${_conversations.length} message${_conversations.length > 1 ? 's' : ''}',
                       style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.screenTextSecondary,
@@ -418,21 +358,22 @@ class _MessagesScreenState extends State<MessagesScreen>
                   height: 40,
                   decoration: BoxDecoration(
                     color: _isSearching
-                        ? AppColors.screenOrangeLight
+                        ? const Color(0xFFB3E5FC)
                         : AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
                       BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 2)),
+                        color: AppColors.screenShadow,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
                   child: Icon(
                     Icons.search,
                     size: 18,
                     color: _isSearching
-                        ? AppColors.screenOrange
+                        ? const Color(0xFF0288D1)
                         : AppColors.screenTextPrimary,
                   ),
                 ),
@@ -445,14 +386,17 @@ class _MessagesScreenState extends State<MessagesScreen>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.screenOrangeLight,
+                      color: const Color(0xFFB3E5FC),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Stack(
                       children: [
                         const Center(
-                          child: Icon(Icons.mark_email_read_outlined,
-                              size: 18, color: AppColors.screenOrange),
+                          child: Icon(
+                            Icons.mark_email_read_outlined,
+                            size: 18,
+                            color: const Color(0xFF0288D1),
+                          ),
                         ),
                         Positioned(
                           right: 6,
@@ -461,7 +405,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                             width: 16,
                             height: 16,
                             decoration: const BoxDecoration(
-                              color: AppColors.screenOrange,
+                              color: const Color(0xFF0288D1),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -504,35 +448,44 @@ class _MessagesScreenState extends State<MessagesScreen>
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: const [
                     BoxShadow(
-                        color: AppColors.screenShadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2)),
+                      color: AppColors.screenShadow,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
                   style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.screenTextPrimary,
-                      fontWeight: FontWeight.w500),
+                    fontSize: 14,
+                    color: AppColors.screenTextPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Rechercher un message...',
                     hintStyle: const TextStyle(
-                        fontSize: 13, color: AppColors.screenTextSecondary),
-                    prefixIcon: const Icon(Icons.search,
-                        color: AppColors.screenOrange, size: 18),
+                      fontSize: 13,
+                      color: AppColors.screenTextSecondary,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: const Color(0xFF0288D1),
+                      size: 18,
+                    ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? GestureDetector(
                             onTap: () =>
                                 setState(() => _searchController.clear()),
-                            child: const Icon(Icons.close,
-                                color: AppColors.screenTextSecondary, size: 16),
+                            child: const Icon(
+                              Icons.close,
+                              color: AppColors.screenTextSecondary,
+                              size: 16,
+                            ),
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -558,12 +511,14 @@ class _MessagesScreenState extends State<MessagesScreen>
               onTap: () => setState(() => _selectedFilter = filter),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: selected
                       ? const LinearGradient(
-                          colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+                          colors: [Color(0xFF0288D1), const Color(0xFF0288D1)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -573,16 +528,17 @@ class _MessagesScreenState extends State<MessagesScreen>
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: AppColors.screenOrange.withOpacity(0.3),
+                            color: const Color(0xFF0288D1).withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
-                          )
+                          ),
                         ]
                       : [
                           const BoxShadow(
-                              color: AppColors.screenShadow,
-                              blurRadius: 4,
-                              offset: Offset(0, 1))
+                            color: AppColors.screenShadow,
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
                         ],
                 ),
                 child: Text(
@@ -590,7 +546,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: selected ? Colors.white : AppColors.screenTextSecondary,
+                    color: selected
+                        ? Colors.white
+                        : AppColors.screenTextSecondary,
                     letterSpacing: 0.1,
                   ),
                 ),
@@ -633,13 +591,14 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
-  Widget _buildMessageCard(Map<String, dynamic> notification, int index) {
-    final isRead = notification['isRead'] as bool? ?? false;
-    final title = notification['title'] as String? ?? 'Notification';
-    final body = notification['body'] as String? ?? '';
-    final sender = notification['sender'] as String? ?? 'Établissement';
-    final timestamp = DateTime.fromMillisecondsSinceEpoch(
-        notification['timestamp'] as int);
+  Widget _buildMessageCard(Conversation conversation, int index) {
+    final isRead = !conversation.hasUnreadMessages;
+    final title = conversation.subject;
+    final lastMessage = conversation.lastMessage;
+    final body = lastMessage?.body ?? 'Aucun message';
+    final sender =
+        '${conversation.student.fullName} - ${conversation.school.nom}';
+    final timestamp = conversation.lastMessageAt;
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -653,7 +612,7 @@ class _MessagesScreenState extends State<MessagesScreen>
         ),
       ),
       child: GestureDetector(
-        onTap: () => _showNotificationDetail(notification),
+        onTap: () => _showNotificationDetail(conversation),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
@@ -662,13 +621,15 @@ class _MessagesScreenState extends State<MessagesScreen>
             border: isRead
                 ? null
                 : Border.all(
-                    color: AppColors.screenOrange.withOpacity(0.2),
-                    width: 1.5),
+                    color: const Color(0xFF0288D1).withOpacity(0.2),
+                    width: 1.5,
+                  ),
             boxShadow: const [
               BoxShadow(
-                  color: AppColors.screenShadow,
-                  blurRadius: 12,
-                  offset: Offset(0, 4)),
+                color: AppColors.screenShadow,
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
             ],
           ),
           child: Padding(
@@ -685,7 +646,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                       decoration: BoxDecoration(
                         color: isRead
                             ? const Color(0xFFF5F5F5)
-                            : AppColors.screenOrangeLight,
+                            : const Color(0xFFB3E5FC),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
@@ -693,7 +654,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                         size: 20,
                         color: isRead
                             ? AppColors.screenTextSecondary
-                            : AppColors.screenOrange,
+                            : const Color(0xFF0288D1),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -724,7 +685,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                                   width: 8,
                                   height: 8,
                                   decoration: const BoxDecoration(
-                                    color: AppColors.screenOrange,
+                                    color: const Color(0xFF0288D1),
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -755,8 +716,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                         ? AppColors.screenTextSecondary
                         : AppColors.screenTextPrimary,
                     height: 1.4,
-                    fontWeight:
-                        isRead ? FontWeight.w400 : FontWeight.w500,
+                    fontWeight: isRead ? FontWeight.w400 : FontWeight.w500,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -764,30 +724,36 @@ class _MessagesScreenState extends State<MessagesScreen>
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.schedule_outlined,
-                        size: 13, color: AppColors.screenTextSecondary),
+                    const Icon(
+                      Icons.schedule_outlined,
+                      size: 13,
+                      color: AppColors.screenTextSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _formatDate(timestamp),
                       style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.screenTextSecondary,
-                          fontWeight: FontWeight.w500),
+                        fontSize: 11,
+                        color: AppColors.screenTextSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const Spacer(),
                     if (!isRead)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.screenOrangeLight,
+                          color: const Color(0xFFB3E5FC),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Text(
                           'Non lu',
                           style: TextStyle(
                             fontSize: 10,
-                            color: AppColors.screenOrange,
+                            color: const Color(0xFF0288D1),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -826,39 +792,35 @@ class _MessagesScreenState extends State<MessagesScreen>
             width: 100,
             height: 100,
             decoration: const BoxDecoration(
-              color: AppColors.screenOrangeLight,
+              color: const Color(0xFFB3E5FC),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.mail_outline,
-                size: 48, color: AppColors.screenOrange),
+            child: const Icon(
+              Icons.mail_outline,
+              size: 48,
+              color: const Color(0xFF0288D1),
+            ),
           ),
           const SizedBox(height: 24),
           const Text(
             'Aucun message',
             style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary),
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.screenTextPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
             'Vos messages apparaîtront ici',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 14,
-                color: AppColors.screenTextSecondary,
-                height: 1.5),
-          ),
-          const SizedBox(height: 32),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: _buildOrangeButton(
-              label: 'Nouveau message',
-              onTap: _showComposeMessageBottomSheet,
-              trailing: const Icon(Icons.edit_outlined,
-                  color: Colors.white, size: 16),
+              fontSize: 14,
+              color: AppColors.screenTextSecondary,
+              height: 1.5,
             ),
           ),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -875,14 +837,14 @@ class _MessagesScreenState extends State<MessagesScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+              colors: [Color(0xFF0288D1), Color(0xFF0288D1)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.screenOrange.withOpacity(0.35),
+                color: const Color(0xFF0288D1).withOpacity(0.35),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -909,8 +871,8 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
-  // ─── ORANGE BUTTON ────────────────────────────────────────────────────────
-  Widget _buildOrangeButton({
+  // ─── BLUE BUTTON ────────────────────────────────────────────────────────
+  Widget _buildBlueButton({
     required String label,
     VoidCallback? onTap,
     bool isLoading = false,
@@ -924,14 +886,14 @@ class _MessagesScreenState extends State<MessagesScreen>
         height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+            colors: [Color(0xFF0288D1), Color(0xFF0288D1)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.35),
+              color: const Color(0xFF0288D1).withOpacity(0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -1035,20 +997,19 @@ class _MessagesScreenState extends State<MessagesScreen>
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: AppColors.screenOrangeLight,
+                                  color: const Color(0xFFB3E5FC),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Icon(
                                   _selectedMessageType.icon,
-                                  color: AppColors.screenOrange,
+                                  color: const Color(0xFF0288D1),
                                   size: 22,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
                                       'Nouveau message',
@@ -1062,9 +1023,10 @@ class _MessagesScreenState extends State<MessagesScreen>
                                     Text(
                                       _selectedMessageType.label,
                                       style: const TextStyle(
-                                          fontSize: 13,
-                                          color: AppColors.screenOrange,
-                                          fontWeight: FontWeight.w600),
+                                        fontSize: 13,
+                                        color: const Color(0xFF0288D1),
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1078,7 +1040,9 @@ class _MessagesScreenState extends State<MessagesScreen>
 
                           const SizedBox(height: 14),
                           const Divider(
-                              color: AppColors.screenDivider, height: 1),
+                            color: AppColors.screenDivider,
+                            height: 1,
+                          ),
                         ],
                       ),
                     ),
@@ -1087,8 +1051,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                     Expanded(
                       child: SingleChildScrollView(
                         controller: scrollController,
-                        padding:
-                            const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1098,7 +1061,8 @@ class _MessagesScreenState extends State<MessagesScreen>
                             _buildInfoTile(
                               icon: Icons.person_outline,
                               label: 'Nom complet',
-                              value: AuthService.instance
+                              value:
+                                  AuthService.instance
                                       .getCurrentUser()
                                       ?.fullName ??
                                   'Non connecté',
@@ -1107,7 +1071,8 @@ class _MessagesScreenState extends State<MessagesScreen>
                             _buildInfoTile(
                               icon: Icons.phone_outlined,
                               label: 'Téléphone',
-                              value: AuthService.instance
+                              value:
+                                  AuthService.instance
                                       .getCurrentUser()
                                       ?.phone ??
                                   '-',
@@ -1121,55 +1086,54 @@ class _MessagesScreenState extends State<MessagesScreen>
                             _buildSheetLabel('École', required: true),
                             const SizedBox(height: 6),
                             _isLoadingEcoles
-                                ? _buildLoadingField(
-                                    'Chargement des écoles...')
+                                ? _buildLoadingField('Chargement des écoles...')
                                 : _ecoles.isEmpty
-                                    ? _buildInfoTile(
-                                        icon: Icons.school_outlined,
-                                        label: 'École',
-                                        value: 'Aucune école disponible')
-                                    : SearchableDropdown(
-                                        key: ValueKey(
-                                            'ecole_${_ecoles.length}'),
-                                        label: 'École *',
-                                        value: localSelectedEcoleName ??
-                                            'Sélectionner une école...',
-                                        items: _ecoles
-                                            .map((e) => e.ecoleclibelle)
-                                            .toList(),
-                                        onChanged: (name) {
-                                          final ecole =
-                                              _ecoles.firstWhere((e) =>
-                                                  e.ecoleclibelle == name);
-                                          setSheetState(() {
-                                            localSelectedEcoleName = name;
-                                            localSelectedEcoleCode =
-                                                ecole.ecolecode;
-                                          });
-                                          setState(() {
-                                            _selectedEcoleName = name;
-                                            _selectedEcoleCode =
-                                                ecole.ecolecode;
-                                          });
-                                        },
-                                        isDarkMode: false,
-                                      ),
+                                ? _buildInfoTile(
+                                    icon: Icons.school_outlined,
+                                    label: 'École',
+                                    value: 'Aucune école disponible',
+                                  )
+                                : SearchableDropdown(
+                                    key: ValueKey('ecole_${_ecoles.length}'),
+                                    label: 'École *',
+                                    value:
+                                        localSelectedEcoleName ??
+                                        'Sélectionner une école...',
+                                    items: _ecoles
+                                        .map((e) => e.ecoleclibelle)
+                                        .toList(),
+                                    onChanged: (name) {
+                                      final ecole = _ecoles.firstWhere(
+                                        (e) => e.ecoleclibelle == name,
+                                      );
+                                      setSheetState(() {
+                                        localSelectedEcoleName = name;
+                                        localSelectedEcoleCode =
+                                            ecole.ecolecode;
+                                      });
+                                      setState(() {
+                                        _selectedEcoleName = name;
+                                        _selectedEcoleCode = ecole.ecolecode;
+                                      });
+                                    },
+                                    isDarkMode: false,
+                                  ),
                             const SizedBox(height: 12),
 
                             // Destinataire
-                            _buildSheetLabel('Destinataire',
-                                required: true),
+                            _buildSheetLabel('Destinataire', required: true),
                             const SizedBox(height: 6),
                             SearchableDropdown(
-                              key: ValueKey(
-                                  'dest_$localSelectedDestinataire'),
+                              key: ValueKey('dest_$localSelectedDestinataire'),
                               label: 'Destinataire *',
-                              value: localSelectedDestinataire ??
+                              value:
+                                  localSelectedDestinataire ??
                                   'Sélectionner un destinataire...',
                               items: _destinataires,
                               onChanged: (dest) {
-                                setSheetState(() =>
-                                    localSelectedDestinataire = dest);
+                                setSheetState(
+                                  () => localSelectedDestinataire = dest,
+                                );
                                 setState(() {
                                   _selectedDestinataire = dest;
                                   _recipientController.text = dest;
@@ -1199,21 +1163,24 @@ class _MessagesScreenState extends State<MessagesScreen>
 
                     // ── Bouton d'envoi fixe ──────────────────────────────
                     Container(
-                      padding:
-                          const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       decoration: const BoxDecoration(
                         color: AppColors.screenCard,
                         border: Border(
-                            top: BorderSide(color: AppColors.screenDivider)),
+                          top: BorderSide(color: AppColors.screenDivider),
+                        ),
                       ),
                       child: SafeArea(
                         top: false,
-                        child: _buildOrangeButton(
+                        child: _buildBlueButton(
                           label: 'Envoyer le message',
                           isLoading: _isSending,
                           onTap: _isSending ? null : _sendMessage,
-                          trailing: const Icon(Icons.send_outlined,
-                              color: Colors.white, size: 16),
+                          trailing: const Icon(
+                            Icons.send_outlined,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -1256,11 +1223,13 @@ class _MessagesScreenState extends State<MessagesScreen>
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    vertical: 10, horizontal: 4),
+                  vertical: 10,
+                  horizontal: 4,
+                ),
                 decoration: BoxDecoration(
                   gradient: isSelected
                       ? const LinearGradient(
-                          colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+                          colors: [Color(0xFF0288D1), Color(0xFF0288D1)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -1270,10 +1239,10 @@ class _MessagesScreenState extends State<MessagesScreen>
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: AppColors.screenOrange.withOpacity(0.25),
+                            color: const Color(0xFF0288D1).withOpacity(0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -1381,8 +1350,7 @@ class _MessagesScreenState extends State<MessagesScreen>
             ),
             const SizedBox(height: 10),
             _attachedFile != null
-                ? _buildAttachedFilePreview(setSheetState,
-                    isImage: true)
+                ? _buildAttachedFilePreview(setSheetState, isImage: true)
                 : _buildImagePickerArea(setSheetState),
           ],
         );
@@ -1413,31 +1381,34 @@ class _MessagesScreenState extends State<MessagesScreen>
             ),
             const SizedBox(height: 10),
             _attachedFile != null
-                ? _buildAttachedFilePreview(setSheetState,
-                    isImage: false)
+                ? _buildAttachedFilePreview(setSheetState, isImage: false)
                 : _buildAudioPickerArea(setSheetState),
             // Pas de champ texte libre pour la note vocale (content = "Note vocale")
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.screenOrangeLight,
+                color: const Color(0xFFB3E5FC),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: AppColors.screenOrange.withOpacity(0.2)),
+                  color: const Color(0xFF0288D1).withOpacity(0.2),
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline,
-                      color: AppColors.screenOrange, size: 16),
+                  const Icon(
+                    Icons.info_outline,
+                    color: const Color(0xFF0288D1),
+                    size: 16,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Le contenu du message sera automatiquement défini comme "Note vocale". Seul le fichier audio sera transmis.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.screenOrange.withOpacity(0.85),
+                        color: const Color(0xFF0288D1).withOpacity(0.85),
                         height: 1.4,
                       ),
                     ),
@@ -1464,7 +1435,7 @@ class _MessagesScreenState extends State<MessagesScreen>
           color: AppColors.screenSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.screenOrange.withOpacity(0.3),
+            color: const Color(0xFF0288D1).withOpacity(0.3),
             width: 1.5,
             // ignore: prefer_const_constructors
             style: BorderStyle.solid,
@@ -1477,11 +1448,14 @@ class _MessagesScreenState extends State<MessagesScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.screenOrangeLight,
+                color: const Color(0xFFB3E5FC),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.add_photo_alternate_outlined,
-                  color: AppColors.screenOrange, size: 24),
+              child: const Icon(
+                Icons.add_photo_alternate_outlined,
+                color: const Color(0xFF0288D1),
+                size: 24,
+              ),
             ),
             const SizedBox(height: 10),
             const Text(
@@ -1512,7 +1486,7 @@ class _MessagesScreenState extends State<MessagesScreen>
           color: AppColors.screenSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.screenOrange.withOpacity(0.3),
+            color: const Color(0xFF0288D1).withOpacity(0.3),
             width: 1.5,
           ),
         ),
@@ -1523,11 +1497,14 @@ class _MessagesScreenState extends State<MessagesScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.screenOrangeLight,
+                color: const Color(0xFFB3E5FC),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.audio_file_outlined,
-                  color: AppColors.screenOrange, size: 24),
+              child: const Icon(
+                Icons.audio_file_outlined,
+                color: const Color(0xFF0288D1),
+                size: 24,
+              ),
             ),
             const SizedBox(height: 10),
             const Text(
@@ -1552,9 +1529,9 @@ class _MessagesScreenState extends State<MessagesScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.screenOrangeLight,
+        color: const Color(0xFFB3E5FC),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.screenOrange.withOpacity(0.25)),
+        border: Border.all(color: const Color(0xFF0288D1).withOpacity(0.25)),
       ),
       child: Row(
         children: [
@@ -1562,12 +1539,12 @@ class _MessagesScreenState extends State<MessagesScreen>
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.screenOrange.withOpacity(0.15),
+              color: const Color(0xFF0288D1).withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               isImage ? Icons.image_outlined : Icons.mic_outlined,
-              color: AppColors.screenOrange,
+              color: const Color(0xFF0288D1),
               size: 22,
             ),
           ),
@@ -1580,7 +1557,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                   _attachedFile!.path.split('/').last,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: AppColors.screenOrange,
+                    color: const Color(0xFF0288D1),
                     fontWeight: FontWeight.w700,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -1590,7 +1567,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                   isImage ? 'Image sélectionnée' : 'Audio sélectionné',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.screenOrange.withOpacity(0.7),
+                    color: const Color(0xFF0288D1).withOpacity(0.7),
                   ),
                 ),
               ],
@@ -1607,19 +1584,19 @@ class _MessagesScreenState extends State<MessagesScreen>
               setSheetState(() {});
             },
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                    color: AppColors.screenOrange.withOpacity(0.3)),
+                  color: const Color(0xFF0288D1).withOpacity(0.3),
+                ),
               ),
               child: const Text(
                 'Changer',
                 style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.screenOrange,
+                  color: const Color(0xFF0288D1),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1639,10 +1616,14 @@ class _MessagesScreenState extends State<MessagesScreen>
                 color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                    color: AppColors.screenOrange.withOpacity(0.3)),
+                  color: const Color(0xFF0288D1).withOpacity(0.3),
+                ),
               ),
-              child: const Icon(Icons.close,
-                  size: 14, color: AppColors.screenOrange),
+              child: const Icon(
+                Icons.close,
+                size: 14,
+                color: const Color(0xFF0288D1),
+              ),
             ),
           ),
         ],
@@ -1675,14 +1656,14 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   // ─── SHEET HELPERS ────────────────────────────────────────────────────────
   Widget _sectionLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: AppColors.screenTextPrimary,
-          letterSpacing: -0.3,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      color: AppColors.screenTextPrimary,
+      letterSpacing: -0.3,
+    ),
+  );
 
   Widget _buildSheetLabel(String text, {bool required = false}) {
     return Row(
@@ -1697,11 +1678,14 @@ class _MessagesScreenState extends State<MessagesScreen>
           ),
         ),
         if (required)
-          const Text(' *',
-              style: TextStyle(
-                  color: AppColors.screenOrange,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold)),
+          const Text(
+            ' *',
+            style: TextStyle(
+              color: const Color(0xFF0288D1),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
       ],
     );
   }
@@ -1720,7 +1704,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.screenOrange, size: 18),
+          Icon(icon, color: const Color(0xFF0288D1), size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -1749,56 +1733,62 @@ class _MessagesScreenState extends State<MessagesScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.screenTextSecondary,
-              letterSpacing: 0.2,
+        Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.screenTextSecondary,
+                letterSpacing: 0.2,
+              ),
             ),
-          ),
-          if (required)
-            const Text(' *',
+            if (required)
+              const Text(
+                ' *',
                 style: TextStyle(
-                    color: AppColors.screenOrange,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold)),
-        ]),
+                  color: const Color(0xFF0288D1),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
           style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.screenTextPrimary,
-              fontWeight: FontWeight.w500),
+            fontSize: 14,
+            color: AppColors.screenTextPrimary,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-            prefixIcon:
-                Icon(icon, color: AppColors.screenOrange, size: 18),
+            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+            prefixIcon: Icon(icon, color: const Color(0xFF0288D1), size: 18),
             filled: true,
             fillColor: AppColors.screenSurface,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.screenDivider),
+              borderSide: const BorderSide(color: AppColors.screenDivider),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.screenDivider),
+              borderSide: const BorderSide(color: AppColors.screenDivider),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                  color: AppColors.screenOrange, width: 1.5),
+                color: const Color(0xFF0288D1),
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -1820,12 +1810,18 @@ class _MessagesScreenState extends State<MessagesScreen>
             width: 16,
             height: 16,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: AppColors.screenOrange),
+              strokeWidth: 2,
+              color: const Color(0xFF0288D1),
+            ),
           ),
           const SizedBox(width: 12),
-          Text(msg,
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.screenTextSecondary)),
+          Text(
+            msg,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -1838,17 +1834,17 @@ class _MessagesScreenState extends State<MessagesScreen>
         _messageController.text = 'Je vous contacte concernant : $msg';
       },
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.screenDivider),
           boxShadow: const [
             BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 4,
-                offset: Offset(0, 1))
+              color: AppColors.screenShadow,
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
           ],
         ),
         child: Row(
@@ -1953,19 +1949,9 @@ class _MessagesScreenState extends State<MessagesScreen>
       }
 
       if (result['success'] == true) {
-        final dest = _recipientController.text.trim();
-        final newMessage = {
-          'id': 'sent_${DateTime.now().millisecondsSinceEpoch}',
-          'title': _subjectController.text,
-          'body': _selectedMessageType == MessageType.voice
-              ? 'Note vocale'
-              : _messageController.text,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'sender':
-              '${currentUser.fullName} → ${dest.isEmpty ? 'Destinataire' : dest}',
-          'isRead': true,
-        };
-        setState(() => _notifications.insert(0, newMessage));
+        // TODO: Implémenter l'envoi de message via l'API
+        // Pour l'instant, nous allons juste recharger les conversations
+        _loadNotifications();
 
         // Reset du formulaire
         _subjectController.clear();
@@ -2034,22 +2020,24 @@ class _MessagesScreenState extends State<MessagesScreen>
   }
 
   // ─── DETAIL BOTTOM SHEET ──────────────────────────────────────────────────
-  void _showNotificationDetail(Map<String, dynamic> notification) async {
-    final title = notification['title'] as String? ?? 'Notification';
-    final body = notification['body'] as String? ?? '';
-    final timestamp = DateTime.fromMillisecondsSinceEpoch(
-        notification['timestamp'] as int);
-    final sender = notification['sender'] as String? ??
-        'Direction de l\'établissement';
-    final data = notification['data'] as Map<String, dynamic>?;
-    final notificationId = notification['id'] as String;
-    final isRead = notification['isRead'] as bool? ?? false;
+  void _showNotificationDetail(Conversation conversation) async {
+    final title = conversation.subject;
+    final lastMessage = conversation.lastMessage;
+    final body = lastMessage?.body ?? 'Aucun message dans cette conversation';
+    final timestamp = conversation.lastMessageAt;
+    final sender =
+        '${conversation.student.fullName} - ${conversation.school.nom}';
+    final isRead = !conversation.hasUnreadMessages;
 
     if (!isRead) {
       try {
-        await DatabaseService.instance
-            .markNotificationAsRead(notificationId);
-        setState(() => notification['isRead'] = true);
+        // TODO: Implémenter l'appel API pour marquer comme lu
+        await _messageApiService.markConversationAsRead(
+          conversation.id,
+          conversation.parentId,
+        );
+        // Recharger les conversations pour mettre à jour l'état
+        _loadNotifications();
       } catch (_) {}
     }
 
@@ -2086,11 +2074,14 @@ class _MessagesScreenState extends State<MessagesScreen>
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.screenOrangeLight,
+                      color: const Color(0xFFB3E5FC),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(_getSenderIcon(sender),
-                        color: AppColors.screenOrange, size: 22),
+                    child: Icon(
+                      _getSenderIcon(sender),
+                      color: const Color(0xFF0288D1),
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -2109,8 +2100,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                         Text(
                           sender,
                           style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.screenTextSecondary),
+                            fontSize: 12,
+                            color: AppColors.screenTextSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -2120,7 +2112,9 @@ class _MessagesScreenState extends State<MessagesScreen>
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.screenSurface,
                   borderRadius: BorderRadius.circular(10),
@@ -2129,15 +2123,19 @@ class _MessagesScreenState extends State<MessagesScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.schedule_outlined,
-                        size: 14, color: AppColors.screenTextSecondary),
+                    const Icon(
+                      Icons.schedule_outlined,
+                      size: 14,
+                      color: AppColors.screenTextSecondary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       _formatDate(timestamp),
                       style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.screenTextSecondary,
-                          fontWeight: FontWeight.w500),
+                        fontSize: 12,
+                        color: AppColors.screenTextSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -2153,19 +2151,48 @@ class _MessagesScreenState extends State<MessagesScreen>
                   height: 1.6,
                 ),
               ),
-              if (data != null && data.isNotEmpty) ...[
+              if (conversation.messages.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 const Divider(color: AppColors.screenDivider),
-                ...data.entries.map((e) => Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text('${e.key}: ${e.value}',
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.screenTextSecondary)),
-                    )),
+                Text(
+                  'Messages dans cette conversation:',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.screenTextSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...conversation.messages
+                    .take(3)
+                    .map(
+                      (msg) => Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              msg.senderPseudo,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.screenTextSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              msg.body,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.screenTextPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
               ],
               const SizedBox(height: 24),
-              _buildOrangeButton(
+              _buildBlueButton(
                 label: 'Fermer',
                 onTap: () => Navigator.of(context).pop(),
               ),

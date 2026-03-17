@@ -97,10 +97,11 @@ class EcoleData {
   final int autoriseEngagement;
   final String? referralCode;
   final String? referredBy;
-  final String? effectif;
+  final int? effectif;
   final String? effectifcant;
   final String? effectifmoyclasse;
   final String? nbrannee;
+  final String? programmelangue;
   final int inscriptionsatatus;
   final String? updatedAt;
   final int exportPouls;
@@ -166,6 +167,7 @@ class EcoleData {
     this.effectifcant,
     this.effectifmoyclasse,
     this.nbrannee,
+    this.programmelangue,
     required this.inscriptionsatatus,
     this.updatedAt,
     required this.exportPouls,
@@ -229,10 +231,11 @@ class EcoleData {
       autoriseEngagement: json['autorise_engagement'] ?? 0,
       referralCode: json['referral_code'],
       referredBy: json['referred_by'],
-      effectif: json['effectif']?.toString(),
+      effectif: json['effectif'] as int?,
       effectifcant: json['effectifcant']?.toString(),
       effectifmoyclasse: json['effectifmoyclasse']?.toString(),
       nbrannee: json['nbrannee']?.toString(),
+      programmelangue: json['programmelangue'],
       inscriptionsatatus: json['inscriptionsatatus'] ?? 0,
       updatedAt: json['updated_at'],
       exportPouls: json['export_pouls'] ?? 0,
@@ -301,6 +304,7 @@ class EcoleData {
       'effectifcant': effectifcant,
       'effectifmoyclasse': effectifmoyclasse,
       'nbrannee': nbrannee,
+      'programmelangue': programmelangue,
       'inscriptionsatatus': inscriptionsatatus,
       'updated_at': updatedAt,
       'export_pouls': exportPouls,

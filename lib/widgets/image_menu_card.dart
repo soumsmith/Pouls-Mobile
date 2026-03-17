@@ -62,13 +62,6 @@ class ImageMenuCard extends StatelessWidget {
                 backgroundColor ??
                 (isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

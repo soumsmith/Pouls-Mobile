@@ -244,6 +244,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   final TextSizeService _textSizeService = TextSizeService();
 
   EcoleDetail? _ecoleDetail;
+  EcoleData? _ecoleParametres;
   Future<ScolariteResponse>? _scolariteFuture;
 
   final _avisNotifier = ValueNotifier<int>(0);
@@ -385,6 +386,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       curve: Curves.easeOut,
     );
     _loadEcoleDetail();
+    _loadEcoleParametres();
     _loadBlogsAndAvisOnly();
     _fadeController.forward();
     _scolariteFuture = ScolariteService.getScolaritesByEcole(
@@ -440,6 +442,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       setState(() => _ecoleDetail = detail);
     } catch (e) {
       debugPrint('Erreur lors du chargement des détails: $e');
+    }
+  }
+
+  Future<void> _loadEcoleParametres() async {
+    try {
+      final parametres = await EcoleApiService.getEcoleParametres(
+        widget.ecole.parametreCode ?? '',
+      );
+      setState(() => _ecoleParametres = parametres);
+    } catch (e) {
+      debugPrint('Erreur lors du chargement des paramètres: $e');
     }
   }
 
@@ -862,161 +875,575 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         widget.ecole.telephone ??
         'Téléphone non disponible';
     final email = _ecoleDetail?.data.email ?? 'Email non disponible';
+    
+    // Récupérer les informations depuis l'API des paramètres
+    final effectif = _ecoleParametres?.effectif;
+    final effectifmoyclasse = _ecoleParametres?.effectifmoyclasse;
+    final nbrannee = _ecoleParametres?.nbrannee;
+    final programmelangue = _ecoleParametres?.programmelangue;
+    final statut = _ecoleParametres?.statut;
+    final periode = _ecoleParametres?.periode;
+    final typeperiode = _ecoleParametres?.typeperiode;
+    final annee = _ecoleParametres?.annee;
+    final testEntree = _ecoleParametres?.testEntree;
+    final debutReservation = _ecoleParametres?.debutReservation;
+    final finReservation = _ecoleParametres?.finReservation;
+    final montantReservation = _ecoleParametres?.montantReservation;
+    final debutPreinscrit = _ecoleParametres?.debutPreinscrit;
+    final finPreinscrit = _ecoleParametres?.finPreinscrit;
+    final debutInscrit = _ecoleParametres?.debutInscrit;
+    final finInscrit = _ecoleParametres?.finInscrit;
+    final telephone = _ecoleParametres?.telephone;
+    final logo = _ecoleParametres?.logo;
+    
     final typeColor = _getTypeColor(establishmentType);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeOutCubic,
-        builder: (context, v, child) => Opacity(
-          opacity: v,
-          child: Transform.translate(
-            offset: Offset(0, 24 * (1 - v)),
-            child: child,
-          ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, child) => Opacity(
+        opacity: v,
+        child: Transform.translate(
+          offset: Offset(0, 20 * (1 - v)),
+          child: child,
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: typeColor.withOpacity(0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // ── Cover image ──────────────────────────────────────
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-                child: Stack(
-                  children: [
-                    if (imageUrl != null && imageUrl.isNotEmpty)
-                      Image.network(
-                        imageUrl,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            _placeholderCover(typeColor),
-                      )
-                    else
-                      _placeholderCover(typeColor),
-                    // Gradient overlay renforcé
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.7),
-                            ],
-                            stops: const [0.4, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Nom en overlay bas
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            establishmentName,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.6,
-                              shadows: [
-                                Shadow(color: Colors.black45, blurRadius: 8),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            motto,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withOpacity(0.85),
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
+      ),
+      child: Column(
+        children: [
+          // ── Header Image (Full Width) ─────────────────────────────────────
+          Container(
+            width: double.infinity,
+            height: 200,
+            child: Stack(
+              children: [
+                // Image de fond
+                if (imageUrl != null && imageUrl.isNotEmpty)
+                  Image.network(
+                    imageUrl,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _productHeaderPlaceholder(typeColor),
+                  )
+                else
+                  _productHeaderPlaceholder(typeColor),
+                
+                // Overlay dégradé subtil
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.3),
                         ],
+                        stops: const [0.6, 1.0],
                       ),
                     ),
-                    // Badge type en haut à droite
-                    Positioned(
-                      top: 14,
-                      right: 14,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                  ),
+                ),
+                
+                // Badge type en haut à droite
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: typeColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: typeColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        decoration: BoxDecoration(
-                          color: typeColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: typeColor.withOpacity(0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.school_rounded,
+                          size: 12,
+                          color: Colors.white,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.school_rounded,
-                              size: 11,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              establishmentType,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 4),
+                        Text(
+                          establishmentType,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // ── Info Section ───────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nom de l'établissement
+                  Text(
+                    establishmentName,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black87,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Slogan
+                  Text(
+                    motto,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white70 : Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Informations supplémentaires
+                  if (statut != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.business_rounded,
+                      'Statut: $statut',
+                      isDark,
+                      color: Colors.blue,
+                    ),
+                  
+                  if (effectif != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.people_rounded,
+                      '$effectif élèves',
+                      isDark,
+                    ),
+                  
+                  if (effectifmoyclasse != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.groups_rounded,
+                      'Moyenne/classe: $effectifmoyclasse',
+                      isDark,
+                      color: Colors.purple,
+                    ),
+                  
+                  if (nbrannee != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.school_rounded,
+                      'Nombre d\'années: $nbrannee',
+                      isDark,
+                      color: Colors.indigo,
+                    ),
+                  
+                  if (programmelangue != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.language_rounded,
+                      'Langues: $programmelangue',
+                      isDark,
+                      color: Colors.teal,
+                    ),
+                  
+                  if (telephone != null && telephone!.isNotEmpty)
+                    _buildInfoItem(
+                      context,
+                      Icons.phone_rounded,
+                      telephone!,
+                      isDark,
+                      color: Colors.green,
+                    ),
+                  
+                  if (periode != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.date_range_rounded,
+                      'Période: $periode',
+                      isDark,
+                      color: Colors.orange,
+                    ),
+                  
+                  if (typeperiode != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.category_rounded,
+                      'Type période: $typeperiode',
+                      isDark,
+                      color: Colors.brown,
+                    ),
+                  
+                  if (annee != null)
+                    _buildInfoItem(
+                      context,
+                      Icons.event_note_rounded,
+                      'Année: $annee',
+                      isDark,
+                      color: Colors.red,
+                    ),
+                  
+                  if (testEntree != null && testEntree! > 0)
+                    _buildInfoItem(
+                      context,
+                      Icons.quiz_rounded,
+                      'Test d\'entrée: Requis',
+                      isDark,
+                      color: Colors.deepOrange,
+                    ),
+                  
+                  if (debutReservation != null && finReservation != null) ...[
+                    const SizedBox(height: 8),
+                    _buildInfoItem(
+                      context,
+                      Icons.bookmark_rounded,
+                      'Réservation: ${_formatDate(debutReservation!)} - ${_formatDate(finReservation!)}',
+                      isDark,
+                      color: Colors.purple,
                     ),
                   ],
+                  
+                  if (montantReservation != null && montantReservation! > 0)
+                    _buildInfoItem(
+                      context,
+                      Icons.payments_rounded,
+                      'Frais réservation: ${_formatCurrency(montantReservation!)}',
+                      isDark,
+                      color: Colors.green,
+                    ),
+                  
+                  if (debutPreinscrit != null && finPreinscrit != null) ...[
+                    const SizedBox(height: 8),
+                    _buildInfoItem(
+                      context,
+                      Icons.calendar_today_rounded,
+                      'Pré-inscription: ${_formatDate(debutPreinscrit!)} - ${_formatDate(finPreinscrit!)}',
+                      isDark,
+                      color: Colors.orange,
+                    ),
+                  ],
+                  
+                  if (debutInscrit != null && finInscrit != null) ...[
+                    const SizedBox(height: 8),
+                    _buildInfoItem(
+                      context,
+                      Icons.edit_calendar_rounded,
+                      'Inscription: ${_formatDate(debutInscrit!)} - ${_formatDate(finInscrit!)}',
+                      isDark,
+                      color: Colors.green,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Product Header Placeholder ───────────────────────────────────────────
+  Widget _productHeaderPlaceholder(Color color) => Container(
+    width: double.infinity,
+    height: 200,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          color.withOpacity(0.8),
+          color.withOpacity(0.6),
+          color.withOpacity(0.4),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ),
+    child: Center(
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.3),
+            width: 2,
+          ),
+        ),
+        child: const Icon(
+          Icons.school_rounded,
+          size: 40,
+          color: Colors.white,
+        ),
+      ),
+    ),
+  );
+
+  // ── Info Item ─────────────────────────────────────────────────────────────
+  Widget _buildInfoItem(
+    BuildContext context,
+    IconData icon,
+    String text,
+    bool isDark, {
+    Color color = AppColors.screenOrange,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black87,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Date Formatter ─────────────────────────────────────────────────────────
+  String _formatDate(String dateString) {
+    try {
+      final dateTime = DateTime.parse(dateString);
+      return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  // ── Currency Formatter ─────────────────────────────────────────────────────
+  String _formatCurrency(int amount) {
+    return '${amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]} ',
+        )} FCFA';
+  }
+
+  // ── Build Info Card ───────────────────────────────────────────────────────
+  Widget _buildInfoCard(
+    IconData icon,
+    String text,
+    bool isDark,
+    String label, {
+    bool fullWidth = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.screenOrange,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Contenu
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.screenOrangeLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  size: 14,
+                  color: AppColors.screenOrange,
                 ),
               ),
-              // ── Info block ───────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                child: Column(
-                  children: [
-                    _infoRowModern(Icons.location_on_outlined, address, isDark),
-                    const SizedBox(height: 8),
-                    _infoRowModern(Icons.phone_outlined, phone, isDark),
-                    const SizedBox(height: 8),
-                    _infoRowModern(Icons.email_outlined, email, isDark),
-                  ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  text,
+                  maxLines: fullWidth ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white70 : Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // ── Hero Placeholder with Enhanced Design ───────────────────────────────
+  Widget _heroPlaceholder(Color color) => Container(
+    height: 220,
+    width: double.infinity,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          color.withOpacity(0.8),
+          color.withOpacity(0.6),
+          color.withOpacity(0.4),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ),
+    child: Stack(
+      children: [
+        // Pattern décoratif
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _PatternPainter(color.withOpacity(0.1)),
+          ),
         ),
+        // Icône centrale
+        Center(
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: const Icon(
+              Icons.school_rounded,
+              size: 40,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  // ── Modern Info Cards ─────────────────────────────────────────────────────
+  Widget _infoCardModern(
+    IconData icon,
+    String text,
+    bool isDark,
+    String label, {
+    bool fullWidth = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3A3A3A) : Colors.grey.withOpacity(0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.screenOrange,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Contenu
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.screenOrangeLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: AppColors.screenOrange,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text,
+                  maxLines: fullWidth ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white70 : Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -6110,4 +6537,40 @@ class _CustomTabBarDelegate extends SliverPersistentHeaderDelegate {
   ) => child;
   @override
   bool shouldRebuild(_CustomTabBarDelegate old) => false;
+}
+
+// ── Pattern Painter Class ───────────────────────────────────────────────
+class _PatternPainter extends CustomPainter {
+  final Color color;
+
+  _PatternPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0;
+
+    // Dessiner des cercles décoratifs
+    for (int i = 0; i < 5; i++) {
+      final offset = Offset(
+        size.width * (0.2 + i * 0.15),
+        size.height * 0.3,
+      );
+      canvas.drawCircle(offset, 8, paint);
+    }
+
+    // Dessiner des lignes décoratives
+    for (int i = 0; i < 3; i++) {
+      final startY = size.height * (0.6 + i * 0.1);
+      canvas.drawLine(
+        Offset(size.width * 0.1, startY),
+        Offset(size.width * 0.9, startY),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

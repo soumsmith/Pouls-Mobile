@@ -183,4 +183,59 @@ class EcoleApiService {
       throw Exception('Erreur lors de la récupération des détails de l\'école: $e');
     }
   }
+
+  /// Récupère les paramètres d'une école spécifique
+  static Future<EcoleData> getEcoleParametres(String ecoleCode) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('🏫 PARAMÈTRES DE L\'ÉCOLE');
+    print('═══════════════════════════════════════════════════════════');
+    print('🏷️ Code école: $ecoleCode');
+    
+    final url = 'https://api2.vie-ecoles.com/api/vie-ecoles/parametre/ecole?ecole=$ecoleCode';
+    print('🔗 URL: $url');
+    print('📡 Envoi de la requête...');
+    
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      print('📥 Réponse reçue:');
+      print('   - Status Code: ${response.statusCode}');
+      print('   - Content-Type: ${response.headers['content-type']}');
+      print('   - Body length: ${response.body.length} caractères');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        
+        if (data['data'] != null) {
+          print('✅ Paramètres de l\'école récupérés avec succès');
+          print('═══════════════════════════════════════════════════════════');
+          print('');
+          return EcoleData.fromJson(data['data']);
+        } else {
+          print('⚠️ Aucune donnée de paramètre trouvée dans la réponse');
+          print('═══════════════════════════════════════════════════════════');
+          print('');
+          throw Exception('Aucune donnée de paramètre trouvée');
+        }
+      } else {
+        print('❌ Erreur HTTP ${response.statusCode}');
+        print('❌ Corps de la réponse: ${response.body}');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        throw Exception('Erreur HTTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('💥 Exception lors de la récupération des paramètres de l\'école: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      throw Exception('Erreur lors de la récupération des paramètres de l\'école: $e');
+    }
+  }
 }

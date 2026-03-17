@@ -10,6 +10,11 @@ class EstablishmentHeaderCard extends StatelessWidget {
   final String address;
   final String phone;
   final String email;
+  final int? effectif;
+  final String? debutPreinscrit;
+  final String? finPreinscrit;
+  final String? debutInscrit;
+  final String? finInscrit;
 
   const EstablishmentHeaderCard({
     super.key,
@@ -20,6 +25,11 @@ class EstablishmentHeaderCard extends StatelessWidget {
     required this.address,
     required this.phone,
     required this.email,
+    this.effectif,
+    this.debutPreinscrit,
+    this.finPreinscrit,
+    this.debutInscrit,
+    this.finInscrit,
   });
 
   @override
@@ -137,7 +147,7 @@ class EstablishmentHeaderCard extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
- 
+
                             const SizedBox(height: 8),
 
                             // Devise
@@ -159,6 +169,38 @@ class EstablishmentHeaderCard extends StatelessWidget {
                               text: address,
                               color: AppColors.primary,
                             ),
+
+                            const SizedBox(height: 4),
+
+                            // Effectif si disponible
+                            if (effectif != null)
+                              _buildInfoRow(
+                                context: context,
+                                icon: Icons.people_rounded,
+                                text: '$effectif élèves',
+                                color: AppColors.primary,
+                              ),
+
+                            // Périodes d'inscription si disponibles
+                            if (debutPreinscrit != null && finPreinscrit != null) ...[
+                              const SizedBox(height: 4),
+                              _buildInfoRow(
+                                context: context,
+                                icon: Icons.calendar_today_rounded,
+                                text: 'Pré-inscription: ${_formatDate(debutPreinscrit!)} - ${_formatDate(finPreinscrit!)}',
+                                color: Colors.orange,
+                              ),
+                            ],
+
+                            if (debutInscrit != null && finInscrit != null) ...[
+                              const SizedBox(height: 4),
+                              _buildInfoRow(
+                                context: context,
+                                icon: Icons.edit_calendar_rounded,
+                                text: 'Inscription: ${_formatDate(debutInscrit!)} - ${_formatDate(finInscrit!)}',
+                                color: Colors.green,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -205,5 +247,14 @@ class EstablishmentHeaderCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final dateTime = DateTime.parse(dateString);
+      return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
+    } catch (e) {
+      return dateString;
+    }
   }
 }

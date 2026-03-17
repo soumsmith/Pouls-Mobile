@@ -37,6 +37,7 @@ import '../models/student_class_info.dart';
 import '../models/group_message.dart';
 import '../services/group_message_service.dart';
 import '../widgets/custom_loader.dart';
+import '../services/ecole_eleve_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -427,8 +428,42 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('📂 Étape 1: Récupération des informations de l\'enfant...');
       await _loadChildInfo();
 
-      // Étape 2: Charger les autres données (timetable, messages, fees)
-      print('📊 Étape 2: Chargement des données de base...');
+      // Étape 2: Charger les données de l'école si le code est disponible
+      if (_ecoleCode != null && _ecoleCode!.isNotEmpty) {
+        print('🏫 Étape 2: Chargement des données de l\'école...');
+        print('🏷️ Code école de l\'élève: $_ecoleCode');
+        print('👤 Élève: ${widget.child.firstName} ${widget.child.lastName}');
+        print('📡 [API] Appel à EcoleEleveService.getEcoleParametresForEleve()');
+        print('🔗 [API] URL: https://api2.vie-ecoles.com/api/vie-ecoles/parametre/ecole?ecole=$_ecoleCode');
+        
+        try {
+          final ecoleData = await EcoleEleveService.getEcoleParametresForEleve(_ecoleCode!);
+          print('✅ Données de l\'école chargées avec succès');
+          print('📊 [API] Résumé des données reçues:');
+          print('   - Nom: ${ecoleData.nom}');
+          print('   - Ville: ${ecoleData.ville}');
+          print('   - Statut: ${ecoleData.statut}');
+          print('   - Année: ${ecoleData.annee}');
+          print('   - Période: ${ecoleData.periode}');
+          print('   - Effectif: ${ecoleData.effectif} élèves');
+          print('📅 [API] Périodes d\'inscription:');
+          print('   - Préinscription: ${ecoleData.debutPreinscrit} au ${ecoleData.finPreinscrit}');
+          print('   - Inscription: ${ecoleData.debutInscrit} au ${ecoleData.finInscrit}');
+          print('   - Réservation: ${ecoleData.debutReservation} au ${ecoleData.finReservation}');
+        } catch (e) {
+          print('❌ [API] Erreur lors du chargement des données de l\'école: $e');
+          print('⚠️ [API] Continuité du chargement malgré l\'erreur de l\'API école');
+          // Continuer le chargement même si l'école échoue
+        }
+      } else {
+        print('⚠️ Étape 2: Aucun code école disponible pour l\'élève ${widget.child.firstName} ${widget.child.lastName}');
+        print('🔍 Recherche du code école dans les informations de l\'élève...');
+        print('   - ecoleCode depuis widget.child.ecoleCode: ${widget.child.ecoleCode}');
+        print('   - _ecoleCode depuis base de données: $_ecoleCode');
+      }
+
+      // Étape 3: Charger les autres données (timetable, messages, fees)
+      print('📊 Étape 3: Chargement des données de base...');
       final results = await Future.wait([
         apiService.getNotesForChild(widget.child.id),
         apiService.getTimetableForChild(widget.child.id),
@@ -452,12 +487,12 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('   💬 Messages: ${_messages.length}');
       print('   💰 Fees: ${_fees.length}');
 
-      // Étape 3: Plus de chargement des données de notes globales (API supprimée)
-      print('📊 Étape 3: Chargement des notes désactivé');
+      // Étape 4: Plus de chargement des données de notes globales (API supprimée)
+      print('📊 Étape 4: Chargement des notes désactivé');
 
-      // Étape 4: Charger les informations détaillées de la classe/école
+      // Étape 5: Charger les informations détaillées de la classe/école
       print(
-        '🏫 Étape 4: Chargement des informations détaillées de la classe/école...',
+        '🏫 Étape 5: Chargement des informations détaillées de la classe/école...',
       );
       if (_studentClassInfo == null &&
           _matricule != null &&

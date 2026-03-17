@@ -8,6 +8,7 @@ class Child {
   final String? photoUrl;
   final String parentId;
   final String? matricule; // Matricule de l'élève
+  final String? ecoleCode; // Code de l'école pour l'API
 
   Child({
     required this.id,
@@ -18,6 +19,7 @@ class Child {
     this.photoUrl,
     required this.parentId,
     this.matricule,
+    this.ecoleCode,
   });
 
   String get fullName => '$firstName $lastName';
@@ -32,6 +34,7 @@ class Child {
       photoUrl: json['photoUrl'] as String?,
       parentId: json['parentId'] as String,
       matricule: json['matricule'] as String?,
+      ecoleCode: json['ecoleCode'] as String?,
     );
   }
 
@@ -45,6 +48,7 @@ class Child {
       'photoUrl': photoUrl,
       'parentId': parentId,
       'matricule': matricule,
+      'ecoleCode': ecoleCode,
     };
   }
 }

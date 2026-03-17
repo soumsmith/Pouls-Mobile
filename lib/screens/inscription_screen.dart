@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import '../models/child.dart';
 import '../widgets/custom_loader.dart';
+import '../services/ecole_eleve_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -319,7 +320,18 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _loadScolarite();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Charger les données après que le widget soit complètement initialisé
+    // pour éviter l'erreur avec ScaffoldMessenger
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadScolarite();
+      }
+    });
   }
 
   @override
@@ -333,15 +345,59 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   }
 
   // ─── API CALLS ──────────────────────────────────────────────────────────────
+  
+  /// Vérifie les périodes d'inscription et retourne le statut
+  Map<String, bool> _checkInscriptionPeriods() {
+    // Utiliser le code de l'école de l'élève si disponible, sinon le code par défaut
+    final ecoleCode = widget.child.ecoleCode ?? kEcoleCode;
+    final ecoleData = EcoleEleveService.getEcoleDataFromCache(ecoleCode);
+    
+    if (ecoleData != null) {
+      return EcoleEleveService.getStatutsInscription(ecoleData);
+    }
+    
+    // Retourner les valeurs par défaut si aucune donnée n'est disponible
+    return {
+      'preinscription': false,
+      'inscription': false,
+      'reservation': false,
+    };
+  }
 
   Future<void> _loadScolarite() async {
     setState(() => _loadingScolarite = true);
+    
     try {
-      final url = '$kBaseUrl/preinscription/scolarite/branche/$_brancheId?ecole=$kEcoleCode&systeme_educatif=1';
+      // Vérifier d'abord si les inscriptions sont ouvertes
+      final statuts = _checkInscriptionPeriods();
+      print('📅 [INSCRIPTION] Statut des périodes:');
+      print('   - Préinscription: ${statuts['preinscription'] == true ? 'OUVERTE' : 'FERMÉE'}');
+      print('   - Inscription: ${statuts['inscription'] == true ? 'OUVERTE' : 'FERMÉE'}');
+      print('   - Réservation: ${statuts['reservation'] == true ? 'OUVERTE' : 'FERMÉE'}');
+      
+      // Si aucune période d'inscription n'est ouverte, afficher un message
+      if (statuts['preinscription'] != true && statuts['inscription'] != true && statuts['reservation'] != true) {
+        print('⚠️ [INSCRIPTION] Aucune période d\'inscription ouverte');
+        _showError('Aucune période d\'inscription n\'est actuellement ouverte pour cette école.');
+        setState(() => _loadingScolarite = false);
+        return;
+      }
+      
+      // Utiliser l'UID de l'élève et le code de l'école
+      final uid = widget.child.id; // Utiliser l'ID de l'élève comme UID
+      final ecoleCode = widget.child.ecoleCode ?? kEcoleCode;
+      final systemeEducatif = ecoleCode.startsWith('*annour*') ? 2 : 1;
+      
+      final url = '$kBaseUrl/preinscription/scolarite/branche/$uid?ecole=$ecoleCode&systeme_educatif=$systemeEducatif';
       print('🔍 [API] Chargement scolarité - URL: $url');
+      print('👤 [API] UID élève: $uid');
+      print('🏷️ [API] Code école: $ecoleCode');
+      print('📚 [API] Système éducatif: $systemeEducatif (${systemeEducatif == 1 ? 'défaut' : 'spécial'})');
+      
       final response = await http.get(Uri.parse(url), headers: {'Content-Type': 'application/json'});
       print('📡 [API] Réponse scolarité - Status: ${response.statusCode}');
       print('📄 [API] Body scolarité: ${response.body}');
+      
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         print('✅ [API] Succès scolarité - ${data.length} échéances trouvées');
@@ -350,6 +406,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         });
       } else {
         print('❌ [API] Erreur scolarité - Status: ${response.statusCode}');
+        _showError('Erreur lors du chargement des données de scolarité: ${response.statusCode}');
       }
     } catch (e) {
       print('💥 [API] Exception scolarité: $e');

@@ -84,8 +84,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   bool _isLoadingMore = false;
   bool _hasMoreEcoles = true;
   int _currentPage = 1;
-  int _ecolesPerPage =
-      6; // Valeur par défaut, sera mise à jour dans didChangeDependencies
+  int _ecolesPerPage = 50; // Valeur par défaut, sera mise à jour dans didChangeDependencies
   String? _error;
 
   // ── Paramètres de recherche dynamique ──────────────────────────────

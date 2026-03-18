@@ -16,6 +16,7 @@ class ImageMenuCard extends StatelessWidget {
   final Color? textColor;
   final String? actionText;
   final Color? actionTextColor;
+  final String? subtitle;
   final VoidCallback onTap;
 
   const ImageMenuCard({
@@ -33,6 +34,7 @@ class ImageMenuCard extends StatelessWidget {
     this.textColor,
     this.actionText,
     this.actionTextColor,
+    this.subtitle,
     required this.onTap,
   });
 
@@ -150,6 +152,31 @@ class ImageMenuCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (textColor ?? 
+                                   (isDark ? Colors.white : AppColors.screenTextPrimary))
+                                   .withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            subtitle!,
+                            style: TextStyle(
+                              fontSize: textSizeService.getScaledFontSize(8),
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                       if (actionText != null) ...[
                         const SizedBox(height: 1),
                         Text(
@@ -166,37 +193,39 @@ class ImageMenuCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ] else ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 12,
-                              color:
-                                  textColor?.withOpacity(0.7) ??
-                                  (isDark
-                                      ? Colors.white70
-                                      : AppColors.screenTextSecondary),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                location ?? 'CÔTE D\'IVOIRE',
-                                style: TextStyle(
-                                  fontSize: textSizeService.getScaledFontSize(
-                                    10,
-                                  ),
-                                  color:
-                                      textColor?.withOpacity(0.7) ??
-                                      (isDark
-                                          ? Colors.white70
-                                          : AppColors.screenTextSecondary),
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                        if (location != null) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 12,
+                                color:
+                                    textColor?.withOpacity(0.7) ??
+                                    (isDark
+                                        ? Colors.white70
+                                        : AppColors.screenTextSecondary),
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  location!,
+                                  style: TextStyle(
+                                    fontSize: textSizeService.getScaledFontSize(
+                                      10,
+                                    ),
+                                    color:
+                                        textColor?.withOpacity(0.7) ??
+                                        (isDark
+                                            ? Colors.white70
+                                            : AppColors.screenTextSecondary),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ],
                   ),

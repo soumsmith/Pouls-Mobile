@@ -1565,7 +1565,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         'assets/images/intro_background.jpg',
       ],
       ['niveaux', 'Niveaux scolaire', 'assets/images/intro_background.png'],
-      ['communication', 'Communication', 'assets/images/logo-app.png'],
+      ['communication', 'Actualités', 'assets/images/logo-app.png'],
     ];
 
     // Section Vie école (opérationnel)
@@ -1633,7 +1633,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             icon: def.icon,
             color: def.color,
             onTap: () => _showActionBottomSheet(item[0], def),
-            location: _getSchoolLocation(),
+            //location: _getSchoolLocation(),
+            subtitle : "Consulter",
             backgroundColor: def.color.withOpacity(0.1),
             textColor: def.color,
           );

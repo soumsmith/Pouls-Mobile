@@ -35,8 +35,10 @@ import '../services/place_reservation_service.dart';
 import '../models/place_reservation.dart';
 import '../models/student_class_info.dart';
 import '../models/group_message.dart';
+import '../models/ecole.dart';
 import '../services/group_message_service.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/searchable_dropdown.dart';
 import '../services/ecole_eleve_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -316,6 +318,13 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<PlaceReservation> _reservations = [];
   bool _isLoadingReservations = false;
 
+  // Variables pour les demandes d'intégration
+  List<Ecole> _ecoles = [];
+  bool _isLoadingEcoles = false;
+  int? _selectedEcoleId;
+  String? _selectedEcoleName;
+  bool _isLoadingIntegrationRequest = false;
+
   // Variables pour les notifications
   List<GroupMessage> _notifications = [];
   bool _isLoadingNotifications = false;
@@ -339,6 +348,12 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Informations supplémentaires de la classe/école
   StudentClassInfo? _studentClassInfo;
+  
+  // Détails complets de l'élève
+  Map<String, dynamic>? _eleveDetail;
+  
+  // État pour l'affichage des informations détaillées
+  bool _showEleveDetails = false;
 
   @override
   void initState() {
@@ -361,6 +376,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         );
 
     _loadData();
+    _loadEcoles();
     _animationController.forward();
   }
 
@@ -555,6 +571,22 @@ class _ChildListScreenState extends State<ChildListScreen>
         if (_matricule != null && _anneeId != null && _classeId != null) {
           await _loadStudentClassInfo();
         }
+        
+        // Charger les détails complets de l'élève (après avoir récupéré le code école)
+        if (_matricule != null) {
+          if (_ecoleCode != null) {
+            print('📋 Étape 6: Chargement des détails complets de l\'élève...');
+            await _loadEleveDetail();
+          } else {
+            print('⚠️ Étape 6: Détails de l\'élève non chargés - code école manquant');
+            print('   - Matricule: $_matricule');
+            print('   - Code école: $_ecoleCode');
+            print('   - Tentative de chargement après _loadStudentClassInfo()');
+          }
+        } else {
+          print('⚠️ Étape 6: Détails de l\'élève non chargés - matricule manquant');
+          print('   - Matricule: $_matricule');
+        }
       } else {
         print('❌ Aucune information trouvée pour l\'enfant ${widget.child.id}');
       }
@@ -579,6 +611,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       setState(() {
         _studentClassInfo = studentClassInfo;
+        // Extraire le code école depuis identifiantVieEcole
+        if (_ecoleCode == null && studentClassInfo.identifiantVieEcole.isNotEmpty) {
+          _ecoleCode = studentClassInfo.identifiantVieEcole;
+          print('🏷️ Code école extrait depuis identifiantVieEcole: $_ecoleCode');
+        }
       });
 
       print('✅ Informations classe/école chargées:');
@@ -586,8 +623,63 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('   📚 Classe: ${_studentClassInfo!.classe.libelle}');
       print('   👤 Élève: ${_studentClassInfo!.eleve.fullName}');
       print('   🏷️ ID Vie École: ${_studentClassInfo!.identifiantVieEcole}');
+      print('   🏷️ Code école utilisé: $_ecoleCode');
     } catch (e) {
       print('❌ Erreur lors du chargement des informations classe/école: $e');
+      // Ne pas bloquer le processus si cette API échoue
+    }
+  }
+
+  Future<void> _loadEleveDetail() async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('🔄 CHARGEMENT DES DÉTAILS DE L\'ÉLÈVE');
+    print('═══════════════════════════════════════════════════════════');
+    print('👤 Élève: ${widget.child.fullName} (${widget.child.id})');
+    print('🎫 Matricule disponible: ${_matricule != null ? "✅ $_matricule" : "❌ NON"}');
+    print('🏷️ Code école disponible: ${_ecoleCode != null ? "✅ $_ecoleCode" : "❌ NON"}');
+    
+    if (_matricule == null || _ecoleCode == null) {
+      print('⚠️ Informations manquantes pour charger les détails de l\'élève');
+      print('   - Matricule: $_matricule');
+      print('   - Code école: $_ecoleCode');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      return;
+    }
+
+    try {
+      print('📡 Appel de l\'API EcoleEleveService.getEleveDetail()...');
+      print('⏱️ Heure de début: ${DateTime.now().toIso8601String()}');
+      
+      final eleveDetail = await EcoleEleveService.getEleveDetail(
+        _matricule!,
+        _ecoleCode!,
+      );
+
+      print('⏱️ Heure de fin: ${DateTime.now().toIso8601String()}');
+      print('✅ Détails de l\'élève reçus avec succès');
+      print('📊 Résumé des données reçues:');
+      print('   - Nom complet: ${eleveDetail['nom']} ${eleveDetail['prenoms']}');
+      print('   - Matricule: ${eleveDetail['matricule']}');
+      print('   - Niveau: ${eleveDetail['niveau']}');
+      print('   - Filière: ${eleveDetail['filiere']}');
+      print('   - Sexe: ${eleveDetail['sexe']}');
+      print('   - Date de naissance: ${eleveDetail['datenaissance']}');
+      print('   - Nombre de champs: ${eleveDetail.keys.length}');
+
+      setState(() {
+        _eleveDetail = eleveDetail;
+      });
+
+      print('✅ Détails de l\'élève chargés et stockés avec succès');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+    } catch (e) {
+      print('❌ Erreur lors du chargement des détails de l\'élève: $e');
+      print('⚠️ L\'application continuera de fonctionner sans les détails complets');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
       // Ne pas bloquer le processus si cette API échoue
     }
   }
@@ -607,7 +699,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               child: Column(
                 children: [
                   _buildModernProfileHeader(),
-                  const SizedBox(height: 20),
+                  // const SizedBox(height: 20),
+                  // _buildEleveDetailSection(),
+                  const SizedBox(height: 16),
                   _buildModernSummaryCards(),
                   const SizedBox(height: 16),
                   _buildPaymentBannerCard(),
@@ -764,9 +858,16 @@ class _ChildListScreenState extends State<ChildListScreen>
           icon: Icons.event_seat_rounded,
           label: 'Réservations',
           onTap: () {},
-          backgroundColor: const Color(0xFFE8F5E8),
-          iconColor: const Color(0xFF4CAF50),
-          titleColor: const Color(0xFF2E7D32),
+          backgroundColor: const Color(0xFFE8F5E9),
+          iconColor: const Color(0xFF2E7D32),
+        );
+      case 'integrationRequests':
+        return StudentMenuCardItem(
+          icon: Icons.school_rounded,
+          label: 'Demandes d\'intégration',
+          onTap: () {},
+          backgroundColor: const Color(0xFFE3F2FD),
+          iconColor: const Color(0xFF1565C0),
         );
       default:
         return StudentMenuCardItem(
@@ -1327,6 +1428,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         return 'Envoyez vos suggestions et feedback';
       case 'reservations':
         return 'Gérez vos réservations et places';
+      case 'integrationRequests':
+        return 'Consultez vos demandes d\'intégration scolaire';
       default:
         return 'En savoir plus...';
     }
@@ -1366,6 +1469,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         return _buildSimpleSuggestionsTab();
       case 'reservations':
         return _buildSimpleReservationsTab();
+      case 'integrationRequests':
+        return _buildIntegrationRequestsTab();
       default:
         return Container(
           padding: const EdgeInsets.all(20),
@@ -1617,19 +1722,604 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ],
           ),
+          
+          // Section des informations détaillées de l'élève
+          if (_showEleveDetails && _eleveDetail != null) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Informations personnelles
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildProfileDetailItem(
+                        icon: Icons.badge,
+                        label: 'Matricule',
+                        value: _eleveDetail!['matricule']?.toString() ?? 'N/A',
+                      ),
+                      _buildProfileDetailItem(
+                        icon: Icons.cake,
+                        label: 'Né(e)',
+                        value: _formatDate(_eleveDetail!['datenaissance']?.toString() ?? 'N/A'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildProfileDetailItem(
+                        icon: Icons.wc,
+                        label: 'Sexe',
+                        value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
+                      ),
+                      _buildProfileDetailItem(
+                        icon: Icons.location_on,
+                        label: 'Lieu',
+                        value: _eleveDetail!['lieun']?.toString() ?? 'N/A',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildProfileDetailItem(
+                        icon: Icons.phone,
+                        label: 'Mobile',
+                        value: _eleveDetail!['mobile']?.toString() ?? 'N/A',
+                        isClickable: true,
+                        onTap: () => _makePhoneCall(_eleveDetail!['mobile']?.toString() ?? ''),
+                      ),
+                      _buildProfileDetailItem(
+                        icon: Icons.flag,
+                        label: 'Nationalité',
+                        value: _eleveDetail!['nationalite']?.toString() ?? 'N/A',
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Informations scolaires
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildProfileDetailItem(
+                        icon: Icons.grade,
+                        label: 'Niveau',
+                        value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
+                      ),
+                      _buildProfileDetailItem(
+                        icon: Icons.category,
+                        label: 'Filière',
+                        value: _eleveDetail!['filiere']?.toString() ?? 'N/A',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildProfileDetailItem(
+                        icon: Icons.book,
+                        label: 'Branche',
+                        value: _eleveDetail!['branche']?.toString() ?? 'N/A',
+                      ),
+                      _buildProfileDetailItem(
+                        icon: Icons.auto_stories,
+                        label: 'Série',
+                        value: _eleveDetail!['serie']?.toString() ?? 'N/A',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildProfileDetailItem(
+                        icon: Icons.refresh,
+                        label: 'Redoublant',
+                        value: _eleveDetail!['redoublant']?.toString() ?? 'N/A',
+                        valueColor: _eleveDetail!['redoublant']?.toString().toLowerCase() == 'oui' 
+                            ? Colors.orange 
+                            : Colors.green,
+                      ),
+                      const SizedBox(width: 100), // Espace pour équilibrer
+                      _buildProfileDetailItem(
+                        icon: Icons.family_restroom,
+                        label: 'Famille',
+                        value: 'Voir détails',
+                        isClickable: true,
+                        onTap: () => _showFamilyBottomSheet(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
           const SizedBox(height: 20),
           Row(
             children: [
-              _buildModernStatusBadge('⭐ Excellent', Colors.white),
-              const SizedBox(width: 8),
-              _buildModernStatusBadge('✔ Assidu', Colors.white),
-              const SizedBox(width: 8),
-              _buildModernStatusBadge('📈 Progression', Colors.white),
+              _buildFamilyDetailsButton(),
+              const SizedBox(width: 16),
+              _buildEleveDetailsButton(),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildFamilyDetailsButton() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        onTap: () => _showFamilyBottomSheet(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.family_restroom,
+                size: 18,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Famille - Voir détails',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(13),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEleveDetailsButton() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _showEleveDetails = !_showEleveDetails;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _showEleveDetails ? Icons.info : Icons.info_outline,
+                size: 18,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _showEleveDetails ? 'Moins d\'infos' : 'Plus d\'infos',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(13),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                _showEleveDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                size: 14,
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileDetailItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isClickable = false,
+    VoidCallback? onTap,
+    Color? valueColor,
+  }) {
+    final defaultColor = valueColor ?? (Colors.white);
+    
+    return GestureDetector(
+      onTap: isClickable && onTap != null ? onTap : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isClickable 
+              ? Colors.white.withOpacity(0.25)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: Colors.white.withOpacity(0.8),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$label: ',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(11),
+                color: Colors.white.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(11),
+                color: defaultColor,
+                fontWeight: FontWeight.w600,
+                decoration: isClickable ? TextDecoration.underline : null,
+                decorationColor: Colors.white.withOpacity(0.5),
+              ),
+            ),
+            if (isClickable)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.call,
+                  size: 12,
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFamilyBottomSheet() {
+    if (_eleveDetail == null) return;
+    
+    final eleve = _eleveDetail!;
+    final isDarkMode = _themeService.isDarkMode;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (_, controller) => Container(
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey[900] : Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Header du bottomSheet
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.family_restroom,
+                        color: Colors.blue,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        'Informations familiales',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(18),
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Contenu familial
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Contact
+                      _buildFamilySection(
+                        title: 'Contact',
+                        icon: Icons.contact_phone,
+                        iconColor: Colors.green,
+                        children: [
+                          _buildFamilyItem(
+                            icon: Icons.home,
+                            label: 'Adresse',
+                            value: eleve['adresse']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.phone,
+                            label: 'Mobile',
+                            value: eleve['mobile']?.toString() ?? 'N/A',
+                            isClickable: true,
+                            onTap: () => _makePhoneCall(eleve['mobile']?.toString() ?? ''),
+                          ),
+                          if (eleve['mobile2']?.toString().isNotEmpty == true)
+                            _buildFamilyItem(
+                              icon: Icons.phone_android,
+                              label: 'Mobile 2',
+                              value: eleve['mobile2']?.toString() ?? 'N/A',
+                              isClickable: true,
+                              onTap: () => _makePhoneCall(eleve['mobile2']?.toString() ?? ''),
+                            ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Parents
+                      _buildFamilySection(
+                        title: 'Parents',
+                        icon: Icons.people,
+                        iconColor: Colors.purple,
+                        children: [
+                          _buildFamilyItem(
+                            icon: Icons.person_outline,
+                            label: 'Père',
+                            value: eleve['pere']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.person_outline,
+                            label: 'Mère',
+                            value: eleve['mere']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.supervisor_account,
+                            label: 'Tuteur',
+                            value: eleve['tuteur']?.toString() ?? 'N/A',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFamilySection({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required List<Widget> children,
+  }) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(16),
+                fontWeight: FontWeight.w700,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _buildFamilyItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isClickable = false,
+    VoidCallback? onTap,
+  }) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return GestureDetector(
+      onTap: isClickable && onTap != null ? onTap : null,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isClickable 
+              ? (isDarkMode ? Colors.grey[700] : Colors.blue[50])
+              : (isDarkMode ? Colors.grey[800] : Colors.grey[50]),
+          borderRadius: BorderRadius.circular(12),
+          border: isClickable 
+              ? Border.all(
+                  color: Colors.blue.withOpacity(0.2),
+                  width: 1,
+                )
+              : Border.all(
+                  color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                  width: 1,
+                ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isClickable 
+                    ? Colors.blue.withOpacity(0.15)
+                    : (isDarkMode ? Colors.grey[700] : Colors.grey[200]),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 16,
+                color: isClickable 
+                    ? Colors.blue
+                    : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      fontWeight: FontWeight.w600,
+                      color: isClickable 
+                          ? Colors.blue[700]
+                          : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      fontWeight: FontWeight.w600,
+                      color: isClickable 
+                          ? Colors.blue[800]
+                          : (isDarkMode ? Colors.white : Colors.black87),
+                      decoration: isClickable ? TextDecoration.underline : null,
+                      decorationColor: Colors.blue[400],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isClickable)
+              Icon(
+                Icons.call,
+                size: 16,
+                color: Colors.blue[600],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    if (phoneNumber.isEmpty || phoneNumber == 'N/A') return;
+    
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    
+    // Utiliser url_launcher pour faire l'appel
+    // Vous devrez ajouter le package url_launcher à pubspec.yaml
+    print('📞 Appel du numéro: $phoneNumber');
+    // await launchUrl(launchUri);
   }
 
   // ─── Helper : En-tête de section (barre colorée + titre) ──────────────────
@@ -1752,6 +2442,30 @@ class _ChildListScreenState extends State<ChildListScreen>
                 _showStudentMenuBottomSheet(
                   'fees',
                   _getStudentMenuCardItem('fees'),
+                );
+              }
+            },
+          ),
+          ImageMenuCard(
+            index: 3,
+            cardKey: 'integration_requests',
+            title: 'Demandes d\'intégration',
+            iconData: Icons.school_rounded,
+            isDark: isDark,
+            color: const Color(0xFF1565C0),
+            backgroundColor: isDark
+                ? const Color(0xFF0A2540)
+                : const Color(0xFFE3F2FD),
+            textColor: isDark
+                ? const Color(0xFF64B5F6)
+                : const Color(0xFF0D47A1),
+            actionText: 'Consulter',
+            actionTextColor: const Color(0xFF1565C0),
+            onTap: () {
+              if (mounted) {
+                _showStudentMenuBottomSheet(
+                  'integrationRequests',
+                  _getStudentMenuCardItem('integrationRequests'),
                 );
               }
             },
@@ -2160,25 +2874,6 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildDefaultAvatar() {
     return const Icon(Icons.person, size: 30, color: Colors.white);
-  }
-
-  Widget _buildModernStatusBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: _textSizeService.getScaledFontSize(11),
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
-    );
   }
 
   void _showPaiementBottomSheet() {
@@ -2703,7 +3398,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           );
         }
       } else {
-        throw Exception('Réponse invalide du serveur');
+        // Afficher le message d'erreur de l'API
+        throw Exception(paiementResponse.message);
       }
     } catch (e) {
       print('❌ Erreur lors du paiement: $e');
@@ -5176,6 +5872,510 @@ class _ChildListScreenState extends State<ChildListScreen>
       default:
         return Colors.grey;
     }
+  }
+
+  Widget _buildIntegrationRequestsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInfoCard(
+            '🎓 Demandes d\'intégration',
+            'Consultez le statut de vos demandes d\'intégration scolaire.',
+            Colors.blue,
+          ),
+          const SizedBox(height: 20),
+          _buildIntegrationRequestsContent(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntegrationRequestsContent() {
+  return StatefulBuilder(
+    builder: (context, setLocalState) {
+      return Container(
+        decoration: BoxDecoration(
+          color: AppColors.screenCard,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.school_rounded, color: Color(0xFF1565C0), size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Consultation demande',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(17),
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.screenTextPrimary,
+                        letterSpacing: -0.3,
+                      )),
+                ],
+              ),
+            ),
+            Center(
+              child: Container(
+                width: 36,
+                height: 3,
+                margin: const EdgeInsets.only(top: 14, bottom: 4),
+                decoration: BoxDecoration(color: AppColors.screenDivider, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                children: [
+                  _buildEcoleFieldLocal(setLocalState),  // ← version locale
+                  const SizedBox(height: 14),
+                  _buildMatriculeDisplay(),
+                  const SizedBox(height: 12),
+                  _buildInfoBanner(),
+                  const SizedBox(height: 20),
+                  _buildOrangeButton(
+                    label: _isLoadingIntegrationRequest
+                        ? 'Consultation en cours...'
+                        : 'Consulter la demande',
+                    onTap: _selectedEcoleId != null && !_isLoadingIntegrationRequest
+                        ? _consultIntegrationRequest
+                        : null,
+                    isLoading: _isLoadingIntegrationRequest,
+                    icon: Icons.search_rounded,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
+  if (_isLoadingEcoles) {
+    return _buildLoadingField('Chargement des écoles...');
+  }
+  if (_ecoles.isEmpty) {
+    return _buildEmptyEcoleField();
+  }
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _fieldLabel('École', required: true),
+      const SizedBox(height: 6),
+      SearchableDropdown(
+        label: 'École',
+        value: _selectedEcoleName ?? 'Sélectionner une école...',
+        items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+        onChanged: (String selected) {
+          final ecole = _ecoles.firstWhere((e) => e.ecoleclibelle == selected);
+          setState(() {           // met à jour le widget principal
+            _selectedEcoleId = ecole.ecoleid;
+            _selectedEcoleName = selected;
+          });
+          setLocalState(() {});   // force le rebuild du bouton dans le StatefulBuilder
+        },
+        isDarkMode: _themeService.isDarkMode,
+      ),
+    ],
+  );
+}
+
+  Widget _buildEcoleField() {
+    if (_isLoadingEcoles) {
+      return _buildLoadingField('Chargement des écoles...');
+    }
+    if (_ecoles.isEmpty) {
+      return Column(
+        children: [
+          _buildEmptyEcoleField(),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('École', required: true),
+        const SizedBox(height: 6),
+        SearchableDropdown(
+          label: 'École',
+          value: _selectedEcoleName ?? 'Sélectionner une école...',
+          items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+          onChanged: (String selected) {
+            final ecole = _ecoles.firstWhere((e) => e.ecoleclibelle == selected);
+            setState(() {
+              _selectedEcoleId = ecole.ecoleid;
+              _selectedEcoleName = selected;
+            });
+          },
+          isDarkMode: _themeService.isDarkMode,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMatriculeDisplay() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('Matricule de l\'élève'),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.screenSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.screenDivider),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              children: [
+                const Icon(Icons.badge_outlined, color: AppColors.screenOrange, size: 18),
+                const SizedBox(width: 12),
+                Text(
+                  widget.child.matricule ?? 'Non disponible',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.screenTextPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoBanner() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F2FD),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1565C0).withOpacity(0.2)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.info_outline, color: Color(0xFF1565C0), size: 16),
+        const SizedBox(width: 8),
+        const Expanded(child: Text(
+          'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
+          style: TextStyle(color: Color(0xFF1565C0), fontSize: 13, fontWeight: FontWeight.w500),
+        )),
+      ]),
+    );
+  }
+
+  Widget _buildLoadingField(String msg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.screenDivider),
+      ),
+      child: Row(children: [
+        const SizedBox(width: 16, height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.screenOrange)),
+        const SizedBox(width: 12),
+        Text(msg, style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
+      ]),
+    );
+  }
+
+  Widget _buildEmptyEcoleField() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Row(children: [
+        Icon(Icons.error_outline, color: Colors.red[400], size: 18),
+        const SizedBox(width: 10),
+        const Expanded(child: Text('Aucune école disponible',
+            style: TextStyle(fontSize: 13, color: AppColors.screenTextPrimary))),
+        TextButton(
+          onPressed: _loadEcoles,
+          child: const Text('Réessayer', style: TextStyle(color: AppColors.screenOrange)),
+        ),
+      ]),
+    );
+  }
+
+  Widget _fieldLabel(String label, {bool required = false}) {
+    return Row(children: [
+      Text(label, style: const TextStyle(
+          fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary, letterSpacing: 0.2)),
+      if (required)
+        const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+    ]);
+  }
+
+  Widget _buildOrangeButton({
+    required String label,
+    required VoidCallback? onTap,
+    required bool isLoading,
+    IconData? icon,
+    Color color = AppColors.screenOrange,
+    Color shadowColor = AppColors.screenOrange,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, shadowColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: isLoading
+                ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Chargement...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadEcoles() async {
+    setState(() {
+      _isLoadingEcoles = true;
+    });
+    try {
+      final ecoles = await _poulsApiService.getAllEcoles();
+      setState(() {
+        _ecoles = ecoles;
+        _isLoadingEcoles = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingEcoles = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur de chargement: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _consultIntegrationRequest() async {
+    if (_selectedEcoleId == null || widget.child.matricule == null) return;
+
+    setState(() {
+      _isLoadingIntegrationRequest = true;
+    });
+
+    try {
+      final ecole = _ecoles.firstWhere((e) => e.ecoleid == _selectedEcoleId);
+      final ecoleCode = ecole.paramecole?.isNotEmpty == true ? ecole.paramecole! : ecole.ecolecode;
+      final matricule = widget.child.matricule!;
+      
+      // Affichage de la requête API dans la console
+      print('🔍 REQUÊTE API DEMANDE D\'INTÉGRATION');
+      print('📋 École sélectionnée: ${ecole.ecoleclibelle} (ID: ${ecole.ecoleid})');
+      print('📝 Code école pour API: $ecoleCode');
+      print('🎫 Matricule de l\'élève: $matricule');
+      
+      final url = 'https://api2.vie-ecoles.com/api/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule';
+      print('🌐 URL complète: $url');
+      
+      final response = await http.get(Uri.parse(url));
+      
+      print('📊 Réponse HTTP - Status: ${response.statusCode}');
+      print('📄 Corps de la réponse: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Données parsées: $data');
+        _showIntegrationResultDialog(data);
+      } else {
+        print('❌ Erreur HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('Erreur ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('💥 Exception lors de la consultation: ${e.toString()}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la consultation: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoadingIntegrationRequest = false;
+      });
+    }
+  }
+
+  void _showIntegrationResultDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        contentPadding: EdgeInsets.zero,
+        content: Container(
+          decoration: BoxDecoration(
+            color: AppColors.screenCard,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.search_rounded, color: Color(0xFF1565C0), size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Résultat de la demande',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(17),
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.screenTextPrimary,
+                          letterSpacing: -0.3,
+                        )),
+                  ],
+                ),
+              ),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 3,
+                  margin: const EdgeInsets.only(top: 14, bottom: 4),
+                  decoration: BoxDecoration(color: AppColors.screenDivider, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildResultItem('Statut', data['statut']?.toString() ?? 'Non spécifié'),
+                    const SizedBox(height: 12),
+                    _buildResultItem('Message', data['message']?.toString() ?? 'Aucun message'),
+                    if (data['date'] != null) ...[
+                      const SizedBox(height: 12),
+                      _buildResultItem('Date', data['date'].toString()),
+                    ],
+                    const SizedBox(height: 20),
+                    _buildOrangeButton(
+                      label: 'Fermer',
+                      onTap: () => Navigator.pop(context),
+                      isLoading: false,
+                      icon: Icons.close_rounded,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(12),
+              fontWeight: FontWeight.w500,
+              color: AppColors.screenTextSecondary,
+              letterSpacing: -0.2,
+            )),
+        const SizedBox(height: 4),
+        Text(value,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(14),
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextPrimary,
+              letterSpacing: -0.3,
+            )),
+      ],
+    );
   }
 
   Widget _buildSimpleMessagesTab() {

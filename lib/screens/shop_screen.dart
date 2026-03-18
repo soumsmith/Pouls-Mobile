@@ -45,7 +45,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   bool _isLoadingMore = false;
   bool _hasMoreProducts = true;
   int _currentPage = 1;
-  int _productsPerPage = 10;
+  int _productsPerPage = 25;
   int _cartItemCount = 0;
   int _ordersCount = 0;
   String? _error;

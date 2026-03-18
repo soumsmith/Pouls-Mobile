@@ -136,4 +136,69 @@ class EcoleEleveService {
       'reservation': isReservationsOuvertes(ecoleData),
     };
   }
+
+  /// Récupère les détails complets d'un élève
+  static Future<Map<String, dynamic>> getEleveDetail(String matricule, String ecoleCode) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('👤 DÉTAILS DE L\'ÉLÈVE');
+    print('═══════════════════════════════════════════════════════════');
+    print('🎫 Matricule: $matricule');
+    print('🏷️ Code école: $ecoleCode');
+    
+    final url = '$baseUrl/vie-ecoles/eleve/detail/$matricule?ecole=$ecoleCode';
+    print('🔗 URL: $url');
+    print('📡 Envoi de la requête...');
+    
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      print('📥 Réponse reçue:');
+      print('   - Status Code: ${response.statusCode}');
+      print('   - Content-Type: ${response.headers['content-type']}');
+      print('   - Body length: ${response.body.length} caractères');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        
+        if (data['data'] != null) {
+          final eleveData = data['data'] as Map<String, dynamic>;
+          
+          print('✅ Détails de l\'élève récupérés avec succès');
+          print('📊 Informations principales:');
+          print('   - Nom: ${eleveData['nom']} ${eleveData['prenoms']}');
+          print('   - Matricule: ${eleveData['matricule']}');
+          print('   - Niveau: ${eleveData['niveau']}');
+          print('   - Filière: ${eleveData['filiere']}');
+          print('   - Sexe: ${eleveData['sexe']}');
+          print('   - Date de naissance: ${eleveData['datenaissance']}');
+          print('═══════════════════════════════════════════════════════════');
+          print('');
+          return eleveData;
+        } else {
+          print('⚠️ Aucune donnée d\'élève trouvée dans la réponse');
+          print('═══════════════════════════════════════════════════════════');
+          print('');
+          throw Exception('Aucune donnée d\'élève trouvée');
+        }
+      } else {
+        print('❌ Erreur HTTP ${response.statusCode}');
+        print('❌ Corps de la réponse: ${response.body}');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        throw Exception('Erreur HTTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('💥 Exception lors de la récupération des détails de l\'élève: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      throw Exception('Erreur lors de la récupération des détails de l\'élève: $e');
+    }
+  }
 }

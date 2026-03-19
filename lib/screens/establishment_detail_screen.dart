@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
@@ -29,7 +31,7 @@ import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
 import '../widgets/color_card_grid.dart';
 import '../widgets/main_screen_wrapper.dart';
-import '../widgets/establishment_header_card.dart';
+import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
 import '../widgets/image_menu_card.dart';
 import 'all_events_screen.dart';
@@ -150,8 +152,8 @@ class _ActionDef {
 const _kActions = <String, _ActionDef>{
   'integration': _ActionDef(
     icon: Icons.person_add_alt_1_rounded,
-    label: 'Demande d\'intégration',
-    subtitle: 'Rejoindre',
+    label: 'Intégrer',
+    subtitle: 'Nous rejoindre',
     color: Color(0xFF3B82F6),
   ),
   'rating': _ActionDef(
@@ -859,13 +861,751 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     );
   }
 
-  // ── Header card ────────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  //  NOUVEAU _buildEstablishmentHeader — REDESIGN "HERO IMMERSIF"
+  //  À coller en remplacement de l'ancien dans EstablishmentDetailScreen
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  //  INSTRUCTIONS D'INTÉGRATION :
+  //  1. Remplace toute la méthode _buildEstablishmentHeader(bool isDark) par ce code.
+  //  2. La méthode _buildInfoRow existante peut être CONSERVÉE (utilisée ailleurs).
+  //  3. Les helpers _formatDate et _formatCurrency sont déjà dans ton fichier — pas de doublon.
+  //  4. Ajoute les méthodes privées auxiliaires (_buildStatChip, _buildInfoPillRow,
+  //     _buildPeriodCard) à la fin de la classe, avant la fermeture `}`.
+  //
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── MÉTHODE PRINCIPALE (remplace l'ancienne) ─────────────────────────────
   Widget _buildEstablishmentHeader(bool isDark) {
+    // ── Données depuis l'API ────────────────────────────────────────────────
     final imageUrl = _ecoleDetail?.image ?? widget.ecole.displayImage;
     final establishmentName =
         _ecoleDetail?.data.nom ?? widget.ecole.parametreNom ?? 'École';
     final establishmentType = widget.ecole.typePrincipal ?? 'Primaire';
-    final motto = _ecoleDetail?.data.slogan ?? 'L\'excellence notre priorité';
+    final slogan = _ecoleDetail?.data.slogan ?? '';
+    final address =
+        _ecoleDetail?.data.adresse ??
+        widget.ecole.adresse ??
+        'Adresse non disponible';
+    final phone = _ecoleDetail?.data.telephone ?? widget.ecole.telephone ?? '';
+
+    // Paramètres école
+    final effectif = _ecoleParametres?.effectif;
+    final nbrannee = _ecoleParametres?.nbrannee;
+    final programmelangue = _ecoleParametres?.programmelangue;
+    final statut = _ecoleParametres?.statut;
+    final annee = _ecoleParametres?.annee;
+    final debutReservation = _ecoleParametres?.debutReservation;
+    final finReservation = _ecoleParametres?.finReservation;
+    final montantReservation = _ecoleParametres?.montantReservation;
+    final debutPreinscrit = _ecoleParametres?.debutPreinscrit;
+    final finPreinscrit = _ecoleParametres?.finPreinscrit;
+    final debutInscrit = _ecoleParametres?.debutInscrit;
+    final finInscrit = _ecoleParametres?.finInscrit;
+    final logo = _ecoleParametres?.logo;
+
+    // Couleur de type
+    final typeColor = _getTypeColor(establishmentType);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, child) => Opacity(
+        opacity: v,
+        child: Transform.translate(
+          offset: Offset(0, 24 * (1 - v)),
+          child: child,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── HERO CARD ───────────────────────────────────────────────────
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            height: 220,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.22),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // ── Image de fond ──────────────────────────────────────
+                  ImageHelper.buildNetworkImage(
+                    imageUrl: imageUrl,
+                    placeholder: establishmentName,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+
+                  // ── Dégradé overlay ────────────────────────────────────
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.35),
+                          Colors.black.withValues(alpha: 0.75),
+                          Colors.black.withValues(alpha: 0.88),
+                        ],
+                        stops: const [0.0, 0.3, 0.55, 0.78, 1.0],
+                      ),
+                    ),
+                  ),
+
+                  // ── Badge type (haut-gauche) ───────────────────────────
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.28),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF4ADE80),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                establishmentType.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // ── Badge statut (haut-droite) ─────────────────────────
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF4ADE80,
+                            ).withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(
+                                0xFF4ADE80,
+                              ).withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            '● ${statut ?? 'ACTIF'}',
+                            style: const TextStyle(
+                              color: Color(0xFF4ADE80),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // ── Contenu bas de carte ───────────────────────────────
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Logo + Nom
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              // Logo flottant
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: logo != null && logo!.isNotEmpty
+                                      ? Image.network(
+                                          logo!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              _buildLogoFallback(
+                                                establishmentName,
+                                                typeColor,
+                                              ),
+                                        )
+                                      : _buildLogoFallback(
+                                          establishmentName,
+                                          typeColor,
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Nom + slogan
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      establishmentName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: -0.4,
+                                        height: 1.2,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black38,
+                                            blurRadius: 8,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (slogan.isNotEmpty) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '"$slogan"',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.72,
+                                          ),
+                                          fontSize: 11,
+                                          fontStyle: FontStyle.italic,
+                                          letterSpacing: 0.1,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ── Stats chips ──────────────────────────────────
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                if (effectif != null)
+                                  _buildStatChip(
+                                    icon: Icons.people_rounded,
+                                    value: '$effectif',
+                                    label: 'Élèves',
+                                  ),
+                                if (nbrannee != null)
+                                  _buildStatChip(
+                                    icon: Icons.layers_rounded,
+                                    value: '$nbrannee niveaux',
+                                    label: 'Scolarité',
+                                  ),
+                                if (annee != null)
+                                  _buildStatChip(
+                                    icon: Icons.schedule_rounded,
+                                    value: annee!,
+                                    label: 'Année',
+                                  ),
+                                _buildStatChip(
+                                  icon: Icons.star_rounded,
+                                  value: '4.8 / 5',
+                                  label: 'Note',
+                                  valueColor: const Color(0xFFFBBF24),
+                                  iconColor: const Color(0xFFFBBF24),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── INFO PILLS CARD (flottant sous le hero) ─────────────────────
+          Transform.translate(
+            offset: const Offset(0, -14),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Adresse
+                  _buildInfoPillRow(
+                    icon: Icons.location_on_rounded,
+                    iconColor: const Color(0xFF3B82F6),
+                    iconBgColor: const Color(0xFFEFF6FF),
+                    label: 'Adresse',
+                    value: address,
+                    isDark: isDark,
+                    isFirst: true,
+                  ),
+
+                  // Téléphone (si dispo)
+                  if (phone.isNotEmpty)
+                    _buildInfoPillRow(
+                      icon: Icons.phone_rounded,
+                      iconColor: const Color(0xFF22C55E),
+                      iconBgColor: const Color(0xFFF0FDF4),
+                      label: 'Téléphone',
+                      value: phone,
+                      isDark: isDark,
+                      trailingWidget: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          border: Border.all(
+                            color: const Color(0xFFBBF7D0),
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Appeler',
+                          style: TextStyle(
+                            color: Color(0xFF16A34A),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Langue (si dispo)
+                  if (programmelangue != null && programmelangue!.isNotEmpty)
+                    _buildInfoPillRow(
+                      icon: Icons.language_rounded,
+                      iconColor: const Color(0xFFA855F7),
+                      iconBgColor: const Color(0xFFFAF5FF),
+                      label: 'Langue & Programme',
+                      value: programmelangue!,
+                      isDark: isDark,
+                    ),
+
+                  // Période d'inscription (si dispo)
+                  if (debutInscrit != null && finInscrit != null)
+                    _buildInfoPillRow(
+                      icon: Icons.edit_calendar_rounded,
+                      iconColor: const Color(0xFFF97316),
+                      iconBgColor: const Color(0xFFFFF7ED),
+                      label: "Période d'inscription",
+                      value:
+                          '${_formatDate(debutInscrit!)} → ${_formatDate(finInscrit!)}',
+                      isDark: isDark,
+                      isLast:
+                          (debutPreinscrit == null && debutReservation == null),
+                      trailingWidget: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7ED),
+                          border: Border.all(
+                            color: const Color(0xFFFED7AA),
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'OUVERT',
+                          style: TextStyle(
+                            color: Color(0xFFEA580C),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── PERIOD CARDS (pré-inscription / inscription / réservation) ──
+          if (debutPreinscrit != null ||
+              debutInscrit != null ||
+              (montantReservation != null && montantReservation! > 0))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  if (debutPreinscrit != null && finPreinscrit != null)
+                    Expanded(
+                      child: _buildPeriodCard(
+                        title: 'Pré-inscription',
+                        value:
+                            '${_formatDate(debutPreinscrit!)} — ${_formatDate(finPreinscrit!)}',
+                        dotColor: const Color(0xFFF97316),
+                        titleColor: const Color(0xFFC2410C),
+                        isDark: isDark,
+                      ),
+                    ),
+                  if (debutPreinscrit != null &&
+                      finPreinscrit != null &&
+                      debutInscrit != null)
+                    const SizedBox(width: 8),
+                  if (debutInscrit != null && finInscrit != null)
+                    Expanded(
+                      child: _buildPeriodCard(
+                        title: 'Inscription',
+                        value:
+                            '${_formatDate(debutInscrit!)} — ${_formatDate(finInscrit!)}',
+                        dotColor: const Color(0xFF22C55E),
+                        titleColor: const Color(0xFF15803D),
+                        isDark: isDark,
+                      ),
+                    ),
+                  if (debutInscrit != null &&
+                      montantReservation != null &&
+                      montantReservation! > 0)
+                    const SizedBox(width: 8),
+                  if (montantReservation != null && montantReservation! > 0)
+                    Expanded(
+                      child: _buildPeriodCard(
+                        title: 'Réservation',
+                        value: _formatCurrency(montantReservation!),
+                        dotColor: const Color(0xFFF59E0B),
+                        titleColor: const Color(0xFFD97706),
+                        isDark: isDark,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Logo fallback ────────────────────────────────────────────────────────
+  Widget _buildLogoFallback(String name, Color color) {
+    final initials = name
+        .split(' ')
+        .take(2)
+        .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
+        .join();
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withValues(alpha: 0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Stat chip (glassmorphism) ────────────────────────────────────────────
+  Widget _buildStatChip({
+    required IconData icon,
+    required String value,
+    required String label,
+    Color valueColor = Colors.white,
+    Color iconColor = Colors.white,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(right: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: iconColor.withValues(alpha: 0.9), size: 13),
+          const SizedBox(width: 5),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: valueColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  height: 1.1,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.3,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Info pill row ────────────────────────────────────────────────────────
+  Widget _buildInfoPillRow({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required String label,
+    required String value,
+    required bool isDark,
+    Widget? trailingWidget,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? iconColor.withValues(alpha: 0.15)
+                      : iconBgColor,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(icon, color: iconColor, size: 14),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: isDark
+                            ? Colors.white38
+                            : const Color(0xFFA0AEC0),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF1A202C),
+                        height: 1.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (trailingWidget != null) trailingWidget,
+            ],
+          ),
+        ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : const Color(0xFFF0F4F8),
+            indent: 14,
+            endIndent: 14,
+          ),
+      ],
+    );
+  }
+
+  // ── Period card ──────────────────────────────────────────────────────────
+  Widget _buildPeriodCard({
+    required String title,
+    required String value,
+    required Color dotColor,
+    required Color titleColor,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: titleColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white70 : const Color(0xFF4A5568),
+              height: 1.4,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Header card ────────────────────────────────────────────────────────────
+  Widget _buildEstablishmentHeader_(bool isDark) {
+    final imageUrl = _ecoleDetail?.image ?? widget.ecole.displayImage;
+    final establishmentName =
+        _ecoleDetail?.data.nom ?? widget.ecole.parametreNom ?? 'École';
+    final establishmentType = widget.ecole.typePrincipal ?? 'Primaire';
+    final motto =
+        _ecoleDetail?.data.slogan ??
+        'L\'excellence notre priorité'; // Currently unused but kept for potential future use
     final address =
         _ecoleDetail?.data.adresse ??
         widget.ecole.adresse ??
@@ -874,8 +1614,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         _ecoleDetail?.data.telephone ??
         widget.ecole.telephone ??
         'Téléphone non disponible';
-    final email = _ecoleDetail?.data.email ?? 'Email non disponible';
-    
+    final email =
+        _ecoleDetail?.data.email ??
+        'Email non disponible'; // Currently unused but kept for potential future use
+
     // Récupérer les informations depuis l'API des paramètres
     final effectif = _ecoleParametres?.effectif;
     final effectifmoyclasse = _ecoleParametres?.effectifmoyclasse;
@@ -895,8 +1637,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final finInscrit = _ecoleParametres?.finInscrit;
     final telephone = _ecoleParametres?.telephone;
     final logo = _ecoleParametres?.logo;
-    
-    final typeColor = _getTypeColor(establishmentType);
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -909,78 +1649,271 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           child: child,
         ),
       ),
-      child: Column(
-        children: [
-          // ── Header Image (Full Width) ─────────────────────────────────────
-          Container(
-            width: double.infinity,
-            height: 200,
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            height: 320, // Augmenté à 320px pour accommoder plus d'informations
             child: Stack(
               children: [
-                // Image de fond
-                if (imageUrl != null && imageUrl.isNotEmpty)
-                  Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _productHeaderPlaceholder(typeColor),
-                  )
-                else
-                  _productHeaderPlaceholder(typeColor),
-                
-                // Overlay dégradé subtil
+                // Image de fond avec dégradé
                 Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.3),
-                        ],
-                        stops: const [0.6, 1.0],
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ImageHelper.buildNetworkImage(
+                        imageUrl: imageUrl,
+                        placeholder: establishmentName,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
                       ),
-                    ),
+                      // Dégradé overlay pour améliorer la lisibilité
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.3),
+                              Colors.black.withValues(alpha: 0.7),
+                            ],
+                            stops: const [0.0, 0.4, 0.7, 1.0],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                
-                // Badge type en haut à droite
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: typeColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: typeColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+
+                // Contenu superposé
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.school_rounded,
-                          size: 12,
-                          color: Colors.white,
+                        const Spacer(),
+
+                        // Badge du type d'établissement
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            establishmentType.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          establishmentType,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+
+                        const SizedBox(height: 8),
+
+                        // Carte d'informations avec fond semi-transparent et défilement
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(
+                              alpha: isDark ? 0.9 : 0.9,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Nom de l'établissement
+                                Text(
+                                  establishmentName,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+
+                                const SizedBox(height: 4),
+
+                                _buildInfoRow(
+                                  context: context,
+                                  icon: Icons.location_on_rounded,
+                                  text: address,
+                                  color: AppColors.primary,
+                                ),
+
+                                const SizedBox(height: 2),
+
+                                // Statut si disponible
+                                if (statut != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.business_rounded,
+                                    text: 'Statut: $statut',
+                                    color: Colors.blue,
+                                  ),
+
+                                // Effectif si disponible
+                                if (effectif != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.people_rounded,
+                                    text: '$effectif élèves',
+                                    color: AppColors.primary,
+                                  ),
+
+                                // Effectif moyen par classe si disponible
+                                if (effectifmoyclasse != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.groups_rounded,
+                                    text: 'Moyenne/classe: $effectifmoyclasse',
+                                    color: Colors.purple,
+                                  ),
+
+                                // Nombre d'années si disponible
+                                if (nbrannee != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.school_rounded,
+                                    text: 'Nombre d\'années: $nbrannee',
+                                    color: Colors.indigo,
+                                  ),
+
+                                // Langues si disponible
+                                if (programmelangue != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.language_rounded,
+                                    text: 'Langues: $programmelangue',
+                                    color: Colors.teal,
+                                  ),
+
+                                // Téléphone si disponible
+                                if (telephone != null && telephone!.isNotEmpty)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.phone_rounded,
+                                    text: telephone!,
+                                    color: Colors.green,
+                                  ),
+
+                                // Période si disponible
+                                if (periode != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.date_range_rounded,
+                                    text: 'Période: $periode',
+                                    color: Colors.orange,
+                                  ),
+
+                                // Type période si disponible
+                                if (typeperiode != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.category_rounded,
+                                    text: 'Type période: $typeperiode',
+                                    color: Colors.brown,
+                                  ),
+
+                                // Année si disponible
+                                if (annee != null)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.event_note_rounded,
+                                    text: 'Année: $annee',
+                                    color: Colors.red,
+                                  ),
+
+                                // Test d'entrée si disponible
+                                if (testEntree != null && testEntree! > 0)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.quiz_rounded,
+                                    text: 'Test d\'entrée: Requis',
+                                    color: Colors.deepOrange,
+                                  ),
+
+                                // Réservation si disponible
+                                if (debutReservation != null &&
+                                    finReservation != null) ...[
+                                  const SizedBox(height: 2),
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.bookmark_rounded,
+                                    text:
+                                        'Réservation: ${_formatDate(debutReservation!)} - ${_formatDate(finReservation!)}',
+                                    color: Colors.purple,
+                                  ),
+                                ],
+
+                                // Frais de réservation si disponible
+                                if (montantReservation != null &&
+                                    montantReservation! > 0)
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.payments_rounded,
+                                    text:
+                                        'Frais réservation: ${_formatCurrency(montantReservation!)}',
+                                    color: Colors.green,
+                                  ),
+
+                                // Périodes d'inscription si disponibles
+                                if (debutPreinscrit != null &&
+                                    finPreinscrit != null) ...[
+                                  const SizedBox(height: 2),
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.calendar_today_rounded,
+                                    text:
+                                        'Pré-inscription: ${_formatDate(debutPreinscrit)} - ${_formatDate(finPreinscrit)}',
+                                    color: Colors.orange,
+                                  ),
+                                ],
+
+                                if (debutInscrit != null &&
+                                    finInscrit != null) ...[
+                                  const SizedBox(height: 2),
+                                  _buildInfoRow(
+                                    context: context,
+                                    icon: Icons.edit_calendar_rounded,
+                                    text:
+                                        'Inscription: ${_formatDate(debutInscrit)} - ${_formatDate(finInscrit)}',
+                                    color: Colors.green,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -990,228 +1923,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               ],
             ),
           ),
-          
-          // ── Info Section ───────────────────────────────────────────────
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nom de l'établissement
-                  Text(
-                    establishmentName,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : Colors.black87,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Slogan
-                  Text(
-                    motto,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? Colors.white70 : Colors.grey.shade600,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Informations supplémentaires
-                  if (statut != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.business_rounded,
-                      'Statut: $statut',
-                      isDark,
-                      color: Colors.blue,
-                    ),
-                  
-                  if (effectif != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.people_rounded,
-                      '$effectif élèves',
-                      isDark,
-                    ),
-                  
-                  if (effectifmoyclasse != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.groups_rounded,
-                      'Moyenne/classe: $effectifmoyclasse',
-                      isDark,
-                      color: Colors.purple,
-                    ),
-                  
-                  if (nbrannee != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.school_rounded,
-                      'Nombre d\'années: $nbrannee',
-                      isDark,
-                      color: Colors.indigo,
-                    ),
-                  
-                  if (programmelangue != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.language_rounded,
-                      'Langues: $programmelangue',
-                      isDark,
-                      color: Colors.teal,
-                    ),
-                  
-                  if (telephone != null && telephone!.isNotEmpty)
-                    _buildInfoItem(
-                      context,
-                      Icons.phone_rounded,
-                      telephone!,
-                      isDark,
-                      color: Colors.green,
-                    ),
-                  
-                  if (periode != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.date_range_rounded,
-                      'Période: $periode',
-                      isDark,
-                      color: Colors.orange,
-                    ),
-                  
-                  if (typeperiode != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.category_rounded,
-                      'Type période: $typeperiode',
-                      isDark,
-                      color: Colors.brown,
-                    ),
-                  
-                  if (annee != null)
-                    _buildInfoItem(
-                      context,
-                      Icons.event_note_rounded,
-                      'Année: $annee',
-                      isDark,
-                      color: Colors.red,
-                    ),
-                  
-                  if (testEntree != null && testEntree! > 0)
-                    _buildInfoItem(
-                      context,
-                      Icons.quiz_rounded,
-                      'Test d\'entrée: Requis',
-                      isDark,
-                      color: Colors.deepOrange,
-                    ),
-                  
-                  if (debutReservation != null && finReservation != null) ...[
-                    const SizedBox(height: 8),
-                    _buildInfoItem(
-                      context,
-                      Icons.bookmark_rounded,
-                      'Réservation: ${_formatDate(debutReservation!)} - ${_formatDate(finReservation!)}',
-                      isDark,
-                      color: Colors.purple,
-                    ),
-                  ],
-                  
-                  if (montantReservation != null && montantReservation! > 0)
-                    _buildInfoItem(
-                      context,
-                      Icons.payments_rounded,
-                      'Frais réservation: ${_formatCurrency(montantReservation!)}',
-                      isDark,
-                      color: Colors.green,
-                    ),
-                  
-                  if (debutPreinscrit != null && finPreinscrit != null) ...[
-                    const SizedBox(height: 8),
-                    _buildInfoItem(
-                      context,
-                      Icons.calendar_today_rounded,
-                      'Pré-inscription: ${_formatDate(debutPreinscrit!)} - ${_formatDate(finPreinscrit!)}',
-                      isDark,
-                      color: Colors.orange,
-                    ),
-                  ],
-                  
-                  if (debutInscrit != null && finInscrit != null) ...[
-                    const SizedBox(height: 8),
-                    _buildInfoItem(
-                      context,
-                      Icons.edit_calendar_rounded,
-                      'Inscription: ${_formatDate(debutInscrit!)} - ${_formatDate(finInscrit!)}',
-                      isDark,
-                      color: Colors.green,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  // ── Product Header Placeholder ───────────────────────────────────────────
-  Widget _productHeaderPlaceholder(Color color) => Container(
-    width: double.infinity,
-    height: 200,
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          color.withOpacity(0.8),
-          color.withOpacity(0.6),
-          color.withOpacity(0.4),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-    ),
-    child: Center(
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-            width: 2,
-          ),
-        ),
-        child: const Icon(
-          Icons.school_rounded,
-          size: 40,
-          color: Colors.white,
-        ),
-      ),
-    ),
-  );
-
-  // ── Info Item ─────────────────────────────────────────────────────────────
-  Widget _buildInfoItem(
-    BuildContext context,
-    IconData icon,
-    String text,
-    bool isDark, {
-    Color color = AppColors.screenOrange,
+  // ── Info Row (from establishment_header_card) ─────────────────────────────
+  Widget _buildInfoRow({
+    required BuildContext context,
+    required IconData icon,
+    required String text,
+    required Color color,
   }) {
     return Row(
       children: [
@@ -1228,7 +1950,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           child: Text(
             text,
             style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black87,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white70
+                  : Colors.black87,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -1251,10 +1975,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Currency Formatter ─────────────────────────────────────────────────────
   String _formatCurrency(int amount) {
-    return '${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
-        )} FCFA';
+    return '${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA';
   }
 
   // ── Build Info Card ───────────────────────────────────────────────────────
@@ -1299,11 +2020,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   color: AppColors.screenOrangeLight,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  size: 14,
-                  color: AppColors.screenOrange,
-                ),
+                child: Icon(icon, size: 14, color: AppColors.screenOrange),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1344,9 +2061,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       children: [
         // Pattern décoratif
         Positioned.fill(
-          child: CustomPaint(
-            painter: _PatternPainter(color.withOpacity(0.1)),
-          ),
+          child: CustomPaint(painter: _PatternPainter(color.withOpacity(0.1))),
         ),
         // Icône centrale
         Center(
@@ -1386,7 +2101,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF3A3A3A) : Colors.grey.withOpacity(0.15),
+          color: isDark
+              ? const Color(0xFF3A3A3A)
+              : Colors.grey.withOpacity(0.15),
           width: 1,
         ),
         boxShadow: [
@@ -1421,11 +2138,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   color: AppColors.screenOrangeLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: AppColors.screenOrange,
-                ),
+                child: Icon(icon, size: 16, color: AppColors.screenOrange),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1634,7 +2347,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             color: def.color,
             onTap: () => _showActionBottomSheet(item[0], def),
             //location: _getSchoolLocation(),
-            subtitle : "Consulter",
+            subtitle: "Consulter",
             backgroundColor: def.color.withOpacity(0.1),
             textColor: def.color,
           );
@@ -6554,10 +7267,7 @@ class _PatternPainter extends CustomPainter {
 
     // Dessiner des cercles décoratifs
     for (int i = 0; i < 5; i++) {
-      final offset = Offset(
-        size.width * (0.2 + i * 0.15),
-        size.height * 0.3,
-      );
+      final offset = Offset(size.width * (0.2 + i * 0.15), size.height * 0.3);
       canvas.drawCircle(offset, 8, paint);
     }
 

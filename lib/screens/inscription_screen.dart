@@ -213,10 +213,7 @@ class ReservationStatus {
   final int sommeReservation;
   final bool status;
 
-  ReservationStatus({
-    required this.sommeReservation,
-    required this.status,
-  });
+  ReservationStatus({required this.sommeReservation, required this.status});
 
   factory ReservationStatus.fromJson(Map<String, dynamic> json) {
     return ReservationStatus(
@@ -231,13 +228,12 @@ class ReservationStatus {
 class InscriptionWizardScreen extends StatefulWidget {
   final Child child;
 
-  const InscriptionWizardScreen({
-    Key? key,
-    required this.child,
-  }) : super(key: key);
+  const InscriptionWizardScreen({Key? key, required this.child})
+    : super(key: key);
 
   @override
-  _InscriptionWizardScreenState createState() => _InscriptionWizardScreenState();
+  _InscriptionWizardScreenState createState() =>
+      _InscriptionWizardScreenState();
 }
 
 class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
@@ -276,32 +272,52 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   PointArret? _selectedPointArret;
 
   // ── Contrôleurs de recherche ───────────────────────────────────────────────────
-  final TextEditingController _serviceSearchController = TextEditingController();
+  final TextEditingController _serviceSearchController =
+      TextEditingController();
   final TextEditingController _zoneSearchController = TextEditingController();
-  final TextEditingController _pointArretSearchController = TextEditingController();
+  final TextEditingController _pointArretSearchController =
+      TextEditingController();
 
   // ── Listes filtrées ───────────────────────────────────────────────────────────
   List<Service> get _filteredServices {
     if (_serviceSearchController.text.isEmpty) return _services;
-    return _services.where((service) =>
-      service.designation.toLowerCase().contains(_serviceSearchController.text.toLowerCase()) ||
-      service.description.toLowerCase().contains(_serviceSearchController.text.toLowerCase())
-    ).toList();
+    return _services
+        .where(
+          (service) =>
+              service.designation.toLowerCase().contains(
+                _serviceSearchController.text.toLowerCase(),
+              ) ||
+              service.description.toLowerCase().contains(
+                _serviceSearchController.text.toLowerCase(),
+              ),
+        )
+        .toList();
   }
 
   List<ZoneTransport> get _filteredZones {
     if (_zoneSearchController.text.isEmpty) return _zones;
-    return _zones.where((zone) =>
-      zone.zone.toLowerCase().contains(_zoneSearchController.text.toLowerCase())
-    ).toList();
+    return _zones
+        .where(
+          (zone) => zone.zone.toLowerCase().contains(
+            _zoneSearchController.text.toLowerCase(),
+          ),
+        )
+        .toList();
   }
 
   List<PointArret> get _filteredPointsArret {
     if (_pointArretSearchController.text.isEmpty) return _pointsArret;
-    return _pointsArret.where((point) =>
-      point.designation.toLowerCase().contains(_pointArretSearchController.text.toLowerCase()) ||
-      point.description.toLowerCase().contains(_pointArretSearchController.text.toLowerCase())
-    ).toList();
+    return _pointsArret
+        .where(
+          (point) =>
+              point.designation.toLowerCase().contains(
+                _pointArretSearchController.text.toLowerCase(),
+              ) ||
+              point.description.toLowerCase().contains(
+                _pointArretSearchController.text.toLowerCase(),
+              ),
+        )
+        .toList();
   }
 
   // NOTE: L'étape Transport (ancien _echeancesTransport) est supprimée.
@@ -313,7 +329,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   @override
   void initState() {
     super.initState();
-    print('🚀 [INIT] Démarrage écran inscription pour ${widget.child.firstName} ${widget.child.lastName}');
+    print(
+      '🚀 [INIT] Démarrage écran inscription pour ${widget.child.firstName} ${widget.child.lastName}',
+    );
     print('📋 [INIT] Matricule: $_matricule, Branche: $_brancheId');
     _pageController = PageController();
     _progressController = AnimationController(
@@ -345,17 +363,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   }
 
   // ─── API CALLS ──────────────────────────────────────────────────────────────
-  
+
   /// Vérifie les périodes d'inscription et retourne le statut
   Map<String, bool> _checkInscriptionPeriods() {
     // Utiliser le code de l'école de l'élève si disponible, sinon le code par défaut
     final ecoleCode = widget.child.ecoleCode ?? kEcoleCode;
     final ecoleData = EcoleEleveService.getEcoleDataFromCache(ecoleCode);
-    
+
     if (ecoleData != null) {
       return EcoleEleveService.getStatutsInscription(ecoleData);
     }
-    
+
     // Retourner les valeurs par défaut si aucune donnée n'est disponible
     return {
       'preinscription': false,
@@ -366,47 +384,67 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   Future<void> _loadScolarite() async {
     setState(() => _loadingScolarite = true);
-    
+
     try {
       // Vérifier d'abord si les inscriptions sont ouvertes
       final statuts = _checkInscriptionPeriods();
       print('📅 [INSCRIPTION] Statut des périodes:');
-      print('   - Préinscription: ${statuts['preinscription'] == true ? 'OUVERTE' : 'FERMÉE'}');
-      print('   - Inscription: ${statuts['inscription'] == true ? 'OUVERTE' : 'FERMÉE'}');
-      print('   - Réservation: ${statuts['reservation'] == true ? 'OUVERTE' : 'FERMÉE'}');
-      
+      print(
+        '   - Préinscription: ${statuts['preinscription'] == true ? 'OUVERTE' : 'FERMÉE'}',
+      );
+      print(
+        '   - Inscription: ${statuts['inscription'] == true ? 'OUVERTE' : 'FERMÉE'}',
+      );
+      print(
+        '   - Réservation: ${statuts['reservation'] == true ? 'OUVERTE' : 'FERMÉE'}',
+      );
+
       // Si aucune période d'inscription n'est ouverte, afficher un message
-      if (statuts['preinscription'] != true && statuts['inscription'] != true && statuts['reservation'] != true) {
+      if (statuts['preinscription'] != true &&
+          statuts['inscription'] != true &&
+          statuts['reservation'] != true) {
         print('⚠️ [INSCRIPTION] Aucune période d\'inscription ouverte');
-        _showError('Aucune période d\'inscription n\'est actuellement ouverte pour cette école.');
+        _showError(
+          'Aucune période d\'inscription n\'est actuellement ouverte pour cette école.',
+        );
         setState(() => _loadingScolarite = false);
         return;
       }
-      
+
       // Utiliser l'UID de l'élève et le code de l'école
       final uid = widget.child.id; // Utiliser l'ID de l'élève comme UID
       final ecoleCode = widget.child.ecoleCode ?? kEcoleCode;
       final systemeEducatif = ecoleCode.startsWith('*annour*') ? 2 : 1;
-      
-      final url = '$kBaseUrl/preinscription/scolarite/branche/$uid?ecole=$ecoleCode&systeme_educatif=$systemeEducatif';
+
+      final url =
+          '$kBaseUrl/preinscription/scolarite/branche/$uid?ecole=$ecoleCode&systeme_educatif=$systemeEducatif';
       print('🔍 [API] Chargement scolarité - URL: $url');
       print('👤 [API] UID élève: $uid');
       print('🏷️ [API] Code école: $ecoleCode');
-      print('📚 [API] Système éducatif: $systemeEducatif (${systemeEducatif == 1 ? 'défaut' : 'spécial'})');
-      
-      final response = await http.get(Uri.parse(url), headers: {'Content-Type': 'application/json'});
+      print(
+        '📚 [API] Système éducatif: $systemeEducatif (${systemeEducatif == 1 ? 'défaut' : 'spécial'})',
+      );
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
       print('📡 [API] Réponse scolarité - Status: ${response.statusCode}');
       print('📄 [API] Body scolarité: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         print('✅ [API] Succès scolarité - ${data.length} échéances trouvées');
         setState(() {
-          _echeancesScolarite = data.map((e) => EcheanceScolarite.fromJson(e)).toList();
+          _echeancesScolarite = data
+              .map((e) => EcheanceScolarite.fromJson(e))
+              .toList();
         });
       } else {
         print('❌ [API] Erreur scolarité - Status: ${response.statusCode}');
-        _showError('Erreur lors du chargement des données de scolarité: ${response.statusCode}');
+        _showError(
+          'Erreur lors du chargement des données de scolarité: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('💥 [API] Exception scolarité: $e');
@@ -421,7 +459,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     try {
       final url = '$kBaseUrl/vie-ecoles/reservation/eleve/$_matricule';
       print('🔍 [API] Chargement réservation - URL: $url');
-      final response = await http.get(Uri.parse(url), headers: {'Content-Type': 'application/json'});
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
       print('📡 [API] Réponse réservation - Status: ${response.statusCode}');
       print('📄 [API] Body réservation: ${response.body}');
 
@@ -451,7 +492,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     try {
       final url = '$kBaseUrl/preinscription/services?ecole=$kEcoleCode';
       print('🔍 [API] Chargement services - URL: $url');
-      final response = await http.get(Uri.parse(url), headers: {'Content-Type': 'application/json'});
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
       print('📡 [API] Réponse services - Status: ${response.statusCode}');
       print('📄 [API] Body services: ${response.body}');
       if (response.statusCode == 200) {
@@ -472,24 +516,36 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   }
 
   Future<void> _loadEcheancesService(String serviceId) async {
-    print('🚀 [API] Début chargement échéances service pour serviceId: $serviceId');
+    print(
+      '🚀 [API] Début chargement échéances service pour serviceId: $serviceId',
+    );
     setState(() => _loadingEcheancesService = true);
     try {
-      final url = '$kBaseUrl/preinscription/service/echeances/$serviceId?ecole=$kEcoleCode';
+      final url =
+          '$kBaseUrl/preinscription/service/echeances/$serviceId?ecole=$kEcoleCode';
       print('🔍 [API] URL requête échéances service: $url');
-      final response = await http.get(Uri.parse(url), headers: {'Content-Type': 'application/json'});
-      print('📡 [API] Réponse échéances service - Status: ${response.statusCode}');
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+      print(
+        '📡 [API] Réponse échéances service - Status: ${response.statusCode}',
+      );
       print('📄 [API] Body réponse échéances service: ${response.body}');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         final echeances = data.map((e) => EcheanceService.fromJson(e)).toList();
-        print('✅ [API] Succès échéances service - ${echeances.length} échéances trouvées');
+        print(
+          '✅ [API] Succès échéances service - ${echeances.length} échéances trouvées',
+        );
         setState(() {
           _echeancesService = echeances;
         });
       } else {
-        print('❌ [API] Erreur échéances service - Status: ${response.statusCode}');
+        print(
+          '❌ [API] Erreur échéances service - Status: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('💥 [API] Exception échéances service: $e');
@@ -508,7 +564,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         }
         _echeancesService.first.selectionnee = true;
       });
-      print('✅ [UI] Première échéance sélectionnée par défaut: ${_echeancesService.first.libelle}');
+      print(
+        '✅ [UI] Première échéance sélectionnée par défaut: ${_echeancesService.first.libelle}',
+      );
     }
   }
 
@@ -529,7 +587,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       final allEcheances = <EcheanceService>[];
 
       for (final service in selectedServices) {
-        print('🔄 [API] Chargement échéances pour service: ${service.designation} (ID: ${service.iddetail})');
+        print(
+          '🔄 [API] Chargement échéances pour service: ${service.designation} (ID: ${service.iddetail})',
+        );
         await _loadEcheancesService(service.iddetail);
         allEcheances.addAll(_echeancesService);
         print('📊 [API] Total échéances accumulées: ${allEcheances.length}');
@@ -538,7 +598,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       setState(() {
         _echeancesService = allEcheances;
       });
-      print('✅ [API] Fin chargement échéances - Total: ${allEcheances.length} échéances');
+      print(
+        '✅ [API] Fin chargement échéances - Total: ${allEcheances.length} échéances',
+      );
       _selectFirstEcheanceByDefault();
     } catch (e) {
       print('💥 [API] Exception échéances services: $e');
@@ -554,7 +616,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     try {
       final url = '$kBaseUrl/preinscription/service/zones?ecole=$kEcoleCode';
       print('🔍 [API] Chargement zones - URL: $url');
-      final response = await http.get(Uri.parse(url), headers: {'Content-Type': 'application/json'});
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
       print('📡 [API] Réponse zones - Status: ${response.statusCode}');
       print('📄 [API] Body réponse zones: ${response.body}');
 
@@ -579,10 +644,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Future<void> _loadPointsArret(String zoneId) async {
     setState(() => _loadingPointsArret = true);
     try {
-      final url = '$kBaseUrl/preinscription/service/points_arret/$zoneId?ecole=$kEcoleCode';
+      final url =
+          '$kBaseUrl/preinscription/service/points_arret/$zoneId?ecole=$kEcoleCode';
       print('🔍 [API] Chargement points d\'arrêt - URL: $url');
-      final response = await http.get(Uri.parse(url), headers: {'Content-Type': 'application/json'});
-      print('📡 [API] Réponse points d\'arrêt - Status: ${response.statusCode}');
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
+      print(
+        '📡 [API] Réponse points d\'arrêt - Status: ${response.statusCode}',
+      );
       print('📄 [API] Body points d\'arrêt: ${response.body}');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -592,7 +663,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           _selectedPointArret = null;
         });
       } else {
-        print('❌ [API] Erreur points d\'arrêt - Status: ${response.statusCode}');
+        print(
+          '❌ [API] Erreur points d\'arrêt - Status: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('💥 [API] Exception points d\'arrêt: $e');
@@ -682,9 +755,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   String _formatDate(String dateStr) {
@@ -810,10 +883,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selectionnee ? color.withOpacity(0.06) : AppColors.screenSurface,
+          color: selectionnee
+              ? color.withOpacity(0.06)
+              : AppColors.screenSurface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selectionnee ? color.withOpacity(0.4) : AppColors.screenDivider,
+            color: selectionnee
+                ? color.withOpacity(0.4)
+                : AppColors.screenDivider,
             width: selectionnee ? 1.5 : 1,
           ),
         ),
@@ -854,8 +931,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_rounded,
-                          size: 11, color: AppColors.screenTextSecondary),
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 11,
+                        color: AppColors.screenTextSecondary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Limite: ${_formatDate(dateLimite)}',
@@ -867,7 +947,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       if (obligatoire) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -921,11 +1004,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       ),
       child: Text(
         'Total: ${_formatAmount(montant)}',
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: c,
-        ),
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c),
       ),
     );
   }
@@ -963,16 +1042,22 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 ),
                 const SizedBox(height: 12),
                 if (_echeancesScolarite.isEmpty)
-                  _buildEmptyState('Aucune échéance disponible', Icons.info_outline)
+                  _buildEmptyState(
+                    'Aucune échéance disponible',
+                    Icons.info_outline,
+                  )
                 else
-                  ..._echeancesScolarite.map((e) => _buildEcheanceCard(
-                    libelle: e.libelle,
-                    montant: e.montant,
-                    dateLimite: e.dateLimite,
-                    selectionnee: e.selectionnee,
-                    obligatoire: e.rubriqueObligatoire == 1,
-                    onToggle: () => setState(() => e.selectionnee = !e.selectionnee),
-                  )),
+                  ..._echeancesScolarite.map(
+                    (e) => _buildEcheanceCard(
+                      libelle: e.libelle,
+                      montant: e.montant,
+                      dateLimite: e.dateLimite,
+                      selectionnee: e.selectionnee,
+                      obligatoire: e.rubriqueObligatoire == 1,
+                      onToggle: () =>
+                          setState(() => e.selectionnee = !e.selectionnee),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 if (_echeancesScolarite.isNotEmpty)
                   _buildInfoBanner(
@@ -1002,7 +1087,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 ),
                 const SizedBox(height: 24),
                 if (_reservation == null)
-                  _buildEmptyState('Impossible de charger les infos réservation', Icons.error_outline)
+                  _buildEmptyState(
+                    'Impossible de charger les infos réservation',
+                    Icons.error_outline,
+                  )
                 else ...[
                   Container(
                     padding: const EdgeInsets.all(24),
@@ -1062,10 +1150,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        if (_reservation!.status && _reservation!.sommeReservation > 0) ...[
+                        if (_reservation!.status &&
+                            _reservation!.sommeReservation > 0) ...[
                           const SizedBox(height: 20),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
@@ -1075,8 +1167,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.remove_circle_rounded,
-                                    color: Colors.white, size: 20),
+                                const Icon(
+                                  Icons.remove_circle_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Déduction: ${_formatAmount(_reservation!.sommeReservation)}',
@@ -1127,7 +1222,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       hintText: 'Rechercher un service...',
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -1147,11 +1245,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF10B981).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withOpacity(0.3),
+                          ),
                         ),
                         child: Text(
                           '${_services.where((s) => s.selectionnee).length} sélectionné(s)',
@@ -1165,7 +1268,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     ],
                   ),
                   const SizedBox(height: 12),
-                  ..._filteredServices.map((service) => _buildServiceCard(service)),
+                  ..._filteredServices.map(
+                    (service) => _buildServiceCard(service),
+                  ),
                 ],
               ],
             ),
@@ -1176,8 +1281,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     final color = service.service == 'CANTINE'
         ? const Color(0xFFF59E0B)
         : service.service == 'TRANS'
-            ? const Color(0xFF14B8A6)
-            : const Color(0xFF10B981);
+        ? const Color(0xFF14B8A6)
+        : const Color(0xFF10B981);
 
     return GestureDetector(
       onTap: () {
@@ -1193,10 +1298,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: service.selectionnee ? color.withOpacity(0.07) : AppColors.screenSurface,
+          color: service.selectionnee
+              ? color.withOpacity(0.07)
+              : AppColors.screenSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: service.selectionnee ? color.withOpacity(0.4) : AppColors.screenDivider,
+            color: service.selectionnee
+                ? color.withOpacity(0.4)
+                : AppColors.screenDivider,
             width: service.selectionnee ? 1.5 : 1,
           ),
         ),
@@ -1206,16 +1315,20 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: service.selectionnee ? color.withOpacity(0.15) : AppColors.screenCard,
+                color: service.selectionnee
+                    ? color.withOpacity(0.15)
+                    : AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 service.service == 'CANTINE'
                     ? Icons.restaurant_rounded
                     : service.service == 'TRANS'
-                        ? Icons.directions_bus_rounded
-                        : Icons.school_rounded,
-                color: service.selectionnee ? color : AppColors.screenTextSecondary,
+                    ? Icons.directions_bus_rounded
+                    : Icons.school_rounded,
+                color: service.selectionnee
+                    ? color
+                    : AppColors.screenTextSecondary,
                 size: 22,
               ),
             ),
@@ -1234,7 +1347,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -1270,12 +1386,18 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     shape: BoxShape.circle,
                     color: service.selectionnee ? color : Colors.transparent,
                     border: Border.all(
-                      color: service.selectionnee ? color : AppColors.screenDivider,
+                      color: service.selectionnee
+                          ? color
+                          : AppColors.screenDivider,
                       width: 2,
                     ),
                   ),
                   child: service.selectionnee
-                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
+                      ? const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        )
                       : null,
                 ),
               ],
@@ -1336,22 +1458,31 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       ),
                     ),
                     const Spacer(),
-                    _buildTotalBadge(_totalServices, color: const Color(0xFF10B981)),
+                    _buildTotalBadge(
+                      _totalServices,
+                      color: const Color(0xFF10B981),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 if (_echeancesService.isEmpty)
-                  _buildEmptyState('Aucune échéance disponible', Icons.info_outline)
+                  _buildEmptyState(
+                    'Aucune échéance disponible',
+                    Icons.info_outline,
+                  )
                 else
-                  ..._echeancesService.map((e) => _buildEcheanceCard(
-                    libelle: e.libelle,
-                    montant: e.montant,
-                    dateLimite: e.dateLimite,
-                    selectionnee: e.selectionnee,
-                    obligatoire: false,
-                    onToggle: () => setState(() => e.selectionnee = !e.selectionnee),
-                    accentColor: const Color(0xFF10B981),
-                  )),
+                  ..._echeancesService.map(
+                    (e) => _buildEcheanceCard(
+                      libelle: e.libelle,
+                      montant: e.montant,
+                      dateLimite: e.dateLimite,
+                      selectionnee: e.selectionnee,
+                      obligatoire: false,
+                      onToggle: () =>
+                          setState(() => e.selectionnee = !e.selectionnee),
+                      accentColor: const Color(0xFF10B981),
+                    ),
+                  ),
               ],
             ),
           );
@@ -1385,7 +1516,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       hintText: 'Rechercher une zone...',
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -1422,7 +1556,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           color: isSelected ? color.withOpacity(0.08) : AppColors.screenSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color.withOpacity(0.4) : AppColors.screenDivider,
+            color: isSelected
+                ? color.withOpacity(0.4)
+                : AppColors.screenDivider,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -1432,7 +1568,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.15) : AppColors.screenCard,
+                color: isSelected
+                    ? color.withOpacity(0.15)
+                    : AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -1472,7 +1610,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   shape: BoxShape.circle,
                   color: color,
                 ),
-                child: const Icon(Icons.check_rounded, color: Colors.white, size: 14),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 14,
+                ),
               ),
           ],
         ),
@@ -1531,15 +1673,23 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       hintText: 'Rechercher un point d\'arrêt...',
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 if (_filteredPointsArret.isEmpty)
-                  _buildEmptyState('Aucun point d\'arrêt trouvé', Icons.search_off)
+                  _buildEmptyState(
+                    'Aucun point d\'arrêt trouvé',
+                    Icons.search_off,
+                  )
                 else
-                  ..._filteredPointsArret.map((point) => _buildPointArretCard(point)),
+                  ..._filteredPointsArret.map(
+                    (point) => _buildPointArretCard(point),
+                  ),
               ],
             ),
           );
@@ -1563,7 +1713,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           color: isSelected ? color.withOpacity(0.07) : AppColors.screenSurface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? color.withOpacity(0.4) : AppColors.screenDivider,
+            color: isSelected
+                ? color.withOpacity(0.4)
+                : AppColors.screenDivider,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -1573,7 +1725,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.15) : AppColors.screenCard,
+                color: isSelected
+                    ? color.withOpacity(0.15)
+                    : AppColors.screenCard,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -1645,9 +1799,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 children: [
                   ..._echeancesScolarite
                       .where((e) => e.selectionnee)
-                      .map((e) => _buildRecapRow(e.libelle, _formatAmount(e.montant))),
+                      .map(
+                        (e) =>
+                            _buildRecapRow(e.libelle, _formatAmount(e.montant)),
+                      ),
                   const Divider(height: 16),
-                  _buildRecapRow('Sous-total', _formatAmount(_totalScolarite), isBold: true),
+                  _buildRecapRow(
+                    'Sous-total',
+                    _formatAmount(_totalScolarite),
+                    isBold: true,
+                  ),
                 ],
               ),
             ),
@@ -1664,9 +1825,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 children: [
                   ..._echeancesService
                       .where((e) => e.selectionnee)
-                      .map((e) => _buildRecapRow(e.libelle, _formatAmount(e.montant))),
+                      .map(
+                        (e) =>
+                            _buildRecapRow(e.libelle, _formatAmount(e.montant)),
+                      ),
                   const Divider(height: 16),
-                  _buildRecapRow('Sous-total', _formatAmount(_totalServices), isBold: true),
+                  _buildRecapRow(
+                    'Sous-total',
+                    _formatAmount(_totalServices),
+                    isBold: true,
+                  ),
                 ],
               ),
             ),
@@ -1683,9 +1851,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 children: [
                   if (_selectedZone != null)
                     _buildRecapRow('Zone', _selectedZone!.zone),
-                  _buildRecapRow('Point d\'arrêt', _selectedPointArret!.designation),
+                  _buildRecapRow(
+                    'Point d\'arrêt',
+                    _selectedPointArret!.designation,
+                  ),
                   const Divider(height: 16),
-                  _buildRecapRow('Sous-total', _formatAmount(_totalTransport), isBold: true),
+                  _buildRecapRow(
+                    'Sous-total',
+                    _formatAmount(_totalTransport),
+                    isBold: true,
+                  ),
                 ],
               ),
             ),
@@ -1699,12 +1874,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFF0EA5E9).withOpacity(0.08),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.3)),
+                border: Border.all(
+                  color: const Color(0xFF0EA5E9).withOpacity(0.3),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.bookmark_added_rounded,
-                      color: Color(0xFF0EA5E9), size: 20),
+                  const Icon(
+                    Icons.bookmark_added_rounded,
+                    color: Color(0xFF0EA5E9),
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
@@ -1750,7 +1930,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.payments_rounded, color: Colors.white, size: 28),
+                const Icon(
+                  Icons.payments_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
                 const SizedBox(width: 14),
                 const Expanded(
                   child: Text(
@@ -1787,11 +1971,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             decoration: BoxDecoration(
               color: const Color(0xFF6366F1).withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
+              border: Border.all(
+                color: const Color(0xFF6366F1).withOpacity(0.2),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, color: Color(0xFF6366F1), size: 18),
+                const Icon(
+                  Icons.info_outline,
+                  color: Color(0xFF6366F1),
+                  size: 18,
+                ),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
@@ -1850,10 +2040,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.all(16), child: child),
         ],
       ),
     );
@@ -1944,7 +2131,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       alignment: Alignment.center,
       child: Column(
         children: [
-          Icon(icon, size: 48, color: AppColors.screenTextSecondary.withOpacity(0.4)),
+          Icon(
+            icon,
+            size: 48,
+            color: AppColors.screenTextSecondary.withOpacity(0.4),
+          ),
           const SizedBox(height: 12),
           Text(
             message,
@@ -1959,7 +2150,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     );
   }
 
-  Widget _buildSkipState(String title, String subtitle, IconData icon, Color color) {
+  Widget _buildSkipState(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -2017,7 +2213,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     );
   }
 
-  Widget _buildInfoBanner(String value, String label, IconData icon, Color color) {
+  Widget _buildInfoBanner(
+    String value,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -2031,7 +2232,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           const SizedBox(width: 8),
           Text(
             '$label: ',
-            style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
           ),
           Text(
             value,
@@ -2052,20 +2256,26 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     final List<Map<String, dynamic>> ids = [];
 
     // Scolarité
-    final echeancesScol = _echeancesScolarite.where((e) => e.selectionnee).toList();
+    final echeancesScol = _echeancesScolarite
+        .where((e) => e.selectionnee)
+        .toList();
     if (echeancesScol.isNotEmpty) {
       ids.add({
         'id': 'SCO',
         'service': 'Scolarité',
         'montant': _totalScolarite,
         'reservation': _reservation?.status ?? false,
-        'echeances_selectionnees': echeancesScol.map((e) => e.toJson()).toList(),
+        'echeances_selectionnees': echeancesScol
+            .map((e) => e.toJson())
+            .toList(),
       });
     }
 
     // Services
     final selectedServices = _services.where((s) => s.selectionnee).toList();
-    final echeancesServices = _echeancesService.where((e) => e.selectionnee).toList();
+    final echeancesServices = _echeancesService
+        .where((e) => e.selectionnee)
+        .toList();
     if (echeancesServices.isNotEmpty && selectedServices.isNotEmpty) {
       for (final service in selectedServices) {
         final serviceEcheances = echeancesServices
@@ -2077,7 +2287,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             'service': service.service,
             'montant': serviceEcheances.fold(0, (sum, e) => sum + e.montant),
             'reservation': false,
-            'echeances_selectionnees': serviceEcheances.map((e) => e.toJson()).toList(),
+            'echeances_selectionnees': serviceEcheances
+                .map((e) => e.toJson())
+                .toList(),
           });
         }
       }
@@ -2103,23 +2315,29 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     };
 
     try {
-      final url = '$kBaseUrl/vie-ecoles/inscription-eleve/$_matricule?ecole=$kEcoleCode';
+      final url =
+          '$kBaseUrl/vie-ecoles/inscription-eleve/$_matricule?ecole=$kEcoleCode';
       print('🚀 [API] Soumission inscription - URL: $url');
       print('📤 [API] Body inscription: ${jsonEncode(body)}');
       final response = await http.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode(body),
       );
       print('📡 [API] Réponse inscription - Status: ${response.statusCode}');
       print('📄 [API] Body inscription: ${response.body}');
 
-      if ((response.statusCode == 200 || response.statusCode == 201) && mounted) {
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Inscription de ${widget.child.firstName} enregistrée avec succès!'),
+              'Inscription de ${widget.child.firstName} enregistrée avec succès!',
+            ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           ),
@@ -2128,7 +2346,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         String errorMessage = 'Erreur lors de l\'inscription';
         try {
           final errorData = jsonDecode(response.body);
-          errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+          errorMessage =
+              errorData['message'] ?? errorData['error'] ?? errorMessage;
         } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
@@ -2138,7 +2357,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       print('💥 [API] Exception inscription: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur réseau: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erreur réseau: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -2155,7 +2377,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         backgroundColor: AppColors.screenCard,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.screenTextPrimary),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.screenTextPrimary,
+          ),
           onPressed: _currentStep == 0
               ? () => Navigator.of(context).pop()
               : _prevStep,
@@ -2186,7 +2411,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             padding: const EdgeInsets.only(right: 16),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -2273,8 +2501,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                         color: isCompleted
                             ? stepColor
                             : isCurrent
-                                ? stepColor
-                                : AppColors.screenDivider,
+                            ? stepColor
+                            : AppColors.screenDivider,
                         boxShadow: isCurrent
                             ? [
                                 BoxShadow(
@@ -2300,8 +2528,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       _steps[index]['label'] as String,
                       style: TextStyle(
                         fontSize: 9,
-                        fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
-                        color: isCurrent ? _stepColor(index) : AppColors.screenTextSecondary,
+                        fontWeight: isCurrent
+                            ? FontWeight.w700
+                            : FontWeight.w400,
+                        color: isCurrent
+                            ? _stepColor(index)
+                            : AppColors.screenTextSecondary,
                       ),
                     ),
                   ],
@@ -2341,13 +2573,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   side: BorderSide(color: AppColors.screenDivider, width: 1.5),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.arrow_back_rounded, size: 18,
-                        color: AppColors.screenTextSecondary),
+                    Icon(
+                      Icons.arrow_back_rounded,
+                      size: 18,
+                      color: AppColors.screenTextSecondary,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'Précédent',
@@ -2364,11 +2600,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
           if (_currentStep > 0) const SizedBox(width: 12),
 
-          if (!isLastStep)
-            Expanded(
-              flex: 3,
-              child: _buildNextButton(canNext),
-            ),
+          if (!isLastStep) Expanded(flex: 3, child: _buildNextButton(canNext)),
         ],
       ),
     );
@@ -2407,7 +2639,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _currentStep == _totalSteps - 2 ? 'Voir le récapitulatif' : 'Suivant',
+                  _currentStep == _totalSteps - 2
+                      ? 'Voir le récapitulatif'
+                      : 'Suivant',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,

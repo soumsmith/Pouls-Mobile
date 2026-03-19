@@ -9,8 +9,42 @@ import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
 import '../widgets/custom_loader.dart';
 
-// ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
+// ─── DESIGN TOKENS LOCAUX ─────────────────────────────────────────────────
+// Tous les tokens utilisent les couleurs originales du projet.
+// Aucune dépendance externe ajoutée.
+class _T {
+  // Surfaces
+  static const bg = Color(0xFFF4F4F0); // fond principal légèrement chaud
+  static const card = Colors.white;
+  static const cardBorder = Color(0xFFEAEAE6);
+  static const divider = Color(0xFFEEEEEA);
+  static const stepperBg = Color(0xFFF4F4F0);
 
+  // Textes
+  static const textPrimary = Color(0xFF1A1A1A);
+  static const textSecondary = Color(0xFF888888);
+  static const textMuted = Color(0xFFAAAAAA);
+
+  // Accents (reprend AppColors.shopGreen et AppColors.screenOrange)
+  static const green = AppColors.shopGreen; // #2E7D32 ou équivalent
+  static const greenLight = Color(0xFFEDF7EE);
+  static const greenBorder = Color(0xFFB8D9BA);
+  static const orange = AppColors.screenOrange; // #FF5500 ou équivalent
+  static const orangeLight = Color(0xFFFFF3E8);
+  static const orangeBorder = Color(0xFFF5C9A0);
+  static const orangeGlow = Color(0x4DFF5500);
+
+  // Nav pill
+  static const navPill = Color(0xCCFFFFFF);
+  static const navBorder = Color(0x0F000000);
+
+  // Shadows
+  static const shadowSoft = Color(0x0A000000);
+  static const shadowMedium = Color(0x14000000);
+  static const shadowStrong = Color(0x20000000);
+}
+
+// ─── SCREEN ───────────────────────────────────────────────────────────────
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
   final String? produitUid;
@@ -26,111 +60,151 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
+  // ── Services (inchangés) ──────────────────────────────────────────────
   final CartService _cartService = MockCartService();
   final ProduitService _produitService = ProduitService();
+
+  // ── State (inchangé) ─────────────────────────────────────────────────
   bool _isLoading = false;
   bool _isDetailLoading = true;
   int _quantity = 1;
   Product? _detailedProduct;
+  int _selectedTab = 0;
+  bool _descExpanded = false;
 
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
+  static const _tabs = ['Détails', 'Specs', 'Avis'];
 
+  // ── Animations ────────────────────────────────────────────────────────
+  // late final : initialisé au premier accès, garanti après création du State.
+  // Évite le LateInitializationError causé par un rebuild parent avant initState.
+  late final AnimationController _fadeCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 500),
+  );
+  late final AnimationController _slideCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 450),
+  );
+  late final Animation<double> _fadeAnim = CurvedAnimation(
+    parent: _fadeCtrl,
+    curve: Curves.easeOut,
+  );
+  late final Animation<Offset> _slideAnim = Tween<Offset>(
+    begin: const Offset(0, 0.06),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
+
+  // ─────────────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _fadeAnimation =
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _loadProductDetail();
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _fadeCtrl.dispose();
+    _slideCtrl.dispose();
     super.dispose();
   }
 
+  // ── Load (logique inchangée) ──────────────────────────────────────────
   Future<void> _loadProductDetail() async {
     if (widget.produitUid != null) {
       try {
-        final detailedProduct =
-            await _produitService.getProduitDetail(widget.produitUid!);
+        final detailedProduct = await _produitService.getProduitDetail(
+          widget.produitUid!,
+        );
         setState(() {
           _detailedProduct = detailedProduct;
           _isDetailLoading = false;
         });
       } catch (e) {
         setState(() => _isDetailLoading = false);
-        _showSnackBar('Erreur lors du chargement des détails: $e',
-            isError: true);
+        _showSnackBar(
+          'Erreur lors du chargement des détails: $e',
+          isError: true,
+        );
       }
     } else {
       setState(() => _isDetailLoading = false);
     }
-    _fadeController.forward();
+    _fadeCtrl.forward();
+    _slideCtrl.forward();
   }
 
-  void _showSnackBar(String msg, {bool isError = false, bool isSuccess = false}) {
+  // ── SnackBar (logique inchangée) ──────────────────────────────────────
+  void _showSnackBar(
+    String msg, {
+    bool isError = false,
+    bool isSuccess = false,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg, style: const TextStyle(color: Colors.white)),
         backgroundColor: isError
             ? Colors.red[400]
             : isSuccess
-                ? Colors.green[500]
-                : Colors.blue[500],
+            ? Colors.green[500]
+            : Colors.blue[500],
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // BUILD
+  // ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final Product currentProduct = _detailedProduct ?? widget.product;
-    final Color primaryColor = Color(int.parse(currentProduct.color));
+    final Product p = _detailedProduct ?? widget.product;
+    final Color productColor = Color(int.parse(p.color));
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: _T.bg,
         body: _isDetailLoading
             ? Center(
                 child: CustomLoader(
                   message: 'Chargement du produit...',
                   loaderColor: AppColors.shopGreen,
-                  backgroundColor: AppColors.screenSurface,
+                  backgroundColor: _T.bg,
                   showBackground: false,
                 ),
               )
             : FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
+                opacity: _fadeAnim,
+                child: Stack(
                   children: [
-                    Expanded(
-                      child: CustomScrollView(
-                        slivers: [
-                          _buildSliverAppBar(currentProduct, primaryColor),
-                          SliverToBoxAdapter(
-                            child: _buildContent(currentProduct, primaryColor),
+                    // ── Scrollable content ──
+                    CustomScrollView(
+                      slivers: [
+                        _buildSliverAppBar(p, productColor),
+                        SliverToBoxAdapter(
+                          child: SlideTransition(
+                            position: _slideAnim,
+                            child: _buildContent(p, productColor),
                           ),
-                        ],
-                      ),
+                        ),
+                        // espace pour la bottom bar
+                        const SliverToBoxAdapter(child: SizedBox(height: 110)),
+                      ],
                     ),
-                    // Bottom bar
-                    if (currentProduct.price > 0)
-                      _buildBottomActionBar(currentProduct, primaryColor)
-                    else
-                      _buildFreeServiceAction(currentProduct, primaryColor),
+                    // ── Bottom bar flottante ──
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: p.price > 0
+                          ? _buildBottomActionBar(p, productColor)
+                          : _buildFreeServiceAction(p, productColor),
+                    ),
                   ],
                 ),
               ),
@@ -138,61 +212,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // ─── SLIVER APP BAR avec image hero ────────────────────────────────────────
-  Widget _buildSliverAppBar(Product product, Color primaryColor) {
+  // ─────────────────────────────────────────────────────────────────────
+  // SLIVER APP BAR
+  // ─────────────────────────────────────────────────────────────────────
+  Widget _buildSliverAppBar(Product product, Color productColor) {
     return SliverAppBar(
-      expandedHeight: 280,
+      expandedHeight: 200,
       pinned: true,
-      backgroundColor: AppColors.screenCard,
+      backgroundColor: _T.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      leading: Padding(
-        padding: const EdgeInsets.all(8),
-        child: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.screenCard,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(
-                    color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
-              ],
-            ),
-            child: const Icon(Icons.arrow_back_ios_new,
-                size: 15, color: AppColors.screenTextPrimary),
-          ),
-        ),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: GestureDetector(
-            onTap: _shareProduct,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.screenCard,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(
-                      color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
-                ],
-              ),
-              child: const Icon(Icons.share_outlined,
-                  size: 16, color: AppColors.screenTextPrimary),
-            ),
-          ),
-        ),
-      ],
+      automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Image
+            // Image produit
             ImageHelper.buildNetworkImage(
               imageUrl: product.imageUrl,
               placeholder: product.title,
@@ -200,55 +236,114 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               height: double.infinity,
               fit: BoxFit.cover,
             ),
-            // Gradient overlay au bas pour la transition
+            // Fade progressif bas → fond clair
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
+                  stops: [0.0, 0.5, 0.82, 1.0],
                   colors: [
                     Colors.transparent,
                     Colors.transparent,
-                    Color(0x33000000),
-                    Color(0x88000000),
+                    Color(0x66F4F4F0),
+                    _T.bg,
                   ],
-                  stops: [0, 0.5, 0.8, 1],
                 ),
               ),
             ),
-            // Type badge en bas à gauche sur l'image
+            // Badges bas
             Positioned(
               left: 16,
-              bottom: 16,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  product.type,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-            // Stock badge en bas à droite
-            Positioned(
               right: 16,
               bottom: 16,
-              child: _buildStockBadge(product),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildTypeBadge(product.type, productColor),
+                  _buildStockBadge(product),
+                ],
+              ),
             ),
           ],
+        ),
+      ),
+      // Bouton retour
+      leading: _buildNavButton(
+        icon: Icons.arrow_back_ios_new_rounded,
+        onTap: () => Navigator.pop(context),
+      ),
+      // Actions
+      actions: [
+        _buildNavButton(icon: Icons.favorite_border_rounded, onTap: () {}),
+        _buildNavButton(
+          icon: Icons.ios_share_rounded,
+          onTap: _shareProduct,
+          rightPadding: 12,
+        ),
+      ],
+    );
+  }
+
+  // ── Nav button (glassmorphism léger) ─────────────────────────────────
+  Widget _buildNavButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    double rightPadding = 0,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(left: 8, right: rightPadding, top: 8, bottom: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: _T.navPill,
+            shape: BoxShape.circle,
+            border: Border.all(color: _T.navBorder),
+            boxShadow: const [
+              BoxShadow(
+                color: _T.shadowMedium,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 15, color: _T.textPrimary),
         ),
       ),
     );
   }
 
+  // ── Type badge ───────────────────────────────────────────────────────
+  Widget _buildTypeBadge(String type, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Text(
+        type.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 10,
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.0,
+        ),
+      ),
+    );
+  }
+
+  // ── Stock badge ──────────────────────────────────────────────────────
   Widget _buildStockBadge(Product product) {
     Color color;
     String label;
@@ -263,29 +358,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       label = 'Stock limité';
       icon = Icons.warning_amber_outlined;
     } else {
-      color = Colors.green;
+      color = _T.green;
       label = 'Disponible';
       icon = Icons.check_circle_outline;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withOpacity(0.92),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 6, offset: Offset(0, 2))
+          BoxShadow(
+            color: _T.shadowMedium,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: color,
               fontWeight: FontWeight.w700,
             ),
@@ -295,35 +394,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // ─── CONTENU PRINCIPAL ─────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────
+  // CONTENU PRINCIPAL
+  // ─────────────────────────────────────────────────────────────────────
   Widget _buildContent(Product product, Color primaryColor) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Titre + sous-titre
           _buildProductHeader(product, primaryColor),
-          const SizedBox(height: 20),
-
-          // Description
+          const SizedBox(height: 4),
+          _buildDivider(),
+          _buildTabs(),
           _buildDescriptionCard(product),
-          const SizedBox(height: 16),
-
-          // Infos chips (stock qty, catégorie…)
+          const SizedBox(height: 12),
           _buildInfoChips(product, primaryColor),
-          const SizedBox(height: 16),
-
-          // Sélecteur de quantité
+          const SizedBox(height: 12),
           if (product.price > 0) _buildQuantitySelector(product),
-
           const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  // ── Titre ──────────────────────────────────────────────────────────────────
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      color: _T.divider,
+      margin: const EdgeInsets.symmetric(vertical: 14),
+    );
+  }
+
+  // ── Titre + Prix ─────────────────────────────────────────────────────
   Widget _buildProductHeader(Product product, Color primaryColor) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,17 +440,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
+                  color: _T.textPrimary,
                   letterSpacing: -0.6,
-                  height: 1.2,
+                  height: 1.15,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 5),
               Text(
                 product.subtitle,
                 style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.screenTextSecondary,
+                  fontSize: 13,
+                  color: _T.textSecondary,
                   fontWeight: FontWeight.w400,
                   height: 1.4,
                 ),
@@ -356,25 +459,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           ),
         ),
         if (product.price > 0) ...[
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${product.price.toStringAsFixed(0)}',
+                product.price.toStringAsFixed(0),
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.shopGreen,
+                  color: _T.green,
                   letterSpacing: -1,
+                  height: 1,
                 ),
               ),
+              const SizedBox(height: 3),
               const Text(
                 'FCFA / unité',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.screenTextSecondary,
-                ),
+                style: TextStyle(fontSize: 10, color: _T.textMuted),
               ),
             ],
           ),
@@ -383,52 +485,173 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // ── Description card ───────────────────────────────────────────────────────
+  // ── Tabs Détails / Specs / Avis ───────────────────────────────────────
+  Widget _buildTabs() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAEAE6),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Row(
+        children: List.generate(_tabs.length, (i) {
+          final bool active = i == _selectedTab;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  color: active ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: active
+                      ? const [
+                          BoxShadow(
+                            color: _T.shadowMedium,
+                            blurRadius: 6,
+                            offset: Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  _tabs[i],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                    color: active ? _T.textPrimary : _T.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // ── Description card avec "Voir plus" ───────────────────────────────
+  static const int _descMaxLines = 3;
+
   Widget _buildDescriptionCard(Product product) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: _T.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.screenDivider),
+        border: Border.all(color: _T.cardBorder),
         boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+          BoxShadow(color: _T.shadowSoft, blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Label ──
           Row(
             children: const [
-              Icon(Icons.info_outline_rounded, size: 16, color: AppColors.shopGreen),
-              SizedBox(width: 8),
+              Icon(Icons.info_outline_rounded, size: 14, color: _T.green),
+              SizedBox(width: 7),
               Text(
-                'Description',
+                'DESCRIPTION',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.2,
+                  color: _T.green,
+                  letterSpacing: 1.5,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text(
-            product.description,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondary,
-              height: 1.6,
+          // ── Texte avec AnimatedCrossFade ──
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 280),
+            crossFadeState: _descExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            // Version tronquée
+            firstChild: Text(
+              product.description,
+              maxLines: _descMaxLines,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                color: _T.textSecondary,
+                height: 1.65,
+              ),
             ),
+            // Version complète
+            secondChild: Text(
+              product.description,
+              style: const TextStyle(
+                fontSize: 13,
+                color: _T.textSecondary,
+                height: 1.65,
+              ),
+            ),
+          ),
+          // ── Bouton Voir plus / Voir moins ──
+          // Affiché uniquement si la description dépasse _descMaxLines
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Mesure si le texte déborde sur plus de _descMaxLines lignes
+              final tp = TextPainter(
+                text: TextSpan(
+                  text: product.description,
+                  style: const TextStyle(fontSize: 13, height: 1.65),
+                ),
+                maxLines: _descMaxLines,
+                textDirection: TextDirection.ltr,
+              )..layout(maxWidth: constraints.maxWidth);
+
+              final bool overflows = tp.didExceedMaxLines;
+
+              if (!overflows) return const SizedBox.shrink();
+
+              return GestureDetector(
+                onTap: () => setState(() => _descExpanded = !_descExpanded),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _descExpanded ? 'Voir moins' : 'Voir plus',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _T.green,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      AnimatedRotation(
+                        turns: _descExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 280),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 16,
+                          color: _T.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // ── Info chips ─────────────────────────────────────────────────────────────
+  // ── Info chips ────────────────────────────────────────────────────────
   Widget _buildInfoChips(Product product, Color primaryColor) {
     return Row(
       children: [
@@ -436,36 +659,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           icon: Icons.inventory_2_outlined,
           label: '${product.stockQuantity} en stock',
           color: product.stockQuantity > 10
-              ? Colors.green
+              ? _T.green
               : product.stockQuantity > 0
-                  ? Colors.orange
-                  : Colors.red,
+              ? Colors.orange
+              : Colors.red,
+          isGreen: product.stockQuantity > 10,
         ),
         const SizedBox(width: 10),
         _infoChip(
           icon: Icons.label_outline_rounded,
           label: product.type,
-          color: primaryColor,
+          color: _T.orange,
+          isOrange: true,
         ),
       ],
     );
   }
 
-  Widget _infoChip(
-      {required IconData icon,
-      required String label,
-      required Color color}) {
+  Widget _infoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    bool isGreen = false,
+    bool isOrange = false,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: isGreen
+            ? _T.greenLight
+            : isOrange
+            ? _T.orangeLight
+            : color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(
+          color: isGreen
+              ? _T.greenBorder
+              : isOrange
+              ? _T.orangeBorder
+              : color.withOpacity(0.2),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 13, color: color),
           const SizedBox(width: 6),
           Text(
             label,
@@ -480,118 +718,133 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // ── Quantity selector ──────────────────────────────────────────────────────
+  // ── Quantity selector ─────────────────────────────────────────────────
   Widget _buildQuantitySelector(Product product) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: _T.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.screenDivider),
+        border: Border.all(color: _T.cardBorder),
         boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+          BoxShadow(color: _T.shadowSoft, blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.shopping_bag_outlined,
-              size: 18, color: AppColors.screenTextSecondary),
+          const Icon(
+            Icons.shopping_bag_outlined,
+            size: 17,
+            color: _T.textSecondary,
+          ),
           const SizedBox(width: 10),
           const Text(
             'Quantité',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
+              color: _T.textPrimary,
               letterSpacing: -0.2,
             ),
           ),
           const Spacer(),
-          // Stepper — même style que CartScreen
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _quantity > 1
-                    ? () => setState(() => _quantity--)
-                    : null,
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: _quantity > 1
-                        ? AppColors.screenSurface
-                        : const Color(0xFFEEEEEE),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.remove,
-                    size: 16,
-                    color: _quantity > 1
-                        ? AppColors.screenTextPrimary
-                        : const Color(0xFFCCCCCC),
+          // Stepper
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: _T.stepperBg,
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: _T.cardBorder),
+            ),
+            child: Row(
+              children: [
+                _stepperButton(
+                  icon: Icons.remove,
+                  enabled: _quantity > 1,
+                  onTap: () => setState(() => _quantity--),
+                ),
+                SizedBox(
+                  width: 36,
+                  child: Center(
+                    child: Text(
+                      '$_quantity',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: _T.textPrimary,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                width: 40,
-                alignment: Alignment.center,
-                child: Text(
-                  '$_quantity',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.screenTextPrimary,
-                  ),
+                _stepperButton(
+                  icon: Icons.add,
+                  enabled: _quantity < product.stockQuantity,
+                  onTap: () => setState(() => _quantity++),
+                  isAdd: true,
                 ),
-              ),
-              GestureDetector(
-                onTap: _quantity < product.stockQuantity
-                    ? () => setState(() => _quantity++)
-                    : null,
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: _quantity < product.stockQuantity
-                        ? AppColors.shopGreen
-                        : const Color(0xFFEEEEEE),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.add,
-                    size: 16,
-                    color: _quantity < product.stockQuantity
-                        ? Colors.white
-                        : const Color(0xFFCCCCCC),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ─── BOTTOM ACTION BAR ─────────────────────────────────────────────────────
+  Widget _stepperButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+    bool isAdd = false,
+  }) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: !enabled
+              ? const Color(0xFFEEEEEE)
+              : isAdd
+              ? _T.orange
+              : const Color(0xFFF4F4F0),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          size: 15,
+          color: !enabled
+              ? const Color(0xFFCCCCCC)
+              : isAdd
+              ? Colors.white
+              : _T.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // BOTTOM ACTION BAR
+  // ─────────────────────────────────────────────────────────────────────
   Widget _buildBottomActionBar(Product product, Color primaryColor) {
     final double total = product.price * _quantity;
 
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.screenCard,
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 20,
-              offset: Offset(0, -4)),
-        ],
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: _T.shadowStrong,
+        //     blurRadius: 24,
+        //     offset: Offset(0, -6),
+        //   ),
+        // ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -600,41 +853,61 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 child: Container(
                   width: 36,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.screenDivider,
+                    color: const Color(0xFFE0E0DA),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               Row(
                 children: [
-                  // Prix total
+                  // Total
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'Total',
-                        style:
-                            TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+                        style: TextStyle(fontSize: 12, color: _T.textMuted),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        '${total.toStringAsFixed(0)} FCFA',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.screenTextPrimary,
-                          letterSpacing: -0.8,
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '${total.toStringAsFixed(0)} ',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: _T.textPrimary,
+                                letterSpacing: -0.8,
+                              ),
+                            ),
+                            WidgetSpan(
+                              child: Transform.translate(
+                                offset: const Offset(0, -4),
+                                child: const Text(
+                                  'FCFA',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: _T.textPrimary,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 16),
-                  // CTA button
-                  Expanded(
-                    child: _buildOrangeButton(
-                      label: 'Ajouter au panier',
+                  const Spacer(),
+                  // CTA
+                  SizedBox(
+                    width: 160,
+                    child: _buildCTAButton(
+                      label: 'Commander',
                       icon: Icons.shopping_bag_outlined,
                       isLoading: _isLoading,
                       enabled: product.isAvailable && !_isLoading,
@@ -655,19 +928,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   Widget _buildFreeServiceAction(Product product, Color primaryColor) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.screenCard,
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 20,
-              offset: Offset(0, -4)),
+            color: _T.shadowStrong,
+            blurRadius: 24,
+            offset: Offset(0, -6),
+          ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -675,14 +949,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 child: Container(
                   width: 36,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.screenDivider,
+                    color: const Color(0xFFE0E0DA),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              _buildOrangeButton(
+              _buildCTAButton(
                 label: 'Accéder au service',
                 icon: Icons.open_in_new_rounded,
                 onTap: () => _accessFreeService(product),
@@ -694,8 +968,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // ─── ORANGE BUTTON (même style que CartScreen) ────────────────────────────
-  Widget _buildOrangeButton({
+  // ── CTA Button (gradient orange) ─────────────────────────────────────
+  Widget _buildCTAButton({
     required String label,
     required IconData icon,
     VoidCallback? onTap,
@@ -706,7 +980,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 54,
+        height: 42,
         decoration: BoxDecoration(
           gradient: enabled
               ? const LinearGradient(
@@ -720,7 +994,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: AppColors.screenOrange.withOpacity(0.35),
+                    color: _T.orangeGlow,
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -734,23 +1008,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon,
-                        size: 18,
-                        color: enabled ? Colors.white : AppColors.screenTextSecondary),
+                    Icon(
+                      icon,
+                      size: 17,
+                      color: enabled ? Colors.white : const Color(0xFFAAAAAA),
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       label,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: enabled ? Colors.white : AppColors.screenTextSecondary,
+                        color: enabled ? Colors.white : const Color(0xFFAAAAAA),
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -761,12 +1036,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // ─── ACTIONS ──────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────
+  // ACTIONS (logique 100% inchangée)
+  // ─────────────────────────────────────────────────────────────────────
   Future<void> _addToCart(Product product) async {
     setState(() => _isLoading = true);
     try {
-      final success =
-          await _cartService.addToCart(product, quantity: _quantity);
+      final success = await _cartService.addToCart(
+        product,
+        quantity: _quantity,
+      );
       if (success) {
         _showSnackBar('${product.title} ajouté au panier', isSuccess: true);
         Future.delayed(const Duration(milliseconds: 500), () {

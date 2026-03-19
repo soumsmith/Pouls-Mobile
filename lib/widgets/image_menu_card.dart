@@ -133,7 +133,10 @@ class ImageMenuCard extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -141,7 +144,7 @@ class ImageMenuCard extends StatelessWidget {
                       Text(
                         title,
                         style: TextStyle(
-                          fontSize: textSizeService.getScaledFontSize(11),
+                          fontSize: textSizeService.getScaledFontSize(13),
                           fontWeight: FontWeight.w700,
                           color:
                               textColor ??
@@ -160,9 +163,12 @@ class ImageMenuCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: (textColor ?? 
-                                   (isDark ? Colors.white : AppColors.screenTextPrimary))
-                                   .withOpacity(0.8),
+                            color:
+                                (textColor ??
+                                        (isDark
+                                            ? Colors.white
+                                            : AppColors.screenTextPrimary))
+                                    .withOpacity(0.8),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(

@@ -97,6 +97,7 @@ class EcoleData {
   final int autoriseEngagement;
   final String? referralCode;
   final String? referredBy;
+  final int serviceExtra;
   final int? effectif;
   final String? effectifcant;
   final String? effectifmoyclasse;
@@ -163,6 +164,7 @@ class EcoleData {
     required this.autoriseEngagement,
     this.referralCode,
     this.referredBy,
+    required this.serviceExtra,
     this.effectif,
     this.effectifcant,
     this.effectifmoyclasse,
@@ -231,6 +233,7 @@ class EcoleData {
       autoriseEngagement: json['autorise_engagement'] ?? 0,
       referralCode: json['referral_code'],
       referredBy: json['referred_by'],
+      serviceExtra: json['service_extra'] ?? 0,
       effectif: json['effectif'] as int?,
       effectifcant: json['effectifcant']?.toString(),
       effectifmoyclasse: json['effectifmoyclasse']?.toString(),

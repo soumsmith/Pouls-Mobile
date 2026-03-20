@@ -31,8 +31,8 @@ import '../services/parent_suggestion_service.dart';
 import '../models/parent_suggestion.dart';
 import '../services/access_log_service.dart';
 import '../models/access_log.dart';
-import '../services/place_reservation_service.dart';
 import '../models/place_reservation.dart';
+import '../services/inscription_api_service.dart' as api_service;
 import '../models/student_class_info.dart';
 import '../models/group_message.dart';
 import '../models/ecole.dart';
@@ -287,8 +287,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   final MockParentSuggestionService _suggestionService =
       MockParentSuggestionService();
   final MockAccessLogService _accessLogService = MockAccessLogService();
-  final MockPlaceReservationService _reservationService =
-      MockPlaceReservationService();
 
   // Variables pour l'emploi du temps dynamique
   StudentTimetableResponse? _timetableResponse;
@@ -348,10 +346,10 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Informations supplémentaires de la classe/école
   StudentClassInfo? _studentClassInfo;
-  
+
   // Détails complets de l'élève
   Map<String, dynamic>? _eleveDetail;
-  
+
   // État pour l'affichage des informations détaillées
   bool _showEleveDetails = false;
 
@@ -449,11 +447,17 @@ class _ChildListScreenState extends State<ChildListScreen>
         print('🏫 Étape 2: Chargement des données de l\'école...');
         print('🏷️ Code école de l\'élève: $_ecoleCode');
         print('👤 Élève: ${widget.child.firstName} ${widget.child.lastName}');
-        print('📡 [API] Appel à EcoleEleveService.getEcoleParametresForEleve()');
-        print('🔗 [API] URL: https://api2.vie-ecoles.com/api/vie-ecoles/parametre/ecole?ecole=$_ecoleCode');
-        
+        print(
+          '📡 [API] Appel à EcoleEleveService.getEcoleParametresForEleve()',
+        );
+        print(
+          '🔗 [API] URL: https://api2.vie-ecoles.com/api/vie-ecoles/parametre/ecole?ecole=$_ecoleCode',
+        );
+
         try {
-          final ecoleData = await EcoleEleveService.getEcoleParametresForEleve(_ecoleCode!);
+          final ecoleData = await EcoleEleveService.getEcoleParametresForEleve(
+            _ecoleCode!,
+          );
           print('✅ Données de l\'école chargées avec succès');
           print('📊 [API] Résumé des données reçues:');
           print('   - Nom: ${ecoleData.nom}');
@@ -463,18 +467,34 @@ class _ChildListScreenState extends State<ChildListScreen>
           print('   - Période: ${ecoleData.periode}');
           print('   - Effectif: ${ecoleData.effectif} élèves');
           print('📅 [API] Périodes d\'inscription:');
-          print('   - Préinscription: ${ecoleData.debutPreinscrit} au ${ecoleData.finPreinscrit}');
-          print('   - Inscription: ${ecoleData.debutInscrit} au ${ecoleData.finInscrit}');
-          print('   - Réservation: ${ecoleData.debutReservation} au ${ecoleData.finReservation}');
+          print(
+            '   - Préinscription: ${ecoleData.debutPreinscrit} au ${ecoleData.finPreinscrit}',
+          );
+          print(
+            '   - Inscription: ${ecoleData.debutInscrit} au ${ecoleData.finInscrit}',
+          );
+          print(
+            '   - Réservation: ${ecoleData.debutReservation} au ${ecoleData.finReservation}',
+          );
         } catch (e) {
-          print('❌ [API] Erreur lors du chargement des données de l\'école: $e');
-          print('⚠️ [API] Continuité du chargement malgré l\'erreur de l\'API école');
+          print(
+            '❌ [API] Erreur lors du chargement des données de l\'école: $e',
+          );
+          print(
+            '⚠️ [API] Continuité du chargement malgré l\'erreur de l\'API école',
+          );
           // Continuer le chargement même si l'école échoue
         }
       } else {
-        print('⚠️ Étape 2: Aucun code école disponible pour l\'élève ${widget.child.firstName} ${widget.child.lastName}');
-        print('🔍 Recherche du code école dans les informations de l\'élève...');
-        print('   - ecoleCode depuis widget.child.ecoleCode: ${widget.child.ecoleCode}');
+        print(
+          '⚠️ Étape 2: Aucun code école disponible pour l\'élève ${widget.child.firstName} ${widget.child.lastName}',
+        );
+        print(
+          '🔍 Recherche du code école dans les informations de l\'élève...',
+        );
+        print(
+          '   - ecoleCode depuis widget.child.ecoleCode: ${widget.child.ecoleCode}',
+        );
         print('   - _ecoleCode depuis base de données: $_ecoleCode');
       }
 
@@ -571,20 +591,24 @@ class _ChildListScreenState extends State<ChildListScreen>
         if (_matricule != null && _anneeId != null && _classeId != null) {
           await _loadStudentClassInfo();
         }
-        
+
         // Charger les détails complets de l'élève (après avoir récupéré le code école)
         if (_matricule != null) {
           if (_ecoleCode != null) {
             print('📋 Étape 6: Chargement des détails complets de l\'élève...');
             await _loadEleveDetail();
           } else {
-            print('⚠️ Étape 6: Détails de l\'élève non chargés - code école manquant');
+            print(
+              '⚠️ Étape 6: Détails de l\'élève non chargés - code école manquant',
+            );
             print('   - Matricule: $_matricule');
             print('   - Code école: $_ecoleCode');
             print('   - Tentative de chargement après _loadStudentClassInfo()');
           }
         } else {
-          print('⚠️ Étape 6: Détails de l\'élève non chargés - matricule manquant');
+          print(
+            '⚠️ Étape 6: Détails de l\'élève non chargés - matricule manquant',
+          );
           print('   - Matricule: $_matricule');
         }
       } else {
@@ -612,9 +636,12 @@ class _ChildListScreenState extends State<ChildListScreen>
       setState(() {
         _studentClassInfo = studentClassInfo;
         // Extraire le code école depuis identifiantVieEcole
-        if (_ecoleCode == null && studentClassInfo.identifiantVieEcole.isNotEmpty) {
+        if (_ecoleCode == null &&
+            studentClassInfo.identifiantVieEcole.isNotEmpty) {
           _ecoleCode = studentClassInfo.identifiantVieEcole;
-          print('🏷️ Code école extrait depuis identifiantVieEcole: $_ecoleCode');
+          print(
+            '🏷️ Code école extrait depuis identifiantVieEcole: $_ecoleCode',
+          );
         }
       });
 
@@ -636,9 +663,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     print('🔄 CHARGEMENT DES DÉTAILS DE L\'ÉLÈVE');
     print('═══════════════════════════════════════════════════════════');
     print('👤 Élève: ${widget.child.fullName} (${widget.child.id})');
-    print('🎫 Matricule disponible: ${_matricule != null ? "✅ $_matricule" : "❌ NON"}');
-    print('🏷️ Code école disponible: ${_ecoleCode != null ? "✅ $_ecoleCode" : "❌ NON"}');
-    
+    print(
+      '🎫 Matricule disponible: ${_matricule != null ? "✅ $_matricule" : "❌ NON"}',
+    );
+    print(
+      '🏷️ Code école disponible: ${_ecoleCode != null ? "✅ $_ecoleCode" : "❌ NON"}',
+    );
+
     if (_matricule == null || _ecoleCode == null) {
       print('⚠️ Informations manquantes pour charger les détails de l\'élève');
       print('   - Matricule: $_matricule');
@@ -651,7 +682,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     try {
       print('📡 Appel de l\'API EcoleEleveService.getEleveDetail()...');
       print('⏱️ Heure de début: ${DateTime.now().toIso8601String()}');
-      
+
       final eleveDetail = await EcoleEleveService.getEleveDetail(
         _matricule!,
         _ecoleCode!,
@@ -660,7 +691,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('⏱️ Heure de fin: ${DateTime.now().toIso8601String()}');
       print('✅ Détails de l\'élève reçus avec succès');
       print('📊 Résumé des données reçues:');
-      print('   - Nom complet: ${eleveDetail['nom']} ${eleveDetail['prenoms']}');
+      print(
+        '   - Nom complet: ${eleveDetail['nom']} ${eleveDetail['prenoms']}',
+      );
       print('   - Matricule: ${eleveDetail['matricule']}');
       print('   - Niveau: ${eleveDetail['niveau']}');
       print('   - Filière: ${eleveDetail['filiere']}');
@@ -677,7 +710,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('');
     } catch (e) {
       print('❌ Erreur lors du chargement des détails de l\'élève: $e');
-      print('⚠️ L\'application continuera de fonctionner sans les détails complets');
+      print(
+        '⚠️ L\'application continuera de fonctionner sans les détails complets',
+      );
       print('═══════════════════════════════════════════════════════════');
       print('');
       // Ne pas bloquer le processus si cette API échoue
@@ -1722,7 +1757,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ],
           ),
-          
+
           // Section des informations détaillées de l'élève
           if (_showEleveDetails && _eleveDetail != null) ...[
             const SizedBox(height: 20),
@@ -1750,7 +1785,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       _buildProfileDetailItem(
                         icon: Icons.cake,
                         label: 'Né(e)',
-                        value: _formatDate(_eleveDetail!['datenaissance']?.toString() ?? 'N/A'),
+                        value: _formatDate(
+                          _eleveDetail!['datenaissance']?.toString() ?? 'N/A',
+                        ),
                       ),
                     ],
                   ),
@@ -1779,18 +1816,21 @@ class _ChildListScreenState extends State<ChildListScreen>
                         label: 'Mobile',
                         value: _eleveDetail!['mobile']?.toString() ?? 'N/A',
                         isClickable: true,
-                        onTap: () => _makePhoneCall(_eleveDetail!['mobile']?.toString() ?? ''),
+                        onTap: () => _makePhoneCall(
+                          _eleveDetail!['mobile']?.toString() ?? '',
+                        ),
                       ),
                       _buildProfileDetailItem(
                         icon: Icons.flag,
                         label: 'Nationalité',
-                        value: _eleveDetail!['nationalite']?.toString() ?? 'N/A',
+                        value:
+                            _eleveDetail!['nationalite']?.toString() ?? 'N/A',
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Informations scolaires
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1831,8 +1871,12 @@ class _ChildListScreenState extends State<ChildListScreen>
                         icon: Icons.refresh,
                         label: 'Redoublant',
                         value: _eleveDetail!['redoublant']?.toString() ?? 'N/A',
-                        valueColor: _eleveDetail!['redoublant']?.toString().toLowerCase() == 'oui' 
-                            ? Colors.orange 
+                        valueColor:
+                            _eleveDetail!['redoublant']
+                                    ?.toString()
+                                    .toLowerCase() ==
+                                'oui'
+                            ? Colors.orange
                             : Colors.green,
                       ),
                       const SizedBox(width: 100), // Espace pour équilibrer
@@ -1849,14 +1893,17 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ),
           ],
-          
+
           const SizedBox(height: 20),
-          Row(
-            children: [
-              _buildFamilyDetailsButton(),
-              const SizedBox(width: 16),
-              _buildEleveDetailsButton(),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFamilyDetailsButton(),
+                const SizedBox(width: 16),
+                _buildEleveDetailsButton(),
+              ],
+            ),
           ),
         ],
       ),
@@ -1873,10 +1920,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.25),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1922,10 +1966,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.25),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1946,7 +1987,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
               const SizedBox(width: 8),
               Icon(
-                _showEleveDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                _showEleveDetails
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
                 size: 14,
                 color: Colors.white.withOpacity(0.7),
               ),
@@ -1966,13 +2009,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     Color? valueColor,
   }) {
     final defaultColor = valueColor ?? (Colors.white);
-    
+
     return GestureDetector(
       onTap: isClickable && onTap != null ? onTap : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isClickable 
+          color: isClickable
               ? Colors.white.withOpacity(0.25)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
@@ -1980,11 +2023,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 14,
-              color: Colors.white.withOpacity(0.8),
-            ),
+            Icon(icon, size: 14, color: Colors.white.withOpacity(0.8)),
             const SizedBox(width: 6),
             Text(
               '$label: ',
@@ -2021,10 +2060,10 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showFamilyBottomSheet() {
     if (_eleveDetail == null) return;
-    
+
     final eleve = _eleveDetail!;
     final isDarkMode = _themeService.isDarkMode;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2091,12 +2130,16 @@ class _ChildListScreenState extends State<ChildListScreen>
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                          color: isDarkMode
+                              ? Colors.grey[700]
+                              : Colors.grey[100],
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
                           Icons.close,
-                          color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                          color: isDarkMode
+                              ? Colors.grey[300]
+                              : Colors.grey[600],
                           size: 18,
                         ),
                       ),
@@ -2104,7 +2147,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   ],
                 ),
               ),
-              
+
               // Contenu familial
               Expanded(
                 child: SingleChildScrollView(
@@ -2127,7 +2170,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                             label: 'Mobile',
                             value: eleve['mobile']?.toString() ?? 'N/A',
                             isClickable: true,
-                            onTap: () => _makePhoneCall(eleve['mobile']?.toString() ?? ''),
+                            onTap: () => _makePhoneCall(
+                              eleve['mobile']?.toString() ?? '',
+                            ),
                           ),
                           if (eleve['mobile2']?.toString().isNotEmpty == true)
                             _buildFamilyItem(
@@ -2135,13 +2180,15 @@ class _ChildListScreenState extends State<ChildListScreen>
                               label: 'Mobile 2',
                               value: eleve['mobile2']?.toString() ?? 'N/A',
                               isClickable: true,
-                              onTap: () => _makePhoneCall(eleve['mobile2']?.toString() ?? ''),
+                              onTap: () => _makePhoneCall(
+                                eleve['mobile2']?.toString() ?? '',
+                              ),
                             ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Parents
                       _buildFamilySection(
                         title: 'Parents',
@@ -2183,7 +2230,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     required List<Widget> children,
   }) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2195,11 +2242,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 color: iconColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 20,
-              ),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
             const SizedBox(width: 12),
             Text(
@@ -2226,22 +2269,19 @@ class _ChildListScreenState extends State<ChildListScreen>
     VoidCallback? onTap,
   }) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return GestureDetector(
       onTap: isClickable && onTap != null ? onTap : null,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isClickable 
+          color: isClickable
               ? (isDarkMode ? Colors.grey[700] : Colors.blue[50])
               : (isDarkMode ? Colors.grey[800] : Colors.grey[50]),
           borderRadius: BorderRadius.circular(12),
-          border: isClickable 
-              ? Border.all(
-                  color: Colors.blue.withOpacity(0.2),
-                  width: 1,
-                )
+          border: isClickable
+              ? Border.all(color: Colors.blue.withOpacity(0.2), width: 1)
               : Border.all(
                   color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
                   width: 1,
@@ -2252,7 +2292,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isClickable 
+                color: isClickable
                     ? Colors.blue.withOpacity(0.15)
                     : (isDarkMode ? Colors.grey[700] : Colors.grey[200]),
                 borderRadius: BorderRadius.circular(8),
@@ -2260,7 +2300,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               child: Icon(
                 icon,
                 size: 16,
-                color: isClickable 
+                color: isClickable
                     ? Colors.blue
                     : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
               ),
@@ -2275,7 +2315,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(12),
                       fontWeight: FontWeight.w600,
-                      color: isClickable 
+                      color: isClickable
                           ? Colors.blue[700]
                           : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                     ),
@@ -2286,7 +2326,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(14),
                       fontWeight: FontWeight.w600,
-                      color: isClickable 
+                      color: isClickable
                           ? Colors.blue[800]
                           : (isDarkMode ? Colors.white : Colors.black87),
                       decoration: isClickable ? TextDecoration.underline : null,
@@ -2297,11 +2337,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ),
             if (isClickable)
-              Icon(
-                Icons.call,
-                size: 16,
-                color: Colors.blue[600],
-              ),
+              Icon(Icons.call, size: 16, color: Colors.blue[600]),
           ],
         ),
       ),
@@ -2310,12 +2346,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     if (phoneNumber.isEmpty || phoneNumber == 'N/A') return;
-    
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    
+
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+
     // Utiliser url_launcher pour faire l'appel
     // Vous devrez ajouter le package url_launcher à pubspec.yaml
     print('📞 Appel du numéro: $phoneNumber');
@@ -2410,10 +2443,15 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionText: 'Gérer',
             actionTextColor: const Color(0xFF3B82F6),
             onTap: () {
+              print('🎯 Navigation vers InscriptionWizardScreen');
+              print('👤 Élève: ${widget.child.fullName}');
+              print('🆔 UID de l\'élève: ${_eleveDetail?['uid']}');
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) =>
-                      inscription.InscriptionWizardScreen(child: widget.child),
+                  builder: (context) => inscription.InscriptionWizardScreen(
+                    child: widget.child,
+                    uid: _eleveDetail?['uid'],
+                  ),
                 ),
               );
             },
@@ -5893,120 +5931,101 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildIntegrationRequestsContent() {
-  return StatefulBuilder(
-    builder: (context, setLocalState) {
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [
-            BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
-          ],
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: BorderRadius.circular(10),
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.screenCard,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.screenShadow,
+                blurRadius: 16,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.school_rounded,
+                        color: Color(0xFF1565C0),
+                        size: 18,
+                      ),
                     ),
-                    child: const Icon(Icons.school_rounded, color: Color(0xFF1565C0), size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Text('Consultation demande',
+                    const SizedBox(width: 12),
+                    Text(
+                      'Consultation demande',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(17),
                         fontWeight: FontWeight.w700,
                         color: AppColors.screenTextPrimary,
                         letterSpacing: -0.3,
-                      )),
-                ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Center(
-              child: Container(
-                width: 36,
-                height: 3,
-                margin: const EdgeInsets.only(top: 14, bottom: 4),
-                decoration: BoxDecoration(color: AppColors.screenDivider, borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              child: Column(
-                children: [
-                  _buildEcoleFieldLocal(setLocalState),  // ← version locale
-                  const SizedBox(height: 14),
-                  _buildMatriculeDisplay(),
-                  const SizedBox(height: 12),
-                  _buildInfoBanner(),
-                  const SizedBox(height: 20),
-                  _buildOrangeButton(
-                    label: _isLoadingIntegrationRequest
-                        ? 'Consultation en cours...'
-                        : 'Consulter la demande',
-                    onTap: _selectedEcoleId != null && !_isLoadingIntegrationRequest
-                        ? _consultIntegrationRequest
-                        : null,
-                    isLoading: _isLoadingIntegrationRequest,
-                    icon: Icons.search_rounded,
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 3,
+                  margin: const EdgeInsets.only(top: 14, bottom: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.screenDivider,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
-  if (_isLoadingEcoles) {
-    return _buildLoadingField('Chargement des écoles...');
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  children: [
+                    _buildEcoleFieldLocal(setLocalState), // ← version locale
+                    const SizedBox(height: 14),
+                    _buildMatriculeDisplay(),
+                    const SizedBox(height: 12),
+                    _buildInfoBanner(),
+                    const SizedBox(height: 20),
+                    _buildOrangeButton(
+                      label: _isLoadingIntegrationRequest
+                          ? 'Consultation en cours...'
+                          : 'Consulter la demande',
+                      onTap:
+                          _selectedEcoleId != null &&
+                              !_isLoadingIntegrationRequest
+                          ? _consultIntegrationRequest
+                          : null,
+                      isLoading: _isLoadingIntegrationRequest,
+                      icon: Icons.search_rounded,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
-  if (_ecoles.isEmpty) {
-    return _buildEmptyEcoleField();
-  }
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _fieldLabel('École', required: true),
-      const SizedBox(height: 6),
-      SearchableDropdown(
-        label: 'École',
-        value: _selectedEcoleName ?? 'Sélectionner une école...',
-        items: _ecoles.map((e) => e.ecoleclibelle).toList(),
-        onChanged: (String selected) {
-          final ecole = _ecoles.firstWhere((e) => e.ecoleclibelle == selected);
-          setState(() {           // met à jour le widget principal
-            _selectedEcoleId = ecole.ecoleid;
-            _selectedEcoleName = selected;
-          });
-          setLocalState(() {});   // force le rebuild du bouton dans le StatefulBuilder
-        },
-        isDarkMode: _themeService.isDarkMode,
-      ),
-    ],
-  );
-}
 
-  Widget _buildEcoleField() {
+  Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
     if (_isLoadingEcoles) {
       return _buildLoadingField('Chargement des écoles...');
     }
     if (_ecoles.isEmpty) {
-      return Column(
-        children: [
-          _buildEmptyEcoleField(),
-        ],
-      );
+      return _buildEmptyEcoleField();
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -6018,7 +6037,44 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
           value: _selectedEcoleName ?? 'Sélectionner une école...',
           items: _ecoles.map((e) => e.ecoleclibelle).toList(),
           onChanged: (String selected) {
-            final ecole = _ecoles.firstWhere((e) => e.ecoleclibelle == selected);
+            final ecole = _ecoles.firstWhere(
+              (e) => e.ecoleclibelle == selected,
+            );
+            setState(() {
+              // met à jour le widget principal
+              _selectedEcoleId = ecole.ecoleid;
+              _selectedEcoleName = selected;
+            });
+            setLocalState(
+              () {},
+            ); // force le rebuild du bouton dans le StatefulBuilder
+          },
+          isDarkMode: _themeService.isDarkMode,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEcoleField() {
+    if (_isLoadingEcoles) {
+      return _buildLoadingField('Chargement des écoles...');
+    }
+    if (_ecoles.isEmpty) {
+      return Column(children: [_buildEmptyEcoleField()]);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('École', required: true),
+        const SizedBox(height: 6),
+        SearchableDropdown(
+          label: 'École',
+          value: _selectedEcoleName ?? 'Sélectionner une école...',
+          items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+          onChanged: (String selected) {
+            final ecole = _ecoles.firstWhere(
+              (e) => e.ecoleclibelle == selected,
+            );
             setState(() {
               _selectedEcoleId = ecole.ecoleid;
               _selectedEcoleName = selected;
@@ -6046,7 +6102,11 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             child: Row(
               children: [
-                const Icon(Icons.badge_outlined, color: AppColors.screenOrange, size: 18),
+                const Icon(
+                  Icons.badge_outlined,
+                  color: AppColors.screenOrange,
+                  size: 18,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   widget.child.matricule ?? 'Non disponible',
@@ -6072,14 +6132,22 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF1565C0).withOpacity(0.2)),
       ),
-      child: Row(children: [
-        const Icon(Icons.info_outline, color: Color(0xFF1565C0), size: 16),
-        const SizedBox(width: 8),
-        const Expanded(child: Text(
-          'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
-          style: TextStyle(color: Color(0xFF1565C0), fontSize: 13, fontWeight: FontWeight.w500),
-        )),
-      ]),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Color(0xFF1565C0), size: 16),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
+              style: TextStyle(
+                color: Color(0xFF1565C0),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -6091,12 +6159,26 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.screenDivider),
       ),
-      child: Row(children: [
-        const SizedBox(width: 16, height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.screenOrange)),
-        const SizedBox(width: 12),
-        Text(msg, style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
-      ]),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.screenOrange,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            msg,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -6108,26 +6190,54 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.red.withOpacity(0.2)),
       ),
-      child: Row(children: [
-        Icon(Icons.error_outline, color: Colors.red[400], size: 18),
-        const SizedBox(width: 10),
-        const Expanded(child: Text('Aucune école disponible',
-            style: TextStyle(fontSize: 13, color: AppColors.screenTextPrimary))),
-        TextButton(
-          onPressed: _loadEcoles,
-          child: const Text('Réessayer', style: TextStyle(color: AppColors.screenOrange)),
-        ),
-      ]),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400], size: 18),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Aucune école disponible',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextPrimary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _loadEcoles,
+            child: const Text(
+              'Réessayer',
+              style: TextStyle(color: AppColors.screenOrange),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _fieldLabel(String label, {bool required = false}) {
-    return Row(children: [
-      Text(label, style: const TextStyle(
-          fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary, letterSpacing: 0.2)),
-      if (required)
-        const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
-    ]);
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.screenTextSecondary,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (required)
+          const Text(
+            ' *',
+            style: TextStyle(
+              color: AppColors.screenOrange,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildOrangeButton({
@@ -6171,11 +6281,19 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       ),
                       SizedBox(width: 12),
-                      Text('Chargement...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                      Text(
+                        'Chargement...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   )
                 : Row(
@@ -6235,23 +6353,28 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
 
     try {
       final ecole = _ecoles.firstWhere((e) => e.ecoleid == _selectedEcoleId);
-      final ecoleCode = ecole.paramecole?.isNotEmpty == true ? ecole.paramecole! : ecole.ecolecode;
+      final ecoleCode = ecole.paramecole?.isNotEmpty == true
+          ? ecole.paramecole!
+          : ecole.ecolecode;
       final matricule = widget.child.matricule!;
-      
+
       // Affichage de la requête API dans la console
       print('🔍 REQUÊTE API DEMANDE D\'INTÉGRATION');
-      print('📋 École sélectionnée: ${ecole.ecoleclibelle} (ID: ${ecole.ecoleid})');
+      print(
+        '📋 École sélectionnée: ${ecole.ecoleclibelle} (ID: ${ecole.ecoleid})',
+      );
       print('📝 Code école pour API: $ecoleCode');
       print('🎫 Matricule de l\'élève: $matricule');
-      
-      final url = 'https://api2.vie-ecoles.com/api/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule';
+
+      final url =
+          'https://api2.vie-ecoles.com/api/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule';
       print('🌐 URL complète: $url');
-      
+
       final response = await http.get(Uri.parse(url));
-      
+
       print('📊 Réponse HTTP - Status: ${response.statusCode}');
       print('📄 Corps de la réponse: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('✅ Données parsées: $data');
@@ -6288,7 +6411,11 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
             color: AppColors.screenCard,
             borderRadius: BorderRadius.circular(24),
             boxShadow: const [
-              BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
+              BoxShadow(
+                color: AppColors.screenShadow,
+                blurRadius: 16,
+                offset: Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -6305,16 +6432,22 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
                         color: const Color(0xFFE3F2FD),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.search_rounded, color: Color(0xFF1565C0), size: 18),
+                      child: const Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF1565C0),
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Résultat de la demande',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(17),
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimary,
-                          letterSpacing: -0.3,
-                        )),
+                    Text(
+                      'Résultat de la demande',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(17),
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.screenTextPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -6323,7 +6456,10 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
                   width: 36,
                   height: 3,
                   margin: const EdgeInsets.only(top: 14, bottom: 4),
-                  decoration: BoxDecoration(color: AppColors.screenDivider, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: AppColors.screenDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               Padding(
@@ -6331,9 +6467,15 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildResultItem('Statut', data['statut']?.toString() ?? 'Non spécifié'),
+                    _buildResultItem(
+                      'Statut',
+                      data['statut']?.toString() ?? 'Non spécifié',
+                    ),
                     const SizedBox(height: 12),
-                    _buildResultItem('Message', data['message']?.toString() ?? 'Aucun message'),
+                    _buildResultItem(
+                      'Message',
+                      data['message']?.toString() ?? 'Aucun message',
+                    ),
                     if (data['date'] != null) ...[
                       const SizedBox(height: 12),
                       _buildResultItem('Date', data['date'].toString()),
@@ -6359,21 +6501,25 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(12),
-              fontWeight: FontWeight.w500,
-              color: AppColors.screenTextSecondary,
-              letterSpacing: -0.2,
-            )),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: _textSizeService.getScaledFontSize(12),
+            fontWeight: FontWeight.w500,
+            color: AppColors.screenTextSecondary,
+            letterSpacing: -0.2,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(value,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              fontWeight: FontWeight.w600,
-              color: AppColors.screenTextPrimary,
-              letterSpacing: -0.3,
-            )),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: _textSizeService.getScaledFontSize(14),
+            fontWeight: FontWeight.w600,
+            color: AppColors.screenTextPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
       ],
     );
   }
@@ -7377,18 +7523,18 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
   Future<void> _loadReservationsData() async {
     if (_isLoadingReservations) return;
 
-    final childId = widget.child.id;
+    final matricule = _matricule ?? widget.child.matricule;
     print(
       '🔄 Début du chargement des réservations pour: ${widget.child.fullName}',
     );
-    print('📋 ID Enfant: $childId');
+    print('📋 Matricule: $matricule');
 
-    if (childId == null || childId.isEmpty) {
-      print('❌ ID enfant non disponible');
+    if (matricule == null || matricule.isEmpty) {
+      print('❌ Matricule non disponible');
       return;
     }
 
-    print('✅ ID valide, début du chargement...');
+    print('✅ Matricule valide, début du chargement...');
     if (mounted) {
       setState(() {
         _isLoadingReservations = true;
@@ -7396,16 +7542,49 @@ Widget _buildEcoleFieldLocal(StateSetter setLocalState) {
     }
 
     try {
-      print('📡 Appel du service PlaceReservationService...');
-      final reservations = await _reservationService.getRecentReservations(10);
-      print('✅ Réponse reçue: ${reservations.length} réservations');
+      print('📡 Appel du service fetchReservation...');
+      final reservationStatus = await api_service
+          .InscriptionApiService.fetchReservation(matricule: matricule);
+      print(
+        '✅ Réponse reçue: statut=${reservationStatus.status}, somme=${reservationStatus.sommeReservation}',
+      );
+
+      // Transformer la réponse en objets PlaceReservation pour compatibilité avec l'UI existante
+      final reservations = <PlaceReservation>[];
+
+      if (reservationStatus.status && reservationStatus.sommeReservation > 0) {
+        // Créer une réservation fictive basée sur la réponse de l'API
+        reservations.add(
+          PlaceReservation(
+            id: 'api_${DateTime.now().millisecondsSinceEpoch}',
+            parentId: 'parent_${widget.child.id}',
+            parentName: 'Parent de ${widget.child.fullName}',
+            childId: widget.child.id ?? '',
+            childName: widget.child.fullName,
+            establishmentId: _ecoleCode ?? 'unknown',
+            establishmentName:
+                widget.child.establishment ?? 'Établissement inconnu',
+            academicYear: '2024-2025', // Année académique par défaut
+            grade: widget.child.grade ?? 'Classe inconnue',
+            type: ReservationType.newAdmission,
+            status: reservationStatus.status
+                ? ReservationStatus.confirmed
+                : ReservationStatus.pending,
+            createdAt: DateTime.now(),
+            reservationFee: reservationStatus.sommeReservation.toDouble(),
+            depositAmount: reservationStatus.sommeReservation.toDouble(),
+          ),
+        );
+      }
 
       if (mounted) {
         setState(() {
           _reservations = reservations;
           _isLoadingReservations = false;
         });
-        print('📊 Mise à jour de l\'UI terminée');
+        print(
+          '📊 Mise à jour de l\'UI terminée avec ${reservations.length} réservation(s)',
+        );
       }
     } catch (e) {
       print('❌ Erreur lors du chargement des réservations: $e');

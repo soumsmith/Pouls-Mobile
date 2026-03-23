@@ -2275,10 +2275,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       [
         'informations',
         'Informations de l\'école',
-        'assets/images/intro_background.jpg',
+        'assets/images/ecole.jpg',
       ],
       ['niveaux', 'Niveaux scolaire', 'assets/images/intro_background.png'],
-      ['communication', 'Actualités', 'assets/images/logo-app.png'],
+      ['communication', 'Actualités', 'assets/images/actualite-scolaire.jpg'],
     ];
 
     // Section Vie école (opérationnel)
@@ -2305,7 +2305,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       [
         'voir_les_avis',
         'Voir les avis',
-        'assets/images/ChatGPT Image 24 janv. 2026, 19_37_01.png',
+        'assets/images/avis-2.jpg',
       ],
     ];
 

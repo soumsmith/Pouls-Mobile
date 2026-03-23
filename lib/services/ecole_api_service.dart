@@ -2,13 +2,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
+import '../config/app_config.dart';
 
 class EcoleApiService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/ecoles/list';
+  static String get baseUrl =>
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/list';
 
   /// Récupère la liste des écoles depuis l'API avec filtres optionnels
   static Future<List<Ecole>> getEcoles({
-    int page = 1, 
+    int page = 1,
     int perPage = 50,
     String? pays,
     String? ville,
@@ -21,33 +23,39 @@ class EcoleApiService {
     print('═══════════════════════════════════════════════════════════');
     print('🏫 CHARGEMENT DES ÉCOLES (PAGE $page - $perPage ÉLÉMENTS/PAGE)');
     print('═══════════════════════════════════════════════════════════');
-    
+
     // Construction des paramètres de requête
     final Map<String, String> queryParams = {
       'page': page.toString(),
       'per_page': perPage.toString(),
     };
-    
+
     // Ajout des filtres s'ils sont fournis
     if (pays != null && pays.isNotEmpty) queryParams['pays'] = pays;
     if (ville != null && ville.isNotEmpty) queryParams['ville'] = ville;
-    if (quartier != null && quartier.isNotEmpty) queryParams['quartier'] = quartier;
-    if (nomEtablissement != null && nomEtablissement.isNotEmpty) queryParams['nomEtablissement'] = nomEtablissement;
-    if (categorie != null && categorie.isNotEmpty) queryParams['categorie'] = categorie;
-    if (codepays != null && codepays.isNotEmpty) queryParams['codepays'] = codepays;
-    
+    if (quartier != null && quartier.isNotEmpty)
+      queryParams['quartier'] = quartier;
+    if (nomEtablissement != null && nomEtablissement.isNotEmpty)
+      queryParams['nomEtablissement'] = nomEtablissement;
+    if (categorie != null && categorie.isNotEmpty)
+      queryParams['categorie'] = categorie;
+    if (codepays != null && codepays.isNotEmpty)
+      queryParams['codepays'] = codepays;
+
     final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
     print('🔗 URL: $uri');
     print('📡 Envoi de la requête...');
-    
+
     try {
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('📥 Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -56,7 +64,7 @@ class EcoleApiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        
+
         if (data['data'] != null && data['data'] is List) {
           final List<dynamic> ecolesData = data['data'];
           print('✅ ${ecolesData.length} école(s) récupérée(s)');
@@ -89,19 +97,21 @@ class EcoleApiService {
     print('═══════════════════════════════════════════════════════════');
     print('🏫 CHARGEMENT DE TOUTES LES ÉCOLES');
     print('═══════════════════════════════════════════════════════════');
-    
+
     final url = baseUrl;
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
-    
+
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('📥 Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -110,7 +120,7 @@ class EcoleApiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        
+
         if (data['data'] != null && data['data'] is List) {
           final List<dynamic> ecolesData = data['data'];
           print('✅ ${ecolesData.length} école(s) récupérée(s)');
@@ -144,19 +154,22 @@ class EcoleApiService {
     print('🏫 DÉTAILS DE L\'ÉCOLE');
     print('═══════════════════════════════════════════════════════════');
     print('🏷️ Code paramètre: $parametreCode');
-    
-    final url = 'https://api2.vie-ecoles.com/api/ecoles/detail-ecole/$parametreCode';
+
+    final url =
+        '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/detail-ecole/$parametreCode';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
-    
+
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('📥 Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -180,7 +193,9 @@ class EcoleApiService {
       print('💥 Exception lors de la récupération des détails de l\'école: $e');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      throw Exception('Erreur lors de la récupération des détails de l\'école: $e');
+      throw Exception(
+        'Erreur lors de la récupération des détails de l\'école: $e',
+      );
     }
   }
 
@@ -191,19 +206,22 @@ class EcoleApiService {
     print('🏫 PARAMÈTRES DE L\'ÉCOLE');
     print('═══════════════════════════════════════════════════════════');
     print('🏷️ Code école: $ecoleCode');
-    
-    final url = 'https://api2.vie-ecoles.com/api/vie-ecoles/parametre/ecole?ecole=$ecoleCode';
+
+    final url =
+        '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/parametre/ecole?ecole=$ecoleCode';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
-    
+
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('📥 Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -212,7 +230,7 @@ class EcoleApiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        
+
         if (data['data'] != null) {
           print('✅ Paramètres de l\'école récupérés avec succès');
           print('═══════════════════════════════════════════════════════════');
@@ -232,10 +250,14 @@ class EcoleApiService {
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      print('💥 Exception lors de la récupération des paramètres de l\'école: $e');
+      print(
+        '💥 Exception lors de la récupération des paramètres de l\'école: $e',
+      );
       print('═══════════════════════════════════════════════════════════');
       print('');
-      throw Exception('Erreur lors de la récupération des paramètres de l\'école: $e');
+      throw Exception(
+        'Erreur lors de la récupération des paramètres de l\'école: $e',
+      );
     }
   }
 }

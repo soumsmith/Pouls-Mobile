@@ -18,9 +18,9 @@ class MessageService {
     int? conversationId,
   }) async {
     print('📤 MessageService.sendTextMessage appelé');
-    
+
     final url = Uri.parse(
-      'https://api2.vie-ecoles.com/api/vie-ecoles/messages/envoyer/$userPhoneNumber'
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/envoyer/$userPhoneNumber',
     );
 
     final body = {
@@ -38,13 +38,13 @@ class MessageService {
 
     try {
       print('📡 Envoi de la requête HTTP...');
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(body),
-      ).timeout(AppConfig.API_TIMEOUT);
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(body),
+          )
+          .timeout(AppConfig.API_TIMEOUT);
 
       print('📥 Réponse reçue - Status: ${response.statusCode}');
       print('📄 Response body: ${response.body}');
@@ -60,16 +60,14 @@ class MessageService {
         print('❌ Erreur HTTP - Status: ${response.statusCode}');
         return {
           'success': false,
-          'message': 'Erreur lors de l\'envoi du message: ${response.statusCode}',
+          'message':
+              'Erreur lors de l\'envoi du message: ${response.statusCode}',
           'error': response.body,
         };
       }
     } catch (e) {
       print('💥 Exception dans sendTextMessage: $e');
-      return {
-        'success': false,
-        'message': 'Erreur de connexion: $e',
-      };
+      return {'success': false, 'message': 'Erreur de connexion: $e'};
     }
   }
 
@@ -84,14 +82,14 @@ class MessageService {
     int? conversationId,
   }) async {
     print('📤 MessageService.sendImageMessage appelé');
-    
+
     final url = Uri.parse(
-      'https://api2.vie-ecoles.com/api/vie-ecoles/messages/envoyer/$userPhoneNumber'
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/envoyer/$userPhoneNumber',
     );
 
     try {
       final request = http.MultipartRequest('POST', url);
-      
+
       // Ajouter les champs texte
       request.fields['content'] = content;
       request.fields['body'] = content;
@@ -114,7 +112,9 @@ class MessageService {
       print('📦 Champs: ${request.fields}');
       print('📡 Envoi de la requête multipart...');
 
-      final streamedResponse = await request.send().timeout(AppConfig.API_TIMEOUT);
+      final streamedResponse = await request.send().timeout(
+        AppConfig.API_TIMEOUT,
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       print('📥 Réponse reçue - Status: ${response.statusCode}');
@@ -131,16 +131,14 @@ class MessageService {
         print('❌ Erreur HTTP - Status: ${response.statusCode}');
         return {
           'success': false,
-          'message': 'Erreur lors de l\'envoi du message: ${response.statusCode}',
+          'message':
+              'Erreur lors de l\'envoi du message: ${response.statusCode}',
           'error': response.body,
         };
       }
     } catch (e) {
       print('💥 Exception dans sendImageMessage: $e');
-      return {
-        'success': false,
-        'message': 'Erreur de connexion: $e',
-      };
+      return {'success': false, 'message': 'Erreur de connexion: $e'};
     }
   }
 
@@ -155,14 +153,14 @@ class MessageService {
     int? conversationId,
   }) async {
     print('📤 MessageService.sendVoiceMessage appelé');
-    
+
     final url = Uri.parse(
-      'https://api2.vie-ecoles.com/api/vie-ecoles/messages/envoyer/$userPhoneNumber'
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/envoyer/$userPhoneNumber',
     );
 
     try {
       final request = http.MultipartRequest('POST', url);
-      
+
       // Ajouter les champs texte
       request.fields['content'] = content;
       request.fields['body'] = content;
@@ -185,7 +183,9 @@ class MessageService {
       print('📦 Champs: ${request.fields}');
       print('📡 Envoi de la requête multipart avec audio...');
 
-      final streamedResponse = await request.send().timeout(AppConfig.API_TIMEOUT);
+      final streamedResponse = await request.send().timeout(
+        AppConfig.API_TIMEOUT,
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       print('📥 Réponse reçue - Status: ${response.statusCode}');
@@ -202,16 +202,14 @@ class MessageService {
         print('❌ Erreur HTTP - Status: ${response.statusCode}');
         return {
           'success': false,
-          'message': 'Erreur lors de l\'envoi du message: ${response.statusCode}',
+          'message':
+              'Erreur lors de l\'envoi du message: ${response.statusCode}',
           'error': response.body,
         };
       }
     } catch (e) {
       print('💥 Exception dans sendVoiceMessage: $e');
-      return {
-        'success': false,
-        'message': 'Erreur de connexion: $e',
-      };
+      return {'success': false, 'message': 'Erreur de connexion: $e'};
     }
   }
 }

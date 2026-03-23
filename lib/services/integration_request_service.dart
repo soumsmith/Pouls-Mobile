@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../config/app_config.dart';
+
 class IntegrationRequestService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api';
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   static Future<Map<String, dynamic>> consultIntegrationRequest({
     required String ecoleCode,
@@ -11,10 +13,14 @@ class IntegrationRequestService {
   }) async {
     try {
       debugPrint('🔍 Consultation demande intégration');
-      debugPrint('📡 URL: $baseUrl/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule');
+      debugPrint(
+        '📡 URL: $baseUrl/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule',
+      );
 
       final response = await http.get(
-        Uri.parse('$baseUrl/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule'),
+        Uri.parse(
+          '$baseUrl/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -22,14 +28,11 @@ class IntegrationRequestService {
       );
 
       debugPrint('📥 Réponse HTTP - Status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         debugPrint('✅ Données reçues: $responseData');
-        return {
-          'success': true,
-          'data': responseData,
-        };
+        return {'success': true, 'data': responseData};
       } else {
         debugPrint('❌ Erreur HTTP - Status: ${response.statusCode}');
         debugPrint('📄 Corps: ${response.body}');
@@ -40,10 +43,7 @@ class IntegrationRequestService {
       }
     } catch (e) {
       debugPrint('💥 Exception: $e');
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
 }

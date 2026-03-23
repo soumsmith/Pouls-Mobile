@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../models/scolarite.dart';
+import '../config/app_config.dart';
 
 class ScolariteService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api';
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   static Future<ScolariteResponse> getScolaritesByEcole(
     String ecoleCode,

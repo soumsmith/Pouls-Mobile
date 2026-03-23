@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class NotesApiService {
-  static const String baseUrl = 'https://api-pouls-scolaire.vie-ecoles.com/api';//http://api-pro.pouls-scolaire.net/api';
-  
+  static const String baseUrl = AppConfig.POULS_SCOLAIRE_API_URL;
+
   Future<Map<String, dynamic>?> getNotesForStudent({
     required String matricule,
     required String anneeId,
@@ -11,10 +12,12 @@ class NotesApiService {
     required String periode,
   }) async {
     try {
-      final url = Uri.parse('$baseUrl/notes/eleve/$matricule?annee=$anneeId&classe=$classeId&periode=$periode');
-      
+      final url = Uri.parse(
+        '$baseUrl/notes/eleve/$matricule?annee=$anneeId&classe=$classeId&periode=$periode',
+      );
+
       print('🌐 Appel API: $url');
-      
+
       final response = await http.get(
         url,
         headers: {
@@ -24,7 +27,7 @@ class NotesApiService {
       );
 
       print('📊 Status code: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('✅ Données reçues: ${data['list']?.length ?? 0} matières');

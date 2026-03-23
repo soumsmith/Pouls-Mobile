@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../config/app_config.dart';
+
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
-const String kBaseUrl = 'https://api2.vie-ecoles.com/api';
+String get kBaseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
 // ─── MODÈLES ──────────────────────────────────────────────────────────────────
 

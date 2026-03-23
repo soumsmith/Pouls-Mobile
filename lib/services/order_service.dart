@@ -3,10 +3,11 @@ import 'package:http/http.dart' as http;
 import '../models/cart_item.dart';
 import '../models/order.dart';
 import 'auth_service.dart';
+import '../config/app_config.dart';
 
 class OrderService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api';
-  
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
+
   Future<Map<String, dynamic>> createOrder({
     required List<CartItem> items,
     required String nom,
@@ -32,10 +33,10 @@ class OrderService {
     print('🆔 Élève ID: ${eleveId ?? "Non spécifié"}');
     print('� Type livraison: $typeLivraison');
     print('💰 Prix livraison: $prixLivraison');
-    
+
     final url = '$baseUrl/vie-ecoles/commander';
     print('🔗 URL: $url');
-    
+
     final orderData = {
       'typeLivraison': typeLivraison,
       'commune_nom': commune,
@@ -44,28 +45,41 @@ class OrderService {
       'eleve_id': eleveId ?? '',
       'ecole': ecole ?? 'non_defini',
       'source': 'mobile_app',
-      'montantTotal': items.fold<double>(0, (sum, item) => sum + (item.product.price * item.quantity)) + prixLivraison,
-      'produits': items.map((item) => {
-        'produit_uid': item.product.id,
-        'quantite': item.quantity,
-      }).toList(),
+      'montantTotal':
+          items.fold<double>(
+            0,
+            (sum, item) => sum + (item.product.price * item.quantity),
+          ) +
+          prixLivraison,
+      'produits': items
+          .map(
+            (item) => {
+              'produit_uid': item.product.id,
+              'quantite': item.quantity,
+            },
+          )
+          .toList(),
     };
 
     print('� Données de la commande:');
     print('   - Montant total: ${orderData['montantTotal']}');
     print('   - Commune: ${orderData['commune_nom']}');
-    print('   - Produits: ${(orderData['produits'] as List?)?.length ?? 0} article(s)');
+    print(
+      '   - Produits: ${(orderData['produits'] as List?)?.length ?? 0} article(s)',
+    );
     print('📡 Envoi de la requête POST...');
 
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: json.encode(orderData),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: json.encode(orderData),
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('� Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -101,19 +115,21 @@ class OrderService {
     print('📦 RÉCUPÉRATION DES COMMANDES');
     print('═══════════════════════════════════════════════════════════');
     print('📱 Téléphone: $phoneNumber');
-    
+
     final url = '$baseUrl/vie-ecoles/suivi-commandes/$phoneNumber';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête GET...');
 
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('📥 Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -122,17 +138,17 @@ class OrderService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        
+
         if (data['status'] == true && data['data'] != null) {
           final responseData = data['data'] as Map<String, dynamic>;
           final ordersData = responseData['data'] as List<dynamic>? ?? [];
-          
+
           print('✅ ${ordersData.length} commande(s) récupérée(s)');
-          
+
           final orders = ordersData.map((orderData) {
             return Order.fromApiMap(orderData as Map<String, dynamic>);
           }).toList();
-          
+
           print('═══════════════════════════════════════════════════════════');
           print('');
           return orders;
@@ -164,12 +180,14 @@ class OrderService {
     print('❌ ANNUATION DE COMMANDE');
     print('═══════════════════════════════════════════════════════════');
     print('🆔 ID Commande: $orderId');
-    
+
     // Pour l'instant, nous allons juste simuler l'annulation
     // En production, il faudrait appeler l'API d'annulation
     try {
-      await Future.delayed(const Duration(seconds: 1)); // Simulation d'appel API
-      
+      await Future.delayed(
+        const Duration(seconds: 1),
+      ); // Simulation d'appel API
+
       print('✅ Commande $orderId annulée avec succès');
       print('═══════════════════════════════════════════════════════════');
       print('');

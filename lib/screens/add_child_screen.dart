@@ -53,7 +53,9 @@ class _AddChildScreenState extends State<AddChildScreen>
   @override
   void initState() {
     super.initState();
-    _textSizeService.addListener(() { if (mounted) setState(() {}); });
+    _textSizeService.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadEcoles();
 
     _animationController = AnimationController(
@@ -61,12 +63,16 @@ class _AddChildScreenState extends State<AddChildScreen>
       vsync: this,
     );
     _fadeAnimation = CurvedAnimation(
-        parent: _animationController, curve: Curves.easeOut);
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.08),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-        parent: _animationController, curve: Curves.easeOutCubic));
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -80,19 +86,31 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   // ─── DATA ──────────────────────────────────────────────────────────────────
   Future<void> _loadEcoles() async {
-    setState(() { _isLoadingEcoles = true; _errorMessage = null; });
+    setState(() {
+      _isLoadingEcoles = true;
+      _errorMessage = null;
+    });
     try {
       final ecoles = await _poulsApiService.getAllEcoles();
-      setState(() { _ecoles = ecoles; _isLoadingEcoles = false; });
+      setState(() {
+        _ecoles = ecoles;
+        _isLoadingEcoles = false;
+      });
       if (ecoles.isEmpty && mounted) {
         _showSnackbar('Aucune école disponible', isError: true);
       }
     } catch (e) {
-      setState(() { _isLoadingEcoles = false; _errorMessage = 'Erreur chargement des écoles'; });
-      final isDns = e.toString().contains('Failed host lookup') ||
+      setState(() {
+        _isLoadingEcoles = false;
+        _errorMessage = 'Erreur chargement des écoles';
+      });
+      final isDns =
+          e.toString().contains('Failed host lookup') ||
           e.toString().contains('No address associated');
-      if (isDns && mounted) _showDnsDialog();
-      else if (mounted) _showSnackbar('Erreur : ${e.toString()}', isError: true);
+      if (isDns && mounted)
+        _showDnsDialog();
+      else if (mounted)
+        _showSnackbar('Erreur : ${e.toString()}', isError: true);
     }
   }
 
@@ -105,28 +123,58 @@ class _AddChildScreenState extends State<AddChildScreen>
       setState(() => _errorMessage = 'Veuillez sélectionner une école');
       return;
     }
-    setState(() { _isSearching = true; _errorMessage = null; _foundEleve = null; _foundEcole = null; });
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+      _foundEleve = null;
+      _foundEcole = null;
+    });
     try {
       final matricule = _matriculeController.text.trim();
-      final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(_selectedEcoleId!);
+      final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(
+        _selectedEcoleId!,
+      );
       final idAnnee = anneeScolaire.anneeOuverteCentraleId;
       if (idAnnee == 0 || anneeScolaire.anneeEcoleList.isEmpty) {
-        setState(() { _errorMessage = 'Aucune année scolaire ouverte pour cette école'; _isSearching = false; });
+        setState(() {
+          _errorMessage = 'Aucune année scolaire ouverte pour cette école';
+          _isSearching = false;
+        });
         return;
       }
-      final eleve = await _poulsApiService.findEleveByMatricule(_selectedEcoleId!, idAnnee, matricule);
+      final eleve = await _poulsApiService.findEleveByMatricule(
+        _selectedEcoleId!,
+        idAnnee,
+        matricule,
+      );
       if (eleve != null) {
-        final ecole = _ecoles.firstWhere((e) => e.ecoleid == _selectedEcoleId, orElse: () => _ecoles.first);
-        setState(() { _foundEleve = eleve; _foundEcole = ecole; _isSearching = false; });
+        final ecole = _ecoles.firstWhere(
+          (e) => e.ecoleid == _selectedEcoleId,
+          orElse: () => _ecoles.first,
+        );
+        setState(() {
+          _foundEleve = eleve;
+          _foundEcole = ecole;
+          _isSearching = false;
+        });
       } else {
-        setState(() { _errorMessage = 'Aucun élève trouvé avec ce matricule'; _isSearching = false; });
+        setState(() {
+          _errorMessage = 'Aucun élève trouvé avec ce matricule';
+          _isSearching = false;
+        });
       }
     } catch (e) {
       String msg = 'Erreur lors de la recherche';
-      if (e.toString().contains('année scolaire')) msg = 'Impossible de récupérer l\'année scolaire.';
-      else if (e.toString().contains('timeout')) msg = 'Délai dépassé. Vérifiez votre connexion.';
-      else msg = 'Erreur : ${e.toString().split(':').last.trim()}';
-      setState(() { _errorMessage = msg; _isSearching = false; });
+      if (e.toString().contains('année scolaire'))
+        msg = 'Impossible de récupérer l\'année scolaire.';
+      else if (e.toString().contains('timeout'))
+        msg = 'Délai dépassé. Vérifiez votre connexion.';
+      else
+        msg = 'Erreur : ${e.toString().split(':').last.trim()}';
+      setState(() {
+        _errorMessage = msg;
+        _isSearching = false;
+      });
     }
   }
 
@@ -141,34 +189,54 @@ class _AddChildScreenState extends State<AddChildScreen>
         await AuthService.instance.loadSavedSession();
         currentUser = AuthService.instance.getCurrentUser();
         if (currentUser == null) {
-          _showSnackbar('Session expirée. Veuillez vous reconnecter.', isError: true);
-          if (mounted) Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+          _showSnackbar(
+            'Session expirée. Veuillez vous reconnecter.',
+            isError: true,
+          );
+          if (mounted)
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (_) => false,
+            );
           return;
         }
       }
       final parentId = currentUser.id;
-      final apiService = AppConfig.MOCK_MODE ? MockApiService() : RemoteApiService();
-      if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty) throw Exception('Informations élève incomplètes');
+      final apiService = AppConfig.MOCK_MODE
+          ? MockApiService()
+          : RemoteApiService();
+      if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty)
+        throw Exception('Informations élève incomplètes');
       final newChild = Child(
         id: eleve.inscriptionsidEleve.toString(),
         firstName: eleve.prenomEleve,
         lastName: eleve.nomEleve,
-        establishment: ecole.ecoleclibelle.isNotEmpty ? ecole.ecoleclibelle : 'École non spécifiée',
+        establishment: ecole.ecoleclibelle.isNotEmpty
+            ? ecole.ecoleclibelle
+            : 'École non spécifiée',
         grade: eleve.classe.isNotEmpty ? eleve.classe : 'Classe non spécifiée',
         photoUrl: eleve.urlPhoto,
         parentId: parentId,
       );
-      await DatabaseService.instance.saveChild(newChild,
-          matricule: eleve.matriculeEleve, ecoleId: ecole.ecoleid,
-          ecoleName: ecole.ecoleclibelle, classeId: eleve.classeid, classeName: eleve.classe);
-      await _updateNotificationTokenWithNewMatricule(parentId, eleve.matriculeEleve);
+      await DatabaseService.instance.saveChild(
+        newChild,
+        matricule: eleve.matriculeEleve,
+        ecoleId: ecole.ecoleid,
+        ecoleName: ecole.ecoleclibelle,
+        classeId: eleve.classeid,
+        classeName: eleve.classe,
+      );
+      await _updateNotificationTokenWithNewMatricule(
+        parentId,
+        eleve.matriculeEleve,
+      );
       final success = await apiService.addChild(parentId, newChild);
       setState(() => _isLoading = false);
       if (success && mounted) {
         _showSnackbar('Élève ajouté avec succès');
         Navigator.of(context).pop(true);
-      } else if (mounted) _showSnackbar('Erreur lors de l\'ajout', isError: true);
+      } else if (mounted)
+        _showSnackbar('Erreur lors de l\'ajout', isError: true);
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) _showSnackbar('Erreur : $e', isError: true);
@@ -177,13 +245,15 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   // ─── HELPERS UI ────────────────────────────────────────────────────────────
   void _showSnackbar(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(color: Colors.white)),
-      backgroundColor: isError ? Colors.red[400] : AppColors.success,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? Colors.red[400] : AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   void _showDnsDialog() {
@@ -191,13 +261,30 @@ class _AddChildScreenState extends State<AddChildScreen>
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Erreur de connexion', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-        content: const Text('Impossible de joindre le serveur. Vérifiez votre connexion internet.'),
+        title: const Text(
+          'Erreur de connexion',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        content: const Text(
+          'Impossible de joindre le serveur. Vérifiez votre connexion internet.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fermer')),
           TextButton(
-            onPressed: () { Navigator.pop(context); _loadEcoles(); },
-            child: Text('Réessayer', style: TextStyle(color: AppColors.screenOrange, fontWeight: FontWeight.w700)),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fermer'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _loadEcoles();
+            },
+            child: Text(
+              'Réessayer',
+              style: TextStyle(
+                color: AppColors.screenOrange,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -209,13 +296,18 @@ class _AddChildScreenState extends State<AddChildScreen>
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Comment trouver le matricule ?',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
+        title: const Text(
+          'Comment trouver le matricule ?',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Le matricule se trouve sur :', style: TextStyle(color: AppColors.screenTextSecondary)),
+            const Text(
+              'Le matricule se trouve sur :',
+              style: TextStyle(color: AppColors.screenTextSecondary),
+            ),
             const SizedBox(height: 12),
             _helpItem('📄', 'Carnet de correspondance'),
             _helpItem('🎓', 'Bulletin scolaire'),
@@ -226,7 +318,13 @@ class _AddChildScreenState extends State<AddChildScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Compris', style: TextStyle(color: AppColors.screenOrange, fontWeight: FontWeight.w700)),
+            child: Text(
+              'Compris',
+              style: TextStyle(
+                color: AppColors.screenOrange,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -234,19 +332,29 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   Widget _helpItem(String emoji, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 10),
-          Text(text, style: const TextStyle(fontSize: 14, color: AppColors.screenTextPrimary)),
-        ]),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 10),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.screenTextPrimary,
+          ),
+        ),
+      ],
+    ),
+  );
 
   // ─── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
       child: Scaffold(
         backgroundColor: AppColors.screenSurface,
         body: FadeTransition(
@@ -287,10 +395,18 @@ class _AddChildScreenState extends State<AddChildScreen>
                     color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
-                      BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+                      BoxShadow(
+                        color: AppColors.screenShadow,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.screenTextPrimary),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 16,
+                    color: AppColors.screenTextPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -299,18 +415,22 @@ class _AddChildScreenState extends State<AddChildScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Ajouter un élève',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(18),
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.screenTextPrimary,
-                          letterSpacing: -0.5,
-                        )),
-                    Text('Recherche par matricule',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(12),
-                          color: AppColors.screenTextSecondary,
-                        )),
+                    Text(
+                      'Ajouter un élève',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.screenTextPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Text(
+                      'Recherche par matricule',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(12),
+                        color: AppColors.screenTextSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -324,10 +444,18 @@ class _AddChildScreenState extends State<AddChildScreen>
                     color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
-                      BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+                      BoxShadow(
+                        color: AppColors.screenShadow,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.help_outline, size: 18, color: AppColors.screenOrange),
+                  child: const Icon(
+                    Icons.help_outline,
+                    size: 18,
+                    color: AppColors.screenOrange,
+                  ),
                 ),
               ),
             ],
@@ -371,7 +499,11 @@ class _AddChildScreenState extends State<AddChildScreen>
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: AppColors.screenOrange.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: AppColors.screenOrange.withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Row(
@@ -383,27 +515,35 @@ class _AddChildScreenState extends State<AddChildScreen>
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.person_add_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Ajouter votre enfant',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(16),
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.3,
-                    )),
+                Text(
+                  'Ajouter votre enfant',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                  ),
+                ),
                 const SizedBox(height: 3),
-                Text('Entrez le matricule scolaire pour retrouver votre enfant',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(12),
-                      color: Colors.white.withOpacity(0.8),
-                      height: 1.3,
-                    )),
+                Text(
+                  'Entrez le matricule scolaire pour retrouver votre enfant',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(12),
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.3,
+                  ),
+                ),
               ],
             ),
           ),
@@ -419,7 +559,11 @@ class _AddChildScreenState extends State<AddChildScreen>
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
+          BoxShadow(
+            color: AppColors.screenShadow,
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -436,16 +580,22 @@ class _AddChildScreenState extends State<AddChildScreen>
                     color: AppColors.screenOrangeLight,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.search_rounded, color: AppColors.screenOrange, size: 18),
+                  child: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.screenOrange,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                Text('Recherche',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(17),
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimary,
-                      letterSpacing: -0.3,
-                    )),
+                Text(
+                  'Recherche',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(17),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.screenTextPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
               ],
             ),
           ),
@@ -456,7 +606,10 @@ class _AddChildScreenState extends State<AddChildScreen>
               width: 36,
               height: 3,
               margin: const EdgeInsets.only(top: 14, bottom: 4),
-              decoration: BoxDecoration(color: AppColors.screenDivider, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                color: AppColors.screenDivider,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
 
@@ -478,7 +631,9 @@ class _AddChildScreenState extends State<AddChildScreen>
                 const SizedBox(height: 20),
                 // Bouton rechercher
                 _buildOrangeButton(
-                  label: _isSearching ? 'Recherche en cours...' : 'Rechercher mon enfant',
+                  label: _isSearching
+                      ? 'Recherche en cours...'
+                      : 'Rechercher mon enfant',
                   onTap: _isSearching ? null : _searchEleve,
                   isLoading: _isSearching,
                   icon: Icons.search_rounded,
@@ -517,7 +672,9 @@ class _AddChildScreenState extends State<AddChildScreen>
           value: _selectedEcoleName ?? 'Sélectionner une école...',
           items: _ecoles.map((e) => e.ecoleclibelle).toList(),
           onChanged: (String selected) {
-            final ecole = _ecoles.firstWhere((e) => e.ecoleclibelle == selected);
+            final ecole = _ecoles.firstWhere(
+              (e) => e.ecoleclibelle == selected,
+            );
             setState(() {
               _selectedEcoleId = ecole.ecoleid;
               _selectedEcoleName = selected;
@@ -540,12 +697,26 @@ class _AddChildScreenState extends State<AddChildScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.screenDivider),
       ),
-      child: Row(children: [
-        const SizedBox(width: 16, height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.screenOrange)),
-        const SizedBox(width: 12),
-        Text(msg, style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
-      ]),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.screenOrange,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            msg,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -557,12 +728,21 @@ class _AddChildScreenState extends State<AddChildScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.red.withOpacity(0.2)),
       ),
-      child: Row(children: [
-        Icon(Icons.error_outline, color: Colors.red[400], size: 18),
-        const SizedBox(width: 10),
-        const Expanded(child: Text('Aucune école disponible',
-            style: TextStyle(fontSize: 13, color: AppColors.screenTextPrimary))),
-      ]),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400], size: 18),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Aucune école disponible',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -575,15 +755,25 @@ class _AddChildScreenState extends State<AddChildScreen>
           color: AppColors.screenOrangeLight,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.refresh_rounded, color: AppColors.screenOrange, size: 16),
-          const SizedBox(width: 8),
-          Text('Réessayer', style: TextStyle(
-            color: AppColors.screenOrange,
-            fontWeight: FontWeight.w700,
-            fontSize: _textSizeService.getScaledFontSize(13),
-          )),
-        ]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.refresh_rounded,
+              color: AppColors.screenOrange,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Réessayer',
+              style: TextStyle(
+                color: AppColors.screenOrange,
+                fontWeight: FontWeight.w700,
+                fontSize: _textSizeService.getScaledFontSize(13),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -611,11 +801,21 @@ class _AddChildScreenState extends State<AddChildScreen>
             ),
             decoration: InputDecoration(
               hintText: 'Ex: 24047355B',
-              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-              prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.screenOrange, size: 18),
+              hintStyle: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFFBBBBBB),
+              ),
+              prefixIcon: const Icon(
+                Icons.badge_outlined,
+                color: AppColors.screenOrange,
+                size: 18,
+              ),
               filled: true,
               fillColor: AppColors.screenSurface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppColors.screenDivider),
@@ -626,7 +826,10 @@ class _AddChildScreenState extends State<AddChildScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.screenOrange, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.screenOrange,
+                  width: 1.5,
+                ),
               ),
             ),
             onSubmitted: (_) => _searchEleve(),
@@ -637,12 +840,28 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   Widget _fieldLabel(String label, {bool required = false}) {
-    return Row(children: [
-      Text(label, style: const TextStyle(
-          fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary, letterSpacing: 0.2)),
-      if (required)
-        const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
-    ]);
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.screenTextSecondary,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (required)
+          const Text(
+            ' *',
+            style: TextStyle(
+              color: AppColors.screenOrange,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+      ],
+    );
   }
 
   // ─── ERROR BANNER ──────────────────────────────────────────────────────────
@@ -654,12 +873,22 @@ class _AddChildScreenState extends State<AddChildScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.red.withOpacity(0.2)),
       ),
-      child: Row(children: [
-        Icon(Icons.error_outline, color: Colors.red[400], size: 16),
-        const SizedBox(width: 8),
-        Expanded(child: Text(_errorMessage!,
-            style: TextStyle(color: Colors.red[700], fontSize: 13, fontWeight: FontWeight.w500))),
-      ]),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400], size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(
+                color: Colors.red[700],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -673,7 +902,11 @@ class _AddChildScreenState extends State<AddChildScreen>
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 16, offset: Offset(0, 4)),
+          BoxShadow(
+            color: AppColors.screenShadow,
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -685,25 +918,33 @@ class _AddChildScreenState extends State<AddChildScreen>
               color: AppColors.successLight,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            child: Row(children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: AppColors.success,
+                    size: 18,
+                  ),
                 ),
-                child: const Icon(Icons.check_rounded, color: AppColors.success, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Text('Élève trouvé !',
+                const SizedBox(width: 10),
+                Text(
+                  'Élève trouvé !',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(15),
                     fontWeight: FontWeight.w700,
                     color: AppColors.success,
                     letterSpacing: -0.2,
-                  )),
-            ]),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // ── Contenu ──
@@ -723,20 +964,40 @@ class _AddChildScreenState extends State<AddChildScreen>
                           height: 64,
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+                              colors: [
+                                Color(0xFFFF7A3C),
+                                AppColors.screenOrange,
+                              ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                           ),
-                          child: eleve.urlPhoto != null && eleve.urlPhoto!.isNotEmpty
-                              ? Image.network(eleve.urlPhoto!, fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      const Icon(Icons.person, color: Colors.white, size: 32),
-                                  loadingBuilder: (_, child, progress) => progress == null
+                          child:
+                              eleve.urlPhoto != null &&
+                                  eleve.urlPhoto!.isNotEmpty
+                              ? Image.network(
+                                  eleve.urlPhoto!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                  loadingBuilder: (_, child, progress) =>
+                                      progress == null
                                       ? child
-                                      : const Center(child: CircularProgressIndicator(
-                                          strokeWidth: 2, color: Colors.white)))
-                              : const Icon(Icons.person, color: Colors.white, size: 32),
+                                      : const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
                         ),
                       ),
                     ),
@@ -745,33 +1006,46 @@ class _AddChildScreenState extends State<AddChildScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(eleve.nomEleve ?? 'Nom inconnu',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(17),
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.screenTextPrimary,
-                                letterSpacing: -0.3,
-                              )),
+                          Text(
+                            eleve.nomEleve ?? 'Nom inconnu',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(17),
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.screenTextPrimary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(eleve.prenomEleve ?? 'Prénom inconnu',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(14),
-                                color: AppColors.screenTextSecondary,
-                                fontWeight: FontWeight.w500,
-                              )),
+                          Text(
+                            eleve.prenomEleve ?? 'Prénom inconnu',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: AppColors.screenTextSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.screenOrangeLight,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(eleve.classe.isNotEmpty ? eleve.classe : 'Classe inconnue',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(11),
-                                  color: AppColors.screenOrange,
-                                  fontWeight: FontWeight.w600,
-                                )),
+                            child: Text(
+                              eleve.classe.isNotEmpty
+                                  ? eleve.classe
+                                  : 'Classe inconnue',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  11,
+                                ),
+                                color: AppColors.screenOrange,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -786,7 +1060,11 @@ class _AddChildScreenState extends State<AddChildScreen>
                 // Infos détaillées
                 _infoRow(Icons.school_outlined, 'École', ecole.ecoleclibelle),
                 const SizedBox(height: 8),
-                _infoRow(Icons.badge_outlined, 'Matricule', eleve.matriculeEleve),
+                _infoRow(
+                  Icons.badge_outlined,
+                  'Matricule',
+                  eleve.matriculeEleve,
+                ),
 
                 const SizedBox(height: 16),
 
@@ -814,24 +1092,40 @@ class _AddChildScreenState extends State<AddChildScreen>
         color: AppColors.screenSurface,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: AppColors.screenOrangeLight,
-            borderRadius: BorderRadius.circular(8),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: AppColors.screenOrangeLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppColors.screenOrange, size: 15),
           ),
-          child: Icon(icon, color: AppColors.screenOrange, size: 15),
-        ),
-        const SizedBox(width: 10),
-        Text('$label :', style: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
-        const SizedBox(width: 6),
-        Expanded(child: Text(value, style: const TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.screenTextPrimary),
-            overflow: TextOverflow.ellipsis)),
-      ]),
+          const SizedBox(width: 10),
+          Text(
+            '$label :',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.screenTextPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -869,22 +1163,32 @@ class _AddChildScreenState extends State<AddChildScreen>
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(width: 22, height: 22,
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-              : Row(mainAxisSize: MainAxisSize.min, children: [
-                  if (icon != null) ...[
-                    Icon(icon, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
                   ],
-                  Text(label, style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.1,
-                  )),
-                ]),
+                ),
         ),
       ),
     );
@@ -892,12 +1196,15 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   // ─── NOTIFICATION TOKEN UPDATE ────────────────────────────────────────────
   Future<void> _updateNotificationTokenWithNewMatricule(
-      String userId, String newMatricule) async {
+    String userId,
+    String newMatricule,
+  ) async {
     try {
       final notificationService = NotificationService();
       final token = await notificationService.getTokenAsync();
       if (token == null || token.isEmpty) return;
-      final childrenInfo = await DatabaseService.instance.getChildrenInfoByParent(userId);
+      final childrenInfo = await DatabaseService.instance
+          .getChildrenInfoByParent(userId);
       final matricules = childrenInfo
           .map((info) => info['matricule'] as String?)
           .where((m) => m != null && m.isNotEmpty)
@@ -906,7 +1213,11 @@ class _AddChildScreenState extends State<AddChildScreen>
       if (matricules.isEmpty) return;
       final deviceType = Platform.isIOS ? 'ios' : 'android';
       await PoulsScolaireApiService().registerNotificationToken(
-          token, userId, deviceType: deviceType, matricules: matricules);
+        token,
+        userId,
+        deviceType: deviceType,
+        matricules: matricules,
+      );
     } catch (_) {}
   }
 }

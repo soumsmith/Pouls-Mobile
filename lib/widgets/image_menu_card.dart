@@ -17,6 +17,8 @@ class ImageMenuCard extends StatelessWidget {
   final String? actionText;
   final Color? actionTextColor;
   final String? subtitle;
+  final String? tag;
+
   final VoidCallback onTap;
 
   const ImageMenuCard({
@@ -35,6 +37,7 @@ class ImageMenuCard extends StatelessWidget {
     this.actionText,
     this.actionTextColor,
     this.subtitle,
+    this.tag,
     required this.onTap,
   });
 
@@ -104,28 +107,29 @@ class ImageMenuCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _getSectionTag(cardKey),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                    if (tag != null)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            tag!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -273,26 +277,5 @@ class ImageMenuCard extends StatelessWidget {
       color: color ?? AppColors.screenOrange,
       size: 40,
     );
-  }
-
-  static String _getSectionTag(String key) {
-    switch (key) {
-      case 'informations':
-        return 'École';
-      case 'niveaux':
-        return 'Primaire';
-      case 'communication':
-        return 'Info';
-      case 'school_events':
-        return 'Events';
-      case 'consult_requests':
-        return 'Demandes';
-      case 'scolarite':
-        return 'Frais';
-      case 'voir_les_avis':
-        return 'Avis';
-      default:
-        return 'Plus';
-    }
   }
 }

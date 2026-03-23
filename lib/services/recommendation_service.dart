@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
+import '../config/app_config.dart';
 
 class RecommendationService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api';
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   static Future<Map<String, dynamic>> submitRecommendation({
     required String etablissement,
@@ -34,15 +35,27 @@ class RecommendationService {
       'villeParent': villeParent,
       'adresseParent': adresseParent,
     };
-    
+
     // Logger les données de la requête
-    developer.log('🚀 Envoi de la recommandation...', name: 'RecommendationService');
-    developer.log('URL: $baseUrl/ecoles/nonpartenaires', name: 'RecommendationService');
-    developer.log('Données envoyées: ${jsonEncode(requestData)}', name: 'RecommendationService');
-    
+    developer.log(
+      '🚀 Envoi de la recommandation...',
+      name: 'RecommendationService',
+    );
+    developer.log(
+      'URL: $baseUrl/ecoles/nonpartenaires',
+      name: 'RecommendationService',
+    );
+    developer.log(
+      'Données envoyées: ${jsonEncode(requestData)}',
+      name: 'RecommendationService',
+    );
+
     try {
-      developer.log('📡 Envoi de la requête POST...', name: 'RecommendationService');
-      
+      developer.log(
+        '📡 Envoi de la requête POST...',
+        name: 'RecommendationService',
+      );
+
       final response = await http.post(
         Uri.parse('$baseUrl/ecoles/nonpartenaires'),
         headers: {
@@ -51,14 +64,23 @@ class RecommendationService {
         },
         body: jsonEncode(requestData),
       );
-      
+
       // Logger la réponse
-      developer.log('📥 Réponse reçue - Status: ${response.statusCode}', name: 'RecommendationService');
-      developer.log('📄 Corps de la réponse: ${response.body}', name: 'RecommendationService');
+      developer.log(
+        '📥 Réponse reçue - Status: ${response.statusCode}',
+        name: 'RecommendationService',
+      );
+      developer.log(
+        '📄 Corps de la réponse: ${response.body}',
+        name: 'RecommendationService',
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = json.decode(response.body);
-        developer.log('✅ Succès - Données décodées: $data', name: 'RecommendationService');
+        developer.log(
+          '✅ Succès - Données décodées: $data',
+          name: 'RecommendationService',
+        );
         return {
           'success': true,
           'data': data,
@@ -66,8 +88,14 @@ class RecommendationService {
           'statusCode': response.statusCode,
         };
       } else {
-        developer.log('❌ Erreur HTTP - Status: ${response.statusCode}', name: 'RecommendationService');
-        developer.log('❌ Corps d\'erreur: ${response.body}', name: 'RecommendationService');
+        developer.log(
+          '❌ Erreur HTTP - Status: ${response.statusCode}',
+          name: 'RecommendationService',
+        );
+        developer.log(
+          '❌ Corps d\'erreur: ${response.body}',
+          name: 'RecommendationService',
+        );
         return {
           'success': false,
           'message': 'Erreur HTTP: ${response.statusCode}',
@@ -76,8 +104,14 @@ class RecommendationService {
         };
       }
     } catch (e) {
-      developer.log('💥 Exception lors de l\'envoi: $e', name: 'RecommendationService');
-      developer.log('💥 Stack trace: ${StackTrace.current}', name: 'RecommendationService');
+      developer.log(
+        '💥 Exception lors de l\'envoi: $e',
+        name: 'RecommendationService',
+      );
+      developer.log(
+        '💥 Stack trace: ${StackTrace.current}',
+        name: 'RecommendationService',
+      );
       return {
         'success': false,
         'message': 'Erreur lors de l\'envoi de la recommandation: $e',

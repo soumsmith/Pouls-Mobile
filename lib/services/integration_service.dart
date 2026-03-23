@@ -1,17 +1,22 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class IntegrationService {
   static Future<Map<String, dynamic>> submitIntegrationRequest(
-    String ecoleCode, 
-    Map<String, dynamic> requestData
+    String ecoleCode,
+    Map<String, dynamic> requestData,
   ) async {
-    final url = Uri.parse('https://api2.vie-ecoles.com/api/preinscription/demande-integration?ecole=$ecoleCode');
-    
+    final url = Uri.parse(
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/preinscription/demande-integration?ecole=$ecoleCode',
+    );
+
     print('🌐 URL de l\'API: $url');
-    print('📤 Headers: Content-Type: application/json, Accept: application/json');
+    print(
+      '📤 Headers: Content-Type: application/json, Accept: application/json',
+    );
     print('📋 Corps de la requête: ${jsonEncode(requestData)}');
-    
+
     try {
       print('⏳ Début de l\'appel HTTP POST...');
       final response = await http.post(
@@ -29,23 +34,20 @@ class IntegrationService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = jsonDecode(response.body);
         print('✅ Parse JSON réussi: $responseData');
-        return {
-          'success': true,
-          'data': responseData,
-        };
+        return {'success': true, 'data': responseData};
       } else {
-        print('❌ Erreur HTTP - Status: ${response.statusCode}, Body: ${response.body}');
+        print(
+          '❌ Erreur HTTP - Status: ${response.statusCode}, Body: ${response.body}',
+        );
         return {
           'success': false,
-          'error': 'Erreur HTTP ${response.statusCode}: ${response.reasonPhrase}',
+          'error':
+              'Erreur HTTP ${response.statusCode}: ${response.reasonPhrase}',
         };
       }
     } catch (e) {
       print('💥 Exception dans IntegrationService: $e');
-      return {
-        'success': false,
-        'error': 'Exception: $e',
-      };
+      return {'success': false, 'error': 'Exception: $e'};
     }
   }
 }

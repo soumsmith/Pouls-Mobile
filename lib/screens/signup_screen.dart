@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../widgets/custom_button.dart';
 import '../config/app_colors.dart';
+import '../config/app_config.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/back_button_widget.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -56,8 +57,10 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
-      final phone = _completePhoneNumber.isNotEmpty ? _completePhoneNumber : _phoneController.text.trim();
-      
+      final phone = _completePhoneNumber.isNotEmpty
+          ? _completePhoneNumber
+          : _phoneController.text.trim();
+
       final userData = {
         'name': _nameController.text.trim(),
         'prenoms': _prenomsController.text.trim(),
@@ -70,14 +73,20 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // Log des données à envoyer
       print('📤 ENVOI DE LA REQUÊTE D\'INSCRIPTION');
-      print('URL: https://api2.vie-ecoles.com/api/espace-parent/inscription');
+      print(
+        'URL: ${AppConfig.VIE_ECOLES_API_BASE_URL}/espace-parent/inscription',
+      );
       print('Méthode: POST');
-      print('Headers: Content-Type: application/json, Accept: application/json');
+      print(
+        'Headers: Content-Type: application/json, Accept: application/json',
+      );
       print('Données utilisateur: ${json.encode(userData)}');
       print('---');
 
       final response = await http.post(
-        Uri.parse('https://api2.vie-ecoles.com/api/espace-parent/inscription'),
+        Uri.parse(
+          '${AppConfig.VIE_ECOLES_API_BASE_URL}/espace-parent/inscription',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -107,20 +116,20 @@ class _SignupScreenState extends State<SignupScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // Naviguer vers l'écran de connexion
           Navigator.of(context).pushReplacementNamed('/login');
         } else {
           print('❌ ERREUR: Échec de la création du compte');
           print('Statut: ${response.statusCode} - ${response.reasonPhrase}');
-          
+
           String errorMessage = 'Erreur lors de la création du compte';
           try {
             final errorData = json.decode(response.body);
             if (errorData['message'] != null) {
               errorMessage = errorData['message'];
               print('Message d\'erreur API: $errorMessage');
-              
+
               // Afficher les erreurs de validation spécifiques
               if (errorData['errors'] != null) {
                 print('Erreurs de validation détaillées:');
@@ -128,7 +137,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 errors.forEach((field, messages) {
                   print('  - $field: $messages');
                 });
-                
+
                 // Créer un message d'erreur plus spécifique
                 if (errors['invitation_code'] != null) {
                   errorMessage = 'Le code d\'invitation est invalide';
@@ -147,7 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
             print('Impossible de parser la réponse d\'erreur: $e');
             print('Réponse brute: ${response.body}');
           }
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
@@ -163,12 +172,12 @@ class _SignupScreenState extends State<SignupScreen> {
       print('Message d\'erreur: $e');
       print('Stack trace: ${StackTrace.current}');
       print('---');
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur de connexion: ${e.toString()}'),
@@ -182,8 +191,9 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
-    
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -199,10 +209,7 @@ class _SignupScreenState extends State<SignupScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [
-                    AppColors.backgroundDark,
-                    AppColors.surfaceDark,
-                  ]
+                ? [AppColors.backgroundDark, AppColors.surfaceDark]
                 : [
                     AppColors.pureWhite,
                     AppColors.primaryLight.withOpacity(0.05),
@@ -223,14 +230,18 @@ class _SignupScreenState extends State<SignupScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(height: AppDimensions.getAdaptiveSpacing(context) * 0.5),
+                      SizedBox(
+                        height: AppDimensions.getAdaptiveSpacing(context) * 0.5,
+                      ),
                       // Logo
                       Center(
                         child: Container(
                           padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(isTablet ? 28.0 : 20.0),
+                            borderRadius: BorderRadius.circular(
+                              isTablet ? 28.0 : 20.0,
+                            ),
                           ),
                           child: Image.asset(
                             'assets/images/logo-app.png',
@@ -240,7 +251,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getAdaptiveSpacing(context) * 0.4),
+                      SizedBox(
+                        height: AppDimensions.getAdaptiveSpacing(context) * 0.4,
+                      ),
                       Text(
                         'CRÉER UN COMPTE',
                         style: TextStyle(
@@ -254,21 +267,35 @@ class _SignupScreenState extends State<SignupScreen> {
                       Text(
                         'Remplissez ce formulaire pour créer votre compte',
                         style: TextStyle(
-                          fontSize: AppDimensions.getFormSubtitleFontSize(context),
-                          color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                          fontSize: AppDimensions.getFormSubtitleFontSize(
+                            context,
+                          ),
+                          color: AppColors.getTextColor(
+                            isDark,
+                            type: TextType.secondary,
+                          ),
                           height: 1.4,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: AppDimensions.getFormFieldSpacing(context) * 0.3),
+                      SizedBox(
+                        height:
+                            AppDimensions.getFormFieldSpacing(context) * 0.3,
+                      ),
                       // Champ Nom
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 20.0 : 16.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: isTablet ? 12.0 : 10.0,
                               offset: const Offset(0, 4),
                             ),
@@ -290,23 +317,33 @@ class _SignupScreenState extends State<SignupScreen> {
                             labelText: 'Nom *',
                             hintText: 'Votre nom',
                             labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             hintStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -318,15 +355,24 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getFormFieldSpacing(context) * 0.3),
+                      SizedBox(
+                        height:
+                            AppDimensions.getFormFieldSpacing(context) * 0.3,
+                      ),
                       // Champ Prénoms
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 20.0 : 16.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: isTablet ? 12.0 : 10.0,
                               offset: const Offset(0, 4),
                             ),
@@ -348,23 +394,33 @@ class _SignupScreenState extends State<SignupScreen> {
                             labelText: 'Prénoms *',
                             hintText: 'Vos prénoms',
                             labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             hintStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -376,14 +432,23 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getFormFieldSpacing(context) * 0.3),
+                      SizedBox(
+                        height:
+                            AppDimensions.getFormFieldSpacing(context) * 0.3,
+                      ),
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 20.0 : 16.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: isTablet ? 12.0 : 10.0,
                               offset: const Offset(0, 4),
                             ),
@@ -424,23 +489,33 @@ class _SignupScreenState extends State<SignupScreen> {
                             labelText: 'Numéro de téléphone *',
                             hintText: 'XX XX XX XX',
                             labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             hintStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -452,15 +527,24 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getFormFieldSpacing(context) * 0.3),
+                      SizedBox(
+                        height:
+                            AppDimensions.getFormFieldSpacing(context) * 0.3,
+                      ),
                       // Champ Mot de passe
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 20.0 : 16.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: isTablet ? 12.0 : 10.0,
                               offset: const Offset(0, 4),
                             ),
@@ -486,23 +570,33 @@ class _SignupScreenState extends State<SignupScreen> {
                             labelText: 'Mot de passe *',
                             hintText: 'Votre mot de passe',
                             labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             hintStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -514,15 +608,24 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getFormFieldSpacing(context) * 0.3),
+                      SizedBox(
+                        height:
+                            AppDimensions.getFormFieldSpacing(context) * 0.3,
+                      ),
                       // Champ Code d'invitation
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 20.0 : 16.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: isTablet ? 12.0 : 10.0,
                               offset: const Offset(0, 4),
                             ),
@@ -538,23 +641,33 @@ class _SignupScreenState extends State<SignupScreen> {
                             labelText: 'Code d\'invitation (optionnel)',
                             hintText: 'Entrez votre code d\'invitation',
                             labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             hintStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -566,15 +679,24 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getFormFieldSpacing(context) * 0.3),
+                      SizedBox(
+                        height:
+                            AppDimensions.getFormFieldSpacing(context) * 0.3,
+                      ),
                       // Champ Question de sécurité
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 20.0 : 16.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: isTablet ? 12.0 : 10.0,
                               offset: const Offset(0, 4),
                             ),
@@ -585,19 +707,27 @@ class _SignupScreenState extends State<SignupScreen> {
                           decoration: InputDecoration(
                             labelText: 'Question de sécurité *',
                             labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -611,14 +741,18 @@ class _SignupScreenState extends State<SignupScreen> {
                             color: Theme.of(context).colorScheme.onSurface,
                             fontSize: isTablet ? 18.0 : 16.0,
                           ),
-                          dropdownColor: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
+                          dropdownColor: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
                           items: _securityQuestions.map((String question) {
                             return DropdownMenuItem<String>(
                               value: question,
                               child: Text(
                                 question,
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   fontSize: isTablet ? 16.0 : 14.0,
                                 ),
                               ),
@@ -631,15 +765,24 @@ class _SignupScreenState extends State<SignupScreen> {
                           },
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getFormFieldSpacing(context) * 0.3),
+                      SizedBox(
+                        height:
+                            AppDimensions.getFormFieldSpacing(context) * 0.3,
+                      ),
                       // Champ Réponse de sécurité
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 20.0 : 16.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: isTablet ? 12.0 : 10.0,
                               offset: const Offset(0, 4),
                             ),
@@ -661,23 +804,33 @@ class _SignupScreenState extends State<SignupScreen> {
                             labelText: 'Réponse de sécurité *',
                             hintText: 'Votre réponse',
                             labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             hintStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                               fontSize: isTablet ? 16.0 : 14.0,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -689,15 +842,22 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: AppDimensions.getAdaptiveSpacing(context) * 0.4),
+                      SizedBox(
+                        height: AppDimensions.getAdaptiveSpacing(context) * 0.4,
+                      ),
                       // Bouton créer le compte
                       CustomButton(
                         text: 'CRÉER LE COMPTE',
                         onPressed: _handleSignup,
                         isLoading: _isLoading,
                       ),
-                      SizedBox(height: AppDimensions.getAdaptiveSpacing(context) * 0.75),
-                      SizedBox(height: AppDimensions.getAdaptiveSpacing(context) * 1.5),
+                      SizedBox(
+                        height:
+                            AppDimensions.getAdaptiveSpacing(context) * 0.75,
+                      ),
+                      SizedBox(
+                        height: AppDimensions.getAdaptiveSpacing(context) * 1.5,
+                      ),
                     ],
                   ),
                 ),

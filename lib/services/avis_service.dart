@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/avis.dart';
+import '../config/app_config.dart';
 
 class AvisService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/ecoles';
-  
+  static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles';
+
   /// Récupère la liste des avis/notes depuis l'API
-  /// 
+  ///
   /// Endpoint: GET /api/ecoles/avis/{codeEcole}
   Future<AvisResponse> getAvisByEcole(String codeEcole) async {
     print('');
@@ -14,19 +15,21 @@ class AvisService {
     print('⭐ CHARGEMENT DES AVIS');
     print('═══════════════════════════════════════════════════════════');
     print('🏫 Code école: $codeEcole');
-    
+
     final url = '$baseUrl/avis/$codeEcole';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
-    
+
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('📥 Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -65,20 +68,23 @@ class AvisService {
   }
 
   /// Recherche des avis par terme
-  Future<List<Map<String, dynamic>>> searchAvis(String codeEcole, String query) async {
+  Future<List<Map<String, dynamic>>> searchAvis(
+    String codeEcole,
+    String query,
+  ) async {
     try {
       final avisResponse = await getAvisByEcole(codeEcole);
       final allAvis = avisResponse.data.map((avis) => avis.toUiMap()).toList();
-      
+
       if (query.isEmpty) return allAvis;
-      
+
       final searchQuery = query.toLowerCase();
       return allAvis.where((avis) {
         return (avis['title'] as String).toLowerCase().contains(searchQuery) ||
-               (avis['subtitle'] as String).toLowerCase().contains(searchQuery) ||
-               (avis['content'] as String).toLowerCase().contains(searchQuery) ||
-               (avis['auteur'] as String).toLowerCase().contains(searchQuery) ||
-               (avis['type'] as String).toLowerCase().contains(searchQuery);
+            (avis['subtitle'] as String).toLowerCase().contains(searchQuery) ||
+            (avis['content'] as String).toLowerCase().contains(searchQuery) ||
+            (avis['auteur'] as String).toLowerCase().contains(searchQuery) ||
+            (avis['type'] as String).toLowerCase().contains(searchQuery);
       }).toList();
     } catch (e) {
       throw Exception('Erreur lors de la recherche des avis: $e');
@@ -91,7 +97,7 @@ class AvisService {
     int statut,
   ) {
     if (statut == 0) return avis; // 0 = Tous
-    
+
     return avis.where((avi) {
       return (avi['statut'] as int) == statut;
     }).toList();
@@ -100,8 +106,11 @@ class AvisService {
   /// Calcule la moyenne des notes
   double calculateAverageRating(List<Map<String, dynamic>> avis) {
     if (avis.isEmpty) return 0.0;
-    
-    final total = avis.fold<double>(0, (sum, avi) => sum + (avi['statut'] as int));
+
+    final total = avis.fold<double>(
+      0,
+      (sum, avi) => sum + (avi['statut'] as int),
+    );
     return total / avis.length;
   }
 
@@ -114,14 +123,14 @@ class AvisService {
       4: 0, // Positif
       5: 0, // Très positif
     };
-    
+
     for (final avi in avis) {
       final statut = avi['statut'] as int;
       if (counts.containsKey(statut)) {
         counts[statut] = counts[statut]! + 1;
       }
     }
-    
+
     return counts;
   }
 }

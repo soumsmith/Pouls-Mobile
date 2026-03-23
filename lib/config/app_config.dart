@@ -37,6 +37,20 @@ class AppConfig {
 
   // Pour Chrome/Windows Desktop, décommentez cette ligne et commentez celle du dessus :
   //static const String POULS_SCOLAIRE_API_URL = 'http://localhost:8889/api';
+
+  /// URL de base pour l'API Vie-Ecoles (api2.vie-ecoles.com)
+  /// Utilise la variable d'environnement VIE_ECOLES_API_BASE_URL si disponible,
+  /// sinon utilise l'URL par défaut
+  static String get VIE_ECOLES_API_BASE_URL {
+    // Vérifier si la variable d'environnement existe
+    const envVar = String.fromEnvironment('VIE_ECOLES_API_BASE_URL');
+    if (envVar.isNotEmpty) {
+      return envVar;
+    }
+    // Valeur par défaut si la variable d'environnement n'est pas définie
+    return 'https://api2.vie-ecoles.com/api';
+  }
+
   // TODO: Configurer le timeout des requêtes HTTP
   static const Duration API_TIMEOUT = Duration(seconds: 30);
 }

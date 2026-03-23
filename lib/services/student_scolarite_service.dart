@@ -6,26 +6,35 @@ import 'school_service.dart';
 
 /// Service pour gérer la scolarité spécifique à un élève
 class StudentScolariteService {
-  static final StudentScolariteService _instance = StudentScolariteService._internal();
+  static final StudentScolariteService _instance =
+      StudentScolariteService._internal();
   factory StudentScolariteService() => _instance;
   StudentScolariteService._internal();
 
   final SchoolService _schoolService = SchoolService();
 
   /// Récupère la scolarité pour un élève spécifique
-  Future<StudentScolariteResponse> getScolariteForStudent(String matricule) async {
+  Future<StudentScolariteResponse> getScolariteForStudent(
+    String matricule,
+  ) async {
     // Récupérer l'ID Vie École depuis le SchoolService
     final vieEcoleId = _schoolService.schoolVieEcoleId;
-    
+
     if (vieEcoleId == null) {
-      print('❌ ID Vie École non disponible. Veuillez charger les données de l\'école d\'abord.');
-      throw Exception('ID Vie École non disponible. Chargez les données de l\'école d\'abord.');
+      print(
+        '❌ ID Vie École non disponible. Veuillez charger les données de l\'école d\'abord.',
+      );
+      throw Exception(
+        'ID Vie École non disponible. Chargez les données de l\'école d\'abord.',
+      );
     }
-    
+
     print('🔄 Début du chargement de la scolarité pour l\'élève: $matricule');
     print('🏫 École: ${_schoolService.schoolName} (ID Vie École: $vieEcoleId)');
-    
-    final url = Uri.parse('https://api2.vie-ecoles.com/api/vie-ecoles/scolarite-eleve/$matricule?ecole=$vieEcoleId');
+
+    final url = Uri.parse(
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/scolarite-eleve/$matricule?ecole=$vieEcoleId',
+    );
 
     try {
       print('📡 Appel API: $url');
@@ -36,15 +45,19 @@ class StudentScolariteService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         print('✅ Données reçues: status=${data['status']}');
-        
+
         final scolariteResponse = StudentScolariteResponse.fromJson(data);
-        print('📚 ${scolariteResponse.data.length} échéances parsées avec succès');
-        
+        print(
+          '📚 ${scolariteResponse.data.length} échéances parsées avec succès',
+        );
+
         return scolariteResponse;
       } else {
         print('❌ Erreur HTTP - Status: ${response.statusCode}');
         print('📄 Response body: ${response.body}');
-        throw Exception('Erreur lors du chargement de la scolarité: ${response.statusCode}');
+        throw Exception(
+          'Erreur lors du chargement de la scolarité: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('💥 Exception dans getScolariteForStudent: $e');
@@ -53,10 +66,12 @@ class StudentScolariteService {
   }
 
   /// Récupère les échéances avec gestion d'erreur améliorée
-  Future<List<StudentScolariteEntry>> getScolariteEntriesForStudent(String matricule) async {
+  Future<List<StudentScolariteEntry>> getScolariteEntriesForStudent(
+    String matricule,
+  ) async {
     try {
       final response = await getScolariteForStudent(matricule);
-      
+
       if (response.status) {
         return response.data;
       } else {
@@ -73,7 +88,7 @@ class StudentScolariteService {
   Future<Map<String, dynamic>> getScolariteStatistics(String matricule) async {
     try {
       final response = await getScolariteForStudent(matricule);
-      
+
       return {
         'totalMontant': response.totalMontant,
         'totalPaye': response.totalPaye,
@@ -115,7 +130,9 @@ class StudentScolariteService {
   }
 
   /// Récupère les échéances en retard
-  Future<List<StudentScolariteEntry>> getOverdueEntries(String matricule) async {
+  Future<List<StudentScolariteEntry>> getOverdueEntries(
+    String matricule,
+  ) async {
     try {
       final response = await getScolariteForStudent(matricule);
       return response.overdueEntries;
@@ -126,12 +143,14 @@ class StudentScolariteService {
   }
 
   /// Récupère les échéances à payer prochainement (dans les 30 jours)
-  Future<List<StudentScolariteEntry>> getUpcomingEntries(String matricule) async {
+  Future<List<StudentScolariteEntry>> getUpcomingEntries(
+    String matricule,
+  ) async {
     try {
       final response = await getScolariteForStudent(matricule);
       final now = DateTime.now();
       final thirtyDaysLater = now.add(const Duration(days: 30));
-      
+
       return response.data.where((entry) {
         if (entry.isFullyPaid) return false;
         try {

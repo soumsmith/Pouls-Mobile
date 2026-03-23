@@ -13,6 +13,7 @@ import '../services/database_service.dart';
 import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
+import '../config/app_config.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../screens/notes_screen_json.dart';
 import '../services/student_timetable_service.dart';
@@ -451,7 +452,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           '📡 [API] Appel à EcoleEleveService.getEcoleParametresForEleve()',
         );
         print(
-          '🔗 [API] URL: https://api2.vie-ecoles.com/api/vie-ecoles/parametre/ecole?ecole=$_ecoleCode',
+          '🔗 [API] URL: ${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/parametre/ecole?ecole=$_ecoleCode',
         );
 
         try {
@@ -2432,7 +2433,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             cardKey: 'inscription',
             title: 'Inscription',
             isDark: isDark,
-            imagePath: 'assets/images/intro_background.jpg',
+            imagePath: 'assets/images/inscription.png',
             color: const Color(0xFF3B82F6),
             backgroundColor: isDark
                 ? const Color(0xFF0D1B35)
@@ -3145,7 +3146,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     try {
       const String ecoleCode = "gainhs";
       final String url =
-          "https://api2.vie-ecoles.com/api/preinscription/services?ecole=$ecoleCode";
+          "${AppConfig.VIE_ECOLES_API_BASE_URL}/preinscription/services?ecole=$ecoleCode";
 
       print('🔄 Chargement des services...');
       print('   URL: $url');
@@ -3242,7 +3243,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       final String ecoleCode =
           _ecoleCode ?? "gainhs"; // Valeur par défaut si null
       final String url =
-          "https://api2.vie-ecoles.com/api/vie-ecoles/inscription-eleve/$matricule?ecole=$ecoleCode";
+          "${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/inscription-eleve/$matricule?ecole=$ecoleCode";
 
       print('🔄 Envoi de la requête d\'inscription...');
       print('   URL: $url');
@@ -6367,7 +6368,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('🎫 Matricule de l\'élève: $matricule');
 
       final url =
-          'https://api2.vie-ecoles.com/api/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule';
+          '${AppConfig.VIE_ECOLES_API_BASE_URL}/preinscription/demande-integration/consulte?ecole=$ecoleCode&matricule=$matricule';
       print('🌐 URL complète: $url');
 
       final response = await http.get(Uri.parse(url));

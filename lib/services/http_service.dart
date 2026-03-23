@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 /// Service HTTP pour les appels API externes
 class HttpService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com';
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
   static const Duration timeout = Duration(seconds: 30);
 
   /// Effectue une requête POST
@@ -14,16 +15,18 @@ class HttpService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          ...?headers,
-        },
-        body: body != null ? json.encode(body) : null,
-      ).timeout(timeout);
+
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...?headers,
+            },
+            body: body != null ? json.encode(body) : null,
+          )
+          .timeout(timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -38,15 +41,17 @@ class HttpService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
-      
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          ...?headers,
-        },
-      ).timeout(timeout);
+
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...?headers,
+            },
+          )
+          .timeout(timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -65,7 +70,9 @@ class HttpService {
     } else {
       try {
         final errorData = json.decode(response.body) as Map<String, dynamic>;
-        throw Exception(errorData['error'] ?? 'Erreur HTTP ${response.statusCode}');
+        throw Exception(
+          errorData['error'] ?? 'Erreur HTTP ${response.statusCode}',
+        );
       } catch (e) {
         throw Exception('Erreur HTTP ${response.statusCode}: ${response.body}');
       }

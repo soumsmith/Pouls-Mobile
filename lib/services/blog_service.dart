@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/blog.dart';
+import '../config/app_config.dart';
 
 class BlogService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/ecoles';
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   /// Récupère la liste des blogs/communications depuis l'API
   ///
@@ -17,7 +18,7 @@ class BlogService {
     print('🏫 École: $ecole');
 
     final url =
-        '$baseUrl/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}';
+        '$baseUrl/ecoles/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 

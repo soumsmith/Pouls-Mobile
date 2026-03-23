@@ -39,6 +39,9 @@ dependencies:
   flutter_screenutil: ^5.9.0
   device_info_plus: ^10.1.0
 
+  record: ^6.2.0          # Enregistrement audio natif
+  path_provider: ^2.1.2
+
   sqflite: ^2.3.0
   path: ^1.8.3
   

@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/event.dart';
+import '../config/app_config.dart';
 
 class EventsService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/ecoles';
-  
+  static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles';
+
   /// Récupère la liste des événements depuis l'API
-  /// 
+  ///
   /// Endpoint: GET /api/ecoles/evenements-list?page=1&per_page=20
   /// Endpoint: GET /api/ecoles/evenements-list?nomEtablissement={nomEtablissement}&page=1&per_page=20
   Future<EventsResponse> getEvents({
@@ -23,23 +24,25 @@ class EventsService {
     if (nomEtablissement != null) {
       print('🏫 Établissement: $nomEtablissement');
     }
-    
+
     String url = '$baseUrl/evenements-list?page=$page&per_page=$perPage';
     if (nomEtablissement != null && nomEtablissement.isNotEmpty) {
       url += '&nomEtablissement=${Uri.encodeComponent(nomEtablissement)}';
     }
-    
+
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
-    
+
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       print('📥 Réponse reçue:');
       print('   - Status Code: ${response.statusCode}');
@@ -74,24 +77,32 @@ class EventsService {
     String? nomEtablissement,
   }) async {
     try {
-      print('🔄 [EventsService] Début de getEventsForUI - Page: $page, PerPage: $perPage');
-      final eventsResponse = await getEvents(
-        page: page, 
-        perPage: perPage, 
-        nomEtablissement: nomEtablissement
+      print(
+        '🔄 [EventsService] Début de getEventsForUI - Page: $page, PerPage: $perPage',
       );
-      print('📊 [EventsService] ${eventsResponse.data.length} événements bruts reçus (Page ${eventsResponse.currentPage}/${eventsResponse.totalPages})');
-      
+      final eventsResponse = await getEvents(
+        page: page,
+        perPage: perPage,
+        nomEtablissement: nomEtablissement,
+      );
+      print(
+        '📊 [EventsService] ${eventsResponse.data.length} événements bruts reçus (Page ${eventsResponse.currentPage}/${eventsResponse.totalPages})',
+      );
+
       final uiEvents = eventsResponse.data.map((event) {
         try {
           return event.toUiMap();
         } catch (e) {
-          print('❌ [EventsService] Erreur conversion événement ${event.slug}: $e');
+          print(
+            '❌ [EventsService] Erreur conversion événement ${event.slug}: $e',
+          );
           rethrow;
         }
       }).toList();
-      
-      print('✅ [EventsService] ${uiEvents.length} événements convertis avec succès');
+
+      print(
+        '✅ [EventsService] ${uiEvents.length} événements convertis avec succès',
+      );
       return uiEvents;
     } catch (e) {
       print('❌ [EventsService] Erreur globale dans getEventsForUI: $e');
@@ -100,20 +111,29 @@ class EventsService {
   }
 
   /// Recherche des événements par terme
-  Future<List<Map<String, dynamic>>> searchEvents(String query, {String? nomEtablissement}) async {
+  Future<List<Map<String, dynamic>>> searchEvents(
+    String query, {
+    String? nomEtablissement,
+  }) async {
     try {
-      final eventsResponse = await getEvents(nomEtablissement: nomEtablissement);
-      final allEvents = eventsResponse.data.map((event) => event.toUiMap()).toList();
-      
+      final eventsResponse = await getEvents(
+        nomEtablissement: nomEtablissement,
+      );
+      final allEvents = eventsResponse.data
+          .map((event) => event.toUiMap())
+          .toList();
+
       if (query.isEmpty) return allEvents;
-      
+
       final searchQuery = query.toLowerCase();
       return allEvents.where((event) {
         return (event['title'] as String).toLowerCase().contains(searchQuery) ||
-               (event['subtitle'] as String).toLowerCase().contains(searchQuery) ||
-               (event['establishment'] as String).toLowerCase().contains(searchQuery) ||
-               (event['type'] as String).toLowerCase().contains(searchQuery) ||
-               (event['content'] as String).toLowerCase().contains(searchQuery);
+            (event['subtitle'] as String).toLowerCase().contains(searchQuery) ||
+            (event['establishment'] as String).toLowerCase().contains(
+              searchQuery,
+            ) ||
+            (event['type'] as String).toLowerCase().contains(searchQuery) ||
+            (event['content'] as String).toLowerCase().contains(searchQuery);
       }).toList();
     } catch (e) {
       throw Exception('Erreur lors de la recherche des événements: $e');
@@ -135,19 +155,19 @@ class EventsService {
         return events.where((event) {
           // Logique simplifiée pour la démo - à améliorer avec des dates réelles
           final eventDate = event['date'] as String;
-          return eventDate.contains('${today.day}') && 
-                 eventDate.contains(_getMonthName(today.month));
+          return eventDate.contains('${today.day}') &&
+              eventDate.contains(_getMonthName(today.month));
         }).toList();
       case 'cette semaine':
         final now = DateTime.now();
         final weekStart = now.subtract(Duration(days: now.weekday - 1));
         final weekEnd = weekStart.add(const Duration(days: 6));
-        
+
         return events.where((event) {
           // Logique simplifiée - à améliorer avec une meilleure gestion des dates
           final eventDate = event['date'] as String;
           return eventDate.contains(weekStart.day.toString()) ||
-                 eventDate.contains(weekEnd.day.toString());
+              eventDate.contains(weekEnd.day.toString());
         }).toList();
       case 'tous':
       default:
@@ -157,8 +177,18 @@ class EventsService {
 
   String _getMonthName(int month) {
     const months = [
-      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
     ];
     return months[month - 1];
   }

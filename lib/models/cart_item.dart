@@ -1,4 +1,5 @@
 import 'product.dart';
+import '../config/app_config.dart';
 
 class CartItem {
   final String id;
@@ -18,7 +19,7 @@ class CartItem {
       id: map['id']?.toString() ?? '',
       product: Product.fromMap(map['product'] as Map<String, dynamic>? ?? {}),
       quantity: map['quantity'] as int? ?? 1,
-      addedAt: map['addedAt'] != null 
+      addedAt: map['addedAt'] != null
           ? DateTime.tryParse(map['addedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
     );
@@ -28,9 +29,10 @@ class CartItem {
     // Construire l'URL complète de l'image
     String? imageUrl = map['produit_image']?.toString();
     if (imageUrl != null && !imageUrl.startsWith('http')) {
-      imageUrl = 'https://api2.vie-ecoles.com/$imageUrl';
+      imageUrl =
+          '${AppConfig.VIE_ECOLES_API_BASE_URL.replaceAll('/api', '')}/$imageUrl';
     }
-    
+
     return CartItem(
       id: map['id_cf']?.toString() ?? '',
       product: Product.fromApiMap({
@@ -98,17 +100,19 @@ class Cart {
   });
 
   factory Cart.fromMap(Map<String, dynamic> map) {
-    final itemsList = (map['items'] as List<dynamic>?)
-        ?.map((item) => CartItem.fromMap(item as Map<String, dynamic>))
-        .toList() ?? [];
+    final itemsList =
+        (map['items'] as List<dynamic>?)
+            ?.map((item) => CartItem.fromMap(item as Map<String, dynamic>))
+            .toList() ??
+        [];
 
     return Cart(
       id: map['id']?.toString() ?? '',
       items: itemsList,
-      createdAt: map['createdAt'] != null 
+      createdAt: map['createdAt'] != null
           ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      updatedAt: map['updatedAt'] != null 
+      updatedAt: map['updatedAt'] != null
           ? DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
     );

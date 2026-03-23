@@ -20,11 +20,7 @@ class NotesResult {
   final double? moyenneGlobale;
   final int? rangGlobal;
 
-  NotesResult({
-    required this.notes,
-    this.moyenneGlobale,
-    this.rangGlobal,
-  });
+  NotesResult({required this.notes, this.moyenneGlobale, this.rangGlobal});
 }
 
 /// Service pour interagir avec l'API Pouls Scolaire
@@ -34,12 +30,17 @@ class PoulsScolaireApiService {
 
   /// Headers requis pour toutes les requêtes
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
   /// Logger une requête API de manière standardisée
-  void _logApiRequest(String method, String endpoint, {Map<String, dynamic>? params, Object? body}) {
+  void _logApiRequest(
+    String method,
+    String endpoint, {
+    Map<String, dynamic>? params,
+    Object? body,
+  }) {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🔌 API REQUEST - ${method.toUpperCase()}');
@@ -56,7 +57,12 @@ class PoulsScolaireApiService {
   }
 
   /// Logger une réponse API de manière standardisée
-  void _logApiResponse(int statusCode, {String? bodyPreview, int? bodyLength, bool isError = false}) {
+  void _logApiResponse(
+    int statusCode, {
+    String? bodyPreview,
+    int? bodyLength,
+    bool isError = false,
+  }) {
     print('');
     print('═══════════════════════════════════════════════════════════');
     if (isError) {
@@ -70,7 +76,9 @@ class PoulsScolaireApiService {
       print('📄 Body Length: $bodyLength characters');
     }
     if (bodyPreview != null && bodyPreview.isNotEmpty) {
-      print('📝 Body Preview: ${bodyPreview.substring(0, bodyPreview.length > 200 ? 200 : bodyPreview.length)}');
+      print(
+        '📝 Body Preview: ${bodyPreview.substring(0, bodyPreview.length > 200 ? 200 : bodyPreview.length)}',
+      );
     }
     print('═══════════════════════════════════════════════════════════');
   }
@@ -88,7 +96,7 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère toutes les écoles disponibles
-  /// 
+  ///
   /// Endpoint: GET /connecte/ecole
   Future<List<Ecole>> getAllEcoles() async {
     try {
@@ -99,7 +107,7 @@ class PoulsScolaireApiService {
       print('═══════════════════════════════════════════════════════════');
       print('🔗 URL: $uri');
       print('📡 Envoi de la requête...');
-      
+
       final response = await http
           .get(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
@@ -114,18 +122,22 @@ class PoulsScolaireApiService {
         try {
           final List<dynamic> data = json.decode(response.body);
           print('✅ ${data.length} école(s) trouvée(s)');
-          
+
           if (data.isEmpty) {
             print('⚠️ La liste des écoles est vide');
           } else {
             print('📋 Premières écoles:');
             for (int i = 0; i < (data.length > 3 ? 3 : data.length); i++) {
               final ecoleJson = data[i] as Map<String, dynamic>;
-              print('   ${i + 1}. ${ecoleJson['ecoleclibelle'] ?? 'N/A'} (ID: ${ecoleJson['ecoleid'] ?? 'N/A'})');
+              print(
+                '   ${i + 1}. ${ecoleJson['ecoleclibelle'] ?? 'N/A'} (ID: ${ecoleJson['ecoleid'] ?? 'N/A'})',
+              );
             }
           }
-          
-          final ecoles = data.map((json) => Ecole.fromJson(json as Map<String, dynamic>)).toList();
+
+          final ecoles = data
+              .map((json) => Ecole.fromJson(json as Map<String, dynamic>))
+              .toList();
           print('═══════════════════════════════════════════════════════════');
           print('✅ FIN CHARGEMENT DES ÉCOLES');
           print('═══════════════════════════════════════════════════════════');
@@ -134,7 +146,9 @@ class PoulsScolaireApiService {
         } catch (e) {
           print('❌ Erreur lors du parsing JSON: $e');
           print('❌ Contenu de la réponse (premiers 500 caractères):');
-          print('   ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
+          print(
+            '   ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
+          );
           print('═══════════════════════════════════════════════════════════');
           print('');
           throw Exception('Erreur lors du parsing des écoles: $e');
@@ -153,11 +167,12 @@ class PoulsScolaireApiService {
       print('❌ Exception lors de la récupération des écoles: $e');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      
+
       // Gérer les différents types d'erreurs
       if (e is http.ClientException) {
         final errorMsg = e.message.toLowerCase();
-        if (errorMsg.contains('failed host lookup') || errorMsg.contains('no address associated')) {
+        if (errorMsg.contains('failed host lookup') ||
+            errorMsg.contains('no address associated')) {
           throw Exception(
             'Impossible de résoudre le nom de domaine "api-pro.pouls-scolaire.net".\n\n'
             'Vérifications à faire :\n'
@@ -165,10 +180,12 @@ class PoulsScolaireApiService {
             '2. Testez l\'URL dans un navigateur : https://api-pro.pouls-scolaire.net/api/connecte/ecole\n'
             '3. Si vous êtes sur un émulateur Android, vérifiez que l\'émulateur a accès à internet\n'
             '4. Vérifiez que le nom de domaine est correct\n'
-            '5. Vérifiez les paramètres DNS de votre réseau'
+            '5. Vérifiez les paramètres DNS de votre réseau',
           );
         }
-        throw Exception('Erreur de connexion: ${e.message}. Vérifiez votre connexion internet.');
+        throw Exception(
+          'Erreur de connexion: ${e.message}. Vérifiez votre connexion internet.',
+        );
       } else if (e is TimeoutException) {
         throw Exception('La requête a pris trop de temps. Veuillez réessayer.');
       } else {
@@ -178,14 +195,19 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère les classes d'une école
-  /// 
+  ///
   /// Endpoint: GET /classes/list-all-populate-by-ecole?ecole={ecoleId}
   Future<List<Classe>> getClassesByEcole(int ecoleId) async {
     try {
-      _logApiRequest('GET', '/classes/list-all-populate-by-ecole', params: {'ecole': ecoleId.toString()});
-      
-      final uri = Uri.parse('$_baseUrl/classes/list-all-populate-by-ecole')
-          .replace(queryParameters: {'ecole': ecoleId.toString()});
+      _logApiRequest(
+        'GET',
+        '/classes/list-all-populate-by-ecole',
+        params: {'ecole': ecoleId.toString()},
+      );
+
+      final uri = Uri.parse(
+        '$_baseUrl/classes/list-all-populate-by-ecole',
+      ).replace(queryParameters: {'ecole': ecoleId.toString()});
       final response = await http
           .get(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
@@ -195,7 +217,9 @@ class PoulsScolaireApiService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         print('✅ ${data.length} classe(s) récupérée(s)');
-        return data.map((json) => Classe.fromJson(json as Map<String, dynamic>)).toList();
+        return data
+            .map((json) => Classe.fromJson(json as Map<String, dynamic>))
+            .toList();
       } else {
         throw Exception(
           'Erreur lors de la récupération des classes: ${response.statusCode}',
@@ -208,13 +232,18 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère l'année scolaire ouverte pour une école
-  /// 
+  ///
   Future<AnneeScolaire> getAnneeScolaireOuverte(int ecoleId) async {
     try {
-      _logApiRequest('GET', '/annee/list-ouverte-to-ecole-dto', params: {'ecole': ecoleId.toString()});
-      
-      final uri = Uri.parse('$_baseUrl/annee/list-ouverte-to-ecole-dto')
-          .replace(queryParameters: {'ecole': ecoleId.toString()});
+      _logApiRequest(
+        'GET',
+        '/annee/list-ouverte-to-ecole-dto',
+        params: {'ecole': ecoleId.toString()},
+      );
+
+      final uri = Uri.parse(
+        '$_baseUrl/annee/list-ouverte-to-ecole-dto',
+      ).replace(queryParameters: {'ecole': ecoleId.toString()});
       final response = await http
           .get(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
@@ -224,14 +253,14 @@ class PoulsScolaireApiService {
       if (response.statusCode == 200) {
         try {
           final Map<String, dynamic> data = json.decode(response.body);
-          print('✅ Année scolaire ouverte récupérée: ${data['libelleAnneeOuverteCentrale'] ?? 'N/A'}');
+          print(
+            '✅ Année scolaire ouverte récupérée: ${data['libelleAnneeOuverteCentrale'] ?? 'N/A'}',
+          );
           return AnneeScolaire.fromJson(data);
         } catch (e) {
           _logApiError('Parsing JSON getAnneeScolaireOuverte', e);
           print('Réponse API: ${response.body}');
-          throw Exception(
-            'Erreur lors du parsing de la réponse de l\'API: $e',
-          );
+          throw Exception('Erreur lors du parsing de la réponse de l\'API: $e');
         }
       } else {
         throw Exception(
@@ -243,16 +272,20 @@ class PoulsScolaireApiService {
         rethrow;
       }
       _logApiError('getAnneeScolaireOuverte', e);
-      throw Exception('Erreur lors de la récupération de l\'année scolaire: $e');
+      throw Exception(
+        'Erreur lors de la récupération de l\'année scolaire: $e',
+      );
     }
   }
 
   /// Récupère les élèves d'une école et d'une année
-  /// 
+  ///
   /// Endpoint: GET /inscriptions/list-eleve-classe/{idEcole}/{idAnnee}
   Future<List<Eleve>> getElevesByEcoleAndAnnee(int idEcole, int idAnnee) async {
     try {
-      final uri = Uri.parse('$_baseUrl/inscriptions/list-eleve-classe/$idEcole/$idAnnee');
+      final uri = Uri.parse(
+        '$_baseUrl/inscriptions/list-eleve-classe/$idEcole/$idAnnee',
+      );
       print('');
       print('═══════════════════════════════════════════════════════════');
       print('📚 CHARGEMENT DES ÉLÈVES');
@@ -264,7 +297,7 @@ class PoulsScolaireApiService {
       print('🏫 Identifiant de l\'école utilisé: $idEcole');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      
+
       final response = await http
           .get(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
@@ -273,13 +306,14 @@ class PoulsScolaireApiService {
         final List<dynamic> data = json.decode(response.body);
         print('✅ Réponse reçue: ${data.length} élèves récupérés');
         print('');
-        
+
         // Chercher spécifiquement le matricule 25125794Q
         bool foundTargetMatricule = false;
         for (final eleveData in data) {
           final eleveJson = eleveData as Map<String, dynamic>;
           final matricule = eleveJson['matriculeEleve']?.toString() ?? '';
-          if (matricule == '25125794Q' || matricule.toUpperCase() == '25125794Q') {
+          if (matricule == '25125794Q' ||
+              matricule.toUpperCase() == '25125794Q') {
             foundTargetMatricule = true;
             print('🎯 ÉLÈVE TROUVÉ - Matricule: 25125794Q');
             print('   📋 Tous les champs retournés par l\'API:');
@@ -297,40 +331,48 @@ class PoulsScolaireApiService {
             break;
           }
         }
-        
+
         if (!foundTargetMatricule) {
           print('⚠️ Matricule 25125794Q non trouvé dans la liste des élèves');
         }
-        
+
         // Logger les classeid des premiers élèves pour débogage
         if (data.isNotEmpty) {
           print('📋 Exemples de classeid des élèves:');
           for (int i = 0; i < (data.length > 3 ? 3 : data.length); i++) {
             final eleveJson = data[i] as Map<String, dynamic>;
-            print('   - Élève ${i + 1}: matricule=${eleveJson['matriculeEleve']}, classeid=${eleveJson['classeid']}, brancheid=${eleveJson['brancheid']}');
+            print(
+              '   - Élève ${i + 1}: matricule=${eleveJson['matriculeEleve']}, classeid=${eleveJson['classeid']}, brancheid=${eleveJson['brancheid']}',
+            );
           }
         }
-        
-        final eleves = data.map((json) => Eleve.fromJson(json as Map<String, dynamic>)).toList();
-        
+
+        final eleves = data
+            .map((json) => Eleve.fromJson(json as Map<String, dynamic>))
+            .toList();
+
         // Vérifier l'élève avec le matricule 25125794Q après parsing
         try {
           final targetEleve = eleves.firstWhere(
-            (e) => e.matriculeEleve == '25125794Q' || e.matriculeEleve.toUpperCase() == '25125794Q',
+            (e) =>
+                e.matriculeEleve == '25125794Q' ||
+                e.matriculeEleve.toUpperCase() == '25125794Q',
           );
-          print('🎯 ÉLÈVE APRÈS PARSING - Matricule: ${targetEleve.matriculeEleve}');
+          print(
+            '🎯 ÉLÈVE APRÈS PARSING - Matricule: ${targetEleve.matriculeEleve}',
+          );
           print('   - classeid final utilisé: ${targetEleve.classeid}');
           print('   - classe final utilisé: ${targetEleve.classe}');
         } catch (e) {
           // Élève non trouvé après parsing, déjà loggé avant
         }
-        
+
         print('');
         print('═══════════════════════════════════════════════════════════');
         print('✅ FIN CHARGEMENT DES ÉLÈVES');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        
+
         return eleves;
       } else {
         throw Exception(
@@ -344,12 +386,12 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère toutes les périodes
-  /// 
+  ///
   /// Endpoint: GET /periodes/list
   Future<List<Periode>> getAllPeriodes() async {
     try {
       _logApiRequest('GET', '/periodes/list');
-      
+
       final uri = Uri.parse('$_baseUrl/periodes/list');
       final response = await http
           .get(uri, headers: _headers)
@@ -360,7 +402,9 @@ class PoulsScolaireApiService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         print('✅ ${data.length} période(s) récupérée(s)');
-        return data.map((json) => Periode.fromJson(json as Map<String, dynamic>)).toList();
+        return data
+            .map((json) => Periode.fromJson(json as Map<String, dynamic>))
+            .toList();
       } else {
         throw Exception(
           'Erreur lors de la récupération des périodes: ${response.statusCode}',
@@ -373,19 +417,23 @@ class PoulsScolaireApiService {
   }
 
   /// Recherche un élève par son matricule dans une école et une année
-  /// 
+  ///
   /// Retourne l'élève correspondant au matricule, ou null si non trouvé
-  Future<Eleve?> findEleveByMatricule(int idEcole, int idAnnee, String matricule) async {
+  Future<Eleve?> findEleveByMatricule(
+    int idEcole,
+    int idAnnee,
+    String matricule,
+  ) async {
     try {
       print('🔍 ===== DÉBUT RECHERCHE ÉLÈVE =====');
       print('📝 Matricule recherché: $matricule');
       print('🏫 École ID: $idEcole');
       print('📅 Année ID: $idAnnee');
       print('🔗 Appel de getElevesByEcoleAndAnnee...');
-      
+
       final eleves = await getElevesByEcoleAndAnnee(idEcole, idAnnee);
       print('📊 Nombre total d\'élèves récupérés: ${eleves.length}');
-      
+
       print('🔎 Recherche du matricule "$matricule" dans la liste...');
       for (final eleve in eleves) {
         if (eleve.matriculeEleve.toLowerCase() == matricule.toLowerCase()) {
@@ -419,15 +467,23 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère les matières d'une école et d'une classe
-  /// 
+  ///
   /// Endpoint: GET /imprimer-matrice-classe/matieres-ecole-web/{idEcole}/{classeId}
-  /// 
+  ///
   /// Exemple: GET /imprimer-matrice-classe/matieres-ecole-web/38/27159
-  Future<List<Matiere>> getMatieresByEcoleAndClasse(int idEcole, int classeId) async {
+  Future<List<Matiere>> getMatieresByEcoleAndClasse(
+    int idEcole,
+    int classeId,
+  ) async {
     try {
-      _logApiRequest('GET', '/imprimer-matrice-classe/matieres-ecole-web/$idEcole/$classeId');
+      _logApiRequest(
+        'GET',
+        '/imprimer-matrice-classe/matieres-ecole-web/$idEcole/$classeId',
+      );
 
-      final uri = Uri.parse('$_baseUrl/imprimer-matrice-classe/matieres-ecole-web/$idEcole/$classeId');
+      final uri = Uri.parse(
+        '$_baseUrl/imprimer-matrice-classe/matieres-ecole-web/$idEcole/$classeId',
+      );
       print('');
       print('═══════════════════════════════════════════════════════════');
       print('📚 CHARGEMENT DES MATIÈRES');
@@ -440,12 +496,10 @@ class PoulsScolaireApiService {
       print('   📚 Classe ID (classeid): $classeId');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      
+
       // Headers selon la documentation de l'API
-      final headers = {
-        'Accept': 'application/octet-stream',
-      };
-      
+      final headers = {'Accept': 'application/octet-stream'};
+
       print('📡 Envoi de la requête...');
       final response = await http
           .get(uri, headers: headers)
@@ -459,12 +513,12 @@ class PoulsScolaireApiService {
         // L'API peut retourner application/octet-stream mais le contenu est du JSON
         final responseBody = response.body;
         print('📚 Taille de la réponse: ${responseBody.length} caractères');
-        
+
         if (responseBody.isEmpty) {
           print('⚠️ Réponse vide pour les matières');
           return [];
         }
-        
+
         try {
           final dynamic decoded = json.decode(responseBody);
 
@@ -475,7 +529,9 @@ class PoulsScolaireApiService {
             } else if (decoded['classe'] is Map) {
               final classeObj = decoded['classe'];
               if (classeObj is Map && classeObj['ecole'] is Map) {
-                foundEcole = Map<String, dynamic>.from(classeObj['ecole'] as Map);
+                foundEcole = Map<String, dynamic>.from(
+                  classeObj['ecole'] as Map,
+                );
               }
             }
           } else if (decoded is List) {
@@ -488,14 +544,19 @@ class PoulsScolaireApiService {
                 if (item['classe'] is Map) {
                   final classeObj = item['classe'];
                   if (classeObj is Map && classeObj['ecole'] is Map) {
-                    foundEcole = Map<String, dynamic>.from(classeObj['ecole'] as Map);
+                    foundEcole = Map<String, dynamic>.from(
+                      classeObj['ecole'] as Map,
+                    );
                     break;
                   }
                 }
                 if (item['matiereEcole'] is Map) {
                   final matiereEcoleObj = item['matiereEcole'];
-                  if (matiereEcoleObj is Map && matiereEcoleObj['ecole'] is Map) {
-                    foundEcole = Map<String, dynamic>.from(matiereEcoleObj['ecole'] as Map);
+                  if (matiereEcoleObj is Map &&
+                      matiereEcoleObj['ecole'] is Map) {
+                    foundEcole = Map<String, dynamic>.from(
+                      matiereEcoleObj['ecole'] as Map,
+                    );
                     break;
                   }
                 }
@@ -513,35 +574,49 @@ class PoulsScolaireApiService {
 
             try {
               await DatabaseService.instance.saveEcoleCache(foundEcole);
-              print('✅ École stockée en cache local (SQLite) - id=${foundEcole['id']}');
+              print(
+                '✅ École stockée en cache local (SQLite) - id=${foundEcole['id']}',
+              );
             } catch (e) {
               print('⚠️ Impossible de stocker l\'école en cache: $e');
             }
           } else {
-            print('⚠️ Aucun objet "ecole" trouvé dans la réponse pour mise en cache');
+            print(
+              '⚠️ Aucun objet "ecole" trouvé dans la réponse pour mise en cache',
+            );
           }
 
-          final List<dynamic> data = decoded is List ? decoded : (decoded is Map && decoded['data'] is List ? decoded['data'] as List : <dynamic>[]);
+          final List<dynamic> data = decoded is List
+              ? decoded
+              : (decoded is Map && decoded['data'] is List
+                    ? decoded['data'] as List
+                    : <dynamic>[]);
           print('');
           print('✅ ${data.length} matières chargées avec succès');
           print('');
           print('📋 Liste des matières:');
           for (int i = 0; i < data.length; i++) {
             final matiereJson = data[i] as Map<String, dynamic>;
-            print('   ${i + 1}. ${matiereJson['libelle'] ?? 'N/A'} (ID: ${matiereJson['id'] ?? 'N/A'})');
+            print(
+              '   ${i + 1}. ${matiereJson['libelle'] ?? 'N/A'} (ID: ${matiereJson['id'] ?? 'N/A'})',
+            );
           }
           print('');
           print('═══════════════════════════════════════════════════════════');
           print('✅ FIN CHARGEMENT DES MATIÈRES');
           print('═══════════════════════════════════════════════════════════');
           print('');
-          final matieres = data.map((json) => Matiere.fromJson(json as Map<String, dynamic>)).toList();
+          final matieres = data
+              .map((json) => Matiere.fromJson(json as Map<String, dynamic>))
+              .toList();
           return matieres;
         } catch (e) {
           print('');
           print('❌ Erreur lors du parsing JSON: $e');
           print('❌ Contenu de la réponse (premiers 200 caractères):');
-          print('   ${responseBody.substring(0, responseBody.length > 200 ? 200 : responseBody.length)}');
+          print(
+            '   ${responseBody.substring(0, responseBody.length > 200 ? 200 : responseBody.length)}',
+          );
           print('═══════════════════════════════════════════════════════════');
           print('');
           throw Exception('Erreur lors du parsing des matières: $e');
@@ -550,7 +625,12 @@ class PoulsScolaireApiService {
         print('');
         print('❌ Erreur HTTP ${response.statusCode}');
         print('❌ Corps de la réponse: ${response.body}');
-        _logApiResponse(response.statusCode, bodyLength: response.body.length, bodyPreview: response.body, isError: true);
+        _logApiResponse(
+          response.statusCode,
+          bodyLength: response.body.length,
+          bodyPreview: response.body,
+          isError: true,
+        );
         print('═══════════════════════════════════════════════════════════');
         print('');
         throw Exception(
@@ -568,17 +648,22 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère les notes d'une classe pour une année et une période
-  /// 
+  ///
   /// Endpoint: GET /notes/list-note-classe?anneeId={anneeId}&classeId={classeId}&periodeId={periodeId}
-  Future<List<NoteClasseDto>> getNotesByClasse(int anneeId, int classeId, int periodeId) async {
+  Future<List<NoteClasseDto>> getNotesByClasse(
+    int anneeId,
+    int classeId,
+    int periodeId,
+  ) async {
     try {
-      final uri = Uri.parse('$_baseUrl/notes/list-note-classe')
-          .replace(queryParameters: {
-        'anneeId': anneeId.toString(),
-        'classeId': classeId.toString(),
-        'periodeId': periodeId.toString(),
-      });
-      
+      final uri = Uri.parse('$_baseUrl/notes/list-note-classe').replace(
+        queryParameters: {
+          'anneeId': anneeId.toString(),
+          'classeId': classeId.toString(),
+          'periodeId': periodeId.toString(),
+        },
+      );
+
       print('');
       print('═══════════════════════════════════════════════════════════');
       print('📝 CHARGEMENT DES NOTES');
@@ -592,7 +677,7 @@ class PoulsScolaireApiService {
       print('   📆 Période ID (periodeId): $periodeId ⬅️ DYNAMIQUE');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      
+
       final response = await http
           .get(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
@@ -601,14 +686,16 @@ class PoulsScolaireApiService {
         final List<dynamic> data = json.decode(response.body);
         print('✅ ${data.length} élève(s) avec notes récupéré(s)');
         print('');
-        
-        final notesDto = data.map((json) => NoteClasseDto.fromJson(json as Map<String, dynamic>)).toList();
-        
+
+        final notesDto = data
+            .map((json) => NoteClasseDto.fromJson(json as Map<String, dynamic>))
+            .toList();
+
         print('═══════════════════════════════════════════════════════════');
         print('✅ FIN CHARGEMENT DES NOTES');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        
+
         return notesDto;
       } else {
         print('❌ Erreur HTTP ${response.statusCode}: ${response.body}');
@@ -623,7 +710,7 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère les notes d'un élève spécifique par matricule, période et matière
-  /// 
+  ///
   /// Utilise la nouvelle ressource API: /notes/list-matricule-notes-moyennes/{matricule}/{anneeId}/{periodeId}
   /// Convertit la nouvelle structure en NoteApi pour compatibilité
   /// Retourne un NotesResult contenant les notes et les informations globales
@@ -631,9 +718,9 @@ class PoulsScolaireApiService {
     int anneeId,
     int classeId,
     int periodeId,
-    String matricule,
-    {String? matiereId}
-  ) async {
+    String matricule, {
+    String? matiereId,
+  }) async {
     try {
       print('');
       print('═══════════════════════════════════════════════════════════');
@@ -645,10 +732,12 @@ class PoulsScolaireApiService {
       print('   📆 Période ID: $periodeId');
       print('   📚 Matière ID: ${matiereId ?? "Toutes"}');
       print('');
-      
+
       // Utiliser la nouvelle ressource API
-      final uri = Uri.parse('$_baseUrl/notes/list-matricule-notes-moyennes/$matricule/$anneeId/$periodeId');
-      
+      final uri = Uri.parse(
+        '$_baseUrl/notes/list-matricule-notes-moyennes/$matricule/$anneeId/$periodeId',
+      );
+
       print('🔗 URL complète de la nouvelle ressource API:');
       print('   $uri');
       print('');
@@ -657,7 +746,7 @@ class PoulsScolaireApiService {
         'GET',
         '/notes/list-matricule-notes-moyennes/$matricule/$anneeId/$periodeId',
       );
-      
+
       final response = await http
           .get(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
@@ -674,50 +763,67 @@ class PoulsScolaireApiService {
         print('✅ Réponse reçue de la nouvelle ressource API');
         print('   Type de la réponse: ${responseData.runtimeType}');
         print('');
-        
+
         // La nouvelle API retourne une liste (même si elle ne contient qu'un seul élément)
         List<NoteClasseDto> notesDtoList;
         if (responseData is List) {
-          print('   📋 Réponse est une liste avec ${responseData.length} élément(s)');
+          print(
+            '   📋 Réponse est une liste avec ${responseData.length} élément(s)',
+          );
           notesDtoList = responseData
-              .map((json) => NoteClasseDto.fromJson(json as Map<String, dynamic>))
+              .map(
+                (json) => NoteClasseDto.fromJson(json as Map<String, dynamic>),
+              )
               .toList();
         } else if (responseData is Map<String, dynamic>) {
           // Gérer le cas où c'est un objet unique (pour compatibilité)
           print('   📋 Réponse est un objet unique');
           notesDtoList = [NoteClasseDto.fromJson(responseData)];
         } else {
-          throw Exception('Format de réponse inattendu: ${responseData.runtimeType}');
+          throw Exception(
+            'Format de réponse inattendu: ${responseData.runtimeType}',
+          );
         }
-        
+
         if (notesDtoList.isEmpty) {
           print('⚠️ Aucune donnée retournée par l\'API');
           return NotesResult(notes: []);
         }
-        
+
         // Trouver l'élève correspondant au matricule (normalement il n'y en a qu'un)
         final eleveNotes = notesDtoList.firstWhere(
-          (dto) => dto.eleve?.matricule.toLowerCase() == matricule.toLowerCase(),
+          (dto) =>
+              dto.eleve?.matricule.toLowerCase() == matricule.toLowerCase(),
           orElse: () => notesDtoList.first,
         );
-        
-        if (eleveNotes.eleve == null || eleveNotes.eleve!.matricule.toLowerCase() != matricule.toLowerCase()) {
+
+        if (eleveNotes.eleve == null ||
+            eleveNotes.eleve!.matricule.toLowerCase() !=
+                matricule.toLowerCase()) {
           print('⚠️ Aucun élève trouvé avec le matricule: $matricule');
-          print('   Matricule dans la réponse: ${eleveNotes.eleve?.matricule ?? "null"}');
+          print(
+            '   Matricule dans la réponse: ${eleveNotes.eleve?.matricule ?? "null"}',
+          );
           return NotesResult(notes: []);
         }
-        
-        print('✅ Élève trouvé: ${eleveNotes.eleve!.nom} ${eleveNotes.eleve!.prenom}');
+
+        print(
+          '✅ Élève trouvé: ${eleveNotes.eleve!.nom} ${eleveNotes.eleve!.prenom}',
+        );
         print('   📚 Nombre de matières: ${eleveNotes.matieres.length}');
         print('   📊 Moyenne générale: ${eleveNotes.moyenne ?? "N/A"}');
         print('   🏆 Rang global: ${eleveNotes.rang ?? "N/A"}');
         print('   📝 Observation: ${eleveNotes.observation ?? "N/A"}');
-        print('   👥 Effectif de la classe: ${eleveNotes.classe?.effectif ?? "N/A"}');
+        print(
+          '   👥 Effectif de la classe: ${eleveNotes.classe?.effectif ?? "N/A"}',
+        );
         if (eleveNotes.noteMatiereMap != null) {
-          print('   📋 noteMatiereMap disponible avec ${eleveNotes.noteMatiereMap!.length} entrées');
+          print(
+            '   📋 noteMatiereMap disponible avec ${eleveNotes.noteMatiereMap!.length} entrées',
+          );
         }
         print('');
-        
+
         // Log détaillé des matières
         for (var matiere in eleveNotes.matieres) {
           print('   📚 Matière: ${matiere.matiereLibelle}');
@@ -728,14 +834,16 @@ class PoulsScolaireApiService {
           print('      - Appréciation: ${matiere.appreciation ?? "N/A"}');
           print('      - Nombre de notes: ${matiere.notes.length}');
           for (var note in matiere.notes) {
-            print('         - Note: ${note.note ?? "N/A"} / ${note.noteSur ?? "N/A"}');
+            print(
+              '         - Note: ${note.note ?? "N/A"} / ${note.noteSur ?? "N/A"}',
+            );
             print('           Type: ${note.evaluationType ?? "N/A"}');
             print('           Date: ${note.dateNote ?? "N/A"}');
             print('           Numéro: ${note.evaluationNumero ?? "N/A"}');
           }
         }
         print('');
-        
+
         // Extraire les rangs par matière depuis noteMatiereMap
         final Map<String, int> rangsParMatiere = {};
         if (eleveNotes.noteMatiereMap != null) {
@@ -760,55 +868,63 @@ class PoulsScolaireApiService {
           });
         }
         print('');
-        
+
         // Convertir en NoteApi
         final List<NoteApi> notesApi = [];
-        
+
         for (final matiere in eleveNotes.matieres) {
           // Filtrer par matière si spécifiée
           if (matiereId != null && matiere.matiereId != matiereId) {
             continue;
           }
-          
+
           // Récupérer le rang de la matière depuis noteMatiereMap ou depuis matiere.rang
           int? rangMatiere = matiere.rang;
-          if (rangMatiere == null && rangsParMatiere.containsKey(matiere.matiereId)) {
+          if (rangMatiere == null &&
+              rangsParMatiere.containsKey(matiere.matiereId)) {
             rangMatiere = rangsParMatiere[matiere.matiereId];
           }
-          
-          print('   📚 Matière: ${matiere.matiereLibelle} (ID: ${matiere.matiereId})');
+
+          print(
+            '   📚 Matière: ${matiere.matiereLibelle} (ID: ${matiere.matiereId})',
+          );
           print('      - Moyenne: ${matiere.moyenne ?? "N/A"}');
           print('      - Coef: ${matiere.coef ?? "N/A"}');
           print('      - Rang: ${rangMatiere ?? "N/A"}');
           print('      - Nombre de notes: ${matiere.notes.length}');
-          
+
           // Convertir chaque note détaillée en NoteApi
           for (final noteDetail in matiere.notes) {
-            notesApi.add(NoteApi(
-              id: noteDetail.id,
-              matriculeEleve: eleveNotes.eleve!.matricule,
-              nomEleve: eleveNotes.eleve!.nom,
-              prenomEleve: eleveNotes.eleve!.prenom,
-              matiereId: int.tryParse(matiere.matiereId), // Convertir string en int
-              matiereLibelle: matiere.matiereLibelle,
-              note: noteDetail.note,
-              coef: matiere.coef,
-              numeroDevoir: noteDetail.evaluationNumero,
-              moyenne: matiere.moyenne,
-              rang: rangMatiere, // Rang de la matière
-              effectif: eleveNotes.classe?.effectif, // Effectif de la classe
-              appreciation: matiere.appreciation,
-              periodeId: periodeId,
-              dateNote: noteDetail.dateNote,
-              noteSur: noteDetail.noteSur, // Note sur depuis evaluation.noteSur
-            ));
+            notesApi.add(
+              NoteApi(
+                id: noteDetail.id,
+                matriculeEleve: eleveNotes.eleve!.matricule,
+                nomEleve: eleveNotes.eleve!.nom,
+                prenomEleve: eleveNotes.eleve!.prenom,
+                matiereId: int.tryParse(
+                  matiere.matiereId,
+                ), // Convertir string en int
+                matiereLibelle: matiere.matiereLibelle,
+                note: noteDetail.note,
+                coef: matiere.coef,
+                numeroDevoir: noteDetail.evaluationNumero,
+                moyenne: matiere.moyenne,
+                rang: rangMatiere, // Rang de la matière
+                effectif: eleveNotes.classe?.effectif, // Effectif de la classe
+                appreciation: matiere.appreciation,
+                periodeId: periodeId,
+                dateNote: noteDetail.dateNote,
+                noteSur:
+                    noteDetail.noteSur, // Note sur depuis evaluation.noteSur
+              ),
+            );
           }
         }
-        
+
         print('✅ ${notesApi.length} note(s) convertie(s)');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        
+
         return NotesResult(
           notes: notesApi,
           moyenneGlobale: eleveNotes.moyenne,
@@ -824,12 +940,14 @@ class PoulsScolaireApiService {
       print('❌ Erreur lors de la récupération des notes de l\'élève: $e');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      throw Exception('Erreur lors de la récupération des notes de l\'élève: $e');
+      throw Exception(
+        'Erreur lors de la récupération des notes de l\'élève: $e',
+      );
     }
   }
 
   /// Charge toutes les données pour une école : année, classes, périodes et élèves
-  /// 
+  ///
   /// Retourne un objet contenant toutes les données chargées
   Future<SchoolData> loadAllDataForEcole(int ecoleId) async {
     try {
@@ -871,15 +989,15 @@ class PoulsScolaireApiService {
   }
 
   /// Enregistre un token FCM pour recevoir les notifications
-  /// 
+  ///
   /// Endpoint: POST /api/notifications/register-token
-  /// Body: { 
-  ///   "token": string, 
-  ///   "userId": string, 
+  /// Body: {
+  ///   "token": string,
+  ///   "userId": string,
   ///   "deviceType": "android" | "ios",
   ///   "matricules": string[]
   /// }
-  /// 
+  ///
   /// Les matricules sont les identifiants des élèves pour lesquels ce token doit recevoir des notifications
   Future<bool> registerNotificationToken(
     String token,
@@ -891,7 +1009,7 @@ class PoulsScolaireApiService {
       // Utiliser l'URL de base de l'API depuis AppConfig
       final baseUrl = AppConfig.API_BASE_URL;
       final uri = Uri.parse('$baseUrl/notifications/register-token');
-      
+
       // Préparer le body avec les matricules (au moins un matricule requis)
       final body = {
         'token': token,
@@ -899,30 +1017,29 @@ class PoulsScolaireApiService {
         'deviceType': deviceType,
         'matricules': matricules ?? [],
       };
-      
+
       print('📤 Enregistrement du token de notification');
       print('   URL: $uri');
       print('   UserId: $userId');
       print('   DeviceType: $deviceType');
       print('   Matricules: ${matricules?.length ?? 0}');
-      
+
       final response = await http
-          .post(
-            uri,
-            headers: _headers,
-            body: jsonEncode(body),
-          )
+          .post(uri, headers: _headers, body: jsonEncode(body))
           .timeout(AppConfig.API_TIMEOUT);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ Token de notification enregistré avec succès');
         final responseData = json.decode(response.body);
-        if (responseData is Map && responseData.containsKey('matriculesCount')) {
+        if (responseData is Map &&
+            responseData.containsKey('matriculesCount')) {
           print('   Matricules associés: ${responseData['matriculesCount']}');
         }
         return true;
       } else {
-        print('❌ Erreur lors de l\'enregistrement du token: ${response.statusCode}');
+        print(
+          '❌ Erreur lors de l\'enregistrement du token: ${response.statusCode}',
+        );
         print('   Réponse: ${response.body}');
         return false;
       }
@@ -933,36 +1050,32 @@ class PoulsScolaireApiService {
   }
 
   /// Supprime un token FCM (déconnexion)
-  /// 
+  ///
   /// Endpoint: DELETE /api/notifications/unregister-token?userId={userId}&token={token}
   /// Utilise des query parameters au lieu d'un body JSON
   Future<bool> unregisterNotificationToken(String token, String userId) async {
     try {
       // Utiliser l'URL de base de l'API depuis AppConfig
       final baseUrl = AppConfig.API_BASE_URL;
-      final uri = Uri.parse('$baseUrl/notifications/unregister-token').replace(
-        queryParameters: {
-          'userId': userId,
-          'token': token,
-        },
-      );
-      
+      final uri = Uri.parse(
+        '$baseUrl/notifications/unregister-token',
+      ).replace(queryParameters: {'userId': userId, 'token': token});
+
       print('🗑️ Suppression du token de notification');
       print('   URL: $uri');
       print('   UserId: $userId');
-      
+
       final response = await http
-          .delete(
-            uri,
-            headers: _headers,
-          )
+          .delete(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         print('✅ Token de notification supprimé avec succès');
         return true;
       } else {
-        print('❌ Erreur lors de la suppression du token: ${response.statusCode}');
+        print(
+          '❌ Erreur lors de la suppression du token: ${response.statusCode}',
+        );
         print('   Réponse: ${response.body}');
         return false;
       }
@@ -973,21 +1086,30 @@ class PoulsScolaireApiService {
   }
 
   /// Récupère les informations de la classe et de l'école pour un élève
-  /// 
+  ///
   /// Endpoint: GET /classe-eleve/get-ecole-by-classe/{matricule}?annee={anneeId}&classe={classeId}
-  Future<StudentClassInfo> getStudentClassInfo(String matricule, int anneeId, int classeId) async {
+  Future<StudentClassInfo> getStudentClassInfo(
+    String matricule,
+    int anneeId,
+    int classeId,
+  ) async {
     try {
-      _logApiRequest('GET', '/classe-eleve/get-ecole-by-classe/$matricule', params: {
-        'annee': anneeId.toString(),
-        'classe': classeId.toString(),
-      });
-      
-      final uri = Uri.parse('$_baseUrl/classe-eleve/get-ecole-by-classe/$matricule')
-          .replace(queryParameters: {
-        'annee': anneeId.toString(),
-        'classe': classeId.toString(),
-      });
-      
+      _logApiRequest(
+        'GET',
+        '/classe-eleve/get-ecole-by-classe/$matricule',
+        params: {'annee': anneeId.toString(), 'classe': classeId.toString()},
+      );
+
+      final uri =
+          Uri.parse(
+            '$_baseUrl/classe-eleve/get-ecole-by-classe/$matricule',
+          ).replace(
+            queryParameters: {
+              'annee': anneeId.toString(),
+              'classe': classeId.toString(),
+            },
+          );
+
       print('');
       print('═══════════════════════════════════════════════════════════');
       print('🏫 CHARGEMENT DES INFOS CLASSE/ÉCOLE');
@@ -1001,7 +1123,7 @@ class PoulsScolaireApiService {
       print('   📚 Classe ID: $classeId');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      
+
       final response = await http
           .get(uri, headers: _headers)
           .timeout(AppConfig.API_TIMEOUT);
@@ -1014,20 +1136,24 @@ class PoulsScolaireApiService {
           print('✅ Informations classe/école récupérées avec succès');
           print('   🏫 École: ${data['ecole']?['libelle']}');
           print('   📚 Classe: ${data['classe']?['libelle']}');
-          print('   👤 Élève: ${data['eleve']?['prenom']} ${data['eleve']?['nom']}');
+          print(
+            '   👤 Élève: ${data['eleve']?['prenom']} ${data['eleve']?['nom']}',
+          );
           print('   🏷️ ID Vie École: ${data['identifiantVieEcole']}');
           print('');
-          
+
           final studentClassInfo = StudentClassInfo.fromJson(data);
-          
+
           // Mettre à jour le SchoolService avec le nouvel identifiantVieEcole
           await _updateSchoolServiceWithVieEcoleId(studentClassInfo);
-          
+
           return studentClassInfo;
         } catch (e) {
           print('❌ Erreur lors du parsing JSON: $e');
           print('❌ Contenu de la réponse: ${response.body}');
-          throw Exception('Erreur lors du parsing des informations classe/école: $e');
+          throw Exception(
+            'Erreur lors du parsing des informations classe/école: $e',
+          );
         }
       } else {
         print('❌ Erreur HTTP ${response.statusCode}: ${response.body}');
@@ -1037,16 +1163,20 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       _logApiError('getStudentClassInfo', e);
-      throw Exception('Erreur lors de la récupération des informations classe/école: $e');
+      throw Exception(
+        'Erreur lors de la récupération des informations classe/école: $e',
+      );
     }
   }
 
   /// Met à jour le SchoolService avec les informations de l'école et l'ID Vie École
-  Future<void> _updateSchoolServiceWithVieEcoleId(StudentClassInfo studentClassInfo) async {
+  Future<void> _updateSchoolServiceWithVieEcoleId(
+    StudentClassInfo studentClassInfo,
+  ) async {
     try {
       // Importer SchoolService ici pour éviter les dépendances circulaires
       final schoolService = SchoolService();
-      
+
       // Créer les données de l'école au format attendu par SchoolService
       final schoolData = {
         'id': studentClassInfo.ecole.id,
@@ -1057,9 +1187,11 @@ class PoulsScolaireApiService {
         'tel': null,
         'nomSignataire': null,
       };
-      
+
       await schoolService.updateSchoolData(schoolData);
-      print('✅ SchoolService mis à jour avec le nouvel ID Vie École: ${studentClassInfo.identifiantVieEcole}');
+      print(
+        '✅ SchoolService mis à jour avec le nouvel ID Vie École: ${studentClassInfo.identifiantVieEcole}',
+      );
     } catch (e) {
       print('⚠️ Impossible de mettre à jour le SchoolService: $e');
       // Ne pas lancer d'exception pour ne pas bloquer le processus principal
@@ -1090,5 +1222,3 @@ class SchoolData {
     return elevesParClasse[classeId] ?? [];
   }
 }
-
-

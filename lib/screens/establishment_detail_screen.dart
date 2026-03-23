@@ -2277,26 +2277,26 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         'Informations de l\'école',
         'assets/images/ecole.jpg',
       ],
-      ['niveaux', 'Niveaux scolaire', 'assets/images/intro_background.png'],
-      ['communication', 'Actualités', 'assets/images/actualite-scolaire.jpg'],
+      ['niveaux', '', 'assets/images/niveau-scolaire.jpg'], //Niveaux scolaire
+      ['communication', '', 'assets/images/actualite-2.jpg'],
     ];
 
     // Section Vie école (opérationnel)
     final vieEcoleSection = [
       [
         'school_events',
-        ' Événements scolaires',
-        'assets/images/ChatGPT Image 24 janv. 2026, 19_36_47.png',
+        '', //Événements scolaires
+        'assets/images/school-event.jpg', //assets/images/school-event.jpg
       ],
       [
         'consult_requests',
-        'Mes demandes',
-        'assets/images/ChatGPT Image 24 janv. 2026, 19_36_51.png',
+        '', //Mes demandes
+        'assets/images/mes-demande.jpg',
       ],
       [
         'scolarite',
-        'Scolarité',
-        'assets/images/ChatGPT Image 24 janv. 2026, 19_36_56.png',
+        '',//Scolarité
+        'assets/images/scolarite.jpg',
       ],
     ];
 
@@ -2304,7 +2304,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final communauteSection = [
       [
         'voir_les_avis',
-        'Voir les avis',
+        '', //Voir les avis
         'assets/images/avis-2.jpg',
       ],
     ];

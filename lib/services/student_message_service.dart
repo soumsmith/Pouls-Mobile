@@ -14,9 +14,10 @@ class StudentMessageService {
   Future<List<StudentMessage>> getMessagesForStudent(String matricule) async {
     print('🔄 Début du chargement des messages pour l\'élève: $matricule');
 
+    // Correction du endpoint - utilise le endpoint correct pour les messages d\'élève
     final url = Uri.parse(
-      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/liste-messages-groupe/$matricule',
-    ); //
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/messages/eleve/$matricule',
+    );
 
     try {
       print('📡 Appel API: $url');
@@ -60,8 +61,9 @@ class StudentMessageService {
   }) async {
     print('🔄 Chargement des messages - Page $page pour l\'élève: $matricule');
 
+    // Correction du endpoint
     final url = Uri.parse(
-      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/liste-messages-groupe/$matricule?page=$page',
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/messages/eleve/$matricule?page=$page',
     );
 
     try {

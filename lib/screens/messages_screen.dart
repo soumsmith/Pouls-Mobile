@@ -208,7 +208,12 @@ class _MessagesScreenState extends State<MessagesScreen>
       backgroundColor: Colors.red[400],
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 80, // Espace pour le FAB
+        top: 16,
+      ),
     ));
   }
 
@@ -218,7 +223,12 @@ class _MessagesScreenState extends State<MessagesScreen>
       backgroundColor: Colors.green[500],
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 80, // Espace pour le FAB
+        top: 16,
+      ),
     ));
   }
 

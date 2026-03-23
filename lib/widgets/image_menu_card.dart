@@ -44,6 +44,9 @@ class ImageMenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Calculer la largeur pour afficher 3 cartes sur téléphone
+    final cardWidth = (screenWidth - 32 - 32) / 3; // 32 = padding horizontal, 32 = marges entre cartes
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -59,7 +62,7 @@ class ImageMenuCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 140,
+          width: cardWidth,
           height: 120, // Hauteur fixe pour éviter l'overflow
           margin: EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
@@ -73,12 +76,13 @@ class ImageMenuCard extends StatelessWidget {
             children: [
               // Image section with overlay tag
               Expanded(
-                flex: 3,
+                flex: (title != null && title.isNotEmpty) ? 3 : 5,
                 child: Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
+                      borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20),
+                        bottom: (title != null && title.isNotEmpty) ? Radius.zero : Radius.circular(20),
                       ),
                       child: Stack(
                         children: [
@@ -133,73 +137,74 @@ class ImageMenuCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Text section
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: textSizeService.getScaledFontSize(13),
-                          fontWeight: FontWeight.w700,
-                          color:
-                              textColor ??
-                              (isDark
-                                  ? Colors.white
-                                  : AppColors.screenTextPrimary),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                (textColor ??
-                                        (isDark
-                                            ? Colors.white
-                                            : AppColors.screenTextPrimary))
-                                    .withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            subtitle!,
-                            style: TextStyle(
-                              fontSize: textSizeService.getScaledFontSize(8),
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                      if (actionText != null) ...[
-                        const SizedBox(height: 1),
+              // Text section - only show if title is not null and not empty
+              if (title != null && title.isNotEmpty) ...[
+                Expanded(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Text(
-                          actionText!,
+                          title!,
                           style: TextStyle(
-                            fontSize: textSizeService.getScaledFontSize(9),
-                            fontWeight: FontWeight.w600,
+                            fontSize: textSizeService.getScaledFontSize(13),
+                            fontWeight: FontWeight.w700,
                             color:
-                                actionTextColor ??
-                                color ??
-                                AppColors.screenOrange,
+                                textColor ??
+                                (isDark
+                                    ? Colors.white
+                                    : AppColors.screenTextPrimary),
                           ),
                           maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  (textColor ??
+                                          (isDark
+                                              ? Colors.white
+                                              : AppColors.screenTextPrimary))
+                                      .withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              subtitle!,
+                              style: TextStyle(
+                                fontSize: textSizeService.getScaledFontSize(8),
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                        if (actionText != null) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            actionText!,
+                            style: TextStyle(
+                              fontSize: textSizeService.getScaledFontSize(9),
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  actionTextColor ??
+                                  color ??
+                                  AppColors.screenOrange,
+                            ),
+                            maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ] else ...[
@@ -241,6 +246,7 @@ class ImageMenuCard extends StatelessWidget {
                   ),
                 ),
               ),
+              ],
             ],
           ),
         ),

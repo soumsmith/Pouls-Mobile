@@ -95,6 +95,14 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             ],
           ),
           duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 80, // Espace pour la bottom nav
+            top: 16,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           action: SnackBarAction(
             label: 'Fermer',
             textColor: AppColors.primary,

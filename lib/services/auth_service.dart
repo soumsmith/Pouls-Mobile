@@ -66,7 +66,7 @@ class AuthService {
       print('🔐 Tentative de connexion directe avec: $phone');
       
       final response = await HttpService.post(
-        '/api/vie-ecoles/auth/parent/connexion',
+        '/vie-ecoles/auth/parent/connexion',
         body: {
           'numero': phone,
         },

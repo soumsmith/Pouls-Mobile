@@ -12,21 +12,11 @@ import '../widgets/see_more_card.dart';
 import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/search_bar_widget.dart';
+import '../widgets/filter_row_widget.dart';
 import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
-
-// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
-
-const _kCardShadow = [
-  BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
-  BoxShadow(color: Color(0x06000000), blurRadius: 4, offset: Offset(0, 1)),
-];
-
-const _kOrangeGradient = LinearGradient(
-  colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
 
 // ─── Color per school type ────────────────────────────────────────────────────
 Color _typeColor(String type) {
@@ -43,23 +33,6 @@ Color _typeColor(String type) {
       return const Color(0xFF6366F1);
     default:
       return const Color(0xFFEF4444);
-  }
-}
-
-IconData _typeIcon(String type) {
-  switch (type.toLowerCase()) {
-    case 'primaire':
-      return Icons.child_care_rounded;
-    case 'collège':
-      return Icons.menu_book_rounded;
-    case 'lycée':
-      return Icons.school_rounded;
-    case 'privé':
-      return Icons.star_rounded;
-    case 'public':
-      return Icons.account_balance_rounded;
-    default:
-      return Icons.business_rounded;
   }
 }
 
@@ -319,19 +292,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _loadEcoles();
   }
 
-  // ── Responsive Grid Methods ───────────────────────────
-  int _getCrossAxisCount(BuildContext context) {
-    return AppDimensions.getEcolesGridColumns(context);
-  }
-
-  double _getChildAspectRatio(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth > 600) {
-      return 0.85; // Slightly wider for tablet layout
-    }
-    return 0.78; // Original aspect ratio for mobile
-  }
-
   // ── Build ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -348,94 +308,73 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       ).copyWith(textScaler: TextScaler.linear(_currentTextScale)),
       child: Scaffold(
         backgroundColor: AppColors.screenSurface,
-        body: Column(
-          children: [
-            _buildHeader(),
-            _buildSearchBar(),
-            _buildFilterRow(),
-            Expanded(child: _buildBody()),
+        body: CustomScrollView(
+          slivers: [
+            CustomSliverAppBar(
+              title: 'Établissements',
+              isDark: false,
+              onBackTap: () => MainScreenWrapper.of(context).navigateToHome(),
+              actions: [
+                _buildHeaderAction(
+                  icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                  onTap: () => setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) _searchController.clear();
+                  }),
+                ),
+                const SizedBox(width: 8),
+                _buildHeaderAction(
+                  icon: Icons.tune,
+                  onTap: _showAdvancedSearchBottomSheet,
+                ),
+                const SizedBox(width: 4),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: SearchBarWidget(
+                isSearching: _isSearching,
+                searchController: _searchController,
+                onChanged: _onSearchChanged,
+                onClear: () {
+                  _searchTimer?.cancel();
+                  setState(() {
+                    _searchController.clear();
+                    _nomEtablissement = null;
+                  });
+                  _loadEcoles();
+                },
+                hintText: 'Rechercher un établissement...',
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: FilterRowWidget(
+                filters: _filters,
+                selectedFilter: _selectedFilter,
+                onFilterSelected: (filter) => setState(() => _selectedFilter = filter),
+              ),
+            ),
+            SliverFillRemaining(child: _buildBody()),
           ],
         ),
       ),
     );
   }
 
-  // ── Header (sans bouton Événements) ───────────────────────
-  Widget _buildHeader() {
-    return Container(
-      color: AppColors.screenCard,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
-        left: 20,
-        right: 12,
-        bottom: 12,
-      ),
-      child: Row(
-        children: [
-          // Back button
-          GestureDetector(
-            onTap: () => MainScreenWrapper.of(context).navigateToHome(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.screenCard,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: AppColors.screenCardShadow,
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Title
-          const Expanded(
-            child: Text(
-              'Établissements',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
-                letterSpacing: -0.5,
-              ),
-            ),
-          ),
-
-          // Search button et advanced search
-          _buildHeaderAction(
-            icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
-            onTap: () => setState(() {
-              _isSearching = !_isSearching;
-              if (!_isSearching) _searchController.clear();
-            }),
-          ),
-          const SizedBox(width: 8),
-          _buildHeaderAction(
-            icon: Icons.tune,
-            onTap: _showAdvancedSearchBottomSheet,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildHeaderAction({
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final actionButtonSize = AppDimensions.getActionButtonSize(context);
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: actionButtonSize,
+        height: actionButtonSize,
         decoration: BoxDecoration(
           color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.getButtonBorderRadius(context)),
           boxShadow: AppColors.screenCardShadow,
         ),
         child: Icon(icon, size: 20, color: const Color(0xFF1A1A1A)),
@@ -443,71 +382,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Search Bar ─────────────────────────────────────────────
-  Widget _buildSearchBar() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      height: _isSearching ? 60 : 0,
-      color: AppColors.screenCard,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: _isSearching
-          ? Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.screenSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.screenOrange.withOpacity(0.4),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.screenOrange.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: _onSearchChanged,
-                decoration: InputDecoration(
-                  hintText: 'Rechercher un établissement...',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    size: 18,
-                    color: AppColors.screenOrange,
-                  ),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () {
-                            _searchTimer?.cancel(); // Annuler le timer
-                            setState(() {
-                              _searchController.clear();
-                              _nomEtablissement = null;
-                            });
-                            _loadEcoles();
-                          },
-                          child: Icon(
-                            Icons.cancel_rounded,
-                            size: 18,
-                            color: Colors.grey[400],
-                          ),
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            )
-          : null,
-    );
-  }
 
   // ── Advanced Search BottomSheet ─────────────────────────────────
   void _showAdvancedSearchBottomSheet() {
@@ -729,62 +603,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Filter Row ─────────────────────────────────────────────
-  Widget _buildFilterRow() {
-    return Container(
-      color: AppColors.screenCard,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: SizedBox(
-        height: 36,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _filters.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final f = _filters[i];
-            final selected = f == _selectedFilter;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: Duration(milliseconds: 300 + i * 40),
-              builder: (_, v, child) => Opacity(opacity: v, child: child),
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedFilter = f),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: selected ? AppColors.screenOrangeGradient : null,
-                    color: selected ? null : AppColors.screenSurface,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.screenOrange.withOpacity(0.30),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    f,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? Colors.white : const Color(0xFF666666),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
 
   // ── Body ───────────────────────────────────────────────────
   Widget _buildBody() {
@@ -888,7 +706,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   child: _EventsBannerCard(
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const AllEventsScreen(),
+                        builder: (_) => AllEventsScreen(),
                       ),
                     ),
                   ),
@@ -1052,14 +870,14 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: _getCrossAxisCount(context),
+                      crossAxisCount: AppDimensions.getEcolesGridColumns(context),
                       crossAxisSpacing: AppDimensions.getEcoleCardSpacing(
                         context,
                       ),
                       mainAxisSpacing: AppDimensions.getEcoleCardSpacing(
                         context,
                       ),
-                      childAspectRatio: _getChildAspectRatio(context),
+                      childAspectRatio: AppDimensions.getEcolesGridChildAspectRatio(context),
                     ),
                     delegate: SliverChildBuilderDelegate((_, i) {
                       // ── "Voir plus" card intégrée à la fin ──
@@ -1336,7 +1154,7 @@ class _EcoleCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppDimensions.getEcoleCardBorderRadius(context)),
           boxShadow: AppColors.screenCardShadow,
         ),
         child: Column(
@@ -1346,8 +1164,8 @@ class _EcoleCard extends StatelessWidget {
             Expanded(
               flex: 3,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(18),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppDimensions.getEcoleCardBorderRadius(context)),
                 ),
                 child: Stack(
                   fit: StackFit.expand,
@@ -1363,7 +1181,7 @@ class _EcoleCard extends StatelessWidget {
                       bottom: 0,
                       left: 0,
                       right: 0,
-                      height: 48,
+                      height: AppDimensions.getEcoleCardGradientHeight(context),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -1381,8 +1199,8 @@ class _EcoleCard extends StatelessWidget {
                       top: 10,
                       right: 10,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppDimensions.getEcoleCardBadgePadding(context),
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
@@ -1398,11 +1216,11 @@ class _EcoleCard extends StatelessWidget {
                         ),
                         child: Text(
                           ecole.typePrincipal,
-                          style: const TextStyle(
-                            fontSize: 10,
+                          style: TextStyle(
+                            fontSize: AppDimensions.getEcoleCardTypeFontSize(context),
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
-                            letterSpacing: 0.2,
+                            letterSpacing: 0.1,
                           ),
                         ),
                       ),
@@ -1411,8 +1229,8 @@ class _EcoleCard extends StatelessWidget {
                       bottom: 8,
                       left: 10,
                       child: Container(
-                        width: 8,
-                        height: 8,
+                        width: AppDimensions.getEcoleCardStatusIndicatorSize(context),
+                        height: AppDimensions.getEcoleCardStatusIndicatorSize(context),
                         decoration: BoxDecoration(
                           color: const Color(0xFF22C55E),
                           shape: BoxShape.circle,
@@ -1435,17 +1253,22 @@ class _EcoleCard extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
+                padding: EdgeInsets.fromLTRB(
+                  AppDimensions.getEcoleCardInfoPadding(context), 
+                  10, 
+                  AppDimensions.getEcoleCardInfoPadding(context), 
+                  10
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       ecole.parametreNom ?? 'École sans nom',
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: AppDimensions.getEcoleCardTitleFontSize(context),
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1A1A1A),
-                        height: 1.2,
+                        height: 1.1,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -1453,10 +1276,10 @@ class _EcoleCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       ecole.adresse,
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: AppDimensions.getEcoleCardSubtitleFontSize(context),
                         color: Color(0xFF999999),
-                        height: 1.2,
+                        height: 1.1,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1464,16 +1287,16 @@ class _EcoleCard extends StatelessWidget {
                     const Spacer(),
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded, size: 11, color: color),
+                        Icon(Icons.location_on_rounded, size: AppDimensions.getEcoleCardIconSize(context), color: color),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             ecole.ville,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppDimensions.getEcoleCardSubtitleFontSize(context),
                               fontWeight: FontWeight.w600,
                               color: color,
-                              height: 1.2,
+                              height: 1.1,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

@@ -4,7 +4,7 @@ import '../config/app_config.dart';
 
 /// Service HTTP pour les appels API externes
 class HttpService {
-  static String get baseUrl => AppConfig.POULS_SCOLAIRE_API_URL;
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
   static const Duration timeout = Duration(seconds: 30);
 
   /// Effectue une requête POST

@@ -239,7 +239,7 @@ class AppColors {
   static const Color shopBlueSurface = Color(0xFFE1F5FE);
   
   // Surface spécifique aux écrans
-  static const Color screenSurface = Color(0xFFF8F8F8);
+  static const Color screenSurface = Color(0xFFFFFFFF);
   static const Color screenCard = Color(0xFFFFFFFF);
   static const Color screenTextPrimary = Color(0xFF1A1A1A);
   static const Color screenTextSecondary = Color(0xFF8A8A8A);

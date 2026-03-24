@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
 import '../models/product.dart';
@@ -16,6 +17,9 @@ import '../widgets/custom_search_bar.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/see_more_card.dart';
+import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/search_bar_widget.dart';
+import '../widgets/filter_row_widget.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -68,11 +72,12 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   // ── Responsive Grid Methods ───────────────────────────
   int _getCrossAxisCount(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth > 600) {
-      return 4; // 4 produits par ligne sur tablette
-    }
-    return 2; // 2 produits par ligne sur mobile
+    return AppDimensions.getProductsGridColumns(context);
+  }
+
+  // ── Responsive Card Height ───────────────────────────
+  double _getCardAspectRatio(BuildContext context) {
+    return AppDimensions.getProductsGridChildAspectRatio(context);
   }
 
   // ── Timer pour debounce ───────────────────────────────────────
@@ -342,142 +347,109 @@ class _LibraryScreenState extends State<LibraryScreen>
       ),
       child: Scaffold(
         backgroundColor: AppColors.screenSurface,
-        body: Column(
-          children: [
-            _buildAppBar(),
-            _buildSearchBar(),
-            _buildFilterTabs(),
-            _buildResultsHeader(),
-            Expanded(child: _buildGrid()),
+        body: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            SliverToBoxAdapter(child: _buildSearchBar()),
+            SliverToBoxAdapter(child: _buildFilterTabs()),
+            SliverToBoxAdapter(child: _buildResultsHeader()),
+            SliverFillRemaining(
+              child: _buildGrid(),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ─── APP BAR ───────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
-    return Container(
-      color: AppColors.screenSurface,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 12, 12),
-          child: Row(
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: _navigateBack,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCard,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.screenShadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 16,
-                    color: AppColors.screenTextPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Title
-              const Expanded(
-                child: Text(
-                  'Boutique',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.screenTextPrimary,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-
-              // Search button
-              _appBarIconButton(
-                icon: _isSearching
-                    ? Icons.search_off_rounded
-                    : Icons.search_rounded,
-                color: _isSearching
-                    ? AppColors.shopBlue
-                    : AppColors.screenTextPrimary,
-                bgColor: _isSearching
-                    ? AppColors.shopBlueSurface
-                    : AppColors.screenCard,
-                onTap: () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) {
-                      _searchTimer?.cancel();
-                      _searchController.clear();
-                      _nomProduit = null;
-                      _loadProducts();
-                    }
-                  });
-                },
-              ),
-              const SizedBox(width: 8),
-
-              // Advanced search button
-              _appBarIconButton(
-                icon: Icons.tune,
-                color: AppColors.screenTextPrimary,
-                bgColor: AppColors.screenCard,
-                onTap: _showAdvancedSearchBottomSheet,
-              ),
-              const SizedBox(width: 8),
-
-              // Cart button
-              _appBarIconButton(
-                icon: Icons.shopping_bag_outlined,
-                color: AppColors.screenTextPrimary,
-                bgColor: AppColors.screenCard,
-                badge: _cartItemCount > 0 ? '$_cartItemCount' : null,
-                badgeColor: AppColors.shopGreen,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CartScreen()),
-                  ).then((_) => _updateCartItemCount());
-                },
-              ),
-              const SizedBox(width: 8),
-
-              // Orders button
-              _appBarIconButton(
-                icon: Icons.receipt_long_outlined,
-                color: AppColors.screenTextPrimary,
-                bgColor: AppColors.screenCard,
-                badge: _ordersCount > 0
-                    ? (_ordersCount > 99 ? '99+' : '$_ordersCount')
-                    : null,
-                badgeColor: Colors.green,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const OrdersScreen()),
-                  ).then((_) => _updateOrdersCount());
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+  // ─── SLIVER APP BAR ─────────────────────────────────────────────────────────────
+  Widget _buildSliverAppBar() {
+    return CustomSliverAppBar(
+      title: 'Boutique',
+      isDark: false,
+      onBackTap: _navigateBack,
+      automaticallyImplyLeading: true,
+      pinned: true,
+      floating: false,
+      elevation: 0,
+      actions: _buildCustomActions(),
     );
   }
 
-  Widget _appBarIconButton({
+  // ─── CUSTOM ACTIONS ───────────────────────────────────────────────────────────
+  List<Widget> _buildCustomActions() {
+    return [
+      // Search button
+      _buildCustomActionButton(
+        icon: _isSearching
+            ? Icons.search_off_rounded
+            : Icons.search_rounded,
+        color: _isSearching
+            ? AppColors.shopBlue
+            : AppColors.screenTextPrimary,
+        bgColor: _isSearching
+            ? AppColors.shopBlueSurface
+            : AppColors.screenCard,
+        onTap: () {
+          setState(() {
+            _isSearching = !_isSearching;
+            if (!_isSearching) {
+              _searchTimer?.cancel();
+              _searchController.clear();
+              _nomProduit = null;
+              _loadProducts();
+            }
+          });
+        },
+      ),
+      const SizedBox(width: 4),
+
+      // Advanced search button
+      _buildCustomActionButton(
+        icon: Icons.tune,
+        color: AppColors.screenTextPrimary,
+        bgColor: AppColors.screenCard,
+        onTap: _showAdvancedSearchBottomSheet,
+      ),
+      const SizedBox(width: 4),
+
+      // Cart button
+      _buildCustomActionButton(
+        icon: Icons.shopping_bag_outlined,
+        color: AppColors.screenTextPrimary,
+        bgColor: AppColors.screenCard,
+        badge: _cartItemCount > 0 ? '$_cartItemCount' : null,
+        badgeColor: AppColors.shopGreen,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          ).then((_) => _updateCartItemCount());
+        },
+      ),
+      const SizedBox(width: 4),
+
+      // Orders button
+      _buildCustomActionButton(
+        icon: Icons.receipt_long_outlined,
+        color: AppColors.screenTextPrimary,
+        bgColor: AppColors.screenCard,
+        badge: _ordersCount > 0
+            ? (_ordersCount > 99 ? '99+' : '$_ordersCount')
+            : null,
+        badgeColor: Colors.green,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const OrdersScreen()),
+          ).then((_) => _updateOrdersCount());
+        },
+      ),
+      const SizedBox(width: 4),
+    ];
+  }
+
+  Widget _buildCustomActionButton({
     required IconData icon,
     required Color color,
     required Color bgColor,
@@ -493,6 +465,7 @@ class _LibraryScreenState extends State<LibraryScreen>
           Container(
             width: 40,
             height: 40,
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(12),
@@ -537,135 +510,36 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   // ─── SEARCH BAR ────────────────────────────────────────────────────────────
   Widget _buildSearchBar() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeInOut,
-      height: _isSearching ? 56 : 0,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _isSearching ? 1 : 0,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.screenCard,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.shopGreen, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shopGreen.withOpacity(0.12),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              autofocus: _isSearching,
-              onChanged: _onSearchChanged,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.screenTextPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Rechercher un produit...',
-                hintStyle: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFFBBBBBB),
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: AppColors.shopBlue,
-                  size: 18,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? GestureDetector(
-                        onTap: () {
-                          _searchTimer?.cancel(); // Annuler le timer
-                          setState(() {
-                            _searchController.clear();
-                            _nomProduit = null;
-                          });
-                          _loadProducts();
-                        },
-                        child: const Icon(
-                          Icons.close_rounded,
-                          color: AppColors.screenTextSecondary,
-                          size: 18,
-                        ),
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return SearchBarWidget(
+      isSearching: _isSearching,
+      searchController: _searchController,
+      onChanged: _onSearchChanged,
+      onClear: () {
+        _searchTimer?.cancel();
+        setState(() {
+          _searchController.clear();
+          _nomProduit = null;
+        });
+        _loadProducts();
+      },
+      hintText: 'Rechercher un produit...',
     );
   }
 
   // ─── FILTER TABS ───────────────────────────────────────────────────────────
   Widget _buildFilterTabs() {
-    return Container(
-      color: AppColors.screenCard,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: SizedBox(
-        height: 36,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _filters.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final f = _filters[i];
-            final selected = f == _selectedFilter;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: Duration(milliseconds: 300 + i * 40),
-              builder: (_, v, child) => Opacity(opacity: v, child: child),
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = f;
-                    _applyFilters();
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: selected ? AppColors.shopGreenGradient : null,
-                    color: selected ? null : AppColors.screenSurface,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.shopGreen.withOpacity(0.30),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    f,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? Colors.white : const Color(0xFF666666),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+    return FilterRowWidget(
+      filters: _filters,
+      selectedFilter: _selectedFilter,
+      onFilterSelected: (filter) {
+        setState(() {
+          _selectedFilter = filter;
+          _applyFilters();
+        });
+      },
+      selectedColor: AppColors.shopGreen,
+      selectedGradient: AppColors.shopGreenGradient,
+      selectedTextColor: Colors.white,
     );
   }
 
@@ -973,9 +847,9 @@ class _LibraryScreenState extends State<LibraryScreen>
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: _getCrossAxisCount(context),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.75,
+                crossAxisSpacing: AppDimensions.getProductsGridSpacing(context),
+                mainAxisSpacing: AppDimensions.getProductsGridSpacing(context),
+                childAspectRatio: _getCardAspectRatio(context),
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -1191,7 +1065,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppDimensions.getProductCardBorderRadius(context)),
             boxShadow: const [
               BoxShadow(
                 color: AppColors.screenShadow,
@@ -1205,12 +1079,12 @@ class _LibraryScreenState extends State<LibraryScreen>
             children: [
               // ── Image ──
               Expanded(
-                flex: 5,
+                flex: AppDimensions.getProductCardImageFlex(context),
                 child: Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(18),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(AppDimensions.getProductCardBorderRadius(context)),
                       ),
                       child: ImageHelper.buildNetworkImage(
                         imageUrl: product.imageUrl,
@@ -1222,11 +1096,11 @@ class _LibraryScreenState extends State<LibraryScreen>
                     ),
                     // Availability dot
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 6,
+                      right: 6,
                       child: Container(
-                        width: 10,
-                        height: 10,
+                        width: AppDimensions.getProductAvailabilityDotSize(context),
+                        height: AppDimensions.getProductAvailabilityDotSize(context),
                         decoration: BoxDecoration(
                           color: product.isAvailable
                               ? Colors.green
@@ -1249,29 +1123,30 @@ class _LibraryScreenState extends State<LibraryScreen>
 
               // ── Info ──
               Expanded(
-                flex: 3,
+                flex: AppDimensions.getProductCardInfoFlex(context),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  padding: AppDimensions.getProductCardPadding(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         product.title,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: AppDimensions.getProductTitleFontSize(context),
                           fontWeight: FontWeight.w700,
                           color: AppColors.screenTextPrimary,
                           letterSpacing: -0.2,
-                          height: 1.2,
+                          height: 1.1,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: AppDimensions.getProductsGridColumns(context) == 3 ? 1 : 2),
                       Text(
                         product.subtitle,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: AppDimensions.getProductSubtitleFontSize(context),
                           color: AppColors.screenTextSecondary,
                         ),
                         maxLines: 1,
@@ -1282,18 +1157,15 @@ class _LibraryScreenState extends State<LibraryScreen>
                         children: [
                           // Type badge
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
-                            ),
+                            padding: AppDimensions.getProductTypeBadgePadding(context),
                             decoration: BoxDecoration(
                               color: accent.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(AppDimensions.getProductTypeBadgeBorderRadius(context)),
                             ),
                             child: Text(
                               product.type,
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppDimensions.getProductTypeFontSize(context),
                                 color: accent,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1304,17 +1176,17 @@ class _LibraryScreenState extends State<LibraryScreen>
                           if (product.price > 0)
                             Text(
                               '${product.price.toStringAsFixed(0)} F',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: AppDimensions.getProductPriceFontSize(context),
                                 color: AppColors.shopGreen,
                                 fontWeight: FontWeight.w800,
                               ),
                             )
                           else
-                            const Text(
+                            Text(
                               'Gratuit',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppDimensions.getProductSubtitleFontSize(context),
                                 color: Colors.green,
                                 fontWeight: FontWeight.w700,
                               ),

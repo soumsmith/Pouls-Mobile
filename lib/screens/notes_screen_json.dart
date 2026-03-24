@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
-import '../services/theme_service.dart';
-import '../services/text_size_service.dart';
 import '../services/school_service.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/custom_loader.dart';
-
-// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
 class NotesScreenJson extends StatefulWidget {
   final String matricule;
@@ -31,11 +27,8 @@ class NotesScreenJson extends StatefulWidget {
 class _NotesScreenJsonState extends State<NotesScreenJson>
     with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _bulletinData;
-  Map<String, dynamic>? _originalBulletinData;
   bool _isLoading = true;
   String? _expandedSubjectId;
-  final ThemeService _themeService = ThemeService();
-  final TextSizeService _textSizeService = TextSizeService();
   final SchoolService _schoolService = SchoolService();
   final NotesApiService _notesApiService = NotesApiService();
 
@@ -69,7 +62,6 @@ void initState() {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _initializeParameters();
     if (_isLoading) _loadApiData();
   }
 
@@ -79,9 +71,6 @@ void initState() {
     super.dispose();
   }
 
-  void _initializeParameters() {
-    // Les paramètres sont déjà initialisés dans initState() depuis le widget
-  }
 
   Future<void> _loadApiData() async {
     try {
@@ -97,7 +86,6 @@ void initState() {
       if (apiData != null) {
         setState(() {
           _bulletinData = apiData;
-          _originalBulletinData = apiData;
           _selectedSubject = null;
           _isLoading = false;
         });
@@ -167,9 +155,9 @@ void initState() {
   }
 
   List<dynamic> _getFilteredMatieres() {
-    if (_originalBulletinData == null) return [];
+    if (_bulletinData == null) return [];
     List<dynamic> matieres =
-        List.from(_originalBulletinData!['list'] as List<dynamic>);
+        List.from(_bulletinData!['list'] as List<dynamic>);
     if (_selectedSubject != null && _selectedSubject!.isNotEmpty) {
       matieres = matieres
           .where((m) => m['matiereLibelle'] == _selectedSubject)
@@ -179,8 +167,8 @@ void initState() {
   }
 
   List<String> get _availableSubjects {
-    if (_originalBulletinData == null) return ['Toutes'];
-    final matieres = _originalBulletinData!['list'] as List<dynamic>;
+    if (_bulletinData == null) return ['Toutes'];
+    final matieres = _bulletinData!['list'] as List<dynamic>;
     return ['Toutes', ...matieres.map((m) => m['matiereLibelle'] as String)];
   }
 
@@ -881,35 +869,35 @@ void initState() {
 
                     const SizedBox(height: 14),
                     // Bouton marquer consulté
-                    GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.screenOrangeLight,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                              color: AppColors.screenOrange.withOpacity(0.2)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.visibility_outlined,
-                                color: AppColors.screenOrange, size: 15),
-                            SizedBox(width: 6),
-                            Text(
-                              'Marquer consulté',
-                              style: TextStyle(
-                                color: AppColors.screenOrange,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // GestureDetector(
+                    //   onTap: () {},
+                    //   child: Container(
+                    //     padding: const EdgeInsets.symmetric(
+                    //         horizontal: 12, vertical: 8),
+                    //     decoration: BoxDecoration(
+                    //       color: AppColors.screenOrangeLight,
+                    //       borderRadius: BorderRadius.circular(10),
+                    //       border: Border.all(
+                    //           color: AppColors.screenOrange.withOpacity(0.2)),
+                    //     ),
+                    //     child: const Row(
+                    //       mainAxisSize: MainAxisSize.min,
+                    //       children: [
+                    //         Icon(Icons.visibility_outlined,
+                    //             color: AppColors.screenOrange, size: 15),
+                    //         SizedBox(width: 6),
+                    //         Text(
+                    //           'Marquer consulté',
+                    //           style: TextStyle(
+                    //             color: AppColors.screenOrange,
+                    //             fontSize: 12,
+                    //             fontWeight: FontWeight.w600,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
@@ -1054,7 +1042,6 @@ void initState() {
     );
   }
 
-  // ─── ORANGE BUTTON (identique CartScreen) ─────────────────────────────────
   Widget _buildOrangeButton({
     required String label,
     VoidCallback? onTap,

@@ -18,6 +18,8 @@ class ImageMenuCard extends StatelessWidget {
   final Color? actionTextColor;
   final String? subtitle;
   final String? tag;
+  final double? width;
+  final double? height;
 
   final VoidCallback onTap;
 
@@ -38,6 +40,8 @@ class ImageMenuCard extends StatelessWidget {
     this.actionTextColor,
     this.subtitle,
     this.tag,
+    this.width,
+    this.height,
     required this.onTap,
   });
 
@@ -46,7 +50,9 @@ class ImageMenuCard extends StatelessWidget {
     final textSizeService = TextSizeService();
     final screenWidth = MediaQuery.of(context).size.width;
     // Calculer la largeur pour afficher 3 cartes sur téléphone
-    final cardWidth = (screenWidth - 32 - 32) / 3; // 32 = padding horizontal, 32 = marges entre cartes
+    final cardWidth =
+        (screenWidth - 32 - 32) /
+        3; // 32 = padding horizontal, 32 = marges entre cartes
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -62,8 +68,8 @@ class ImageMenuCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: cardWidth,
-          height: 120, // Hauteur fixe pour éviter l'overflow
+          width: width ?? 120, //cardWidth,
+          height: height ?? 120, // Hauteur par défaut si non spécifiée
           margin: EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
             color:
@@ -82,7 +88,9 @@ class ImageMenuCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20),
-                        bottom: (title != null && title.isNotEmpty) ? Radius.zero : Radius.circular(20),
+                        bottom: (title != null && title.isNotEmpty)
+                            ? Radius.zero
+                            : Radius.circular(20),
                       ),
                       child: Stack(
                         children: [
@@ -205,47 +213,46 @@ class ImageMenuCard extends StatelessWidget {
                                   AppColors.screenOrange,
                             ),
                             maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ] else ...[
-                        if (location != null) ...[
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_outlined,
-                                size: 12,
-                                color:
-                                    textColor?.withOpacity(0.7) ??
-                                    (isDark
-                                        ? Colors.white70
-                                        : AppColors.screenTextSecondary),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  location!,
-                                  style: TextStyle(
-                                    fontSize: textSizeService.getScaledFontSize(
-                                      10,
-                                    ),
-                                    color:
-                                        textColor?.withOpacity(0.7) ??
-                                        (isDark
-                                            ? Colors.white70
-                                            : AppColors.screenTextSecondary),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ] else ...[
+                          if (location != null) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 12,
+                                  color:
+                                      textColor?.withOpacity(0.7) ??
+                                      (isDark
+                                          ? Colors.white70
+                                          : AppColors.screenTextSecondary),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    location!,
+                                    style: TextStyle(
+                                      fontSize: textSizeService
+                                          .getScaledFontSize(10),
+                                      color:
+                                          textColor?.withOpacity(0.7) ??
+                                          (isDark
+                                              ? Colors.white70
+                                              : AppColors.screenTextSecondary),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
               ],
             ],
           ),

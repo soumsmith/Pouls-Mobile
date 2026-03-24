@@ -2272,11 +2272,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildMenuCards(bool isDark) {
     // Section École (pédagogique)
     final ecoleSection = [
-      [
-        'informations',
-        'Informations de l\'école',
-        'assets/images/ecole.jpg',
-      ],
+      ['informations', 'Informations de l\'école', 'assets/images/ecole.jpg'],
       ['niveaux', '', 'assets/images/niveau-scolaire.jpg'], //Niveaux scolaire
       ['communication', '', 'assets/images/actualite-2.jpg'],
     ];
@@ -2295,7 +2291,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ],
       [
         'scolarite',
-        '',//Scolarité
+        '', //Scolarité
         'assets/images/scolarite.jpg',
       ],
     ];
@@ -2329,7 +2325,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   Widget _buildHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
     return SizedBox(
-      height: 160,
+      height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2345,6 +2341,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             isDark: isDark,
             icon: def.icon,
             color: def.color,
+            width: 110,
+            height: 110,
             onTap: () => _showActionBottomSheet(item[0], def),
             //location: _getSchoolLocation(),
             subtitle: "Consulter",

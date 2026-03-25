@@ -57,6 +57,9 @@ dependencies:
   # Phone field
   intl_phone_field: ^3.0.1
   
+  # Internationalization
+  intl: ^0.19.0
+  
   # File picker
   file_picker: ^8.1.2
   

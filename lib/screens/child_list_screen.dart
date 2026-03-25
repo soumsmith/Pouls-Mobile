@@ -1,7 +1,9 @@
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
 import 'package:parents_responsable/widgets/image_menu_card.dart';
+import '../widgets/custom_loader.dart';
 import '../models/child.dart';
 import '../models/note.dart';
 import '../models/timetable_entry.dart';
@@ -10,10 +12,14 @@ import '../models/fee.dart';
 import '../models/school_supply.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/database_service.dart';
-import '../services/theme_service.dart';
+import '../services/order_service.dart';
+import '../models/order.dart';
+import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_config.dart';
+import '../config/app_dimensions.dart';
+import '../services/theme_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../screens/notes_screen_json.dart';
 import '../services/student_timetable_service.dart';
@@ -28,8 +34,11 @@ import '../services/student_message_service.dart';
 import '../models/student_message.dart';
 import '../services/student_scolarite_service.dart';
 import '../models/student_scolarite.dart';
-import '../services/parent_suggestion_service.dart';
+import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/section_header_widget.dart';
+import '../widgets/main_screen_wrapper.dart';
 import '../models/parent_suggestion.dart';
+import '../services/parent_suggestion_service.dart';
 import '../services/access_log_service.dart';
 import '../models/access_log.dart';
 import '../models/place_reservation.dart';
@@ -289,6 +298,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       MockParentSuggestionService();
   final MockAccessLogService _accessLogService = MockAccessLogService();
 
+  // Variables pour la gestion des commandes
+  List<Order> _orders = [];
+  bool _isLoadingOrders = false;
+
   // Variables pour l'emploi du temps dynamique
   StudentTimetableResponse? _timetableResponse;
   bool _isLoadingTimetable = false;
@@ -422,6 +435,45 @@ class _ChildListScreenState extends State<ChildListScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors du chargement des fournitures: $e'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadOrders() async {
+    final authService = AuthService();
+    final currentUser = authService.getCurrentUser();
+    
+    if (currentUser?.phone == null) {
+      print('⚠️ Impossible de charger les commandes: téléphone utilisateur manquant');
+      return;
+    }
+
+    setState(() {
+      _isLoadingOrders = true;
+    });
+
+    try {
+      print('📦 Chargement des commandes pour le téléphone: ${currentUser!.phone}');
+      final orders = await OrderService().getUserOrders(currentUser!.phone);
+
+      setState(() {
+        _orders = orders;
+        _isLoadingOrders = false;
+      });
+
+      print('✅ Commandes chargées: ${_orders.length} commandes');
+    } catch (e) {
+      print('❌ Erreur lors du chargement des commandes: $e');
+      setState(() {
+        _isLoadingOrders = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du chargement des commandes: $e'),
           ),
         );
       }
@@ -1029,7 +1081,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 // Content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+                    //padding: const EdgeInsets.all(20),
                     child: _buildStudentMenuContent(menuType),
                   ),
                 ),
@@ -1525,151 +1577,105 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildModernSliverAppBar() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return CustomSliverAppBar(
+      title: widget.child.fullName,
+      isDark: isDarkMode,
+      expandedHeight: 80,
+      actions: [
+        _buildNotificationButton(),
+        _buildMoreButton(),
+      ],
+      titleTextStyle: TextStyle(
+        fontSize: _textSizeService.getScaledFontSize(16),
+        fontWeight: FontWeight.w700,
+        color: isDarkMode ? Colors.white : Theme.of(context).textTheme.titleLarge?.color,
+        letterSpacing: -0.5,
+      ),
+    );
+  }
+
+  Widget _buildNotificationButton() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
-
-    return SliverAppBar(
-      expandedHeight: 80,
-      floating: false,
-      pinned: true,
-      leadingWidth: 60,
-      automaticallyImplyLeading: false,
-      backgroundColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
-      elevation: 0,
-      forceElevated: false,
-      surfaceTintColor: Colors.transparent,
-      titleSpacing: 0,
-      leading: Container(
-        margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-        decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.screenShadow,
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            size: 16,
-            color: theme.iconTheme.color,
+    
+    return Container(
+      margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
+        borderRadius: BorderRadius.circular(AppDimensions.getButtonBorderRadius(context)),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.screenShadow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
-          onPressed: () {
-            if (MainScreenWrapper.maybeOf(context) != null) {
-              MainScreenWrapper.of(context).navigateToHome();
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
+        ],
       ),
-      actions: [
-        // Icône de notifications avec badge
-        Container(
-          margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
-          decoration: BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
+      child: Stack(
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.notifications_outlined,
+              color: theme.iconTheme.color,
+            ),
+            onPressed: () => _showNotificationsBottomSheet(),
           ),
-          child: Stack(
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.notifications_outlined,
-                  color: theme.iconTheme.color,
+          // Badge pour les notifications non lues
+          if (unreadNotificationsCount > 0)
+            Positioned(
+              right: 8,
+              top: 8,
+              child: Container(
+                padding: EdgeInsets.all(AppDimensions.getBadgePadding(context)),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+                  border: Border.all(color: AppColors.screenCard, width: 2),
                 ),
-                onPressed: () => _showNotificationsBottomSheet(),
-              ),
-              // Badge pour les notifications non lues
-              if (unreadNotificationsCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.screenCard, width: 2),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
-                    ),
-                    child: Text(
-                      unreadNotificationsCount > 99
-                          ? '99+'
-                          : unreadNotificationsCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                constraints: BoxConstraints(
+                  minWidth: AppDimensions.getBadgeMinSize(context),
+                  minHeight: AppDimensions.getBadgeMinSize(context),
+                ),
+                child: Text(
+                  unreadNotificationsCount > 99
+                      ? '99+'
+                      : unreadNotificationsCount.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: AppDimensions.getBadgeFontSize(context),
+                    fontWeight: FontWeight.bold,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-            ],
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-          decoration: BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
-            onPressed: () {},
-          ),
-        ),
-      ],
-      title: Padding(
-        padding: const EdgeInsets.only(left: 10.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.child.fullName,
-              style: TextStyle(
-                color: theme.textTheme.titleLarge?.color,
-                fontWeight: FontWeight.w700,
-                fontSize: _textSizeService.getScaledFontSize(16),
-                letterSpacing: -0.5,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              widget.child.grade,
-              style: TextStyle(
-                color: AppColors.screenTextSecondary,
-                fontSize: _textSizeService.getScaledFontSize(13),
-                fontWeight: FontWeight.w500,
               ),
             ),
-          ],
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoreButton() {
+    final theme = Theme.of(context);
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
+        borderRadius: BorderRadius.circular(AppDimensions.getButtonBorderRadius(context)),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.screenShadow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
+        onPressed: () {},
       ),
     );
   }
@@ -1677,14 +1683,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildModernProfileHeader() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.symmetric(horizontal: AppDimensions.getMainContainerPadding(context), vertical: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        gradient: AppColors.screenOrangeGradient,
+        borderRadius: BorderRadius.circular(AppDimensions.getMainContainerBorderRadius(context)),
         boxShadow: [
           BoxShadow(
             color: AppColors.screenOrange.withOpacity(0.3),
@@ -1736,15 +1738,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.child.grade,
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(14),
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                     const SizedBox(height: 2),
                     Text(
                       widget.child.establishment,
@@ -1753,6 +1746,62 @@ class _ChildListScreenState extends State<ChildListScreen>
                         color: Colors.white.withOpacity(0.7),
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          widget.child.grade,
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(14),
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_eleveDetail != null) ...[
+                          SizedBox(width: 8),
+                          Text(
+                            '|',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: Colors.white.withOpacity(0.5),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            _eleveDetail!['sexe']?.toString() ?? 'N/A',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            '|',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: Colors.white.withOpacity(0.5),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              _eleveDetail!['nationalite']?.toString() ?? 'N/A',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(14),
+                                color: Colors.white.withOpacity(0.9),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    
                   ],
                 ),
               ),
@@ -1763,10 +1812,10 @@ class _ChildListScreenState extends State<ChildListScreen>
           if (_showEleveDetails && _eleveDetail != null) ...[
             const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppDimensions.getProfileDetailsPadding(context)),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppDimensions.getProfileDetailsBorderRadius(context)),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.2),
                   width: 1,
@@ -1774,122 +1823,227 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
               child: Column(
                 children: [
-                  // Informations personnelles
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildProfileDetailItem(
-                        icon: Icons.badge,
-                        label: 'Matricule',
-                        value: _eleveDetail!['matricule']?.toString() ?? 'N/A',
+                  // Titre Informations personnelles
+                  _buildSectionTitle('Informations personnelles'),
+                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                  
+                  // Layout responsive pour les informations personnelles
+                  if (AppDimensions.isMobile(context)) ...[
+                    // Mobile : une seule colonne
+                    _buildProfileDetailItem(
+                      icon: Icons.badge,
+                      label: 'Matricule',
+                      value: _eleveDetail!['matricule']?.toString() ?? 'N/A',
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    _buildProfileDetailItem(
+                      icon: Icons.cake,
+                      label: 'Né(e)',
+                      value: _formatDate(
+                        _eleveDetail!['datenaissance']?.toString() ?? 'N/A',
                       ),
-                      _buildProfileDetailItem(
-                        icon: Icons.cake,
-                        label: 'Né(e)',
-                        value: _formatDate(
-                          _eleveDetail!['datenaissance']?.toString() ?? 'N/A',
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    _buildProfileDetailItem(
+                      icon: Icons.wc,
+                      label: 'Sexe',
+                      value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    _buildProfileDetailItem(
+                      icon: Icons.location_on,
+                      label: 'Lieu',
+                      value: _eleveDetail!['lieun']?.toString() ?? 'N/A',
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    _buildProfileDetailItem(
+                      icon: Icons.phone,
+                      label: 'Mobile',
+                      value: _eleveDetail!['mobile']?.toString() ?? 'N/A',
+                      isClickable: true,
+                      onTap: () => _makePhoneCall(
+                        _eleveDetail!['mobile']?.toString() ?? '',
+                      ),
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    _buildProfileDetailItem(
+                      icon: Icons.flag,
+                      label: 'Nationalité',
+                      value: _eleveDetail!['nationalite']?.toString() ?? 'N/A',
+                    ),
+                  ] else ...[
+                    // Tablettes : deux colonnes
+                    Row(
+                      children: [
+                        _buildProfileDetailItem(
+                          icon: Icons.badge,
+                          label: 'Matricule',
+                          value: _eleveDetail!['matricule']?.toString() ?? 'N/A',
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildProfileDetailItem(
-                        icon: Icons.wc,
-                        label: 'Sexe',
-                        value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
-                      ),
-                      _buildProfileDetailItem(
-                        icon: Icons.location_on,
-                        label: 'Lieu',
-                        value: _eleveDetail!['lieun']?.toString() ?? 'N/A',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildProfileDetailItem(
-                        icon: Icons.phone,
-                        label: 'Mobile',
-                        value: _eleveDetail!['mobile']?.toString() ?? 'N/A',
-                        isClickable: true,
-                        onTap: () => _makePhoneCall(
-                          _eleveDetail!['mobile']?.toString() ?? '',
+                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        _buildProfileDetailItem(
+                          icon: Icons.cake,
+                          label: 'Né(e)',
+                          value: _formatDate(
+                            _eleveDetail!['datenaissance']?.toString() ?? 'N/A',
+                          ),
                         ),
-                      ),
-                      _buildProfileDetailItem(
-                        icon: Icons.flag,
-                        label: 'Nationalité',
-                        value:
-                            _eleveDetail!['nationalite']?.toString() ?? 'N/A',
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    Row(
+                      children: [
+                        _buildProfileDetailItem(
+                          icon: Icons.wc,
+                          label: 'Sexe',
+                          value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
+                        ),
+                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        _buildProfileDetailItem(
+                          icon: Icons.location_on,
+                          label: 'Lieu',
+                          value: _eleveDetail!['lieun']?.toString() ?? 'N/A',
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    Row(
+                      children: [
+                        _buildProfileDetailItem(
+                          icon: Icons.phone,
+                          label: 'Mobile',
+                          value: _eleveDetail!['mobile']?.toString() ?? 'N/A',
+                          isClickable: true,
+                          onTap: () => _makePhoneCall(
+                            _eleveDetail!['mobile']?.toString() ?? '',
+                          ),
+                        ),
+                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        _buildProfileDetailItem(
+                          icon: Icons.flag,
+                          label: 'Nationalité',
+                          value: _eleveDetail!['nationalite']?.toString() ?? 'N/A',
+                        ),
+                      ],
+                    ),
+                  ],
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context) * 1.5),
 
-                  // Informations scolaires
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildProfileDetailItem(
-                        icon: Icons.grade,
-                        label: 'Niveau',
-                        value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
-                      ),
-                      _buildProfileDetailItem(
-                        icon: Icons.category,
-                        label: 'Filière',
-                        value: _eleveDetail!['filiere']?.toString() ?? 'N/A',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildProfileDetailItem(
-                        icon: Icons.book,
-                        label: 'Branche',
-                        value: _eleveDetail!['branche']?.toString() ?? 'N/A',
-                      ),
-                      _buildProfileDetailItem(
-                        icon: Icons.auto_stories,
-                        label: 'Série',
-                        value: _eleveDetail!['serie']?.toString() ?? 'N/A',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildProfileDetailItem(
-                        icon: Icons.refresh,
-                        label: 'Redoublant',
-                        value: _eleveDetail!['redoublant']?.toString() ?? 'N/A',
-                        valueColor:
-                            _eleveDetail!['redoublant']
-                                    ?.toString()
-                                    .toLowerCase() ==
-                                'oui'
-                            ? Colors.orange
-                            : Colors.green,
-                      ),
-                      const SizedBox(width: 100), // Espace pour équilibrer
-                      _buildProfileDetailItem(
-                        icon: Icons.family_restroom,
-                        label: 'Famille',
-                        value: 'Voir détails',
-                        isClickable: true,
-                        onTap: () => _showFamilyBottomSheet(),
-                      ),
-                    ],
-                  ),
+                  // Titre Informations scolaires
+                  _buildSectionTitle('Informations scolaires'),
+                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+
+                  // Layout responsive pour les informations scolaires
+                  if (AppDimensions.isMobile(context)) ...[
+                    // Mobile : une seule colonne
+                    _buildProfileDetailItem(
+                      icon: Icons.grade,
+                      label: 'Niveau',
+                      value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    _buildProfileDetailItem(
+                      icon: Icons.category,
+                      label: 'Filière',
+                      value: _eleveDetail!['filiere']?.toString() ?? 'N/A',
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    // _buildProfileDetailItem(
+                    //   icon: Icons.book,
+                    //   label: 'Branche',
+                    //   value: _eleveDetail!['branche']?.toString() ?? 'N/A',
+                    // ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    _buildProfileDetailItem(
+                      icon: Icons.auto_stories,
+                      label: 'Série',
+                      value: _eleveDetail!['serie']?.toString() ?? 'N/A',
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    Row(
+                      children: [
+                        _buildProfileDetailItem(
+                          icon: Icons.refresh,
+                          label: 'Redoublant',
+                          value: _eleveDetail!['redoublant']?.toString() ?? 'N/A',
+                          valueColor:
+                              _eleveDetail!['redoublant']
+                                          ?.toString()
+                                          .toLowerCase() ==
+                                      'oui'
+                                  ? Colors.orange
+                                  : Colors.green,
+                        ),
+                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        _buildProfileDetailItem(
+                          icon: Icons.family_restroom,
+                          label: 'Famille',
+                          value: 'Voir détails',
+                          isClickable: true,
+                          onTap: () => _showFamilyBottomSheet(),
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    // Tablettes : deux colonnes
+                    Row(
+                      children: [
+                        _buildProfileDetailItem(
+                          icon: Icons.grade,
+                          label: 'Niveau',
+                          value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
+                        ),
+                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        _buildProfileDetailItem(
+                          icon: Icons.category,
+                          label: 'Filière',
+                          value: _eleveDetail!['filiere']?.toString() ?? 'N/A',
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    Row(
+                      children: [
+                        _buildProfileDetailItem(
+                          icon: Icons.book,
+                          label: 'Branche',
+                          value: _eleveDetail!['branche']?.toString() ?? 'N/A',
+                        ),
+                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        _buildProfileDetailItem(
+                          icon: Icons.auto_stories,
+                          label: 'Série',
+                          value: _eleveDetail!['serie']?.toString() ?? 'N/A',
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    Row(
+                      children: [
+                        _buildProfileDetailItem(
+                          icon: Icons.refresh,
+                          label: 'Redoublant',
+                          value: _eleveDetail!['redoublant']?.toString() ?? 'N/A',
+                          valueColor:
+                              _eleveDetail!['redoublant']
+                                          ?.toString()
+                                          .toLowerCase() ==
+                                      'oui'
+                                  ? Colors.orange
+                                  : Colors.green,
+                        ),
+                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        _buildProfileDetailItem(
+                          icon: Icons.family_restroom,
+                          label: 'Famille',
+                          value: 'Voir détails',
+                          isClickable: true,
+                          onTap: () => _showFamilyBottomSheet(),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1900,9 +2054,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFamilyDetailsButton(),
-                const SizedBox(width: 16),
                 _buildEleveDetailsButton(),
+                SizedBox(width: AppDimensions.getDetailsButtonSpacing(context)),
+                _buildFamilyDetailsButton(),
               ],
             ),
           ),
@@ -1917,33 +2071,36 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: GestureDetector(
         onTap: () => _showFamilyBottomSheet(),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(context),
+            vertical: AppDimensions.getDetailsButtonPaddingVertical(context),
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppDimensions.getDetailsButtonBorderRadius(context)),
             border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.family_restroom,
-                size: 18,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              const SizedBox(width: 8),
+              // Icon(
+              //   Icons.family_restroom,
+              //   size: AppDimensions.getActionButtonSize(context) * 0.45,
+              //   color: Colors.white.withOpacity(0.9),
+              // ),
+              // SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
               Text(
-                'Famille - Voir détails',
+                'Infos Familles',
                 style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(13),
+                  fontSize: AppDimensions.getDetailsButtonFontSize(context),
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
               Icon(
                 Icons.arrow_forward_ios,
-                size: 14,
+                size: AppDimensions.getActionButtonSize(context) * 0.35,
                 color: Colors.white.withOpacity(0.7),
               ),
             ],
@@ -1963,10 +2120,13 @@ class _ChildListScreenState extends State<ChildListScreen>
           });
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(context),
+            vertical: AppDimensions.getDetailsButtonPaddingVertical(context),
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppDimensions.getDetailsButtonBorderRadius(context)),
             border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: Row(
@@ -1974,24 +2134,24 @@ class _ChildListScreenState extends State<ChildListScreen>
             children: [
               Icon(
                 _showEleveDetails ? Icons.info : Icons.info_outline,
-                size: 18,
+                size: AppDimensions.getActionButtonSize(context) * 0.45,
                 color: Colors.white.withOpacity(0.9),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
               Text(
                 _showEleveDetails ? 'Moins d\'infos' : 'Plus d\'infos',
                 style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(13),
+                  fontSize: AppDimensions.getDetailsButtonFontSize(context),
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
               Icon(
                 _showEleveDetails
                     ? Icons.keyboard_arrow_up
                     : Icons.keyboard_arrow_down,
-                size: 14,
+                size: AppDimensions.getActionButtonSize(context) * 0.35,
                 color: Colors.white.withOpacity(0.7),
               ),
             ],
@@ -2014,47 +2174,93 @@ class _ChildListScreenState extends State<ChildListScreen>
     return GestureDetector(
       onTap: isClickable && onTap != null ? onTap : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        width: AppDimensions.getProfileDetailItemWidth(context),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.getProfileDetailsSpacing(context) * 0.5,
+          vertical: AppDimensions.getProfileDetailsSpacing(context) * 0.25,
+        ),
         decoration: BoxDecoration(
           color: isClickable
               ? Colors.white.withOpacity(0.25)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppDimensions.getProfileDetailsBorderRadius(context) * 0.5),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 14, color: Colors.white.withOpacity(0.8)),
-            const SizedBox(width: 6),
-            Text(
-              '$label: ',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(11),
-                color: Colors.white.withOpacity(0.7),
-                fontWeight: FontWeight.w500,
-              ),
+            Icon(
+              icon, 
+              size: AppDimensions.getActionButtonSize(context) * 0.35, 
+              color: Colors.white.withOpacity(0.8)
             ),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(11),
-                color: defaultColor,
-                fontWeight: FontWeight.w600,
-                decoration: isClickable ? TextDecoration.underline : null,
-                decorationColor: Colors.white.withOpacity(0.5),
+            SizedBox(width: AppDimensions.getProfileDetailsSpacing(context) * 0.5),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: AppDimensions.getDetailsButtonFontSize(context) * 0.85,
+                      color: Colors.white.withOpacity(0.7),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context) * 0.25),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: AppDimensions.getDetailsButtonFontSize(context) * 0.85,
+                      color: defaultColor,
+                      fontWeight: FontWeight.w600,
+                      decoration: isClickable ? TextDecoration.underline : null,
+                      decorationColor: Colors.white.withOpacity(0.5),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
             if (isClickable)
               Padding(
-                padding: const EdgeInsets.only(left: 4),
+                padding: EdgeInsets.only(left: AppDimensions.getProfileDetailsSpacing(context) * 0.25),
                 child: Icon(
                   Icons.call,
-                  size: 12,
+                  size: AppDimensions.getActionButtonSize(context) * 0.3,
                   color: Colors.white.withOpacity(0.8),
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.getProfileDetailsPadding(context) * 0.5,
+        vertical: AppDimensions.getProfileDetailsSpacing(context) * 0.5,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppDimensions.getProfileDetailsBorderRadius(context) * 0.5),
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: AppDimensions.getDetailsButtonFontSize(context),
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -2358,32 +2564,10 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // ─── Helper : En-tête de section (barre colorée + titre) ──────────────────
   Widget _buildSectionHeader(String title, Color accentColor) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 22,
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(18),
-              fontWeight: FontWeight.w800,
-              color: _themeService.isDarkMode
-                  ? Colors.white
-                  : AppColors.screenTextPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
+    return SectionHeaderWidget(
+      title: title,
+      isDark: _themeService.isDarkMode,
+      accentColor: accentColor,
     );
   }
 
@@ -2431,7 +2615,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           ImageMenuCard(
             index: 1,
             cardKey: 'inscription',
-            title: 'Inscription',
+            //title: 'Inscription',
             isDark: isDark,
             imagePath: 'assets/images/inscription.png',
             color: const Color(0xFF3B82F6),
@@ -2522,6 +2706,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             index: 0,
             cardKey: 'notes',
             title: 'Mes Notes',
+            imagePath: 'assets/images/notes.jpg',
             iconData: Icons.bar_chart_rounded,
             isDark: isDark,
             color: const Color(0xFF1976D2),
@@ -2579,6 +2764,8 @@ class _ChildListScreenState extends State<ChildListScreen>
             index: 2,
             cardKey: 'timetable',
             title: 'Emploi du temps',
+            imagePath: 'assets/images/emploi-du-temps.jpg',
+            width: 200,
             iconData: Icons.calendar_today_rounded,
             isDark: isDark,
             color: const Color(0xFFF57C00),
@@ -2751,8 +2938,10 @@ class _ChildListScreenState extends State<ChildListScreen>
             index: 0,
             cardKey: 'communication',
             title: 'Messages',
+            imagePath: 'assets/images/messages.jpg',
             iconData: Icons.message_rounded,
             isDark: isDark,
+            //width: 165,
             color: const Color(0xFF0288D1),
             backgroundColor: isDark
                 ? const Color(0xFF001A2E)
@@ -2816,6 +3005,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             index: 0,
             cardKey: 'niveaux',
             title: 'Fournitures',
+            imagePath: 'assets/images/foutnitures-scolaire.jpg',
+            height: 110,
+            width: 110,
             iconData: Icons.inventory_2_rounded,
             isDark: isDark,
             color: const Color(0xFF795548),
@@ -2835,7 +3027,10 @@ class _ChildListScreenState extends State<ChildListScreen>
           ImageMenuCard(
             index: 1,
             cardKey: 'consult_requests',
-            title: 'Commandes',
+            //title: 'Commandes',
+            imagePath: 'assets/images/mes-commandes.jpg',
+            height: 110,
+            width: 210,
             iconData: Icons.shopping_cart_rounded,
             isDark: isDark,
             color: const Color(0xFF00ACC1),
@@ -2856,6 +3051,8 @@ class _ChildListScreenState extends State<ChildListScreen>
             index: 2,
             cardKey: 'informations',
             title: 'Réservations',
+            height: 110,
+            width: 110,
             iconData: Icons.event_seat_rounded,
             isDark: isDark,
             color: const Color(0xFF4CAF50),
@@ -8632,56 +8829,467 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildOrdersTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildInfoCard(
-            '🛒 Commandes',
-            'Suivi de vos commandes de fournitures scolaires et services.',
-            Colors.purple,
+    return FutureBuilder<List<Order>>(
+      future: _loadOrdersFuture(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomLoader(
+                    message: 'Chargement des commandes...',
+                    backgroundColor: _themeService.isDarkMode 
+                        ? Colors.grey[800] 
+                        : Colors.white,
+                    loaderColor: Colors.blue,
+                    size: 40.0,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: _themeService.isDarkMode 
+                      ? Colors.red[400] 
+                      : Colors.red[600],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Erreur de chargement',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    color: _themeService.isDarkMode 
+                        ? Colors.red[400] 
+                        : Colors.red[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Veuillez réessayer plus tard',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    color: _themeService.isDarkMode 
+                        ? Colors.grey[400] 
+                        : Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final orders = snapshot.data ?? [];
+
+        if (orders.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 64,
+                  color: _themeService.isDarkMode 
+                      ? Colors.grey[600] 
+                      : Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Aucune commande trouvée',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    color: _themeService.isDarkMode 
+                        ? Colors.grey[400] 
+                        : Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Vos commandes apparaîtront ici',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    color: _themeService.isDarkMode 
+                        ? Colors.grey[500] 
+                        : Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // _buildInfoCard(
+              //   '🛒 Commandes',
+              //   'Suivi de vos commandes de fournitures scolaires et services.',
+              //   Colors.purple,
+              // ),
+              const SizedBox(height: 20),
+              Column(
+                children: orders.map((order) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildOrderCardFromOrder(order),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          _buildOrdersList(),
-        ],
-      ),
+        );
+      },
     );
   }
 
+  Future<List<Order>> _loadOrdersFuture() async {
+    final authService = AuthService();
+    final currentUser = authService.getCurrentUser();
+    
+    if (currentUser?.phone == null) {
+      print('⚠️ Impossible de charger les commandes: téléphone utilisateur manquant');
+      return [];
+    }
+
+    try {
+      print('📦 Chargement des commandes pour le téléphone: ${currentUser!.phone}');
+      final orders = await OrderService().getUserOrders(currentUser!.phone);
+
+      // Mettre à jour la variable locale pour d'autres utilisations
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+        });
+      }
+
+      print('✅ Commandes chargées: ${orders.length} commandes');
+      return orders;
+    } catch (e) {
+      print('❌ Erreur lors du chargement des commandes: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du chargement des commandes: $e'),
+          ),
+        );
+      }
+      
+      return [];
+    }
+  }
+
   Widget _buildOrdersList() {
+    if (_isLoadingOrders) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_orders.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 64,
+              color: _themeService.isDarkMode 
+                  ? Colors.grey[600] 
+                  : Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Aucune commande trouvée',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(16),
+                color: _themeService.isDarkMode 
+                    ? Colors.grey[400] 
+                    : Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Vos commandes apparaîtront ici',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(14),
+                color: _themeService.isDarkMode 
+                    ? Colors.grey[500] 
+                    : Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
-      children: [
-        _buildOrderCard(
-          'Commande #2024-001',
-          'Fournitures de rentrée',
-          'En cours de préparation',
-          '12 janvier 2024',
-          '45.99 €',
-          Icons.inventory_rounded,
-          Colors.blue,
-        ),
-        const SizedBox(height: 12),
-        _buildOrderCard(
-          'Commande #2023-015',
-          'Cantine - Mois de janvier',
-          'Livrée',
-          '5 janvier 2024',
-          '28.50 €',
-          Icons.restaurant_rounded,
-          Colors.green,
-        ),
-        const SizedBox(height: 12),
-        _buildOrderCard(
-          'Commande #2023-014',
-          'Sortie scolaire',
-          'Confirmée',
-          '20 décembre 2023',
-          '15.00 €',
-          Icons.directions_bus_rounded,
-          Colors.orange,
-        ),
-      ],
+      children: _orders.map((order) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildOrderCardFromOrder(order),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildOrderCardFromOrder(Order order) {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    // Déterminer l'icône et la couleur selon le statut
+    IconData statusIcon;
+    Color statusColor;
+    
+    switch (order.status) {
+      case OrderStatus.pending:
+        statusIcon = Icons.pending_outlined;
+        statusColor = Colors.orange;
+        break;
+      case OrderStatus.confirmed:
+        statusIcon = Icons.check_circle_outline;
+        statusColor = Colors.blue;
+        break;
+      case OrderStatus.processing:
+        statusIcon = Icons.sync;
+        statusColor = Colors.purple;
+        break;
+      case OrderStatus.shipped:
+        statusIcon = Icons.local_shipping_outlined;
+        statusColor = Colors.indigo;
+        break;
+      case OrderStatus.delivered:
+        statusIcon = Icons.check_circle;
+        statusColor = Colors.green;
+        break;
+      case OrderStatus.cancelled:
+        statusIcon = Icons.cancel_outlined;
+        statusColor = Colors.red;
+        break;
+      case OrderStatus.refunded:
+        statusIcon = Icons.refresh;
+        statusColor = Colors.grey;
+        break;
+      default:
+        statusIcon = Icons.shopping_cart_outlined;
+        statusColor = Colors.blue;
+    }
+
+    // Formatter la date sans utiliser DateFormat pour éviter l'erreur de localisation
+    final months = [
+      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+    ];
+    final formattedDate = '${order.createdAt.day} ${months[order.createdAt.month - 1]} ${order.createdAt.year}';
+
+    // Formatter le montant en FCFA
+    final formattedAmount = '${order.totalAmount.toStringAsFixed(2)} FCFA';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withOpacity(0.15), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.3)
+                : statusColor.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header avec numéro de commande et statut
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Icon(statusIcon, color: statusColor, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Commande #${order.id}',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(16),
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      order.items.isNotEmpty 
+                          ? '${order.items.length} article(s)'
+                          : 'Aucun article',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          // Séparateur
+          const SizedBox(height: 12),
+          
+          // Détails des produits
+          if (order.items.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Détails des articles',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...order.items.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.product.title ?? 'Produit sans nom',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(13),
+                                  fontWeight: FontWeight.w500,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Quantité: ${item.quantity} • ${item.product.price.toStringAsFixed(2)} FCFA',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )).toList(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          
+          // Footer avec statut, date et montant
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      order.status.displayName,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(11),
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formattedDate,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formattedAmount,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  if (order.metadata?['frais_livraison'] != null)
+                    Text(
+                      '+${(order.metadata!['frais_livraison'] as num).toStringAsFixed(2)} FCFA',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(11),
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

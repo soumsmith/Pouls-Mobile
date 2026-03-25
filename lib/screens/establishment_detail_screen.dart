@@ -30,11 +30,11 @@ import '../services/parrainage_service.dart';
 import '../widgets/custom_file_field.dart';
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
-import '../widgets/color_card_grid.dart';
+import '../widgets/section_header_widget.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
-import '../widgets/custom_sliver_app_bar.dart';
 import 'all_events_screen.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
@@ -773,30 +773,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Widget _buildSectionHeader(String title, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 3,
-            height: 18,
-            decoration: BoxDecoration(
-              color: AppColors.screenOrange,
-              borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(16),
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : AppColors.screenTextPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-        ],
-      ),
+    return SectionHeaderWidget(
+      title: title,
+      isDark: isDark,
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import '../models/child.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 import '../services/ecole_eleve_service.dart';
 import '../services/inscription_api_service.dart';
 
@@ -479,85 +480,48 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   // ─── APP BAR ───────────────────────────────────────────────────────────────
 
-  Widget _buildAppBar() {
+  Widget _buildCustomAppBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return CustomSliverAppBar(
+      title: 'Inscription – ${widget.child.firstName}',
+      isDark: isDark,
+      onBackTap: _currentStep == 0
+          ? () => Navigator.of(context).pop()
+          : _prevStep,
+      actions: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.shopBlueSurface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            _formatAmount(_totalNet),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.shopBlue,
+            ),
+          ),
+        ),
+      ],
+      backgroundColor: AppColors.screenCard,
+      elevation: 0,
+    );
+  }
+
+  Widget _buildAppBarSubtitle() {
     return Container(
       color: AppColors.screenCard,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: _currentStep == 0
-                    ? () => Navigator.of(context).pop()
-                    : _prevStep,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenSurface,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.screenShadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 16,
-                    color: AppColors.screenTextPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Inscription – ${widget.child.firstName}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    Text(
-                      'Étape ${_currentStep + 1} sur ${_steps.length}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.screenTextSecondary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.shopBlueSurface,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _formatAmount(_totalNet),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.shopBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Text(
+        'Étape ${_currentStep + 1} sur ${_steps.length}',
+        style: const TextStyle(
+          fontSize: 13,
+          color: AppColors.screenTextSecondary,
+          fontWeight: FontWeight.w400,
         ),
       ),
     );
@@ -1341,7 +1305,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1426,7 +1390,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       return _buildLoadingState('Vérification de la réservation...');
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       child: Column(
         children: [
           _buildStepHeader(
@@ -1677,7 +1641,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildStep5() {
     if (!_services.any((s) => s.selectionnee)) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
         child: Column(
           children: [
             _buildStepHeader(
@@ -1704,7 +1668,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       return _buildLoadingState('Chargement de l\'échéancier...');
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       child: Column(
         children: [
           _buildStepHeader(
@@ -1948,8 +1912,6 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           ),
 
           const SizedBox(height: 20),
-          _buildConfirmButton(),
-          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -2058,51 +2020,6 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     );
   }
 
-  // ─── BOUTON CONFIRMER ──────────────────────────────────────────────────────
-
-  Widget _buildConfirmButton() {
-    return GestureDetector(
-      onTap: _effectuerInscription,
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shopBlue.withOpacity(0.25),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 10),
-              Text(
-                'Confirmer l\'inscription',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ─── BOUTONS DE NAVIGATION ─────────────────────────────────────────────────
 
   Widget _buildNavigationButtons() {
@@ -2110,127 +2027,166 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     final isLastStep = _currentStep == _steps.length - 1;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Color(0x0A000000),
+            color: Colors.black.withOpacity(0.12),
             blurRadius: 12,
-            offset: Offset(0, -2),
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Row(
-            children: [
-              if (_currentStep > 0) ...[
-                Expanded(
-                  flex: 2,
-                  child: GestureDetector(
-                    onTap: _prevStep,
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: AppColors.screenSurface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.screenDivider),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.arrow_back_ios_new,
-                            size: 15,
-                            color: AppColors.screenTextSecondary,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Précédent',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.screenTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          mainAxisAlignment: _currentStep > 0 ? MainAxisAlignment.spaceBetween : MainAxisAlignment.end,
+          children: [
+            if (_currentStep > 0)
+              GestureDetector(
+                onTap: _prevStep,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.screenSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.screenDivider),
                   ),
-                ),
-                const SizedBox(width: 12),
-              ],
-              if (!isLastStep)
-                Expanded(
-                  flex: 3,
-                  child: GestureDetector(
-                    onTap: canNext ? _nextStep : null,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: canNext
-                            ? const LinearGradient(
-                                colors: [
-                                  AppColors.shopBlueLight,
-                                  AppColors.shopBlue,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                            : LinearGradient(
-                                colors: [
-                                  Colors.grey.shade300,
-                                  Colors.grey.shade300,
-                                ],
-                              ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: canNext
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.shopBlue.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ]
-                            : null,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 14,
+                        color: AppColors.screenTextSecondary,
                       ),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _currentStep == _steps.length - 2
-                                  ? 'Voir le récapitulatif'
-                                  : 'Suivant',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: canNext
-                                    ? Colors.white
-                                    : Colors.grey.shade500,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: canNext
-                                  ? Colors.white
-                                  : Colors.grey.shade500,
-                            ),
-                          ],
+                      SizedBox(width: 4),
+                      Text(
+                        'Précédent',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.screenTextSecondary,
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-            ],
-          ),
+              ),
+            if (!isLastStep)
+              GestureDetector(
+                onTap: canNext ? _nextStep : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    gradient: canNext
+                        ? const LinearGradient(
+                            colors: [
+                              AppColors.shopBlueLight,
+                              AppColors.shopBlue,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : LinearGradient(
+                            colors: [
+                              Colors.grey.shade300,
+                              Colors.grey.shade300,
+                            ],
+                          ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: canNext
+                        ? [
+                            BoxShadow(
+                              color: AppColors.shopBlue.withOpacity(0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _currentStep == _steps.length - 2
+                            ? 'Récap'
+                            : 'Suivant',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: canNext
+                              ? Colors.white
+                              : Colors.grey.shade500,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 14,
+                        color: canNext
+                            ? Colors.white
+                            : Colors.grey.shade500,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            // Bouton de confirmation uniquement à la dernière étape
+            if (isLastStep)
+              GestureDetector(
+                onTap: _effectuerInscription,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.shopBlueLight, AppColors.shopBlue],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.shopBlue.withOpacity(0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Confirmer',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -2315,27 +2271,42 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pureWhite,
-      body: Column(
+      body: Stack(
         children: [
-          _buildAppBar(),
-          _buildProgressIndicator(),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStep1(),
-                _buildStep2(),
-                if (_servicesEnabled) ...[
-                  _buildStep3(),
-                  _buildStep4(),
-                  _buildStep5(),
-                ],
-                _buildRecap(),
-              ],
-            ),
+          CustomScrollView(
+            slivers: [
+              _buildCustomAppBar(context),
+              SliverToBoxAdapter(child: _buildAppBarSubtitle()),
+              SliverToBoxAdapter(child: _buildProgressIndicator()),
+              SliverFillRemaining(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _buildStep1(),
+                    _buildStep2(),
+                    if (_servicesEnabled) ...[
+                      _buildStep3(),
+                      _buildStep4(),
+                      _buildStep5(),
+                    ],
+                    _buildRecap(),
+                  ],
+                ),
+              ),
+              // Ajout d'un padding pour éviter que le contenu ne soit caché par les boutons flottants
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 80), // Hauteur des boutons + marge
+              ),
+            ],
           ),
-          _buildNavigationButtons(),
+          // Boutons de navigation flottants en bas
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: _buildNavigationButtons(),
+          ),
         ],
       ),
     );

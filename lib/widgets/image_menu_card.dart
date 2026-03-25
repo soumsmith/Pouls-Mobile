@@ -5,7 +5,7 @@ import '../services/text_size_service.dart';
 class ImageMenuCard extends StatelessWidget {
   final int index;
   final String cardKey;
-  final String title;
+  final String? title; // Rendu optionnel
   final String? imagePath;
   final IconData? iconData;
   final bool isDark;
@@ -27,7 +27,7 @@ class ImageMenuCard extends StatelessWidget {
     super.key,
     required this.index,
     required this.cardKey,
-    required this.title,
+    this.title, // Rendu optionnel
     this.imagePath,
     this.iconData,
     required this.isDark,
@@ -82,13 +82,13 @@ class ImageMenuCard extends StatelessWidget {
             children: [
               // Image section with overlay tag
               Expanded(
-                flex: (title != null && title.isNotEmpty) ? 3 : 5,
+                flex: (title?.isNotEmpty == true) ? 3 : 5,
                 child: Stack(
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20),
-                        bottom: (title != null && title.isNotEmpty)
+                        bottom: (title?.isNotEmpty == true)
                             ? Radius.zero
                             : Radius.circular(20),
                       ),
@@ -146,7 +146,7 @@ class ImageMenuCard extends StatelessWidget {
                 ),
               ),
               // Text section - only show if title is not null and not empty
-              if (title != null && title.isNotEmpty) ...[
+              if (title?.isNotEmpty == true) ...[
                 Expanded(
                   flex: 2,
                   child: Padding(

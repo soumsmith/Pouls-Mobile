@@ -1045,4 +1045,194 @@ class AppDimensions {
       return 14.0; // Desktop : plus grand
     }
   }
+
+  // ── DIMENSIONS POUR LES BADGES ────────────────────────────────────────────────
+  
+  /// Taille de police pour les badges de notification selon l'appareil
+  static double getBadgeFontSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 10.0; // Mobile : très petit
+    } else if (isSmallTablet(context)) {
+      return 11.0; // iPad Mini : petit
+    } else if (isTablet(context)) {
+      return 11.0; // iPad : petit
+    } else {
+      return 12.0; // Desktop : standard
+    }
+  }
+  
+  /// Taille minimale des badges de notification selon l'appareil
+  static double getBadgeMinSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 18.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 20.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 20.0; // iPad : standard
+    } else {
+      return 22.0; // Desktop : plus grand
+    }
+  }
+  
+  /// Padding intérieur des badges de notification selon l'appareil
+  static double getBadgePadding(BuildContext context) {
+    if (isMobile(context)) {
+      return 4.0; // Mobile : très compact
+    } else if (isSmallTablet(context)) {
+      return 5.0; // iPad Mini : compact
+    } else if (isTablet(context)) {
+      return 5.0; // iPad : compact
+    } else {
+      return 6.0; // Desktop : standard
+    }
+  }
+
+  // ── DIMENSIONS POUR LES BOUTONS DE DÉTAILS ───────────────────────────────────────────
+  
+  /// Taille de police pour les boutons de détails selon l'appareil
+  static double getDetailsButtonFontSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 13.0; // Mobile : plus petit
+    } else if (isSmallTablet(context)) {
+      return 14.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 14.0; // iPad : standard
+    } else {
+      return 15.0; // Desktop : plus grand
+    }
+  }
+  
+  /// Padding horizontal pour les boutons de détails selon l'appareil
+  static double getDetailsButtonPaddingHorizontal(BuildContext context) {
+    if (isMobile(context)) {
+      return 12.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 16.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 18.0; // iPad : plus grand
+    } else {
+      return 20.0; // Desktop : maximum
+    }
+  }
+  
+  /// Padding vertical pour les boutons de détails selon l'appareil
+  static double getDetailsButtonPaddingVertical(BuildContext context) {
+    if (isMobile(context)) {
+      return 8.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 10.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 12.0; // iPad : plus grand
+    } else {
+      return 14.0; // Desktop : maximum
+    }
+  }
+  
+  /// Rayon de bordure pour les boutons de détails selon l'appareil
+  static double getDetailsButtonBorderRadius(BuildContext context) {
+    if (isMobile(context)) {
+      return 16.0; // Mobile : arrondis modérés
+    } else if (isSmallTablet(context)) {
+      return 10.0; // iPad Mini : arrondis standards
+    } else if (isTablet(context)) {
+      return 12.0; // iPad : arrondis prononcés
+    } else {
+      return 14.0; // Desktop : arrondis maximum
+    }
+  }
+  
+  /// Espacement entre les boutons de détails selon l'appareil
+  static double getDetailsButtonSpacing(BuildContext context) {
+    if (isMobile(context)) {
+      return 12.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 16.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 18.0; // iPad : plus grand
+    } else {
+      return 20.0; // Desktop : maximum
+    }
+  }
+
+  // ── DIMENSIONS POUR LES CONTENEURS PRINCIPAUX ──────────────────────────────────────
+  
+  /// Padding pour les conteneurs principaux selon l'appareil
+  static double getMainContainerPadding(BuildContext context) {
+    if (isMobile(context)) {
+      return 8.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 20.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 24.0; // iPad : plus grand
+    } else {
+      return 32.0; // Desktop : maximum
+    }
+  }
+  
+  /// Rayon de bordure pour les conteneurs principaux selon l'appareil
+  static double getMainContainerBorderRadius(BuildContext context) {
+    if (isMobile(context)) {
+      return 16.0; // Mobile : arrondis modérés
+    } else if (isSmallTablet(context)) {
+      return 20.0; // iPad Mini : arrondis standards
+    } else if (isTablet(context)) {
+      return 24.0; // iPad : arrondis prononcés
+    } else {
+      return 28.0; // Desktop : arrondis maximum
+    }
+  }
+
+  // ── DIMENSIONS POUR LES DÉTAILS DE PROFIL ───────────────────────────────────────────
+  
+  /// Padding pour les conteneurs de détails selon l'appareil
+  static double getProfileDetailsPadding(BuildContext context) {
+    if (isMobile(context)) {
+      return 12.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 16.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 20.0; // iPad : plus grand
+    } else {
+      return 24.0; // Desktop : maximum
+    }
+  }
+  
+  /// Rayon de bordure pour les conteneurs de détails selon l'appareil
+  static double getProfileDetailsBorderRadius(BuildContext context) {
+    if (isMobile(context)) {
+      return 12.0; // Mobile : arrondis modérés
+    } else if (isSmallTablet(context)) {
+      return 16.0; // iPad Mini : arrondis standards
+    } else if (isTablet(context)) {
+      return 20.0; // iPad : arrondis prononcés
+    } else {
+      return 24.0; // Desktop : arrondis maximum
+    }
+  }
+  
+  /// Espacement entre les éléments de détails selon l'appareil
+  static double getProfileDetailsSpacing(BuildContext context) {
+    if (isMobile(context)) {
+      return 8.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 12.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 16.0; // iPad : plus grand
+    } else {
+      return 20.0; // Desktop : maximum
+    }
+  }
+  
+  /// Largeur pour les éléments de détail en mode deux colonnes
+  static double getProfileDetailItemWidth(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double padding = getProfileDetailsPadding(context) * 2; // Padding gauche et droite
+    double spacing = getProfileDetailsSpacing(context) / 2; // Espacement entre colonnes
+    
+    if (isMobile(context)) {
+      return screenWidth - padding - 32; // Mobile : pleine largeur
+    } else {
+      return (screenWidth - padding - spacing) / 2; // Tablettes : moitié de largeur
+    }
+  }
 }

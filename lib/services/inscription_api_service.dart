@@ -236,18 +236,34 @@ class InscriptionApiService {
     String url, {
     Map<String, dynamic>? body,
   }) {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
     print('🌐 [API] Requête $method');
+    print('═══════════════════════════════════════════════════════════');
     print('🔗 URL: $url');
-    if (body != null) print('📤 Body: ${jsonEncode(body)}');
+    if (body != null) {
+      print('📤 Body:');
+      final formattedJson = const JsonEncoder.withIndent('  ').convert(body);
+      final lines = formattedJson.split('\n');
+      for (final line in lines) {
+        print('  $line');
+      }
+    }
     print('⏰ Heure: ${DateTime.now().toIso8601String()}');
+    print('═══════════════════════════════════════════════════════════');
+    print('');
   }
 
   static void _logResponse(String label, int statusCode, String body) {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
     print('📊 [API] Réponse $label');
+    print('═══════════════════════════════════════════════════════════');
     print('📊 Status: $statusCode');
-    print('📄 Body: $body');
+    print('📄 Body (${body.length} chars): ${body.length > 500 ? body.substring(0, 500) + "..." : body}');
     print('⏰ Heure: ${DateTime.now().toIso8601String()}');
     print('═══════════════════════════════════════════════════════════');
+    print('');
   }
 
   // ── 1. Scolarité ────────────────────────────────────────────────────────────

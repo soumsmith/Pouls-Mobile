@@ -24,6 +24,31 @@ class Child {
 
   String get fullName => '$firstName $lastName';
 
+  /// Crée une copie de l'objet Child avec des champs mis à jour
+  Child copyWith({
+    String? id,
+    String? firstName,
+    String? lastName,
+    String? establishment,
+    String? grade,
+    String? photoUrl,
+    String? parentId,
+    String? matricule,
+    String? ecoleCode,
+  }) {
+    return Child(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      establishment: establishment ?? this.establishment,
+      grade: grade ?? this.grade,
+      photoUrl: photoUrl ?? this.photoUrl,
+      parentId: parentId ?? this.parentId,
+      matricule: matricule ?? this.matricule,
+      ecoleCode: ecoleCode ?? this.ecoleCode,
+    );
+  }
+
   factory Child.fromJson(Map<String, dynamic> json) {
     return Child(
       id: json['id'] as String,

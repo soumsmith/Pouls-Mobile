@@ -3,12 +3,27 @@ import 'package:parents_responsable/config/app_colors.dart';
 import '../models/child.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/selectable_item_card.dart';
+import '../widgets/search_bar_widget.dart';
 import '../services/ecole_eleve_service.dart';
 import '../services/inscription_api_service.dart';
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
 const String kEcoleCode = 'gainhs';
+
+// ─── IDENTIFIANTS D'ÉTAPE ────────────────────────────────────────────────────
+//
+// On identifie chaque étape par une chaîne stable plutôt que par un index
+// entier. Ainsi, ajouter ou retirer l'étape "zones" ne décale jamais les
+// autres.  Le PageView est reconstruit depuis _orderedStepIds à chaque build.
+
+const String _kStepScolarite  = 'scolarite';
+const String _kStepReservation = 'reservation';
+const String _kStepServices   = 'services';
+const String _kStepZones      = 'zones';
+const String _kStepEcheancier = 'echeancier';
+const String _kStepRecap      = 'recap';
 
 // ─── ÉCRAN WIZARD ─────────────────────────────────────────────────────────────
 
@@ -17,7 +32,7 @@ class InscriptionWizardScreen extends StatefulWidget {
   final String? uid;
 
   const InscriptionWizardScreen({Key? key, required this.child, this.uid})
-    : super(key: key);
+      : super(key: key);
 
   @override
   _InscriptionWizardScreenState createState() =>
@@ -27,13 +42,14 @@ class InscriptionWizardScreen extends StatefulWidget {
 class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     with TickerProviderStateMixin {
   // ── État du wizard ──────────────────────────────────────────────────────────
-  int _currentStep = 0;
+  int _currentPageIndex = 0;
   late PageController _pageController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
   // ── Paramètres de l'école ───────────────────────────────────────────────────
   bool _servicesEnabled = true;
+  bool _periodsClosed = false;
 
   // ── Données de chaque étape ─────────────────────────────────────────────────
   List<EcheanceScolarite> _echeancesScolarite = [];
@@ -57,38 +73,90 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       TextEditingController();
   final TextEditingController _zoneSearchController = TextEditingController();
 
-  // ── Accesseurs utilitaires ──────────────────────────────────────────────────
-  String get _matricule => widget.child.matricule ?? '67894F';
-  String get _ecoleCode => widget.child.ecoleCode ?? kEcoleCode;
-  String get _uid_eleve =>
-      //widget.uid ??
-      //widget.child.matricule ??
-      'fe5e28c5-23b9-4908-a0e8-5e02b128f2b6';
+  bool _isServiceSearching = false;
+  bool _isZoneSearching = false;
 
-  // ── Listes filtrées ─────────────────────────────────────────────────────────
+  // ── Accesseurs utilitaires ──────────────────────────────────────────────────
+  String get _matricule   => widget.child.matricule  ?? '';
+  String get _ecoleCode   => widget.child.ecoleCode   ?? ''; //widget.child.ecoleCode 
+  String get _uid_eleve   => widget.uid ?? '';
+
+  // ─── LISTE DYNAMIQUE DES ÉTAPES ───────────────────────────────────────────
+  //
+  // C'est la seule source de vérité pour l'ordre et la présence des étapes.
+  // Le PageView ET la barre de progression en sont dérivés automatiquement.
+
+  List<String> get _orderedStepIds {
+    final hasTransSelected =
+        _services.any((s) => s.service == 'TRANS' && s.selectionnee);
+    return [
+      _kStepScolarite,
+      _kStepReservation,
+      if (_servicesEnabled) ...[
+        _kStepServices,
+        if (hasTransSelected) _kStepZones,
+        _kStepEcheancier,
+      ],
+      _kStepRecap,
+    ];
+  }
+
+  // Métadonnées d'affichage (label + icône) pour chaque identifiant d'étape.
+  Map<String, dynamic> _stepMeta(String id) {
+    switch (id) {
+      case _kStepScolarite:
+        return {'label': 'Scolarité',    'icon': Icons.school_rounded};
+      case _kStepReservation:
+        return {'label': 'Réservation',  'icon': Icons.bookmark_rounded};
+      case _kStepServices:
+        return {'label': 'Services',     'icon': Icons.grid_view_rounded};
+      case _kStepZones:
+        return {'label': 'Zones',        'icon': Icons.map_rounded};
+      case _kStepEcheancier:
+        return {'label': 'Échéancier',   'icon': Icons.payment_rounded};
+      case _kStepRecap:
+        return {'label': 'Récap',        'icon': Icons.receipt_long_rounded};
+      default:
+        return {'label': id,             'icon': Icons.circle_outlined};
+    }
+  }
+
+  // Builder associé à chaque identifiant d'étape.
+  Widget _buildStepById(String id) {
+    switch (id) {
+      case _kStepScolarite:   return _buildStep1();
+      case _kStepReservation: return _buildStep2();
+      case _kStepServices:    return _buildStep3();
+      case _kStepZones:       return _buildStep4();
+      case _kStepEcheancier:  return _buildStep5();
+      case _kStepRecap:       return _buildRecap();
+      default:                return const SizedBox.shrink();
+    }
+  }
+
+  // Étape courante (identifiant).
+  String get _currentStepId => _orderedStepIds[_currentPageIndex];
+
+  // Listes filtrées ──────────────────────────────────────────────────────────
   List<Service> get _filteredServices {
     if (_serviceSearchController.text.isEmpty) return _services;
     return _services
-        .where(
-          (s) =>
-              s.designation.toLowerCase().contains(
-                _serviceSearchController.text.toLowerCase(),
-              ) ||
-              s.description.toLowerCase().contains(
-                _serviceSearchController.text.toLowerCase(),
-              ),
-        )
+        .where((s) =>
+            s.designation.toLowerCase().contains(
+              _serviceSearchController.text.toLowerCase(),
+            ) ||
+            s.description.toLowerCase().contains(
+              _serviceSearchController.text.toLowerCase(),
+            ))
         .toList();
   }
 
   List<ZoneTransport> get _filteredZones {
     if (_zoneSearchController.text.isEmpty) return _zones;
     return _zones
-        .where(
-          (z) => z.zone.toLowerCase().contains(
-            _zoneSearchController.text.toLowerCase(),
-          ),
-        )
+        .where((z) => z.zone
+            .toLowerCase()
+            .contains(_zoneSearchController.text.toLowerCase()))
         .toList();
   }
 
@@ -104,40 +172,21 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   @override
   void initState() {
-    try {
-      super.initState();
-      print('🎫 UID reçu dans InscriptionWizardScreen: ${widget.uid}');
-      print('👤 Élève: ${widget.child.fullName}');
-      print('📋 Matricule de l\'enfant: ${widget.child.matricule}');
-      print('🏷️ Code école de l\'enfant: ${widget.child.ecoleCode}');
-      print('🏷️ Valeur de kEcoleCode: $kEcoleCode');
-      print('📋 Matricule utilisé: ${_matricule}');
-      print('🏷️ Code école utilisé: ${_ecoleCode}');
-      print('🆔 UID élève utilisé: ${_uid_eleve}');
+    super.initState();
+    print('🎫 UID reçu dans InscriptionWizardScreen: ${widget.uid}');
+    print('👤 Élève: ${widget.child.fullName}');
+    print('📋 Matricule: ${widget.child.matricule}');
+    print('🏷️ Code école: ${widget.child.ecoleCode}');
+    print('🆔 UID qui sera utilisé dans les API: $_uid_eleve');
 
-      // Vérification des valeurs critiques
-      if (_uid_eleve.isEmpty) {
-        print('❌ ERREUR: UID élève est vide!');
-      }
-      if (_ecoleCode.isEmpty) {
-        print('❌ ERREUR: Code école est vide!');
-      }
-
-      _pageController = PageController();
-      _fadeController = AnimationController(
-        duration: const Duration(milliseconds: 300),
-        vsync: this,
-      );
-      _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-      );
-
-      print('✅ initState terminé avec succès');
-    } catch (e, stackTrace) {
-      print('❌ ERREUR dans initState: $e');
-      print('📋 Stack trace: $stackTrace');
-      rethrow;
-    }
+    _pageController = PageController();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -161,9 +210,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   Future<void> _loadEcoleParams() async {
     try {
-      final ecoleData = await EcoleEleveService.getEcoleParametresForEleve(
-        _ecoleCode,
-      );
+      final ecoleData =
+          await EcoleEleveService.getEcoleParametresForEleve(_ecoleCode);
       if (mounted) {
         setState(() => _servicesEnabled = ecoleData.serviceExtra == 1);
         _loadScolarite();
@@ -177,14 +225,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     var ecoleData = EcoleEleveService.getEcoleDataFromCache(_ecoleCode);
     if (ecoleData == null) {
       try {
-        ecoleData = await EcoleEleveService.getEcoleParametresForEleve(
-          _ecoleCode,
-        );
+        ecoleData =
+            await EcoleEleveService.getEcoleParametresForEleve(_ecoleCode);
       } catch (_) {
         return {
           'preinscription': false,
           'inscription': false,
-          'reservation': false,
+          'reservation': false
         };
       }
     }
@@ -194,31 +241,36 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // ─── APPELS API ────────────────────────────────────────────────────────────
 
   Future<void> _loadScolarite() async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('📚 [INSCRIPTION] Chargement de la scolarité');
+    print('═══════════════════════════════════════════════════════════');
+    print('🏷️ Code école: $_ecoleCode');
+    print('🆔 UID élève: $_uid_eleve');
+    print('📋 Système éducatif: ${_ecoleCode.startsWith('*annour*') ? 2 : 1}');
+    print('═══════════════════════════════════════════════════════════');
+    print('');
+    
     setState(() => _loadingScolarite = true);
     try {
       final statuts = await _checkInscriptionPeriods();
       if (statuts['preinscription'] != true &&
           statuts['inscription'] != true &&
           statuts['reservation'] != true) {
-        _showError(
-          'Aucune période d\'inscription n\'est actuellement ouverte pour cette école.',
-        );
+        if (mounted) {
+          setState(() {
+            _periodsClosed = true;
+            _loadingScolarite = false;
+          });
+        }
         return;
       }
-
       final systemeEducatif = _ecoleCode.startsWith('*annour*') ? 2 : 1;
-
-      print('📡 Appel API fetchScolarite avec:');
-      print('   - UID élève: ${_uid_eleve}');
-      print('   - Code école: ${_ecoleCode}');
-      print('   - Système éducatif: $systemeEducatif');
-
       final echeances = await InscriptionApiService.fetchScolarite(
         brancheId: _uid_eleve,
         ecoleCode: _ecoleCode,
         systemeEducatif: systemeEducatif,
       );
-
       if (mounted) {
         setState(() => _echeancesScolarite = echeances);
         _fadeController.forward();
@@ -233,30 +285,31 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Future<void> _loadReservation() async {
     setState(() => _loadingReservation = true);
     try {
-      final reservation = await InscriptionApiService.fetchReservation(
-        matricule: _matricule,
-      );
+      final reservation =
+          await InscriptionApiService.fetchReservation(matricule: _matricule);
       if (mounted) setState(() => _reservation = reservation);
     } catch (_) {
-      if (mounted) {
-        setState(
-          () => _reservation = ReservationStatus(
-            sommeReservation: 0,
-            status: false,
-          ),
-        );
-      }
+      if (mounted)
+        setState(() => _reservation =
+            ReservationStatus(sommeReservation: 0, status: false));
     } finally {
       if (mounted) setState(() => _loadingReservation = false);
     }
   }
 
   Future<void> _loadServices() async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('🛍️ [INSCRIPTION] Chargement des services');
+    print('═══════════════════════════════════════════════════════════');
+    print('🏷️ Code école: $_ecoleCode');
+    print('═══════════════════════════════════════════════════════════');
+    print('');
+    
     setState(() => _loadingServices = true);
     try {
-      final services = await InscriptionApiService.fetchServices(
-        ecoleCode: _ecoleCode,
-      );
+      final services =
+          await InscriptionApiService.fetchServices(ecoleCode: _ecoleCode);
       if (mounted) {
         setState(() => _services = services);
         _selectDefaultServices();
@@ -277,15 +330,15 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     try {
       final echeances =
           await InscriptionApiService.fetchEcheancesForSelectedServices(
-            services: _services,
-            ecoleCode: _ecoleCode,
-          );
+        services: _services,
+        ecoleCode: _ecoleCode,
+      );
       if (mounted) {
         setState(() => _echeancesService = echeances);
         _selectMostRecentEcheanceByDefault();
       }
     } catch (e) {
-      _showError('Erreur chargement échéancier : $e');
+      _showError("Erreur chargement échéancier : $e");
     } finally {
       if (mounted) setState(() => _loadingEcheancesService = false);
     }
@@ -294,9 +347,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Future<void> _loadZones() async {
     setState(() => _loadingZones = true);
     try {
-      final zones = await InscriptionApiService.fetchZones(
-        ecoleCode: _ecoleCode,
-      );
+      final zones =
+          await InscriptionApiService.fetchZones(ecoleCode: _ecoleCode);
       if (mounted) setState(() => _zones = zones);
     } catch (e) {
       _showError('Erreur chargement zones : $e');
@@ -330,17 +382,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     if (_echeancesService.isEmpty) return;
     setState(() {
       for (var e in _echeancesService) e.selectionnee = false;
-
       for (final rubrique in ['CANTINE', 'TRANS']) {
-        final list = _echeancesService
-            .where((e) => e.codeRubrique == rubrique)
-            .toList();
+        final list =
+            _echeancesService.where((e) => e.codeRubrique == rubrique).toList();
         if (list.isEmpty) continue;
         EcheanceService mostRecent = list.first;
         for (var e in list) {
-          if (_isDateMoreRecent(e.dateLimite, mostRecent.dateLimite)) {
+          if (_isDateMoreRecent(e.dateLimite, mostRecent.dateLimite))
             mostRecent = e;
-          }
         }
         mostRecent.selectionnee = true;
       }
@@ -356,80 +405,89 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   }
 
   // ─── NAVIGATION ────────────────────────────────────────────────────────────
+  //
+  // Principe : on navigue toujours par index dans _orderedStepIds.
+  // Quand l'utilisateur coche/décoche Transport, _orderedStepIds change
+  // (l'étape Zones apparaît ou disparaît) et le PageView est reconstruit
+  // lors du prochain setState(), ce qui synchronise automatiquement tout.
 
-  void _nextStep() {
-    if (_currentStep >= _steps.length - 1) return;
-
-    var nextStep = _currentStep + 1;
-
-    if (!_servicesEnabled && _currentStep == 1) {
-      nextStep = _steps.length - 1;
-    }
-
-    if (nextStep == 1 && _reservation == null) _loadReservation();
-    if (nextStep == 2 && _services.isEmpty) _loadServices();
-    if (nextStep == 3) _loadZones();
-    if (nextStep == 4) _loadEcheancesForSelectedServices();
-
-    setState(() => _currentStep = nextStep);
+  void _navigateToPage(int targetIndex) {
+    if (targetIndex < 0 || targetIndex >= _orderedStepIds.length) return;
+    setState(() => _currentPageIndex = targetIndex);
     _pageController.animateToPage(
-      nextStep,
+      targetIndex,
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
   }
 
+  void _nextStep() {
+    final nextIndex = _currentPageIndex + 1;
+    if (nextIndex >= _orderedStepIds.length) return;
+
+    // Déclencher les chargements selon l'étape qui arrive.
+    final nextId = _orderedStepIds[nextIndex];
+    if (nextId == _kStepReservation && _reservation == null) _loadReservation();
+    if (nextId == _kStepServices    && _services.isEmpty)    _loadServices();
+    if (nextId == _kStepZones)                               _loadZones();
+    if (nextId == _kStepEcheancier) _loadEcheancesForSelectedServices();
+
+    _navigateToPage(nextIndex);
+  }
+
   void _prevStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-      _pageController.animateToPage(
-        _currentStep,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    }
+    if (_currentPageIndex > 0) _navigateToPage(_currentPageIndex - 1);
   }
 
   bool _canGoNext() {
-    switch (_currentStep) {
-      case 0:
+    switch (_currentStepId) {
+      case _kStepScolarite:
         return _echeancesScolarite.any((e) => e.selectionnee);
-      case 4:
+      case _kStepZones:
+        return _selectedZone != null;
+      case _kStepEcheancier:
         if (!_servicesEnabled) return true;
-        final hasSelectedService = _services.any((s) => s.selectionnee);
-        if (!hasSelectedService) return true;
+        final hasSelected = _services.any((s) => s.selectionnee);
+        if (!hasSelected) return true;
         return _echeancesService.any((e) => e.selectionnee);
       default:
         return true;
     }
   }
 
-  // ─── CALCULS ────────────────────────────────────────────────────────────────
+  // ─── MISE À JOUR DYNAMIQUE APRÈS CHANGEMENT DE SERVICE TRANS ─────────────
+  //
+  // Appelée après chaque toggle d'un service pour resynchroniser la page
+  // courante si l'étape Zones vient d'apparaître ou de disparaître.
+
+  void _onTransportServiceToggled() {
+    // Récupère les nouvelles étapes APRÈS le setState du toggle.
+    final newSteps = _orderedStepIds;
+    // Si l'index courant dépasse la nouvelle liste, on recule.
+    if (_currentPageIndex >= newSteps.length) {
+      _navigateToPage(newSteps.length - 1);
+    }
+    // Si on est sur une étape qui n'existe plus (ex-Zones), on recule aussi.
+    // (Ne peut arriver qu'en retirant Transport depuis l'étape Zones.)
+    if (!newSteps.contains(_currentStepId)) {
+      _navigateToPage(_currentPageIndex - 1);
+    }
+  }
+
+  // ─── CALCULS ───────────────────────────────────────────────────────────────
 
   int get _totalScolarite => _echeancesScolarite
       .where((e) => e.selectionnee)
       .fold(0, (sum, e) => sum + e.montant);
-  int get _totalServices => _echeancesService
+  int get _totalServices  => _echeancesService
       .where((e) => e.selectionnee)
       .fold(0, (sum, e) => sum + e.montant);
   int get _totalTransport => 0;
-  int get _totalBrut => _totalScolarite + _totalServices + _totalTransport;
+  int get _totalBrut      => _totalScolarite + _totalServices + _totalTransport;
   int get _deductionReservation =>
       (_reservation?.status == true) ? _reservation!.sommeReservation : 0;
-  int get _totalNet => (_totalBrut - _deductionReservation).clamp(0, 999999999);
-
-  // ─── STEPS CONFIG ──────────────────────────────────────────────────────────
-
-  List<Map<String, dynamic>> get _steps => [
-    {'label': 'Scolarité', 'icon': Icons.school_rounded},
-    {'label': 'Réservation', 'icon': Icons.bookmark_rounded},
-    if (_servicesEnabled) ...[
-      {'label': 'Services', 'icon': Icons.grid_view_rounded},
-      {'label': 'Zones', 'icon': Icons.map_rounded},
-      {'label': 'Échéancier', 'icon': Icons.payment_rounded},
-    ],
-    {'label': 'Récap', 'icon': Icons.receipt_long_rounded},
-  ];
+  int get _totalNet =>
+      (_totalBrut - _deductionReservation).clamp(0, 999999999);
 
   // ─── UI HELPERS ────────────────────────────────────────────────────────────
 
@@ -440,7 +498,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         content: Text(msg, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.red[400],
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -453,7 +512,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         content: Text(msg, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.green[500],
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -462,7 +522,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   String _formatDate(String dateStr) {
     try {
       final d = DateTime.parse(dateStr);
-      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+      return '${d.day.toString().padLeft(2, '0')}/'
+          '${d.month.toString().padLeft(2, '0')}/${d.year}';
     } catch (_) {
       return dateStr;
     }
@@ -482,13 +543,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   Widget _buildCustomAppBar(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return CustomSliverAppBar(
       title: 'Inscription – ${widget.child.firstName}',
       isDark: isDark,
-      onBackTap: _currentStep == 0
-          ? () => Navigator.of(context).pop()
-          : _prevStep,
+      onBackTap:
+          _currentPageIndex == 0 ? () => Navigator.of(context).pop() : _prevStep,
       actions: [
         Container(
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -517,7 +576,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Text(
-        'Étape ${_currentStep + 1} sur ${_steps.length}',
+        'Étape ${_currentPageIndex + 1} sur ${_orderedStepIds.length}',
         style: const TextStyle(
           fontSize: 13,
           color: AppColors.screenTextSecondary,
@@ -530,6 +589,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // ─── PROGRESS INDICATOR ────────────────────────────────────────────────────
 
   Widget _buildProgressIndicator() {
+    final steps = _orderedStepIds;
     return Container(
       color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -538,29 +598,24 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: (_currentStep + 1) / _steps.length,
+              value: (_currentPageIndex + 1) / steps.length,
               backgroundColor: AppColors.screenDivider,
-              valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
+              valueColor:
+                  const AlwaysStoppedAnimation(AppColors.shopBlue),
               minHeight: 4,
             ),
           ),
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(_steps.length, (index) {
-              final isCompleted = index < _currentStep;
-              final isCurrent = index == _currentStep;
+            children: List.generate(steps.length, (index) {
+              final meta        = _stepMeta(steps[index]);
+              final isCompleted = index < _currentPageIndex;
+              final isCurrent   = index == _currentPageIndex;
 
               return GestureDetector(
                 onTap: () {
-                  if (index < _currentStep) {
-                    setState(() => _currentStep = index);
-                    _pageController.animateToPage(
-                      index,
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeInOut,
-                    );
-                  }
+                  if (index < _currentPageIndex) _navigateToPage(index);
                 },
                 child: Column(
                   children: [
@@ -570,23 +625,34 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       height: isCurrent ? 34 : 28,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isCompleted || isCurrent
-                            ? AppColors.shopBlue
-                            : AppColors.screenDivider,
+                        color: isCompleted
+                            ? Colors.green
+                            : isCurrent
+                                ? AppColors.shopBlue
+                                : AppColors.screenDivider,
                         boxShadow: isCurrent
                             ? [
                                 BoxShadow(
                                   color: AppColors.shopBlue.withOpacity(0.25),
                                   blurRadius: 6,
                                   spreadRadius: 1,
-                                ),
+                                )
                               ]
-                            : null,
+                            : isCompleted
+                                ? [
+                                    BoxShadow(
+                                      color:
+                                          Colors.green.withOpacity(0.25),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    )
+                                  ]
+                                : null,
                       ),
                       child: Icon(
                         isCompleted
                             ? Icons.check_rounded
-                            : (_steps[index]['icon'] as IconData),
+                            : meta['icon'] as IconData,
                         color: (isCompleted || isCurrent)
                             ? Colors.white
                             : AppColors.screenTextSecondary,
@@ -595,15 +661,19 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _steps[index]['label'] as String,
+                      meta['label'] as String,
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: isCurrent
                             ? FontWeight.w700
-                            : FontWeight.w400,
+                            : isCompleted
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                         color: isCurrent
                             ? AppColors.shopBlue
-                            : AppColors.screenTextSecondary,
+                            : isCompleted
+                                ? Colors.green
+                                : AppColors.screenTextSecondary,
                       ),
                     ),
                   ],
@@ -619,21 +689,22 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // ─── COMPOSANTS RÉUTILISABLES ──────────────────────────────────────────────
 
   Widget _sectionLabel(String text) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 15,
-      fontWeight: FontWeight.w700,
-      color: AppColors.screenTextPrimary,
-      letterSpacing: -0.3,
-    ),
-  );
+        text,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: AppColors.screenTextPrimary,
+          letterSpacing: -0.3,
+        ),
+      );
 
-  Widget _buildStepHeader(String title, String subtitle, IconData icon) {
+  Widget _buildStepHeader(String title, String subtitle, IconData icon,
+      {VoidCallback? onSearchPressed}) {
     return Row(
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             color: AppColors.shopBlueSurface,
             borderRadius: BorderRadius.circular(14),
@@ -641,667 +712,167 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           child: Icon(icon, color: AppColors.shopBlue, size: 22),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.screenTextPrimary,
-                letterSpacing: -0.4,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenTextPrimary,
+                  letterSpacing: -0.4,
+                ),
               ),
-            ),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
+              Text(
+                subtitle,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.screenTextSecondary),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        if (onSearchPressed != null)
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.screenCard,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.screenDivider),
+            ),
+            child: IconButton(
+              onPressed: onSearchPressed,
+              icon: const Icon(Icons.search_rounded,
+                  size: 18, color: AppColors.screenTextSecondary),
+              padding: EdgeInsets.zero,
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildCountBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.shopBlueSurface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.shopBlue,
+  Widget _buildCountBadge(String label) => Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.shopBlueSurface,
+          borderRadius: BorderRadius.circular(20),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSearchField(TextEditingController controller, String hint) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 6,
-            offset: Offset(0, 2),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.shopBlue,
           ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
+        ),
+      );
+
+  Widget _buildServiceSearchBar() => SearchBarWidget(
+        isSearching: _isServiceSearching,
+        searchController: _serviceSearchController,
         onChanged: (_) => setState(() {}),
-        style: const TextStyle(
-          fontSize: 14,
-          color: AppColors.screenTextPrimary,
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.screenTextSecondary,
-            size: 20,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-        ),
-      ),
-    );
-  }
+        onClear: () => setState(() {}),
+        hintText: 'Rechercher un service...',
+      );
 
-  Widget _buildLoadingState(String message) {
-    return CustomLoader(
-      message: message,
-      loaderColor: AppColors.shopBlue,
-      backgroundColor: AppColors.screenCard,
-    );
-  }
+  Widget _buildZoneSearchBar() => SearchBarWidget(
+        isSearching: _isZoneSearching,
+        searchController: _zoneSearchController,
+        onChanged: (_) => setState(() {}),
+        onClear: () => setState(() {}),
+        hintText: 'Rechercher une zone...',
+      );
 
-  Widget _buildEmptyState(String message, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      alignment: Alignment.center,
-      child: Column(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.shopBlueSurface,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              size: 34,
-              color: AppColors.shopBlue.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            message,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.screenTextSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildLoadingState(String message) => CustomLoader(
+        message: message,
+        loaderColor: AppColors.shopBlue,
+        backgroundColor: AppColors.screenCard,
+      );
 
-  Widget _buildSkipState(String title, String subtitle, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: AppColors.shopBlueSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.shopBlue.withOpacity(0.15)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.shopBlue.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              size: 32,
-              color: AppColors.shopBlue.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.shopBlue,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.shopBlue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Appuyez sur Suivant pour continuer',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.shopBlue,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── ÉCHÉANCE CARD ─────────────────────────────────────────────────────────
-
-  Widget _buildEcheanceCard({
-    required String libelle,
-    required int montant,
-    required String dateLimite,
-    required bool selectionnee,
-    required bool obligatoire,
-    required VoidCallback? onToggle,
-    int index = 0,
-  }) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 300 + index * 60),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Opacity(
-        opacity: value,
-        child: Transform.translate(
-          offset: Offset(0, 16 * (1 - value)),
-          child: child,
-        ),
-      ),
-      child: GestureDetector(
-        onTap: obligatoire ? null : onToggle,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selectionnee
-                  ? AppColors.shopBlue.withOpacity(0.4)
-                  : Colors.transparent,
-              width: selectionnee ? 1.5 : 0,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: selectionnee
-                        ? AppColors.shopBlue
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: selectionnee
-                          ? AppColors.shopBlue
-                          : AppColors.screenDivider,
-                      width: 2,
-                    ),
-                  ),
-                  child: selectionnee
-                      ? Icon(
-                          obligatoire
-                              ? Icons.lock_rounded
-                              : Icons.check_rounded,
-                          color: Colors.white,
-                          size: 13,
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        libelle,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimary,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today_rounded,
-                            size: 11,
-                            color: AppColors.screenTextSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Limite : ${_formatDate(dateLimite)}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.screenTextSecondary,
-                            ),
-                          ),
-                          if (obligatoire) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'Obligatoire',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  _formatAmount(montant),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.shopGreen,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── SERVICE SECTION ───────────────────────────────────────────────────────
-
-  Widget _buildServiceSection({
-    required String title,
-    required IconData icon,
-    required List<EcheanceService> echeances,
-  }) {
-    final sortedEcheances = List<EcheanceService>.from(echeances)
-      ..sort((a, b) {
-        try {
-          return DateTime.parse(
-            b.dateLimite,
-          ).compareTo(DateTime.parse(a.dateLimite));
-        } catch (_) {
-          return 0;
-        }
-      });
-
-    final isRestaurant = icon == Icons.restaurant;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  Widget _buildEmptyState(String message, IconData icon) => Container(
+        padding: const EdgeInsets.all(32),
+        alignment: Alignment.center,
+        child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: isRestaurant
-                    ? Colors.orange.withOpacity(0.1)
-                    : Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: isRestaurant ? Colors.orange : Colors.blue,
-              ),
+                  color: AppColors.shopBlueSurface, shape: BoxShape.circle),
+              child: Icon(icon,
+                  size: 34,
+                  color: AppColors.shopBlue.withOpacity(0.5)),
             ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
-              ),
+            const SizedBox(height: 14),
+            Text(message,
+                style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.screenTextSecondary),
+                textAlign: TextAlign.center),
+          ],
+        ),
+      );
+
+  Widget _buildSkipState(String title, String subtitle, IconData icon) =>
+      Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: AppColors.shopBlueSurface,
+          borderRadius: BorderRadius.circular(20),
+          border:
+              Border.all(color: AppColors.shopBlue.withOpacity(0.15)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                  color: AppColors.shopBlue.withOpacity(0.12),
+                  shape: BoxShape.circle),
+              child: Icon(icon,
+                  size: 32,
+                  color: AppColors.shopBlue.withOpacity(0.6)),
             ),
-            const Spacer(),
-            Text(
-              '${sortedEcheances.where((e) => e.selectionnee).length}/${sortedEcheances.length}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.screenTextSecondary,
+            const SizedBox(height: 16),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.shopBlue)),
+            const SizedBox(height: 6),
+            Text(subtitle,
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.screenTextSecondary),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                  color: AppColors.shopBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20)),
+              child: const Text(
+                'Appuyez sur Suivant pour continuer',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.shopBlue),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        ...sortedEcheances.asMap().entries.map(
-          (entry) => _buildEcheanceCard(
-            libelle: entry.value.libelle,
-            montant: entry.value.montant,
-            dateLimite: entry.value.dateLimite,
-            selectionnee: entry.value.selectionnee,
-            obligatoire: false,
-            onToggle: () => setState(
-              () => entry.value.selectionnee = !entry.value.selectionnee,
-            ),
-            index: entry.key,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── SERVICE CARD ──────────────────────────────────────────────────────────
-
-  Widget _buildServiceCard(Service service, int index) {
-    const color = AppColors.shopBlue;
-    final iconData = service.service == 'CANTINE'
-        ? Icons.restaurant_rounded
-        : service.service == 'TRANS'
-        ? Icons.directions_bus_rounded
-        : Icons.school_rounded;
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 300 + index * 80),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Opacity(
-        opacity: value,
-        child: Transform.translate(
-          offset: Offset(0, 20 * (1 - value)),
-          child: child,
-        ),
-      ),
-      child: GestureDetector(
-        onTap: () {
-          setState(() => service.selectionnee = !service.selectionnee);
-          if (service.selectionnee) {
-            _loadEcheancesForSelectedServices();
-            if (service.service == 'TRANS' && _zones.isEmpty) _loadZones();
-          }
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: service.selectionnee
-                  ? color.withOpacity(0.35)
-                  : Colors.transparent,
-              width: service.selectionnee ? 1.5 : 0,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: service.selectionnee
-                      ? AppColors.shopBlueSurface
-                      : AppColors.screenSurface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  iconData,
-                  color: service.selectionnee
-                      ? color
-                      : AppColors.screenTextSecondary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      service.designation,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.shopBlueSurface,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        service.service,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.shopBlue,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _formatAmount(service.prix),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.shopGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: service.selectionnee ? color : Colors.transparent,
-                      border: Border.all(
-                        color: service.selectionnee
-                            ? color
-                            : AppColors.screenDivider,
-                        width: 2,
-                      ),
-                    ),
-                    child: service.selectionnee
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Colors.white,
-                            size: 14,
-                          )
-                        : null,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── ZONE CARD ─────────────────────────────────────────────────────────────
-
-  Widget _buildZoneCard(ZoneTransport zone, int index) {
-    final isSelected = _selectedZone?.idzone == zone.idzone;
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 300 + index * 70),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Opacity(
-        opacity: value,
-        child: Transform.translate(
-          offset: Offset(0, 16 * (1 - value)),
-          child: child,
-        ),
-      ),
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedZone = zone),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected
-                  ? AppColors.shopBlue.withOpacity(0.35)
-                  : Colors.transparent,
-              width: isSelected ? 1.5 : 0,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.shopBlueSurface
-                      : AppColors.screenSurface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.location_on_rounded,
-                  color: isSelected
-                      ? AppColors.shopBlue
-                      : AppColors.screenTextSecondary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      zone.zone,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    Text(
-                      'Code : ${zone.code}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.screenTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.shopBlue,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+      );
 
   // ─── ÉTAPE 1 – Scolarité ───────────────────────────────────────────────────
 
   Widget _buildStep1() {
     if (_loadingScolarite)
       return _buildLoadingState('Chargement de la scolarité...');
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SingleChildScrollView(
@@ -1311,7 +882,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           children: [
             _buildStepHeader(
               'Scolarité',
-              'Frais scolaires pour ${widget.child.firstName}',
+              'Frais scolaires pour ${widget.child.firstName} | ${widget.child.grade}',
               Icons.school_rounded,
             ),
             const SizedBox(height: 20),
@@ -1324,59 +895,27 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             ),
             const Divider(color: AppColors.screenDivider, height: 20),
             if (_echeancesScolarite.isEmpty)
-              _buildEmptyState('Aucune échéance disponible', Icons.info_outline)
+              _buildEmptyState(
+                  'Aucune échéance disponible', Icons.info_outline)
             else
               ..._echeancesScolarite.asMap().entries.map(
-                (entry) => _buildEcheanceCard(
-                  libelle: entry.value.libelle,
-                  montant: entry.value.montant,
-                  dateLimite: entry.value.dateLimite,
-                  selectionnee: entry.value.selectionnee,
-                  obligatoire: entry.value.rubriqueObligatoire == 1,
-                  onToggle: () => setState(
-                    () => entry.value.selectionnee = !entry.value.selectionnee,
+                    (entry) => SelectableItemCard(
+                      config: ItemCardFactory.echeance(
+                        libelle: entry.value.libelle,
+                        montantFormate:
+                            _formatAmount(entry.value.montant),
+                        dateLimite:
+                            _formatDate(entry.value.dateLimite),
+                        selected: entry.value.selectionnee,
+                        obligatoire:
+                            entry.value.rubriqueObligatoire == 1,
+                        onToggle: () => setState(() =>
+                            entry.value.selectionnee =
+                                !entry.value.selectionnee),
+                        index: entry.key + 1,
+                      ),
+                    ),
                   ),
-                  index: entry.key,
-                ),
-              ),
-            if (_echeancesScolarite.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.shopBlueSurface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.class_rounded,
-                      size: 15,
-                      color: AppColors.shopBlue,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Classe : ',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.screenTextSecondary,
-                      ),
-                    ),
-                    Text(
-                      _echeancesScolarite.first.branche,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.shopBlue,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -1388,7 +927,6 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildStep2() {
     if (_loadingReservation)
       return _buildLoadingState('Vérification de la réservation...');
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       child: Column(
@@ -1404,8 +942,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               child: _reservation == null
                   ? _buildEmptyState(
                       'Impossible de charger les infos réservation',
-                      Icons.error_outline,
-                    )
+                      Icons.error_outline)
                   : Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -1413,15 +950,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: const [
                           BoxShadow(
-                            color: AppColors.screenShadow,
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
+                              color: AppColors.screenShadow,
+                              blurRadius: 6,
+                              offset: Offset(0, 2))
                         ],
                         border: _reservation!.status
                             ? Border.all(
-                                color: AppColors.shopBlue.withOpacity(0.3),
-                              )
+                                color:
+                                    AppColors.shopBlue.withOpacity(0.3))
                             : null,
                       ),
                       child: Column(
@@ -1465,9 +1001,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                 ? 'Une déduction sera appliquée au montant total'
                                 : 'Aucune déduction ne sera appliquée',
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.screenTextSecondary,
-                            ),
+                                fontSize: 13,
+                                color:
+                                    AppColors.screenTextSecondary),
                             textAlign: TextAlign.center,
                           ),
                           if (_reservation!.status &&
@@ -1475,35 +1011,33 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             const SizedBox(height: 20),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
+                                  horizontal: 20, vertical: 12),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
                                   colors: [
                                     AppColors.shopBlueLight,
-                                    AppColors.shopBlue,
+                                    AppColors.shopBlue
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius:
+                                    BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.shopBlue.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
+                                      color: AppColors.shopBlue
+                                          .withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3))
                                 ],
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
-                                    Icons.remove_circle_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
+                                      Icons.remove_circle_rounded,
+                                      color: Colors.white,
+                                      size: 20),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Déduction : ${_formatAmount(_reservation!.sommeReservation)}',
@@ -1532,9 +1066,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildStep3() {
     if (_loadingServices)
       return _buildLoadingState('Chargement des services...');
-
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1542,62 +1075,103 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             'Services',
             'Sélectionnez les services souhaités',
             Icons.grid_view_rounded,
+            onSearchPressed: () => setState(
+                () => _isServiceSearching = !_isServiceSearching),
           ),
           const Divider(color: AppColors.screenDivider, height: 20),
-          _buildSearchField(
-            _serviceSearchController,
-            'Rechercher un service...',
-          ),
+          _buildServiceSearchBar(),
           const SizedBox(height: 16),
           if (_filteredServices.isEmpty)
             _buildEmptyState('Aucun service trouvé', Icons.search_off)
           else ...[
             if (_cantineServices.isNotEmpty) ...[
-              Row(
-                children: [
-                  _sectionLabel('Services Cantine'),
-                  const Spacer(),
-                  _buildCountBadge(
+              ItemSectionHeader(
+                title: 'Services Cantine',
+                icon: Icons.restaurant_rounded,
+                iconColor: Colors.orange,
+                trailingLabel:
                     '${_cantineServices.where((s) => s.selectionnee).length} sélectionné(s)',
-                  ),
-                ],
               ),
-              const SizedBox(height: 12),
               ..._cantineServices.asMap().entries.map(
-                (entry) => _buildServiceCard(entry.value, entry.key),
-              ),
+                    (entry) => SelectableItemCard(
+                      config: ItemCardFactory.service(
+                        designation: entry.value.designation,
+                        type: entry.value.service,
+                        prixFormate:
+                            _formatAmount(entry.value.prix),
+                        selected: entry.value.selectionnee,
+                        onTap: () {
+                          setState(() =>
+                              entry.value.selectionnee =
+                                  !entry.value.selectionnee);
+                          if (entry.value.selectionnee)
+                            _loadEcheancesForSelectedServices();
+                        },
+                        index: entry.key + 1,
+                      ),
+                    ),
+                  ),
               const SizedBox(height: 20),
             ],
             if (_transportServices.isNotEmpty) ...[
-              Row(
-                children: [
-                  _sectionLabel('Services Transport'),
-                  const Spacer(),
-                  _buildCountBadge(
+              ItemSectionHeader(
+                title: 'Services Transport',
+                icon: Icons.directions_bus_rounded,
+                iconColor: Colors.blue,
+                trailingLabel:
                     '${_transportServices.where((s) => s.selectionnee).length} sélectionné(s)',
-                  ),
-                ],
               ),
-              const SizedBox(height: 12),
               ..._transportServices.asMap().entries.map(
-                (entry) => _buildServiceCard(entry.value, entry.key),
-              ),
+                    (entry) => SelectableItemCard(
+                      config: ItemCardFactory.service(
+                        designation: entry.value.designation,
+                        type: entry.value.service,
+                        prixFormate:
+                            _formatAmount(entry.value.prix),
+                        selected: entry.value.selectionnee,
+                        onTap: () {
+                          // 1. Toggler le service
+                          setState(() =>
+                              entry.value.selectionnee =
+                                  !entry.value.selectionnee);
+
+                          // 2. Resynchroniser la navigation (Zones apparaît/disparaît)
+                          _onTransportServiceToggled();
+
+                          // 3. Charger les données si nécessaire
+                          if (entry.value.selectionnee) {
+                            _loadEcheancesForSelectedServices();
+                            if (_zones.isEmpty) _loadZones();
+                          }
+                        },
+                        index: entry.key + 1,
+                      ),
+                    ),
+                  ),
               const SizedBox(height: 20),
             ],
             if (_otherServices.isNotEmpty) ...[
-              Row(
-                children: [
-                  _sectionLabel('Autres Services'),
-                  const Spacer(),
-                  _buildCountBadge(
+              ItemSectionHeader(
+                title: 'Autres Services',
+                icon: Icons.school_rounded,
+                trailingLabel:
                     '${_otherServices.where((s) => s.selectionnee).length} sélectionné(s)',
-                  ),
-                ],
               ),
-              const SizedBox(height: 12),
               ..._otherServices.asMap().entries.map(
-                (entry) => _buildServiceCard(entry.value, entry.key),
-              ),
+                    (entry) => SelectableItemCard(
+                      config: ItemCardFactory.service(
+                        designation: entry.value.designation,
+                        type: entry.value.service,
+                        prixFormate:
+                            _formatAmount(entry.value.prix),
+                        selected: entry.value.selectionnee,
+                        onTap: () => setState(() =>
+                            entry.value.selectionnee =
+                                !entry.value.selectionnee),
+                        index: entry.key + 1,
+                      ),
+                    ),
+                  ),
             ],
           ],
         ],
@@ -1608,8 +1182,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // ─── ÉTAPE 4 – Zones ───────────────────────────────────────────────────────
 
   Widget _buildStep4() {
-    if (_loadingZones) return _buildLoadingState('Chargement des zones...');
-
+    if (_loadingZones)
+      return _buildLoadingState('Chargement des zones...');
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
@@ -1619,18 +1193,31 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             'Zone de transport',
             'Sélectionnez votre zone (optionnel)',
             Icons.map_rounded,
+            onSearchPressed: () =>
+                setState(() => _isZoneSearching = !_isZoneSearching),
           ),
           const Divider(color: AppColors.screenDivider, height: 20),
-          _buildSearchField(_zoneSearchController, 'Rechercher une zone...'),
+          _buildZoneSearchBar(),
           const SizedBox(height: 16),
           if (_zones.isEmpty)
-            _buildEmptyState('Aucune zone disponible', Icons.info_outline)
+            _buildEmptyState(
+                'Aucune zone disponible', Icons.info_outline)
           else if (_filteredZones.isEmpty)
             _buildEmptyState('Aucune zone trouvée', Icons.search_off)
           else
             ..._filteredZones.asMap().entries.map(
-              (entry) => _buildZoneCard(entry.value, entry.key),
-            ),
+                  (entry) => SelectableItemCard(
+                    config: ItemCardFactory.zone(
+                      nom: entry.value.zone,
+                      code: entry.value.code,
+                      selected:
+                          _selectedZone?.idzone == entry.value.idzone,
+                      onTap: () =>
+                          setState(() => _selectedZone = entry.value),
+                      index: entry.key + 1,
+                    ),
+                  ),
+                ),
         ],
       ),
     );
@@ -1654,7 +1241,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               child: Center(
                 child: _buildSkipState(
                   'Aucun service sélectionné',
-                  'Vous pouvez passer à l\'étape suivante',
+                  "Vous pouvez passer à l'étape suivante",
                   Icons.payment_rounded,
                 ),
               ),
@@ -1665,7 +1252,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     }
 
     if (_loadingEcheancesService)
-      return _buildLoadingState('Chargement de l\'échéancier...');
+      return _buildLoadingState("Chargement de l'échéancier...");
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
@@ -1689,34 +1276,28 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             child: _echeancesService.isEmpty
                 ? Center(
                     child: _buildEmptyState(
-                      'Aucune échéance disponible',
-                      Icons.info_outline,
-                    ),
-                  )
+                        'Aucune échéance disponible',
+                        Icons.info_outline))
                 : SingleChildScrollView(
                     child: Column(
                       children: [
-                        if (_echeancesService.any(
-                          (e) => e.codeRubrique == 'CANTINE',
-                        )) ...[
-                          _buildServiceSection(
+                        if (_echeancesService
+                            .any((e) => e.codeRubrique == 'CANTINE')) ...[
+                          _buildEcheanceServiceSection(
+                            rubrique: 'CANTINE',
                             title: 'Services Cantine',
-                            icon: Icons.restaurant,
-                            echeances: _echeancesService
-                                .where((e) => e.codeRubrique == 'CANTINE')
-                                .toList(),
+                            icon: Icons.restaurant_rounded,
+                            iconColor: Colors.orange,
                           ),
                           const SizedBox(height: 24),
                         ],
-                        if (_echeancesService.any(
-                          (e) => e.codeRubrique == 'TRANS',
-                        ))
-                          _buildServiceSection(
+                        if (_echeancesService
+                            .any((e) => e.codeRubrique == 'TRANS'))
+                          _buildEcheanceServiceSection(
+                            rubrique: 'TRANS',
                             title: 'Services Transport',
-                            icon: Icons.directions_bus,
-                            echeances: _echeancesService
-                                .where((e) => e.codeRubrique == 'TRANS')
-                                .toList(),
+                            icon: Icons.directions_bus_rounded,
+                            iconColor: Colors.blue,
                           ),
                       ],
                     ),
@@ -1724,6 +1305,50 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEcheanceServiceSection({
+    required String rubrique,
+    required String title,
+    required IconData icon,
+    Color? iconColor,
+  }) {
+    final echeances = List<EcheanceService>.from(
+        _echeancesService.where((e) => e.codeRubrique == rubrique))
+      ..sort((a, b) {
+        try {
+          return DateTime.parse(b.dateLimite)
+              .compareTo(DateTime.parse(a.dateLimite));
+        } catch (_) {
+          return 0;
+        }
+      });
+    final selectedCount = echeances.where((e) => e.selectionnee).length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ItemSectionHeader(
+          title: title,
+          icon: icon,
+          iconColor: iconColor,
+          trailingLabel: '$selectedCount/${echeances.length}',
+        ),
+        ...echeances.asMap().entries.map(
+              (entry) => SelectableItemCard(
+                config: ItemCardFactory.echeance(
+                  libelle: entry.value.libelle,
+                  montantFormate: _formatAmount(entry.value.montant),
+                  dateLimite: _formatDate(entry.value.dateLimite),
+                  selected: entry.value.selectionnee,
+                  onToggle: () => setState(() =>
+                      entry.value.selectionnee =
+                          !entry.value.selectionnee),
+                  index: entry.key + 1,
+                ),
+              ),
+            ),
+      ],
     );
   }
 
@@ -1759,16 +1384,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 children: [
                   ..._echeancesScolarite
                       .where((e) => e.selectionnee)
-                      .map(
-                        (e) =>
-                            _buildRecapRow(e.libelle, _formatAmount(e.montant)),
-                      ),
-                  const Divider(height: 16, color: AppColors.screenDivider),
-                  _buildRecapRow(
-                    'Sous-total',
-                    _formatAmount(_totalScolarite),
-                    isBold: true,
-                  ),
+                      .map((e) =>
+                          _buildRecapRow(e.libelle, _formatAmount(e.montant))),
+                  const Divider(
+                      height: 16, color: AppColors.screenDivider),
+                  _buildRecapRow('Sous-total',
+                      _formatAmount(_totalScolarite),
+                      isBold: true),
                 ],
               ),
             ),
@@ -1784,36 +1406,34 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 children: [
                   ..._echeancesService
                       .where((e) => e.selectionnee)
-                      .map(
-                        (e) =>
-                            _buildRecapRow(e.libelle, _formatAmount(e.montant)),
-                      ),
-                  const Divider(height: 16, color: AppColors.screenDivider),
-                  _buildRecapRow(
-                    'Sous-total',
-                    _formatAmount(_totalServices),
-                    isBold: true,
-                  ),
+                      .map((e) =>
+                          _buildRecapRow(e.libelle, _formatAmount(e.montant))),
+                  const Divider(
+                      height: 16, color: AppColors.screenDivider),
+                  _buildRecapRow('Sous-total',
+                      _formatAmount(_totalServices),
+                      isBold: true),
                 ],
               ),
             ),
             const SizedBox(height: 12),
           ],
 
-          // Transport
-          if (_selectedZone != null) ...[
+          // Transport (zone uniquement si transport coché)
+          if (_selectedZone != null &&
+              _services.any(
+                  (s) => s.service == 'TRANS' && s.selectionnee)) ...[
             _buildRecapSection(
               title: 'Transport',
               icon: Icons.directions_bus_rounded,
               child: Column(
                 children: [
                   _buildRecapRow('Zone', _selectedZone!.zone),
-                  const Divider(height: 16, color: AppColors.screenDivider),
+                  const Divider(
+                      height: 16, color: AppColors.screenDivider),
                   _buildRecapRow(
-                    'Sous-total',
-                    _formatAmount(_totalTransport),
-                    isBold: true,
-                  ),
+                      'Sous-total', _formatAmount(_totalTransport),
+                      isBold: true),
                 ],
               ),
             ),
@@ -1821,39 +1441,36 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           ],
 
           // Déduction réservation
-          if (_reservation?.status == true && _deductionReservation > 0) ...[
+          if (_reservation?.status == true &&
+              _deductionReservation > 0) ...[
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: AppColors.shopBlueSurface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.shopBlue.withOpacity(0.2)),
+                border: Border.all(
+                    color: AppColors.shopBlue.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.bookmark_added_rounded,
-                    color: AppColors.shopBlue,
-                    size: 18,
-                  ),
+                  const Icon(Icons.bookmark_added_rounded,
+                      color: AppColors.shopBlue, size: 18),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
                       'Déduction réservation',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.shopBlue,
-                      ),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.shopBlue),
                     ),
                   ),
                   Text(
                     '- ${_formatAmount(_deductionReservation)}',
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.shopBlue,
-                    ),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.shopBlue),
                   ),
                 ],
               ),
@@ -1873,39 +1490,33 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.shopBlue.withOpacity(0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
+                    color: AppColors.shopBlue.withOpacity(0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4))
               ],
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.payments_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
+                const Icon(Icons.payments_rounded,
+                    color: Colors.white, size: 26),
                 const SizedBox(width: 14),
                 const Expanded(
                   child: Text(
                     'TOTAL À PAYER',
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white70,
-                      letterSpacing: 0.5,
-                    ),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white70,
+                        letterSpacing: 0.5),
                   ),
                 ),
                 Text(
                   _formatAmount(_totalNet),
                   style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.5),
                 ),
               ],
             ),
@@ -1920,16 +1531,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             ),
             child: const Row(
               children: [
-                Icon(Icons.info_outline, color: AppColors.shopBlue, size: 16),
+                Icon(Icons.info_outline,
+                    color: AppColors.shopBlue, size: 16),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'L\'inscription sera confirmée après validation par l\'administration.',
+                    "L'inscription sera confirmée après validation par l'administration.",
                     style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.shopBlue,
-                      fontWeight: FontWeight.w500,
-                    ),
+                        fontSize: 12,
+                        color: AppColors.shopBlue,
+                        fontWeight: FontWeight.w500),
                   ),
                 ),
               ],
@@ -1944,87 +1555,87 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     required String title,
     required IconData icon,
     required Widget child,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.shopBlueSurface,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
+  }) =>
+      Container(
+        decoration: BoxDecoration(
+          color: AppColors.screenCard,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+                color: AppColors.screenShadow,
+                blurRadius: 6,
+                offset: Offset(0, 2))
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: AppColors.shopBlueSurface,
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15)),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, color: AppColors.shopBlue, size: 16),
+                  const SizedBox(width: 8),
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.shopBlue)),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                Icon(icon, color: AppColors.shopBlue, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.shopBlue,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(padding: const EdgeInsets.all(16), child: child),
-        ],
-      ),
-    );
-  }
+            Padding(
+                padding: const EdgeInsets.all(16), child: child),
+          ],
+        ),
+      );
 
-  Widget _buildRecapRow(String label, String value, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
-                color: isBold
-                    ? AppColors.screenTextPrimary
-                    : AppColors.screenTextSecondary,
+  Widget _buildRecapRow(String label, String value,
+      {bool isBold = false}) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        isBold ? FontWeight.w700 : FontWeight.w400,
+                    color: isBold
+                        ? AppColors.screenTextPrimary
+                        : AppColors.screenTextSecondary),
               ),
             ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-              color: isBold ? AppColors.shopGreen : AppColors.screenTextPrimary,
+            Text(
+              value,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight:
+                      isBold ? FontWeight.w800 : FontWeight.w600,
+                  color: isBold
+                      ? AppColors.shopGreen
+                      : AppColors.screenTextPrimary),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
 
   // ─── BOUTONS DE NAVIGATION ─────────────────────────────────────────────────
 
   Widget _buildNavigationButtons() {
-    final canNext = _canGoNext();
-    final isLastStep = _currentStep == _steps.length - 1;
+    final canNext  = _canGoNext();
+    final isLast   = _currentPageIndex == _orderedStepIds.length - 1;
+    final isSecondToLast =
+        _currentPageIndex == _orderedStepIds.length - 2;
 
     return Container(
       decoration: BoxDecoration(
@@ -2032,28 +1643,30 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4)),
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 4,
+              offset: const Offset(0, 1)),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
-          mainAxisAlignment: _currentStep > 0 ? MainAxisAlignment.spaceBetween : MainAxisAlignment.end,
+          mainAxisAlignment: _currentPageIndex > 0
+              ? MainAxisAlignment.spaceBetween
+              : MainAxisAlignment.end,
           children: [
-            if (_currentStep > 0)
+            if (_currentPageIndex > 0)
               GestureDetector(
                 onTap: _prevStep,
                 child: Container(
                   height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: AppColors.screenSurface,
                     borderRadius: BorderRadius.circular(12),
@@ -2062,55 +1675,49 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 14,
-                        color: AppColors.screenTextSecondary,
-                      ),
+                      Icon(Icons.arrow_back_ios_new,
+                          size: 14,
+                          color: AppColors.screenTextSecondary),
                       SizedBox(width: 4),
-                      Text(
-                        'Précédent',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.screenTextSecondary,
-                        ),
-                      ),
+                      Text('Précédent',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.screenTextSecondary)),
                     ],
                   ),
                 ),
               ),
-            if (!isLastStep)
+            if (!isLast)
               GestureDetector(
                 onTap: canNext ? _nextStep : null,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     gradient: canNext
                         ? const LinearGradient(
                             colors: [
                               AppColors.shopBlueLight,
-                              AppColors.shopBlue,
+                              AppColors.shopBlue
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
-                        : LinearGradient(
-                            colors: [
-                              Colors.grey.shade300,
-                              Colors.grey.shade300,
-                            ],
-                          ),
+                        : LinearGradient(colors: [
+                            Colors.grey.shade300,
+                            Colors.grey.shade300
+                          ]),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: canNext
                         ? [
                             BoxShadow(
-                              color: AppColors.shopBlue.withOpacity(0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
+                                color:
+                                    AppColors.shopBlue.withOpacity(0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3))
                           ]
                         : null,
                   ),
@@ -2118,70 +1725,60 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _currentStep == _steps.length - 2
-                            ? 'Récap'
-                            : 'Suivant',
+                        isSecondToLast ? 'Récap' : 'Suivant',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: canNext
-                              ? Colors.white
-                              : Colors.grey.shade500,
-                          letterSpacing: 0.1,
-                        ),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: canNext
+                                ? Colors.white
+                                : Colors.grey.shade500,
+                            letterSpacing: 0.1),
                       ),
                       const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 14,
-                        color: canNext
-                            ? Colors.white
-                            : Colors.grey.shade500,
-                      ),
+                      Icon(Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: canNext
+                              ? Colors.white
+                              : Colors.grey.shade500),
                     ],
                   ),
                 ),
               ),
-            // Bouton de confirmation uniquement à la dernière étape
-            if (isLastStep)
+            if (isLast)
               GestureDetector(
                 onTap: _effectuerInscription,
                 child: Container(
                   height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                        colors: [
+                          AppColors.shopBlueLight,
+                          AppColors.shopBlue
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.shopBlue.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
+                          color: AppColors.shopBlue.withOpacity(0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3))
                     ],
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: Colors.white,
-                        size: 14,
-                      ),
+                      Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 14),
                       SizedBox(width: 4),
-                      Text(
-                        'Confirmer',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
+                      Text('Confirmer',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.1)),
                     ],
                   ),
                 ),
@@ -2197,27 +1794,22 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Future<void> _effectuerInscription() async {
     final List<Map<String, dynamic>> ids = [];
 
-    // Scolarité
-    final echeancesScol = _echeancesScolarite
-        .where((e) => e.selectionnee)
-        .toList();
+    final echeancesScol =
+        _echeancesScolarite.where((e) => e.selectionnee).toList();
     if (echeancesScol.isNotEmpty) {
       ids.add({
         'id': 'SCO',
         'service': 'Scolarité',
         'montant': _totalScolarite,
-        'reservation': _reservation?.status ?? false,
-        'echeances_selectionnees': echeancesScol
-            .map((e) => e.toJson())
-            .toList(),
+        'echeancesSelectionnees':
+            echeancesScol.map((e) => e.toJson()).toList(),
       });
     }
 
-    // Services
-    final selectedServices = _services.where((s) => s.selectionnee).toList();
-    final echeancesServices = _echeancesService
-        .where((e) => e.selectionnee)
-        .toList();
+    final selectedServices =
+        _services.where((s) => s.selectionnee).toList();
+    final echeancesServices =
+        _echeancesService.where((e) => e.selectionnee).toList();
     if (echeancesServices.isNotEmpty && selectedServices.isNotEmpty) {
       for (final service in selectedServices) {
         final serviceEcheances = echeancesServices
@@ -2227,24 +1819,24 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           ids.add({
             'id': service.iddetail,
             'service': service.service,
-            'montant': serviceEcheances.fold(0, (sum, e) => sum + e.montant),
-            'reservation': false,
-            'echeances_selectionnees': serviceEcheances
-                .map((e) => e.toJson())
-                .toList(),
+            'montant':
+                serviceEcheances.fold(0, (sum, e) => sum + e.montant),
+            'echeancesServicesSelectionnees':
+                serviceEcheances.map((e) => e.toJson()).toList(),
           });
         }
       }
     }
 
-    // Transport
-    if (_selectedZone != null) {
+    // Zone de transport (seulement si TRANS coché ET zone sélectionnée)
+    final hasTransService =
+        selectedServices.any((s) => s.service == 'TRANS');
+    if (_selectedZone != null && hasTransService) {
       ids.add({
         'id': _selectedZone!.idzone,
         'service': 'Transport',
         'montant': _totalTransport,
-        'reservation': false,
-        'echeances_selectionnees': [],
+        'echeancesServicesSelectionnees': [],
       });
     }
 
@@ -2257,18 +1849,170 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       if (mounted) {
         Navigator.of(context).pop();
         _showSuccess(
-          'Inscription de ${widget.child.firstName} enregistrée avec succès !',
-        );
+            'Inscription de ${widget.child.firstName} enregistrée avec succès !');
       }
     } catch (e) {
-      if (mounted) _showError(e.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        _showError(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
   // ─── BUILD PRINCIPAL ───────────────────────────────────────────────────────
 
+  /// Construit l'écran affiché lorsque les périodes d'inscription sont fermées
+  Widget _buildPeriodsClosedScreen() {
+    return Scaffold(
+      backgroundColor: AppColors.pureWhite,
+      body: CustomScrollView(
+        slivers: [
+          _buildCustomAppBar(context),
+          SliverFillRemaining(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icône d'information
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: AppColors.shopBlueSurface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 60,
+                      color: AppColors.shopBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // Titre principal
+                  Text(
+                    'Périodes d\'inscription fermées',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.screenTextPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Sous-titre
+                  Text(
+                    'Aucune période d\'inscription n\'est actuellement ouverte pour cette école.',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.screenTextSecondary,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Carte d'information
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.shopBlueSurface.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.shopBlue.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: AppColors.shopBlue,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Que faire ?',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.shopBlue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '• Contactez l\'administration de l\'école pour plus d\'informations\n'
+                          '• Consultez le site web de l\'établissement\n'
+                          '• Revenez plus tard pour vérifier l\'ouverture des inscriptions',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.screenTextSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // Bouton de retour
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.shopBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.arrow_back_rounded, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Retour',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Si les périodes sont fermées, afficher l'écran d'information
+    if (_periodsClosed) {
+      return _buildPeriodsClosedScreen();
+    }
+
+    // On capture la liste une seule fois par build pour garantir la cohérence
+    // entre le PageView et la barre de progression.
+    final steps = _orderedStepIds;
+
     return Scaffold(
       backgroundColor: AppColors.pureWhite,
       body: Stack(
@@ -2282,25 +2026,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _buildStep1(),
-                    _buildStep2(),
-                    if (_servicesEnabled) ...[
-                      _buildStep3(),
-                      _buildStep4(),
-                      _buildStep5(),
-                    ],
-                    _buildRecap(),
-                  ],
+                  // ← PageView construit dynamiquement depuis _orderedStepIds.
+                  //   Plus aucun désalignement possible entre l'index courant
+                  //   et le contenu affiché.
+                  children: steps
+                      .map((id) => _buildStepById(id))
+                      .toList(),
                 ),
               ),
-              // Ajout d'un padding pour éviter que le contenu ne soit caché par les boutons flottants
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 80), // Hauteur des boutons + marge
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
-          // Boutons de navigation flottants en bas
           Positioned(
             left: 16,
             right: 16,

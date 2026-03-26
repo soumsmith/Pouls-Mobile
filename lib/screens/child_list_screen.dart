@@ -2615,8 +2615,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           ImageMenuCard(
             index: 1,
             cardKey: 'inscription',
-            //title: 'Inscription',
+            title: 'Inscription',
             isDark: isDark,
+            width: 200,
             imagePath: 'assets/images/inscription.png',
             color: const Color(0xFF3B82F6),
             backgroundColor: isDark
@@ -2631,10 +2632,20 @@ class _ChildListScreenState extends State<ChildListScreen>
               print('🎯 Navigation vers InscriptionWizardScreen');
               print('👤 Élève: ${widget.child.fullName}');
               print('🆔 UID de l\'élève: ${_eleveDetail?['uid']}');
+              print('🏷️ Code école actuel: ${widget.child.ecoleCode}');
+              print('🏷️ Code école récupéré: $_ecoleCode');
+              
+              // Mettre à jour l'objet Child avec le ecoleCode si disponible
+              final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
+                  ? widget.child.copyWith(ecoleCode: _ecoleCode)
+                  : widget.child;
+              
+              print('🏷️ Code école final dans l\'objet: ${updatedChild.ecoleCode}');
+              
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => inscription.InscriptionWizardScreen(
-                    child: widget.child,
+                    child: updatedChild,
                     uid: _eleveDetail?['uid'],
                   ),
                 ),
@@ -3776,8 +3787,12 @@ class _ChildListScreenState extends State<ChildListScreen>
                 const SizedBox(width: 12),
                 _buildModernSummaryCard(
                   'Présence',
-                  '95%',
-                  AppColors.success,
+                  _eleveDetail != null && _eleveDetail!['pt_in_jour'] != null
+                      ? _eleveDetail!['pt_in_jour'] == 1 ? 'Présent' : 'Absent'
+                      : '--',
+                  _eleveDetail != null && _eleveDetail!['pt_in_jour'] == 1
+                      ? AppColors.success
+                      : AppColors.error,
                   Icons.check_circle,
                 ),
                 const SizedBox(width: 12),
@@ -3789,6 +3804,28 @@ class _ChildListScreenState extends State<ChildListScreen>
                   AppColors.secondary,
                   Icons.star,
                   isLoading: _isLoadingNotes,
+                ),
+                const SizedBox(width: 12),
+                _buildModernSummaryCard(
+                  'Scolarité',
+                  _eleveDetail != null && _eleveDetail!['msolde'] != null
+                      ? '${(_eleveDetail!['msolde'] as int).toString()}F'
+                      : '--',
+                  _eleveDetail != null && _eleveDetail!['msolde'] != null && (_eleveDetail!['msolde'] as int) > 0
+                      ? Colors.orange
+                      : AppColors.success,
+                  Icons.account_balance_wallet,
+                ),
+                const SizedBox(width: 12),
+                _buildModernSummaryCard(
+                  'Redoublant',
+                  _eleveDetail != null
+                      ? _eleveDetail!['redoublant']?.toString() ?? 'Non'
+                      : '--',
+                  _eleveDetail != null && _eleveDetail!['redoublant'] == 'OUI'
+                      ? Colors.red
+                      : AppColors.success,
+                  Icons.refresh,
                 ),
               ],
             ),

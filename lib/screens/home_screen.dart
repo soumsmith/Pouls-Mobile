@@ -997,6 +997,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF1A1A2E),
                 ),
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
               const SizedBox(height: 8),
               const Text(
@@ -1005,6 +1007,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 14,
                   color: Color(0xFF8A8A9A),
                 ),
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
               const SizedBox(height: 24),
               // Matricule field

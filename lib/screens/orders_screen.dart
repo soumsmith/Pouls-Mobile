@@ -652,12 +652,16 @@ class _OrderDetailsSheet extends StatelessWidget {
                                   color: AppColors.screenTextPrimary,
                                   letterSpacing: -0.4,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
                               ),
                               Text(
                                 '#${order.id.substring(order.id.length - 8)}',
                                 style: const TextStyle(
                                     fontSize: 13,
                                     color: AppColors.screenTextSecondary),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
                               ),
                             ],
                           ),

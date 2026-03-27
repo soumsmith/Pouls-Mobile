@@ -2376,6 +2376,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                           : AppColors.screenTextPrimary,
                                       letterSpacing: -0.4,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
                                   ),
                                   Text(
                                     def.subtitle,
@@ -2383,6 +2385,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                       fontSize: 13,
                                       color: AppColors.screenTextSecondary,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
                                   ),
                                 ],
                               ),

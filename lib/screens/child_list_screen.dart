@@ -444,9 +444,11 @@ class _ChildListScreenState extends State<ChildListScreen>
   Future<void> _loadOrders() async {
     final authService = AuthService();
     final currentUser = authService.getCurrentUser();
-    
+
     if (currentUser?.phone == null) {
-      print('⚠️ Impossible de charger les commandes: téléphone utilisateur manquant');
+      print(
+        '⚠️ Impossible de charger les commandes: téléphone utilisateur manquant',
+      );
       return;
     }
 
@@ -455,7 +457,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     });
 
     try {
-      print('📦 Chargement des commandes pour le téléphone: ${currentUser!.phone}');
+      print(
+        '📦 Chargement des commandes pour le téléphone: ${currentUser!.phone}',
+      );
       final orders = await OrderService().getUserOrders(currentUser!.phone);
 
       setState(() {
@@ -952,7 +956,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       case 'integrationRequests':
         return StudentMenuCardItem(
           icon: Icons.school_rounded,
-          label: 'Demandes d\'intégration',
+          label: 'Consultation demande',
           onTap: () {},
           backgroundColor: const Color(0xFFE3F2FD),
           iconColor: const Color(0xFF1565C0),
@@ -1049,6 +1053,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                     cardItem.titleColor ??
                                     (isDark ? Colors.white : Colors.black),
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -1061,6 +1067,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                     ? Colors.grey[400]
                                     : Colors.grey[600],
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
                             ),
                           ],
                         ),
@@ -1207,6 +1215,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF0D47A1),
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -1223,6 +1233,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       ? Colors.grey[400]
                                       : Colors.grey[600],
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
                               ),
                             ],
                           ),
@@ -1578,19 +1590,18 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildModernSliverAppBar() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return CustomSliverAppBar(
       title: widget.child.fullName,
       isDark: isDarkMode,
       expandedHeight: 80,
-      actions: [
-        _buildNotificationButton(),
-        _buildMoreButton(),
-      ],
+      actions: [_buildNotificationButton(), _buildMoreButton()],
       titleTextStyle: TextStyle(
         fontSize: _textSizeService.getScaledFontSize(16),
         fontWeight: FontWeight.w700,
-        color: isDarkMode ? Colors.white : Theme.of(context).textTheme.titleLarge?.color,
+        color: isDarkMode
+            ? Colors.white
+            : Theme.of(context).textTheme.titleLarge?.color,
         letterSpacing: -0.5,
       ),
     );
@@ -1599,12 +1610,14 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildNotificationButton() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getButtonBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getButtonBorderRadius(context),
+        ),
         boxShadow: const [
           BoxShadow(
             color: AppColors.screenShadow,
@@ -1631,7 +1644,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 padding: EdgeInsets.all(AppDimensions.getBadgePadding(context)),
                 decoration: BoxDecoration(
                   color: Colors.red,
-                  borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getBadgeBorderRadius(context),
+                  ),
                   border: Border.all(color: AppColors.screenCard, width: 2),
                 ),
                 constraints: BoxConstraints(
@@ -1659,12 +1674,14 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildMoreButton() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getButtonBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getButtonBorderRadius(context),
+        ),
         boxShadow: const [
           BoxShadow(
             color: AppColors.screenShadow,
@@ -1683,10 +1700,15 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildModernProfileHeader() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      padding: EdgeInsets.symmetric(horizontal: AppDimensions.getMainContainerPadding(context), vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.getMainContainerPadding(context),
+        vertical: 16,
+      ),
       decoration: BoxDecoration(
         gradient: AppColors.screenOrangeGradient,
-        borderRadius: BorderRadius.circular(AppDimensions.getMainContainerBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getMainContainerBorderRadius(context),
+        ),
         boxShadow: [
           BoxShadow(
             color: AppColors.screenOrange.withOpacity(0.3),
@@ -1790,7 +1812,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                             child: Text(
                               _eleveDetail!['nationalite']?.toString() ?? 'N/A',
                               style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(14),
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  14,
+                                ),
                                 color: Colors.white.withOpacity(0.9),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1801,7 +1825,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ],
                       ],
                     ),
-                    
                   ],
                 ),
               ),
@@ -1812,10 +1835,14 @@ class _ChildListScreenState extends State<ChildListScreen>
           if (_showEleveDetails && _eleveDetail != null) ...[
             const SizedBox(height: 20),
             Container(
-              padding: EdgeInsets.all(AppDimensions.getProfileDetailsPadding(context)),
+              padding: EdgeInsets.all(
+                AppDimensions.getProfileDetailsPadding(context),
+              ),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(AppDimensions.getProfileDetailsBorderRadius(context)),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.getProfileDetailsBorderRadius(context),
+                ),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.2),
                   width: 1,
@@ -1825,8 +1852,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                 children: [
                   // Titre Informations personnelles
                   _buildSectionTitle('Informations personnelles'),
-                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
-                  
+                  SizedBox(
+                    height: AppDimensions.getProfileDetailsSpacing(context),
+                  ),
+
                   // Layout responsive pour les informations personnelles
                   if (AppDimensions.isMobile(context)) ...[
                     // Mobile : une seule colonne
@@ -1835,7 +1864,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       label: 'Matricule',
                       value: _eleveDetail!['matricule']?.toString() ?? 'N/A',
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     _buildProfileDetailItem(
                       icon: Icons.cake,
                       label: 'Né(e)',
@@ -1843,19 +1874,25 @@ class _ChildListScreenState extends State<ChildListScreen>
                         _eleveDetail!['datenaissance']?.toString() ?? 'N/A',
                       ),
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     _buildProfileDetailItem(
                       icon: Icons.wc,
                       label: 'Sexe',
                       value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     _buildProfileDetailItem(
                       icon: Icons.location_on,
                       label: 'Lieu',
                       value: _eleveDetail!['lieun']?.toString() ?? 'N/A',
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     _buildProfileDetailItem(
                       icon: Icons.phone,
                       label: 'Mobile',
@@ -1865,7 +1902,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         _eleveDetail!['mobile']?.toString() ?? '',
                       ),
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     _buildProfileDetailItem(
                       icon: Icons.flag,
                       label: 'Nationalité',
@@ -1878,9 +1917,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                         _buildProfileDetailItem(
                           icon: Icons.badge,
                           label: 'Matricule',
-                          value: _eleveDetail!['matricule']?.toString() ?? 'N/A',
+                          value:
+                              _eleveDetail!['matricule']?.toString() ?? 'N/A',
                         ),
-                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getProfileDetailsSpacing(
+                            context,
+                          ),
+                        ),
                         _buildProfileDetailItem(
                           icon: Icons.cake,
                           label: 'Né(e)',
@@ -1890,7 +1934,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       ],
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     Row(
                       children: [
                         _buildProfileDetailItem(
@@ -1898,7 +1944,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                           label: 'Sexe',
                           value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
                         ),
-                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getProfileDetailsSpacing(
+                            context,
+                          ),
+                        ),
                         _buildProfileDetailItem(
                           icon: Icons.location_on,
                           label: 'Lieu',
@@ -1906,7 +1956,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       ],
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     Row(
                       children: [
                         _buildProfileDetailItem(
@@ -1918,21 +1970,31 @@ class _ChildListScreenState extends State<ChildListScreen>
                             _eleveDetail!['mobile']?.toString() ?? '',
                           ),
                         ),
-                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getProfileDetailsSpacing(
+                            context,
+                          ),
+                        ),
                         _buildProfileDetailItem(
                           icon: Icons.flag,
                           label: 'Nationalité',
-                          value: _eleveDetail!['nationalite']?.toString() ?? 'N/A',
+                          value:
+                              _eleveDetail!['nationalite']?.toString() ?? 'N/A',
                         ),
                       ],
                     ),
                   ],
 
-                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context) * 1.5),
+                  SizedBox(
+                    height:
+                        AppDimensions.getProfileDetailsSpacing(context) * 1.5,
+                  ),
 
                   // Titre Informations scolaires
                   _buildSectionTitle('Informations scolaires'),
-                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                  SizedBox(
+                    height: AppDimensions.getProfileDetailsSpacing(context),
+                  ),
 
                   // Layout responsive pour les informations scolaires
                   if (AppDimensions.isMobile(context)) ...[
@@ -1942,40 +2004,53 @@ class _ChildListScreenState extends State<ChildListScreen>
                       label: 'Niveau',
                       value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     _buildProfileDetailItem(
                       icon: Icons.category,
                       label: 'Filière',
                       value: _eleveDetail!['filiere']?.toString() ?? 'N/A',
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     // _buildProfileDetailItem(
                     //   icon: Icons.book,
                     //   label: 'Branche',
                     //   value: _eleveDetail!['branche']?.toString() ?? 'N/A',
                     // ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     _buildProfileDetailItem(
                       icon: Icons.auto_stories,
                       label: 'Série',
                       value: _eleveDetail!['serie']?.toString() ?? 'N/A',
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     Row(
                       children: [
                         _buildProfileDetailItem(
                           icon: Icons.refresh,
                           label: 'Redoublant',
-                          value: _eleveDetail!['redoublant']?.toString() ?? 'N/A',
+                          value:
+                              _eleveDetail!['redoublant']?.toString() ?? 'N/A',
                           valueColor:
                               _eleveDetail!['redoublant']
-                                          ?.toString()
-                                          .toLowerCase() ==
-                                      'oui'
-                                  ? Colors.orange
-                                  : Colors.green,
+                                      ?.toString()
+                                      .toLowerCase() ==
+                                  'oui'
+                              ? Colors.orange
+                              : Colors.green,
                         ),
-                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getProfileDetailsSpacing(
+                            context,
+                          ),
+                        ),
                         _buildProfileDetailItem(
                           icon: Icons.family_restroom,
                           label: 'Famille',
@@ -1994,7 +2069,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                           label: 'Niveau',
                           value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
                         ),
-                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getProfileDetailsSpacing(
+                            context,
+                          ),
+                        ),
                         _buildProfileDetailItem(
                           icon: Icons.category,
                           label: 'Filière',
@@ -2002,7 +2081,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       ],
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     Row(
                       children: [
                         _buildProfileDetailItem(
@@ -2010,7 +2091,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                           label: 'Branche',
                           value: _eleveDetail!['branche']?.toString() ?? 'N/A',
                         ),
-                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getProfileDetailsSpacing(
+                            context,
+                          ),
+                        ),
                         _buildProfileDetailItem(
                           icon: Icons.auto_stories,
                           label: 'Série',
@@ -2018,22 +2103,29 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       ],
                     ),
-                    SizedBox(height: AppDimensions.getProfileDetailsSpacing(context)),
+                    SizedBox(
+                      height: AppDimensions.getProfileDetailsSpacing(context),
+                    ),
                     Row(
                       children: [
                         _buildProfileDetailItem(
                           icon: Icons.refresh,
                           label: 'Redoublant',
-                          value: _eleveDetail!['redoublant']?.toString() ?? 'N/A',
+                          value:
+                              _eleveDetail!['redoublant']?.toString() ?? 'N/A',
                           valueColor:
                               _eleveDetail!['redoublant']
-                                          ?.toString()
-                                          .toLowerCase() ==
-                                      'oui'
-                                  ? Colors.orange
-                                  : Colors.green,
+                                      ?.toString()
+                                      .toLowerCase() ==
+                                  'oui'
+                              ? Colors.orange
+                              : Colors.green,
                         ),
-                        SizedBox(width: AppDimensions.getProfileDetailsSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getProfileDetailsSpacing(
+                            context,
+                          ),
+                        ),
                         _buildProfileDetailItem(
                           icon: Icons.family_restroom,
                           label: 'Famille',
@@ -2072,12 +2164,16 @@ class _ChildListScreenState extends State<ChildListScreen>
         onTap: () => _showFamilyBottomSheet(),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(context),
+            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(
+              context,
+            ),
             vertical: AppDimensions.getDetailsButtonPaddingVertical(context),
           ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(AppDimensions.getDetailsButtonBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getDetailsButtonBorderRadius(context),
+            ),
             border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: Row(
@@ -2097,7 +2193,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
+              SizedBox(
+                width: AppDimensions.getDetailsButtonSpacing(context) * 0.66,
+              ),
               Icon(
                 Icons.arrow_forward_ios,
                 size: AppDimensions.getActionButtonSize(context) * 0.35,
@@ -2121,12 +2219,16 @@ class _ChildListScreenState extends State<ChildListScreen>
         },
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(context),
+            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(
+              context,
+            ),
             vertical: AppDimensions.getDetailsButtonPaddingVertical(context),
           ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(AppDimensions.getDetailsButtonBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getDetailsButtonBorderRadius(context),
+            ),
             border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: Row(
@@ -2137,7 +2239,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 size: AppDimensions.getActionButtonSize(context) * 0.45,
                 color: Colors.white.withOpacity(0.9),
               ),
-              SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
+              SizedBox(
+                width: AppDimensions.getDetailsButtonSpacing(context) * 0.66,
+              ),
               Text(
                 _showEleveDetails ? 'Moins d\'infos' : 'Plus d\'infos',
                 style: TextStyle(
@@ -2146,7 +2250,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
+              SizedBox(
+                width: AppDimensions.getDetailsButtonSpacing(context) * 0.66,
+              ),
               Icon(
                 _showEleveDetails
                     ? Icons.keyboard_arrow_up
@@ -2183,18 +2289,22 @@ class _ChildListScreenState extends State<ChildListScreen>
           color: isClickable
               ? Colors.white.withOpacity(0.25)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppDimensions.getProfileDetailsBorderRadius(context) * 0.5),
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getProfileDetailsBorderRadius(context) * 0.5,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              icon, 
-              size: AppDimensions.getActionButtonSize(context) * 0.35, 
-              color: Colors.white.withOpacity(0.8)
+              icon,
+              size: AppDimensions.getActionButtonSize(context) * 0.35,
+              color: Colors.white.withOpacity(0.8),
             ),
-            SizedBox(width: AppDimensions.getProfileDetailsSpacing(context) * 0.5),
+            SizedBox(
+              width: AppDimensions.getProfileDetailsSpacing(context) * 0.5,
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2203,18 +2313,25 @@ class _ChildListScreenState extends State<ChildListScreen>
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: AppDimensions.getDetailsButtonFontSize(context) * 0.85,
+                      fontSize:
+                          AppDimensions.getDetailsButtonFontSize(context) *
+                          0.85,
                       color: Colors.white.withOpacity(0.7),
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: AppDimensions.getProfileDetailsSpacing(context) * 0.25),
+                  SizedBox(
+                    height:
+                        AppDimensions.getProfileDetailsSpacing(context) * 0.25,
+                  ),
                   Text(
                     value,
                     style: TextStyle(
-                      fontSize: AppDimensions.getDetailsButtonFontSize(context) * 0.85,
+                      fontSize:
+                          AppDimensions.getDetailsButtonFontSize(context) *
+                          0.85,
                       color: defaultColor,
                       fontWeight: FontWeight.w600,
                       decoration: isClickable ? TextDecoration.underline : null,
@@ -2228,7 +2345,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
             if (isClickable)
               Padding(
-                padding: EdgeInsets.only(left: AppDimensions.getProfileDetailsSpacing(context) * 0.25),
+                padding: EdgeInsets.only(
+                  left: AppDimensions.getProfileDetailsSpacing(context) * 0.25,
+                ),
                 child: Icon(
                   Icons.call,
                   size: AppDimensions.getActionButtonSize(context) * 0.3,
@@ -2250,7 +2369,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.getProfileDetailsBorderRadius(context) * 0.5),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getProfileDetailsBorderRadius(context) * 0.5,
+        ),
       ),
       child: Text(
         title,
@@ -2330,6 +2451,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                           fontWeight: FontWeight.w700,
                           color: isDarkMode ? Colors.white : Colors.black87,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
                       ),
                     ),
                     GestureDetector(
@@ -2634,19 +2757,22 @@ class _ChildListScreenState extends State<ChildListScreen>
               print('🆔 UID de l\'élève: ${_eleveDetail?['uid']}');
               print('🏷️ Code école actuel: ${widget.child.ecoleCode}');
               print('🏷️ Code école récupéré: $_ecoleCode');
-              
+
               // Mettre à jour l'objet Child avec le ecoleCode si disponible
               final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
                   ? widget.child.copyWith(ecoleCode: _ecoleCode)
                   : widget.child;
-              
-              print('🏷️ Code école final dans l\'objet: ${updatedChild.ecoleCode}');
-              
+
+              print(
+                '🏷️ Code école final dans l\'objet: ${updatedChild.ecoleCode}',
+              );
+
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => inscription.InscriptionWizardScreen(
                     child: updatedChild,
                     uid: _eleveDetail?['uid'],
+                    eleveDetail: _eleveDetail,
                   ),
                 ),
               );
@@ -2970,7 +3096,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const MessagesScreen(),
+                    builder: (context) => MessagesScreen(
+                      studentArgs: StudentMessageArgs(
+                        studentName: widget.child.fullName,
+                        studentMatricule:
+                            _matricule ?? widget.child.matricule ?? '',
+                        ecoleName:
+                            _studentClassInfo?.ecole.libelle ??
+                            widget.child.establishment,
+                        ecoleCode: _ecoleCode ?? widget.child.ecoleCode ?? '',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -3206,6 +3342,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                         color: AppColors.screenTextPrimary,
                                         letterSpacing: -0.4,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
                                     ),
                                     Text(
                                       'Entrez le montant à payer pour ${widget.child.firstName}',
@@ -3213,6 +3351,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                         fontSize: 13,
                                         color: AppColors.screenTextSecondary,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
                                     ),
                                   ],
                                 ),
@@ -3788,7 +3928,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 _buildModernSummaryCard(
                   'Présence',
                   _eleveDetail != null && _eleveDetail!['pt_in_jour'] != null
-                      ? _eleveDetail!['pt_in_jour'] == 1 ? 'Présent' : 'Absent'
+                      ? _eleveDetail!['pt_in_jour'] == 1
+                            ? 'Présent'
+                            : 'Absent'
                       : '--',
                   _eleveDetail != null && _eleveDetail!['pt_in_jour'] == 1
                       ? AppColors.success
@@ -3811,7 +3953,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   _eleveDetail != null && _eleveDetail!['msolde'] != null
                       ? '${(_eleveDetail!['msolde'] as int).toString()}F'
                       : '--',
-                  _eleveDetail != null && _eleveDetail!['msolde'] != null && (_eleveDetail!['msolde'] as int) > 0
+                  _eleveDetail != null &&
+                          _eleveDetail!['msolde'] != null &&
+                          (_eleveDetail!['msolde'] as int) > 0
                       ? Colors.orange
                       : AppColors.success,
                   Icons.account_balance_wallet,
@@ -6152,15 +6296,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildInfoCard(
-            '🎓 Demandes d\'intégration',
-            'Consultez le statut de vos demandes d\'intégration scolaire.',
-            Colors.blue,
-          ),
-          const SizedBox(height: 20),
-          _buildIntegrationRequestsContent(),
-        ],
+        children: [_buildIntegrationRequestsContent()],
       ),
     );
   }
@@ -6182,36 +6318,36 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE3F2FD),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.school_rounded,
-                        color: Color(0xFF1565C0),
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Consultation demande',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(17),
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Padding(
+              //   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              //   child: Row(
+              //     children: [
+              //       Container(
+              //         width: 36,
+              //         height: 36,
+              //         decoration: BoxDecoration(
+              //           color: const Color(0xFFE3F2FD),
+              //           borderRadius: BorderRadius.circular(10),
+              //         ),
+              //         child: const Icon(
+              //           Icons.school_rounded,
+              //           color: Color(0xFF1565C0),
+              //           size: 18,
+              //         ),
+              //       ),
+              //       const SizedBox(width: 12),
+              //       Text(
+              //         'Consultation demande',
+              //         style: TextStyle(
+              //           fontSize: _textSizeService.getScaledFontSize(17),
+              //           fontWeight: FontWeight.w700,
+              //           color: AppColors.screenTextPrimary,
+              //           letterSpacing: -0.3,
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
               Center(
                 child: Container(
                   width: 36,
@@ -7601,7 +7737,14 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       print('📡 Appel du service StudentMessageService...');
+
+      final currentUser = AuthService.instance.getCurrentUser();
+      if (currentUser == null) {
+        throw Exception('Aucun utilisateur connecté');
+      }
+
       final messages = await _messageService.getMessagesForStudent(
+        currentUser.phone,
         studentMatricule,
       );
       print('✅ Réponse reçue: ${messages.length} messages');
@@ -8878,8 +9021,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 children: [
                   CustomLoader(
                     message: 'Chargement des commandes...',
-                    backgroundColor: _themeService.isDarkMode 
-                        ? Colors.grey[800] 
+                    backgroundColor: _themeService.isDarkMode
+                        ? Colors.grey[800]
                         : Colors.white,
                     loaderColor: Colors.blue,
                     size: 40.0,
@@ -8898,8 +9041,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Icon(
                   Icons.error_outline,
                   size: 64,
-                  color: _themeService.isDarkMode 
-                      ? Colors.red[400] 
+                  color: _themeService.isDarkMode
+                      ? Colors.red[400]
                       : Colors.red[600],
                 ),
                 const SizedBox(height: 16),
@@ -8907,8 +9050,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   'Erreur de chargement',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(16),
-                    color: _themeService.isDarkMode 
-                        ? Colors.red[400] 
+                    color: _themeService.isDarkMode
+                        ? Colors.red[400]
                         : Colors.red[600],
                     fontWeight: FontWeight.w500,
                   ),
@@ -8918,8 +9061,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   'Veuillez réessayer plus tard',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(14),
-                    color: _themeService.isDarkMode 
-                        ? Colors.grey[400] 
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[400]
                         : Colors.grey[500],
                   ),
                 ),
@@ -8938,8 +9081,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Icon(
                   Icons.shopping_cart_outlined,
                   size: 64,
-                  color: _themeService.isDarkMode 
-                      ? Colors.grey[600] 
+                  color: _themeService.isDarkMode
+                      ? Colors.grey[600]
                       : Colors.grey[400],
                 ),
                 const SizedBox(height: 16),
@@ -8947,8 +9090,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   'Aucune commande trouvée',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(16),
-                    color: _themeService.isDarkMode 
-                        ? Colors.grey[400] 
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[400]
                         : Colors.grey[600],
                     fontWeight: FontWeight.w500,
                   ),
@@ -8958,8 +9101,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   'Vos commandes apparaîtront ici',
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(14),
-                    color: _themeService.isDarkMode 
-                        ? Colors.grey[500] 
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[500]
                         : Colors.grey[500],
                   ),
                 ),
@@ -8997,14 +9140,18 @@ class _ChildListScreenState extends State<ChildListScreen>
   Future<List<Order>> _loadOrdersFuture() async {
     final authService = AuthService();
     final currentUser = authService.getCurrentUser();
-    
+
     if (currentUser?.phone == null) {
-      print('⚠️ Impossible de charger les commandes: téléphone utilisateur manquant');
+      print(
+        '⚠️ Impossible de charger les commandes: téléphone utilisateur manquant',
+      );
       return [];
     }
 
     try {
-      print('📦 Chargement des commandes pour le téléphone: ${currentUser!.phone}');
+      print(
+        '📦 Chargement des commandes pour le téléphone: ${currentUser!.phone}',
+      );
       final orders = await OrderService().getUserOrders(currentUser!.phone);
 
       // Mettre à jour la variable locale pour d'autres utilisations
@@ -9018,7 +9165,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       return orders;
     } catch (e) {
       print('❌ Erreur lors du chargement des commandes: $e');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -9026,7 +9173,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         );
       }
-      
+
       return [];
     }
   }
@@ -9049,8 +9196,8 @@ class _ChildListScreenState extends State<ChildListScreen>
             Icon(
               Icons.shopping_cart_outlined,
               size: 64,
-              color: _themeService.isDarkMode 
-                  ? Colors.grey[600] 
+              color: _themeService.isDarkMode
+                  ? Colors.grey[600]
                   : Colors.grey[400],
             ),
             const SizedBox(height: 16),
@@ -9058,8 +9205,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               'Aucune commande trouvée',
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(16),
-                color: _themeService.isDarkMode 
-                    ? Colors.grey[400] 
+                color: _themeService.isDarkMode
+                    ? Colors.grey[400]
                     : Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
@@ -9069,8 +9216,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               'Vos commandes apparaîtront ici',
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(14),
-                color: _themeService.isDarkMode 
-                    ? Colors.grey[500] 
+                color: _themeService.isDarkMode
+                    ? Colors.grey[500]
                     : Colors.grey[500],
               ),
             ),
@@ -9091,11 +9238,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildOrderCardFromOrder(Order order) {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     // Déterminer l'icône et la couleur selon le statut
     IconData statusIcon;
     Color statusColor;
-    
+
     switch (order.status) {
       case OrderStatus.pending:
         statusIcon = Icons.pending_outlined;
@@ -9132,10 +9279,21 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     // Formatter la date sans utiliser DateFormat pour éviter l'erreur de localisation
     final months = [
-      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
     ];
-    final formattedDate = '${order.createdAt.day} ${months[order.createdAt.month - 1]} ${order.createdAt.year}';
+    final formattedDate =
+        '${order.createdAt.day} ${months[order.createdAt.month - 1]} ${order.createdAt.year}';
 
     // Formatter le montant en FCFA
     final formattedAmount = '${order.totalAmount.toStringAsFixed(2)} FCFA';
@@ -9185,7 +9343,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      order.items.isNotEmpty 
+                      order.items.isNotEmpty
                           ? '${order.items.length} article(s)'
                           : 'Aucun article',
                       style: TextStyle(
@@ -9198,10 +9356,10 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ],
           ),
-          
+
           // Séparateur
           const SizedBox(height: 12),
-          
+
           // Détails des produits
           if (order.items.isNotEmpty) ...[
             Container(
@@ -9223,53 +9381,63 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...order.items.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  ...order.items
+                      .map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
                             children: [
-                              Text(
-                                item.product.title ?? 'Produit sans nom',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(13),
-                                  fontWeight: FontWeight.w500,
-                                  color: isDarkMode ? Colors.white : Colors.black87,
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  borderRadius: BorderRadius.circular(2),
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Quantité: ${item.quantity} • ${item.product.price.toStringAsFixed(2)} FCFA',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(11),
-                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.product.title ?? 'Produit sans nom',
+                                      style: TextStyle(
+                                        fontSize: _textSizeService
+                                            .getScaledFontSize(13),
+                                        fontWeight: FontWeight.w500,
+                                        color: isDarkMode
+                                            ? Colors.white
+                                            : Colors.black87,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Quantité: ${item.quantity} • ${item.product.price.toStringAsFixed(2)} FCFA',
+                                      style: TextStyle(
+                                        fontSize: _textSizeService
+                                            .getScaledFontSize(11),
+                                        color: isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  )).toList(),
+                      )
+                      .toList(),
                 ],
               ),
             ),
             const SizedBox(height: 12),
           ],
-          
+
           // Footer avec statut, date et montant
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -9278,7 +9446,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),

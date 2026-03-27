@@ -598,6 +598,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                   ),
                   const Spacer(),
                   GestureDetector(

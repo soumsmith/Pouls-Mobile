@@ -49,8 +49,16 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    final phone = _completePhoneNumber.isNotEmpty ? _completePhoneNumber : _phoneController.text.trim();
-    final result = await AuthService.instance.loginDirectly(phone);
+    // Extraire le numéro sans l'indicatif
+    String phoneNumber;
+    if (_completePhoneNumber.isNotEmpty) {
+      // Retirer l'indicatif du pays (ex: +225) pour ne garder que le numéro
+      phoneNumber = _phoneController.text.trim();
+    } else {
+      phoneNumber = _phoneController.text.trim();
+    }
+
+    final result = await AuthService.instance.loginDirectly(phoneNumber);
 
     setState(() {
       _isLoading = false;

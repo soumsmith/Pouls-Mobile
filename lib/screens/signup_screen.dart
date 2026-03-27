@@ -57,14 +57,19 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
-      final phone = _completePhoneNumber.isNotEmpty
-          ? _completePhoneNumber
-          : _phoneController.text.trim();
+      // Extraire le numéro sans l'indicatif
+      String phoneNumber;
+      if (_completePhoneNumber.isNotEmpty) {
+        // Retirer l'indicatif du pays (ex: +225) pour ne garder que le numéro
+        phoneNumber = _phoneController.text.trim();
+      } else {
+        phoneNumber = _phoneController.text.trim();
+      }
 
       final userData = {
         'name': _nameController.text.trim(),
         'prenoms': _prenomsController.text.trim(),
-        'phone': phone,
+        'phone': phoneNumber,
         'password': _passwordController.text,
         'invitation_code': _invitationCodeController.text.trim(),
         'security_question': _selectedSecurityQuestion,

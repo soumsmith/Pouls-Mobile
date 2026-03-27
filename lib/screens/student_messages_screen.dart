@@ -3,7 +3,9 @@ import '../models/child.dart';
 import '../models/student_message.dart';
 import '../services/student_message_service.dart';
 import '../services/text_size_service.dart';
+import '../services/auth_service.dart';
 import '../config/app_colors.dart';
+import '../services/text_size_service.dart' as text_service;
 
 /// Écran de messagerie spécifique à un élève
 class StudentMessagesScreen extends StatefulWidget {
@@ -72,8 +74,21 @@ class _StudentMessagesScreenState extends State<StudentMessagesScreen>
 
     try {
       final studentMatricule = widget.child.matricule ?? widget.child.id;
+      final currentUser = AuthService.instance.getCurrentUser();
+      
+      if (currentUser == null) {
+        throw Exception('Aucun utilisateur connecté');
+      }
+      
       print('🔄 Chargement des messages pour l\'élève: ${widget.child.firstName} (matricule: $studentMatricule)');
-      final messages = await _messageService.getMessagesForStudent(studentMatricule);
+      print('📋 Matricule: $studentMatricule');
+      print('✅ Matricule valide, début du chargement...');
+      print('📡 Appel du service StudentMessageService...');
+      
+      final messages = await _messageService.getMessagesForStudent(
+        currentUser.phone,
+        studentMatricule,
+      );
       
       setState(() {
         _messages = messages;

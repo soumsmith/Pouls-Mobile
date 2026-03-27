@@ -175,6 +175,8 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
                 color: _kTextPrimary,
                 letterSpacing: -0.5,
               ),
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
           ),
 

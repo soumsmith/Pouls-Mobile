@@ -60,7 +60,7 @@ class CustomSliverAppBar extends StatelessWidget {
               letterSpacing: -0.5,
             ),
       ),
-      actions: actions ?? _buildDefaultActions(),
+      actions: actions,
     );
   }
 

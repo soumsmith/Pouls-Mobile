@@ -11,12 +11,12 @@ class StudentMessageService {
   StudentMessageService._internal();
 
   /// Récupère les messages pour un élève spécifique
-  Future<List<StudentMessage>> getMessagesForStudent(String matricule) async {
+  Future<List<StudentMessage>> getMessagesForStudent(String phoneNumber, String matricule, {int perPage = 20, int page = 1}) async {
     print('🔄 Début du chargement des messages pour l\'élève: $matricule');
 
-    // Correction du endpoint - utilise le endpoint correct pour les messages d\'élève
+    // Utilise le bon endpoint spécifié par l'utilisateur
     final url = Uri.parse(
-      '${AppConfig.VIE_ECOLES_API_BASE_URL}/messages/eleve/$matricule',
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/$phoneNumber/eleve/$matricule?per_page=$perPage&page=$page',
     );
 
     try {
@@ -27,18 +27,26 @@ class StudentMessageService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        print('✅ Données reçues: ${data['data']['total']} messages trouvés');
-
-        if (data['status'] == true && data['data'] != null) {
-          final List<dynamic> messagesData = data['data']['data'] as List;
+        print('📄 Response body: ${response.body}');
+        
+        // Vérifier différents formats de réponse possibles
+        if (data['status'] == 'success' && data['data'] != null) {
+          final List<dynamic> messagesData = data['data'] as List;
           final messages = messagesData
               .map((json) => StudentMessage.fromJson(json))
               .toList();
 
           print('📚 ${messages.length} messages parsés avec succès');
           return messages;
+        } else if (data['status'] == false && data['error'] != null) {
+          print('❌ Erreur API: ${data['error']}');
+          return [];
         } else {
           print('❌ Status false ou data null dans la réponse');
+          print('📄 Response structure: ${data.keys.toList()}');
+          if (data.containsKey('message')) {
+            print('📄 Message: ${data['message']}');
+          }
           return [];
         }
       } else {
@@ -56,14 +64,15 @@ class StudentMessageService {
 
   /// Récupère les messages avec pagination
   Future<List<StudentMessage>> getMessagesPage(
-    String matricule, {
+    String phoneNumber, String matricule, {
     int page = 1,
+    int perPage = 20,
   }) async {
     print('🔄 Chargement des messages - Page $page pour l\'élève: $matricule');
 
-    // Correction du endpoint
+    // Utilise le bon endpoint
     final url = Uri.parse(
-      '${AppConfig.VIE_ECOLES_API_BASE_URL}/messages/eleve/$matricule?page=$page',
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/$phoneNumber/eleve/$matricule?per_page=$perPage&page=$page',
     );
 
     try {
@@ -71,12 +80,22 @@ class StudentMessageService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        if (data['status'] == true && data['data'] != null) {
-          final List<dynamic> messagesData = data['data']['data'] as List;
+        print('📄 Response body: ${response.body}');
+        
+        if (data['status'] == 'success' && data['data'] != null) {
+          final List<dynamic> messagesData = data['data'] as List;
           return messagesData
               .map((json) => StudentMessage.fromJson(json))
               .toList();
+        } else if (data['status'] == false && data['error'] != null) {
+          print('❌ Erreur API: ${data['error']}');
+          return [];
         } else {
+          print('❌ Status false ou data null dans la réponse');
+          print('📄 Response structure: ${data.keys.toList()}');
+          if (data.containsKey('message')) {
+            print('📄 Message: ${data['message']}');
+          }
           return [];
         }
       } else {

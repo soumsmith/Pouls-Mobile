@@ -35,6 +35,7 @@ class CustomLoader extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 16),
                   child: Text(
                     message,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF999999),

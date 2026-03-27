@@ -1048,6 +1048,8 @@ class _EventDetailSheetState extends State<_EventDetailSheet> {
                           height: 1.2,
                           letterSpacing: -0.3,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
                       ),
                     ),
                     const SizedBox(width: 10),

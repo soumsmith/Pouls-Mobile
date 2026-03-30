@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_sheet.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bottom_sheet.dart';
+import 'package:parents_responsable/widgets/image_menu_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/child.dart';
 import '../services/database_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/text_size_service.dart';
+import '../services/theme_service.dart';
 import '../services/integration_request_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/search_bar_widget.dart';
 import '../config/app_colors.dart';
 import 'add_child_screen.dart';
 
@@ -25,11 +30,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Child> _children = [];
+  List<Child> _filteredChildren = [];
   bool _isLoading = true;
   String? _error;
   final TextSizeService _textSizeService = TextSizeService();
+  final ThemeService _themeService = ThemeService();
   final TextEditingController _matriculeController = TextEditingController();
-  
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+
   // Variables pour les notifications
   int _unreadNotificationsCount = 0;
   bool _notificationsLoading = false;
@@ -37,7 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _textSizeService.addListener(() { if (mounted) setState(() {}); });
+    _textSizeService.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadChildren();
     _loadUnreadNotificationsCount();
   }
@@ -46,13 +57,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _textSizeService.removeListener(() {});
     _matriculeController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   // Charge le nombre de notifications non lues
   Future<void> _loadUnreadNotificationsCount() async {
     if (!mounted) return;
-    
+
     setState(() {
       _notificationsLoading = true;
     });
@@ -60,11 +72,13 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final authService = AuthService.instance;
       final currentUser = authService.getCurrentUser();
-      
+
       if (currentUser != null) {
         final databaseService = DatabaseService.instance;
-        final unreadCount = await databaseService.getUnreadNotificationsCount(currentUser.id);
-        
+        final unreadCount = await databaseService.getUnreadNotificationsCount(
+          currentUser.id,
+        );
+
         if (mounted) {
           setState(() {
             _unreadNotificationsCount = unreadCount;
@@ -90,8 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       MainScreenWrapper.of(context).refreshCurrentUser();
-      final parentId =
-          MainScreenWrapper.of(context).currentUserId ?? 'parent1';
+      final parentId = MainScreenWrapper.of(context).currentUserId ?? 'parent1';
       final apiService = MainScreenWrapper.of(context).apiService;
       final children = await apiService.getChildrenForParent(parentId);
 
@@ -99,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() {
         _children = List.from(children);
+        _filteredChildren = List.from(children);
         _isLoading = false;
       });
 
@@ -120,27 +134,32 @@ class _HomeScreenState extends State<HomeScreen> {
       if ((child.photoUrl == null || child.photoUrl!.isEmpty) &&
           child.id.isNotEmpty) {
         try {
-          final childInfo =
-              await DatabaseService.instance.getChildInfoById(child.id);
+          final childInfo = await DatabaseService.instance.getChildInfoById(
+            child.id,
+          );
           if (childInfo != null) {
             final ecoleId = childInfo['ecoleId'] as int?;
             final matricule = childInfo['matricule'] as String?;
             if (ecoleId != null && matricule != null) {
-              final anneeScolaire =
-                  await poulsApiService.getAnneeScolaireOuverte(ecoleId);
+              final anneeScolaire = await poulsApiService
+                  .getAnneeScolaireOuverte(ecoleId);
               final anneeId = anneeScolaire.anneeOuverteCentraleId;
               final eleve = await poulsApiService.findEleveByMatricule(
-                  ecoleId, anneeId, matricule);
+                ecoleId,
+                anneeId,
+                matricule,
+              );
               if (eleve != null &&
                   eleve.urlPhoto != null &&
                   eleve.urlPhoto!.isNotEmpty) {
-                await DatabaseService.instance
-                    .updateChildPhoto(child.id, eleve.urlPhoto);
+                await DatabaseService.instance.updateChildPhoto(
+                  child.id,
+                  eleve.urlPhoto,
+                );
                 if (!mounted) return;
                 // Mise à jour optimiste : seule la carte concernée se rafraîchit
                 setState(() {
-                  final index =
-                      _children.indexWhere((c) => c.id == child.id);
+                  final index = _children.indexWhere((c) => c.id == child.id);
                   if (index >= 0) {
                     _children[index] = Child(
                       id: child.id,
@@ -151,6 +170,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       photoUrl: eleve.urlPhoto,
                       parentId: child.parentId,
                     );
+                    // Update filtered children if needed
+                    final filteredIndex = _filteredChildren.indexWhere(
+                      (c) => c.id == child.id,
+                    );
+                    if (filteredIndex >= 0) {
+                      _filteredChildren[filteredIndex] = _children[index];
+                    }
                   }
                 });
               }
@@ -169,20 +195,36 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       position: RelativeRect.fromRect(
         Rect.fromLTWH(
-            MediaQuery.of(context).size.width - 16, kToolbarHeight + 50, 0, 0),
+          MediaQuery.of(context).size.width - 16,
+          kToolbarHeight + 50,
+          0,
+          0,
+        ),
         Offset.zero & overlay.size,
       ),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,
       color: AppColors.screenCard,
       items: [
         _shareMenuItem(Icons.email, Colors.red, 'Partager par mail', 'mail'),
         _shareMenuItem(
-            Icons.message, Colors.green, 'Partager par WhatsApp', 'whatsapp'),
+          Icons.message,
+          Colors.green,
+          'Partager par WhatsApp',
+          'whatsapp',
+        ),
         _shareMenuItem(
-            Icons.facebook, Colors.blue, 'Partager sur Facebook', 'facebook'),
-        _shareMenuItem(Icons.share, AppColors.screenTextSecondary, 'Autres options', 'other'),
+          Icons.facebook,
+          Colors.blue,
+          'Partager sur Facebook',
+          'facebook',
+        ),
+        _shareMenuItem(
+          Icons.share,
+          AppColors.screenTextSecondary,
+          'Autres options',
+          'other',
+        ),
       ],
     ).then((value) {
       if (value != null) _handleShareAction(value);
@@ -190,18 +232,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   PopupMenuItem<String> _shareMenuItem(
-      IconData icon, Color color, String label, String value) {
+    IconData icon,
+    Color color,
+    String label,
+    String value,
+  ) {
     return PopupMenuItem(
       value: value,
-      child: Row(children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 12),
-        Text(label,
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Text(
+            label,
             style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.screenTextPrimary,
-                fontWeight: FontWeight.w500)),
-      ]),
+              fontSize: 14,
+              color: AppColors.screenTextPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -213,31 +264,36 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (action) {
       case 'mail':
         final uri = Uri(
-            scheme: 'mailto',
-            query:
-                'subject=${Uri.encodeComponent('Découvrez Pouls École')}&body=${Uri.encodeComponent('$shareText\n\nTéléchargez l\'application ici : $appUrl')}');
+          scheme: 'mailto',
+          query:
+              'subject=${Uri.encodeComponent('Découvrez Pouls École')}&body=${Uri.encodeComponent('$shareText\n\nTéléchargez l\'application ici : $appUrl')}',
+        );
         if (await canLaunchUrl(uri)) await launchUrl(uri);
         break;
       case 'whatsapp':
         final uri = Uri(
-            scheme: 'https',
-            host: 'wa.me',
-            queryParameters: {
-              'text': '$shareText\n\nTéléchargez l\'application ici : $appUrl'
-            });
+          scheme: 'https',
+          host: 'wa.me',
+          queryParameters: {
+            'text': '$shareText\n\nTéléchargez l\'application ici : $appUrl',
+          },
+        );
         if (await canLaunchUrl(uri)) await launchUrl(uri);
         break;
       case 'facebook':
         final uri = Uri(
-            scheme: 'https',
-            host: 'www.facebook.com',
-            path: 'sharer/sharer.php',
-            queryParameters: {'u': appUrl, 'quote': shareText});
+          scheme: 'https',
+          host: 'www.facebook.com',
+          path: 'sharer/sharer.php',
+          queryParameters: {'u': appUrl, 'quote': shareText},
+        );
         if (await canLaunchUrl(uri)) await launchUrl(uri);
         break;
       case 'other':
-        await Share.share('$shareText\n\nTéléchargez l\'application ici : $appUrl',
-            subject: 'Découvrez Pouls École');
+        await Share.share(
+          '$shareText\n\nTéléchargez l\'application ici : $appUrl',
+          subject: 'Découvrez Pouls École',
+        );
         break;
     }
   }
@@ -246,8 +302,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark
-          .copyWith(statusBarColor: Colors.transparent),
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
       child: Scaffold(
         backgroundColor: AppColors.screenSurface,
         body: Column(
@@ -278,8 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'Parent responsable',
                       style: TextStyle(
-                        fontSize:
-                            _textSizeService.getScaledFontSize(22),
+                        fontSize: _textSizeService.getScaledFontSize(22),
                         fontWeight: FontWeight.w800,
                         color: AppColors.screenTextPrimary,
                         letterSpacing: -0.6,
@@ -288,8 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'Suivi scolaire en temps réel',
                       style: TextStyle(
-                        fontSize:
-                            _textSizeService.getScaledFontSize(12),
+                        fontSize: _textSizeService.getScaledFontSize(12),
                         color: AppColors.screenTextSecondary,
                         fontWeight: FontWeight.w400,
                       ),
@@ -300,10 +355,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Consultation demandes button
               _appBarIconButton(
-                icon: Icons.search_rounded,
-                onTap: _showIntegrationRequestBottomSheet,
-                backgroundColor: AppColors.screenOrange,
-                iconColor: Colors.white,
+                icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                onTap: _toggleSearch,
+                backgroundColor: _isSearching
+                    ? Colors.grey[300]
+                    : AppColors.screenOrange,
+                iconColor: _isSearching ? Colors.grey[700] : Colors.white,
               ),
               const SizedBox(width: 8),
               // Share button
@@ -315,7 +372,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // Notifications button
               _appBarIconButton(
                 icon: Icons.notifications_outlined,
-                onTap: () {/* TODO: Notifications */},
+                onTap: () {
+                  /* TODO: Notifications */
+                },
                 showBadge: true,
                 badgeCount: _unreadNotificationsCount,
               ),
@@ -327,23 +386,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _appBarIconButton(
-      {required IconData icon, 
-      required VoidCallback onTap,
-      Color? backgroundColor,
-      Color? iconColor,
-      bool showBadge = false,
-      int badgeCount = 0}) {
+  Widget _appBarIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color? backgroundColor,
+    Color? iconColor,
+    bool showBadge = false,
+    int badgeCount = 0,
+  }) {
     return Stack(
       children: [
         GestureDetector(
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.all(8),
-            decoration: backgroundColor != null ? BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(8),
-            ) : null,
+            decoration: backgroundColor != null
+                ? BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.circular(8),
+                  )
+                : null,
             child: Icon(
               icon,
               size: 22,
@@ -361,10 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(10),
               ),
-              constraints: const BoxConstraints(
-                minWidth: 16,
-                minHeight: 16,
-              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 badgeCount > 99 ? '99+' : badgeCount.toString(),
                 style: const TextStyle(
@@ -385,6 +444,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Search bar
+        SearchBarWidget(
+          isSearching: _isSearching,
+          searchController: _searchController,
+          onChanged: _onSearchChanged,
+          onClear: _onSearchCleared,
+          hintText: 'Rechercher par nom ou école...',
+        ),
         // ── Section fixe : hero + stats ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -422,9 +489,10 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
-                    color: Color(0x10000000),
-                    blurRadius: 20,
-                    offset: Offset(0, -4)),
+                  color: Color(0x10000000),
+                  blurRadius: 20,
+                  offset: Offset(0, -4),
+                ),
               ],
             ),
             child: Column(
@@ -447,9 +515,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _buildSectionHeader(),
                 ),
                 // Scrollable list
-                Expanded(
-                  child: _buildChildrenContent(),
-                ),
+                Expanded(child: _buildChildrenContent()),
               ],
             ),
           ),
@@ -460,37 +526,76 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── STATS GRID ────────────────────────────────────────────────────────────
   Widget _buildStatsGrid() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
+    final isDark = _themeService.isDarkMode;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildStatCard(
             icon: Icons.child_care_rounded,
             color: const Color(0xFF4A90D9),
             value: '${_children.length}',
             label:
                 'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.grade_rounded,
-            color: const Color(0xFF27AE60),
-            value: _getAverageGradeDisplay(),
-            label: 'Niveau moyen',
+          const SizedBox(width: 8),
+          ImageMenuCard(
+            index: 3,
+            cardKey: 'integration_requests',
+            title: 'Demandes d\'intégration',
+            iconData: Icons.school_rounded,
+            isDark: isDark,
+            color: const Color(0xFF1565C0),
+            backgroundColor: isDark
+                ? const Color(0xFF0A2540)
+                : const Color(0xFFE3F2FD),
+            textColor: isDark
+                ? const Color(0xFF64B5F6)
+                : const Color(0xFF0D47A1),
+            actionText: 'Consulter',
+            actionTextColor: const Color(0xFF1565C0),
+            onTap: () => IntegrationRequestBottomSheet.show(
+              context,
+              //matricule: widget.child.matricule,
+              //childFullName: widget.child.fullName,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildStatCard(
+          const SizedBox(width: 8),
+          ImageMenuCard(
+            index: 3,
+            cardKey: 'integration_requests',
+            title: 'Demandes d\'intégration',
+            iconData: Icons.school_rounded,
+            isDark: isDark,
+            color: const Color(0xFF1565C0),
+            backgroundColor: isDark
+                ? const Color(0xFF0A2540)
+                : const Color(0xFFE3F2FD),
+            textColor: isDark
+                ? const Color(0xFF64B5F6)
+                : const Color(0xFF0D47A1),
+            actionText: 'Consulter',
+            actionTextColor: const Color(0xFF1565C0),
+            onTap: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => IntegrationBottomSheet(
+                //ecole: monEcole,
+                //onSuccess: (uid) => _showSuccessDialog(uid),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildStatCard(
             icon: Icons.school_rounded,
             color: AppColors.screenOrange,
             value: '${_getUniqueSchoolsCount()}',
-            label:
-                'École${_getUniqueSchoolsCount() > 1 ? 's' : ''}',
+            label: 'École${_getUniqueSchoolsCount() > 1 ? 's' : ''}',
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -506,7 +611,11 @@ class _HomeScreenState extends State<HomeScreen> {
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
+          BoxShadow(
+            color: AppColors.screenShadow,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -564,14 +673,13 @@ class _HomeScreenState extends State<HomeScreen> {
         const Spacer(),
         GestureDetector(
           onTap: () async {
-            final result = await Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AddChildScreen()),
-            );
+            final result = await Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
             if (result == true) _loadChildren();
           },
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
@@ -596,8 +704,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Ajouter un enfant',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize:
-                        _textSizeService.getScaledFontSize(12),
+                    fontSize: _textSizeService.getScaledFontSize(12),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -648,8 +755,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: const Color(0xFFFFF0F0),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.error_outline,
-                  size: 36, color: Colors.red[400]),
+              child: Icon(
+                Icons.error_outline,
+                size: 36,
+                color: Colors.red[400],
+              ),
             ),
             const SizedBox(height: 20),
             Text(
@@ -671,10 +781,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            _buildOrangeButton(
-              label: 'Réessayer',
-              onTap: _loadChildren,
-            ),
+            _buildOrangeButton(label: 'Réessayer', onTap: _loadChildren),
           ],
         ),
       ),
@@ -694,8 +801,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: AppColors.screenOrangeLight,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.child_care_rounded,
-                  size: 44, color: AppColors.screenOrange),
+              child: const Icon(
+                Icons.child_care_rounded,
+                size: 44,
+                color: AppColors.screenOrange,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
@@ -727,9 +837,9 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
-          itemCount: _children.length,
+          itemCount: _filteredChildren.length,
           itemBuilder: (context, index) =>
-              _buildChildCard(_children[index], index),
+              _buildChildCard(_filteredChildren[index], index),
         ),
         // Gradient fade at bottom
         Positioned(
@@ -758,8 +868,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildChildCard(Child child, int index) {
     return GestureDetector(
-      onTap: () =>
-          MainScreenWrapper.of(context).navigateToChildDetail(child),
+      onTap: () => MainScreenWrapper.of(context).navigateToChildDetail(child),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -767,7 +876,10 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
-                color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
+              color: AppColors.screenShadow,
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
           ],
         ),
         child: Padding(
@@ -787,18 +899,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: child.photoUrl != null &&
-                          child.photoUrl!.isNotEmpty
+                  child: child.photoUrl != null && child.photoUrl!.isNotEmpty
                       ? Image.network(
                           child.photoUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 26),
+                            Icons.person,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                         )
-                      : const Icon(Icons.person,
-                          color: Colors.white, size: 26),
+                      : const Icon(Icons.person, color: Colors.white, size: 26),
                 ),
               ),
               const SizedBox(width: 14),
@@ -811,8 +922,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       child.fullName,
                       style: TextStyle(
-                        fontSize:
-                            _textSizeService.getScaledFontSize(15),
+                        fontSize: _textSizeService.getScaledFontSize(15),
                         fontWeight: FontWeight.w700,
                         color: AppColors.screenTextPrimary,
                         letterSpacing: -0.3,
@@ -824,8 +934,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? child.establishment
                           : 'Établissement non renseigné',
                       style: TextStyle(
-                        fontSize:
-                            _textSizeService.getScaledFontSize(12),
+                        fontSize: _textSizeService.getScaledFontSize(12),
                         color: AppColors.screenTextSecondary,
                         fontWeight: FontWeight.w400,
                       ),
@@ -836,7 +945,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Grade badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.screenOrangeLight,
                         borderRadius: BorderRadius.circular(20),
@@ -846,8 +957,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? child.grade
                             : 'Classe non renseignée',
                         style: TextStyle(
-                          fontSize:
-                              _textSizeService.getScaledFontSize(11),
+                          fontSize: _textSizeService.getScaledFontSize(11),
                           color: AppColors.screenOrange,
                           fontWeight: FontWeight.w600,
                         ),
@@ -865,8 +975,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppColors.screenOrangeLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.arrow_forward_ios_rounded,
-                    color: AppColors.screenOrange, size: 14),
+                child: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppColors.screenOrange,
+                  size: 14,
+                ),
               ),
             ],
           ),
@@ -908,9 +1021,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.white)),
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
                 )
               : Text(
                   label,
@@ -927,8 +1040,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ─── HELPERS ───────────────────────────────────────────────────────────────
-  int _getUniqueClassesCount() =>
-      _children.map((c) => c.grade).toSet().length;
+  int _getUniqueClassesCount() => _children.map((c) => c.grade).toSet().length;
 
   int _getUniqueSchoolsCount() =>
       _children.map((c) => c.establishment).toSet().length;
@@ -1003,10 +1115,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               const Text(
                 'Entrez votre matricule pour vérifier le statut de votre demande d\'intégration',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF8A8A9A),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF8A8A9A)),
                 overflow: TextOverflow.ellipsis,
                 softWrap: false,
               ),
@@ -1141,7 +1250,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Icon(
-                  data['statut'] == 2 ? Icons.check_rounded : Icons.info_rounded,
+                  data['statut'] == 2
+                      ? Icons.check_rounded
+                      : Icons.info_rounded,
                   color: Colors.white,
                   size: 30,
                 ),
@@ -1195,5 +1306,40 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  // ─── SEARCH FUNCTIONALITY ─────────────────────────────────────────────────────
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        _filteredChildren = List.from(_children);
+      }
+    });
+  }
+
+  void _onSearchChanged(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredChildren = List.from(_children);
+      });
+      return;
+    }
+
+    final lowerQuery = query.toLowerCase();
+    setState(() {
+      _filteredChildren = _children.where((child) {
+        final fullName = '${child.firstName} ${child.lastName}'.toLowerCase();
+        final schoolName = child.establishment.toLowerCase();
+        return fullName.contains(lowerQuery) || schoolName.contains(lowerQuery);
+      }).toList();
+    });
+  }
+
+  void _onSearchCleared() {
+    setState(() {
+      _filteredChildren = List.from(_children);
+    });
   }
 }

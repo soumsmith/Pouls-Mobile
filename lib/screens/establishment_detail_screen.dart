@@ -36,6 +36,7 @@ import '../widgets/main_screen_wrapper.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
 import 'all_events_screen.dart';
+import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
 class _DateInputFormatter extends TextInputFormatter {
@@ -773,10 +774,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Widget _buildSectionHeader(String title, bool isDark) {
-    return SectionHeaderWidget(
-      title: title,
-      isDark: isDark,
-    );
+    return SectionHeaderWidget(title: title, isDark: isDark);
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -844,11 +842,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             margin: const EdgeInsets.symmetric(horizontal: 16),
             height: 220,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDimensions.getHeroCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getHeroCardBorderRadius(context),
+              ),
               boxShadow: AppDimensions.getMainShadow(context),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppDimensions.getHeroCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getHeroCardBorderRadius(context),
+              ),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -884,7 +886,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     top: 16,
                     left: 16,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getMediumCardBorderRadius(context),
+                      ),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                         child: Container(
@@ -894,7 +898,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.getMediumCardBorderRadius(context),
+                            ),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.28),
                               width: 1,
@@ -933,7 +939,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     top: 16,
                     right: 16,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getMediumCardBorderRadius(context),
+                      ),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                         child: Container(
@@ -945,7 +953,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             color: const Color(
                               0xFF4ADE80,
                             ).withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.getMediumCardBorderRadius(context),
+                            ),
                             border: Border.all(
                               color: const Color(
                                 0xFF4ADE80,
@@ -988,7 +998,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                 height: 56,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.getMediumCardBorderRadius(
+                                      context,
+                                    ),
+                                  ),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.9),
                                     width: 2,
@@ -1004,7 +1018,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                   ],
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.getMediumCardBorderRadius(
+                                      context,
+                                    ),
+                                  ),
                                   child: logo != null && logo!.isNotEmpty
                                       ? Image.network(
                                           logo!,
@@ -1120,7 +1138,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.getLargeCardBorderRadius(context),
+                ),
                 boxShadow: AppDimensions.getLightShadow(context),
               ),
               child: Column(
@@ -1156,7 +1176,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             color: const Color(0xFFBBF7D0),
                             width: 1,
                           ),
-                          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getSmallCardBorderRadius(context),
+                          ),
                         ),
                         child: const Text(
                           'Appeler',
@@ -1202,7 +1224,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       value:
                           '${_formatDate(debutInscrit!)} → ${_formatDate(finInscrit!)}',
                       isDark: isDark,
-                      isLast: (montantReservation == null || montantReservation! <= 0),
+                      isLast:
+                          (montantReservation == null ||
+                          montantReservation! <= 0),
                       trailingWidget: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -1214,16 +1238,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             color: const Color(0xFFFED7AA),
                             width: 1,
                           ),
-                          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getSmallCardBorderRadius(context),
+                          ),
                         ),
                         child: Text(
                           _isPeriodActive(debutInscrit, finInscrit)
                               ? 'OUVERT'
                               : 'FERMÉ',
                           style: TextStyle(
-                            color: _isPeriodActive(debutInscrit, finInscrit) 
-                                ? const Color(0xFF16A34A) // Vert si période active
-                                : const Color(0xFFEA580C), // Orange si période inactive
+                            color: _isPeriodActive(debutInscrit, finInscrit)
+                                ? const Color(
+                                    0xFF16A34A,
+                                  ) // Vert si période active
+                                : const Color(
+                                    0xFFEA580C,
+                                  ), // Orange si période inactive
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1253,7 +1283,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             color: const Color(0xFFBFDBFE),
                             width: 1,
                           ),
-                          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getSmallCardBorderRadius(context),
+                          ),
                         ),
                         child: Text(
                           '${montantReservation!.toStringAsFixed(0)} XOF',
@@ -1316,7 +1348,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getBadgeBorderRadius(context),
+        ),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.2),
           width: 1,
@@ -1382,7 +1416,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   color: isDark
                       ? iconColor.withValues(alpha: 0.15)
                       : iconBgColor,
-                  borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getIconContainerBorderRadius(context),
+                  ),
                 ),
                 child: Icon(icon, color: iconColor, size: 14),
               ),
@@ -1435,7 +1471,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Period card ──────────────────────────────────────────────────────────
-  
+
   /// Vérifie si une période d'inscription est active
   bool _isPeriodActive(String? debut, String? fin) {
     if (debut == null || fin == null) return false;
@@ -1448,7 +1484,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       return false;
     }
   }
-  
+
   Widget _buildPeriodCard({
     required String title,
     required String value,
@@ -1461,7 +1497,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getMediumCardBorderRadius(context),
+        ),
         boxShadow: AppDimensions.getLightShadow(context, enabled: enableShadow),
       ),
       child: Column(
@@ -1565,11 +1603,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       child: Container(
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getLargeCardBorderRadius(context),
+          ),
           boxShadow: AppDimensions.getMainShadow(context),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getLargeCardBorderRadius(context),
+          ),
           child: SizedBox(
             height: 320, // Augmenté à 320px pour accommoder plus d'informations
             child: Stack(
@@ -1623,13 +1665,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.getMediumCardBorderRadius(context),
+                            ),
                             boxShadow: AppDimensions.getCustomShadow(
-                context: context,
-                alpha: 0.3,
-                blurRadius: 8,
-                offset: 2,
-              ),
+                              context: context,
+                              alpha: 0.3,
+                              blurRadius: 8,
+                              offset: 2,
+                            ),
                           ),
                           child: Text(
                             establishmentType.toUpperCase(),
@@ -1651,7 +1695,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             color: Colors.white.withValues(
                               alpha: isDark ? 0.9 : 0.9,
                             ),
-                            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.getSmallCardBorderRadius(context),
+                            ),
                           ),
                           child: SingleChildScrollView(
                             child: Column(
@@ -1847,7 +1893,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getSmallCardBorderRadius(context),
+            ),
           ),
           child: Icon(icon, size: 16, color: color),
         ),
@@ -1896,7 +1944,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getSmallCardBorderRadius(context),
+        ),
         border: Border.all(
           color: isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade200,
           width: 1,
@@ -1924,7 +1974,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 28,
                 decoration: BoxDecoration(
                   color: AppColors.screenOrangeLight,
-                  borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
                 ),
                 child: Icon(icon, size: 14, color: AppColors.screenOrange),
               ),
@@ -1976,7 +2028,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 80,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getLargeCardBorderRadius(context),
+              ),
               border: Border.all(
                 color: Colors.white.withOpacity(0.3),
                 width: 2,
@@ -2006,7 +2060,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getMediumCardBorderRadius(context),
+        ),
         border: Border.all(
           color: isDark
               ? const Color(0xFF3A3A3A)
@@ -2043,7 +2099,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 32,
                 decoration: BoxDecoration(
                   color: AppColors.screenOrangeLight,
-                  borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getBadgeBorderRadius(context),
+                  ),
                 ),
                 child: Icon(icon, size: 16, color: AppColors.screenOrange),
               ),
@@ -2074,7 +2132,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2A2A2A) : AppColors.screenSurface,
-        borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getBadgeBorderRadius(context),
+        ),
         border: Border.all(
           color: isDark ? const Color(0xFF3A3A3A) : AppColors.screenDivider,
         ),
@@ -2086,7 +2146,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 28,
             decoration: BoxDecoration(
               color: AppColors.screenOrangeLight,
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             child: Icon(icon, size: 14, color: AppColors.screenOrange),
           ),
@@ -2235,13 +2297,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       height: AppDimensions.getHorizontalMenuCardHeight(context),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: AppDimensions.getAdaptivePadding(context) / 1.5),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.getAdaptivePadding(context) / 1.5,
+        ),
         itemCount: menuItems.length,
         itemBuilder: (context, index) {
           final item = menuItems[index];
           final def = _kActions[item[0]]!;
           return Padding(
-            padding: EdgeInsets.only(right: AppDimensions.getHorizontalMenuCardSpacing(context)),
+            padding: EdgeInsets.only(
+              right: AppDimensions.getHorizontalMenuCardSpacing(context),
+            ),
             child: ImageMenuCard(
               index: index,
               cardKey: item[0],
@@ -2251,7 +2317,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               icon: def.icon,
               color: def.color,
               width: AppDimensions.getHorizontalMenuCardWidth(context),
-              height: AppDimensions.getHorizontalMenuCardHeight(context), // - 10
+              height: AppDimensions.getHorizontalMenuCardHeight(
+                context,
+              ), // - 10
               onTap: () => _showActionBottomSheet(item[0], def),
               //location: _getSchoolLocation(),
               subtitle: "Consulter",
@@ -2325,11 +2393,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   top: Radius.circular(28),
                 ),
                 boxShadow: AppDimensions.getCustomShadow(
-                context: context,
-                alpha: 0.12,
-                blurRadius: 24,
-                offset: -6,
-              ),
+                  context: context,
+                  alpha: 0.12,
+                  blurRadius: 24,
+                  offset: -6,
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -2344,7 +2412,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             height: 4,
                             decoration: BoxDecoration(
                               color: AppColors.screenDivider,
-                              borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.getIconContainerBorderRadius(
+                                  context,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -2356,7 +2428,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               height: 46,
                               decoration: BoxDecoration(
                                 color: def.color.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.getMediumCardBorderRadius(
+                                    context,
+                                  ),
+                                ),
                               ),
                               child: Icon(def.icon, color: def.color, size: 22),
                             ),
@@ -2400,7 +2476,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                   color: isDark
                                       ? const Color(0xFF2A2A2A)
                                       : AppColors.screenSurface,
-                                  borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.getBadgeBorderRadius(context),
+                                  ),
                                 ),
                                 child: Icon(
                                   Icons.close,
@@ -2438,8 +2516,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
   Widget _buildActionContent(String actionType) {
     switch (actionType) {
+      // case 'integration':
+      //   return _buildIntegrationForm();
       case 'integration':
-        return _buildIntegrationForm();
+        return IntegrationFormContent(
+          ecole: widget.ecole,
+          scaffoldMessengerKey: _scaffoldMessengerKey,
+          onSuccess: (uid) {
+            Navigator.of(context).pop();
+            _showSuccessDialog(uid);
+          },
+        );
       case 'rating':
         return _buildRatingForm();
       case 'sponsorship':
@@ -2461,7 +2548,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       case 'scolarite':
         return _buildScolariteTab();
       case 'voir_les_avis':
-        return _buildNotesTab();
+        return _buildRatingForm();
       default:
         return const Center(child: Text('Contenu non disponible'));
     }
@@ -2562,7 +2649,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     backgroundColor: Colors.red[400],
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getSmallCardBorderRadius(context),
+                      ),
                     ),
                     margin: const EdgeInsets.all(16),
                   ),
@@ -2576,7 +2665,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   backgroundColor: Colors.red[400],
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getSmallCardBorderRadius(context),
+                    ),
                   ),
                   margin: const EdgeInsets.all(16),
                 ),
@@ -2603,7 +2694,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getLargeCardBorderRadius(context),
+              ),
               boxShadow: AppDimensions.getCustomShadow(
                 context: context,
                 alpha: isDark ? 0.5 : 0.22,
@@ -2620,7 +2713,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 80,
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppDimensions.getHeroCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getHeroCardBorderRadius(context),
+                    ),
                   ),
                   child: const Icon(
                     Icons.card_giftcard_rounded,
@@ -2662,7 +2757,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F4F6),
-                    borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getMediumCardBorderRadius(context),
+                    ),
                     border: Border.all(
                       color: const Color(0xFFE5E7EB),
                       width: 2,
@@ -2716,7 +2813,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           backgroundColor: Colors.green[500],
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.getSmallCardBorderRadius(context),
+                            ),
                           ),
                           margin: const EdgeInsets.all(16),
                         ),
@@ -2903,7 +3002,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     backgroundColor: Colors.green[500],
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getSmallCardBorderRadius(context),
+                      ),
                     ),
                     margin: const EdgeInsets.all(16),
                   ),
@@ -2917,7 +3018,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     backgroundColor: Colors.red[400],
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getSmallCardBorderRadius(context),
+                      ),
                     ),
                     margin: const EdgeInsets.all(16),
                   ),
@@ -2931,7 +3034,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   backgroundColor: Colors.red[400],
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getSmallCardBorderRadius(context),
+                    ),
                   ),
                   margin: const EdgeInsets.all(16),
                 ),
@@ -2953,7 +3058,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getLargeCardBorderRadius(context),
+            ),
             boxShadow: const [
               BoxShadow(
                 color: AppColors.screenShadow,
@@ -3025,7 +3132,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 56,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getMediumCardBorderRadius(context),
+              ),
             ),
             child: Icon(icon, color: color, size: 26),
           ),
@@ -3100,7 +3209,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Column(
@@ -3187,7 +3298,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       ),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.getSmallCardBorderRadius(context),
+                        ),
                       ),
                       child: Text(
                         blog['type'] as String? ?? 'Actualité',
@@ -3376,7 +3489,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Column(
@@ -3397,7 +3512,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 44,
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getSmallCardBorderRadius(context),
+                    ),
                   ),
                   child: Icon(
                     _getFiliereIcon(filiere),
@@ -3435,7 +3552,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getLargeCardBorderRadius(context),
+                    ),
                   ),
                   child: Text(
                     filiere,
@@ -3484,7 +3603,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 14,
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getIconContainerBorderRadius(context),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -3504,7 +3625,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getIconContainerBorderRadius(context),
+                    ),
                   ),
                   child: Text(
                     '${classes.length} séries',
@@ -3534,7 +3657,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getSmallCardBorderRadius(context),
+        ),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
@@ -3544,7 +3669,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 36,
             decoration: BoxDecoration(
               color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getBadgeBorderRadius(context),
+              ),
             ),
             child: Center(
               child: Text(
@@ -3589,7 +3716,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.getIconContainerBorderRadius(context),
+                ),
               ),
               child: Text(
                 niveau.code!,
@@ -3610,7 +3739,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getBadgeBorderRadius(context),
+        ),
         border: Border.all(color: color.withOpacity(0.25)),
       ),
       child: Column(
@@ -3747,7 +3878,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.screenOrange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getMediumCardBorderRadius(context),
+                          ),
                           border: Border.all(
                             color: AppColors.screenOrange.withOpacity(0.3),
                             width: 1,
@@ -3828,7 +3961,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Padding(
@@ -3838,7 +3973,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           children: [
             // ── Image (taille responsive) ───────────────────
             ClipRRect(
-              borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getMediumCardBorderRadius(context),
+              ),
               child: Container(
                 width: AppDimensions.getEventImageSize(context),
                 height: AppDimensions.getEventImageSize(context),
@@ -3889,7 +4026,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFEF4444),
-                              borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.getIconContainerBorderRadius(
+                                  context,
+                                ),
+                              ),
                             ),
                             child: const Text(
                               'COMPLET',
@@ -3939,7 +4080,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         height: 28,
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getSmallCardBorderRadius(context),
+                          ),
                         ),
                         child: Icon(
                           Icons.info_outline_rounded,
@@ -3984,7 +4127,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         ),
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getIconContainerBorderRadius(context),
+                          ),
                         ),
                         child: Text(
                           date,
@@ -4010,7 +4155,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getLargeCardBorderRadius(context),
+          ),
+        ),
         title: Text(
           'Achat de ticket\n${event['title']}',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -4044,7 +4193,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.screenOrange),
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getSmallCardBorderRadius(context),
+                    ),
                   ),
                   child: const Text(
                     '1',
@@ -4079,7 +4230,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   backgroundColor: Colors.green[500],
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getSmallCardBorderRadius(context),
+                    ),
                   ),
                   margin: const EdgeInsets.all(16),
                 ),
@@ -4089,7 +4242,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               backgroundColor: AppColors.screenOrange,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.getSmallCardBorderRadius(context),
+                ),
               ),
             ),
             child: const Text('Confirmer'),
@@ -4170,7 +4325,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             Container(
               decoration: BoxDecoration(
                 color: AppColors.screenSurface,
-                borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.getSmallCardBorderRadius(context),
+                ),
                 border: Border.all(color: AppColors.screenDivider),
               ),
               child: TextField(
@@ -4258,7 +4415,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getLargeCardBorderRadius(context),
+          ),
           boxShadow: AppDimensions.getMainShadow(context),
         ),
         child: Column(
@@ -4275,7 +4434,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         height: 40,
                         decoration: BoxDecoration(
                           color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getSmallCardBorderRadius(context),
+                          ),
                           // border: Border.all(
                           //   color: Colors.grey.withOpacity(0.3),
                           //   width: 1,
@@ -4328,7 +4489,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.grey.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getBadgeBorderRadius(context),
+                      ),
                       border: Border.all(color: Colors.grey.withOpacity(0.2)),
                     ),
                     child: Row(
@@ -4443,7 +4606,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getBadgeBorderRadius(context),
+            ),
             border: Border.all(color: color.withOpacity(0.3)),
           ),
           child: Row(
@@ -4461,7 +4626,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getIconContainerBorderRadius(context),
+                  ),
                 ),
                 child: Text(
                   ScolariteService.formaterMontant(totalMontant),
@@ -4506,7 +4673,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 6, left: 8, right: 8),
       decoration: BoxDecoration(
         color: AppColors.screenSurface,
-        borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getBadgeBorderRadius(context),
+        ),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: ListTile(
@@ -4517,7 +4686,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           height: 32,
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getSmallCardBorderRadius(context),
+            ),
           ),
           child: Icon(
             scolarite.rubrique == 'INS'
@@ -4546,7 +4717,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getIconContainerBorderRadius(context),
+            ),
           ),
           child: Text(
             ScolariteService.getStatutLibelle(scolarite.statut),
@@ -4642,7 +4815,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getMediumCardBorderRadius(context),
+                      ),
                     ),
                   ),
                 ),
@@ -4700,7 +4875,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         vertical: 12,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.getMediumCardBorderRadius(context),
+                        ),
                       ),
                     ),
                   ),
@@ -4715,13 +4892,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Widget pour afficher les étoiles de rating ───────────────────────────────────
-  Widget _buildStarRating(int rating, Color color) {
+  Widget _buildStarRating(int rating, Color color, [double size = 20]) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (index) {
         return Icon(
           index < rating ? Icons.star : Icons.star_border,
-          size: 20,
+          size: size,
           color: index < rating ? color : color.withOpacity(0.3),
         );
       }),
@@ -4736,7 +4913,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Column(
@@ -4751,7 +4930,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 46,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getMediumCardBorderRadius(context),
+                    ),
                   ),
                   child: Icon(
                     avi['icon'] as IconData? ?? Icons.person_rounded,
@@ -4805,7 +4986,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.getSmallCardBorderRadius(context),
+                            ),
                             child: Image.network(
                               avi['image'] as String,
                               width: double.infinity,
@@ -4949,7 +5132,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           backgroundColor: const Color(0xFFF59E0B),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getSmallCardBorderRadius(context),
+            ),
           ),
           margin: const EdgeInsets.all(16),
         ),
@@ -4967,7 +5152,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           backgroundColor: const Color(0xFFF59E0B),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getSmallCardBorderRadius(context),
+            ),
           ),
           margin: const EdgeInsets.all(16),
         ),
@@ -5044,7 +5231,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             backgroundColor: Colors.green[500],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             margin: const EdgeInsets.all(16),
           ),
@@ -5062,7 +5251,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             backgroundColor: Colors.red[400],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             margin: const EdgeInsets.all(16),
           ),
@@ -5078,7 +5269,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           backgroundColor: Colors.red[400],
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getSmallCardBorderRadius(context),
+            ),
           ),
           margin: const EdgeInsets.all(16),
         ),
@@ -5098,7 +5291,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(AppDimensions.getHeroCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getHeroCardBorderRadius(context),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.08),
@@ -5122,11 +5317,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                   shape: BoxShape.circle,
                   boxShadow: AppDimensions.getCustomShadow(
-                context: context,
-                alpha: 0.3,
-                blurRadius: 16,
-                offset: 6,
-              ),
+                    context: context,
+                    alpha: 0.3,
+                    blurRadius: 16,
+                    offset: 6,
+                  ),
                 ),
                 child: const Icon(
                   Icons.check_rounded,
@@ -5166,7 +5361,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8F9FF),
-                  borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getMediumCardBorderRadius(context),
+                  ),
                   border: Border.all(color: const Color(0xFFEEEFF5)),
                 ),
                 child: Column(
@@ -5179,7 +5376,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           height: 28,
                           decoration: BoxDecoration(
                             color: AppColors.screenOrange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.getSmallCardBorderRadius(context),
+                            ),
                           ),
                           child: const Icon(
                             Icons.tag_rounded,
@@ -5225,7 +5424,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getMediumCardBorderRadius(context),
+                      ),
                     ),
                   ),
                   child: const Text(
@@ -5273,7 +5474,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.screenOrange,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
                 ),
               ),
               child: const Text(
@@ -5413,15 +5616,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               vertical: 14,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
               borderSide: const BorderSide(color: AppColors.screenDivider),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
               borderSide: const BorderSide(color: AppColors.screenDivider),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
               borderSide: const BorderSide(
                 color: AppColors.screenOrange,
                 width: 1.5,
@@ -5442,7 +5651,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
       child: Column(
@@ -5457,7 +5668,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 34,
                   decoration: BoxDecoration(
                     color: AppColors.screenOrangeLight,
-                    borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getBadgeBorderRadius(context),
+                    ),
                   ),
                   child: Icon(icon, color: AppColors.screenOrange, size: 18),
                 ),
@@ -5783,241 +5996,547 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         content: Text('Sélection de fichier pour: $fileType'),
         backgroundColor: AppColors.screenOrange,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getSmallCardBorderRadius(context),
+          ),
+        ),
         margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  // ── Rating form ────────────────────────────────────────────────────────────
+  // ── Rating form (Style WhatsApp) ────────────────────────────────────────────────────
   Widget _buildRatingForm() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Star rating
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
+        // Header
+        // Container(
+        //   padding: const EdgeInsets.all(16),
+        //   decoration: BoxDecoration(
+        //     color: const Color(0xFF0288D1),
+        //     borderRadius: const BorderRadius.only(
+        //       topLeft: Radius.circular(20),
+        //       topRight: Radius.circular(20),
+        //     ),
+        //   ),
+        //   child: Row(
+        //     children: [
+        //       Container(
+        //         width: 40,
+        //         height: 40,
+        //         decoration: BoxDecoration(
+        //           color: Colors.white.withOpacity(0.15),
+        //           borderRadius: BorderRadius.circular(20),
+        //         ),
+        //         child: const Icon(
+        //           Icons.star_rate_rounded,
+        //           color: Colors.white,
+        //           size: 20,
+        //         ),
+        //       ),
+        //       const SizedBox(width: 12),
+        //       Flexible(
+        //         child: Column(
+        //           crossAxisAlignment: CrossAxisAlignment.start,
+        //           children: [
+        //             Text(
+        //               'Avis & Commentaires',
+        //               style: TextStyle(
+        //                 fontSize: _textSizeService.getScaledFontSize(18),
+        //                 fontWeight: FontWeight.w700,
+        //                 color: Colors.white,
+        //               ),
+        //             ),
+        //             const Text(
+        //               'Partagez votre expérience',
+        //               style: TextStyle(fontSize: 13, color: Colors.white70),
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //       GestureDetector(
+        //         onTap: () => _loadAvisOnly(),
+        //         child: Container(
+        //           width: 40,
+        //           height: 40,
+        //           decoration: BoxDecoration(
+        //             color: Colors.white.withOpacity(0.15),
+        //             borderRadius: BorderRadius.circular(20),
+        //           ),
+        //           child: const Icon(
+        //             Icons.refresh_outlined,
+        //             color: Colors.white,
+        //             size: 18,
+        //           ),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+
+        // Liste des avis (style messages WhatsApp)
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.5,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF8E0),
-                      borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+          child: Container(
+            color: const Color(0xFFF5F5F5),
+            child: _isLoadingAvis
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF0288D1),
+                      strokeWidth: 2.5,
                     ),
-                    child: const Icon(
-                      Icons.grade_rounded,
-                      color: Color(0xFFF59E0B),
-                      size: 18,
+                  )
+                : _avisError != null
+                ? _buildErrorView()
+                : _avis.isEmpty
+                ? _buildEmptyAvisView()
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                    itemCount: _avis.length,
+                    itemBuilder: (context, index) {
+                      final avis = _avis[index];
+                      return _buildAvisBubble(avis);
+                    },
+                  ),
+          ),
+        ),
+
+        // Barre d'envoi (style WhatsApp)
+        _buildComposeAvisBar(),
+      ],
+    );
+  }
+
+  // ── Bulle d'avis (style WhatsApp) ───────────────────────────────────────────────────
+  Widget _buildAvisBubble(Map<String, dynamic> avis) {
+    final String auteur = avis['auteur'] ?? 'Anonyme';
+    final String contenu = avis['content'] ?? '';
+    final int note = avis['statut'] ?? 0;
+    final String date = avis['date'] ?? '';
+    final Color color = avis['color'] as Color? ?? AppColors.screenOrange;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Avatar de l'école (toujours à gauche)
+          Container(
+            width: 32,
+            height: 32,
+            margin: const EdgeInsets.only(right: 8, bottom: 2),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.school_outlined, size: 16, color: color),
+          ),
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(4),
+                  bottomRight: Radius.circular(18),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // En-tête avec nom et étoiles
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          auteur,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0288D1),
+                          ),
+                        ),
+                      ),
+                      _buildStarRating(note, const Color(0xFFF59E0B), 16),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Contenu du message
+                  Text(
+                    contenu,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.4,
+                      color: AppColors.screenTextPrimary,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Votre note',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimary,
+                  const SizedBox(height: 4),
+                  // Date
+                  Text(
+                    _formatAvisDate(date),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.screenTextSecondary,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              StatefulBuilder(
-                builder: (context, ss) {
-                  final current = int.tryParse(_ratingController.text) ?? 0;
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(5, (i) {
-                      final selected = current > i;
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Barre de composition (style WhatsApp) ───────────────────────────────────────────
+  Widget _buildComposeAvisBar() {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.fromLTRB(
+        8,
+        8,
+        8,
+        MediaQuery.of(context).padding.bottom + 8,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Sélection des étoiles
+          StatefulBuilder(
+            builder: (context, setState) {
+              final currentRating = int.tryParse(_ratingController.text) ?? 0;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Votre note:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.screenTextSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ...List.generate(5, (index) {
                       return GestureDetector(
-                        onTap: () => ss(
-                          () => _ratingController.text = (i + 1).toString(),
-                        ),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? const Color(0xFFFFF8E0)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
-                          ),
+                        onTap: () => setState(() {
+                          _ratingController.text = (index + 1).toString();
+                        }),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
                           child: Icon(
-                            selected
+                            index < currentRating
                                 ? Icons.star_rounded
                                 : Icons.star_border_rounded,
-                            color: selected
+                            size: 24,
+                            color: index < currentRating
                                 ? const Color(0xFFF59E0B)
                                 : const Color(0xFFDDDDDD),
-                            size: 40,
                           ),
                         ),
                       );
                     }),
-                  );
-                },
+                  ],
+                ),
+              );
+            },
+          ),
+          // Barre de texte et envoi
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Champ de texte
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    maxHeight: 100,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: const Color(0xFFE8E8E8),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _commentController,
+                    maxLines: null,
+                    textInputAction: TextInputAction.newline,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.screenTextPrimary,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Votre avis...',
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFFBBBBBB),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Bouton d'envoi
+              GestureDetector(
+                onTap: _sendAvis,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0288D1),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0288D1).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-        // Comment
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.screenSurface,
-            borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
-            border: Border.all(color: AppColors.screenDivider),
-          ),
-          child: TextField(
-            controller: _commentController,
-            maxLines: 5,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.screenTextPrimary,
+        ],
+      ),
+    );
+  }
+
+  // ── Vue d'erreur ────────────────────────────────────────────────────────────────
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+            const SizedBox(height: 16),
+            const Text(
+              'Erreur de chargement',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.screenTextPrimary,
+              ),
             ),
-            decoration: InputDecoration(
-              labelText: 'Votre commentaire',
-              hintText: 'Partagez votre expérience...',
-              labelStyle: const TextStyle(
+            const SizedBox(height: 8),
+            Text(
+              _avisError!,
+              style: const TextStyle(
+                fontSize: 13,
                 color: AppColors.screenTextSecondary,
-                fontWeight: FontWeight.w600,
               ),
-              hintStyle: const TextStyle(color: Color(0xFFBBBBBB)),
-              border: InputBorder.none,
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(left: 4, right: 8),
-                child: Icon(
-                  Icons.comment_rounded,
-                  color: AppColors.screenOrange,
-                  size: 20,
-                ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadAvisOnly,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Réessayer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0288D1),
+                foregroundColor: Colors.white,
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(height: 24),
-        CustomFormButton(
-          text: 'Envoyer le témoignage',
-          color: const Color(0xFFF59E0B),
-          icon: Icons.star_rounded,
-          onPressed: () async {
-            if (_ratingController.text.isEmpty ||
-                _commentController.text.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'Veuillez remplir la note et le commentaire',
-                  ),
-                  backgroundColor: const Color(0xFFF59E0B),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-              return;
-            }
-            final currentUser = AuthService().getCurrentUser();
-            if (currentUser == null || currentUser.phone.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Utilisateur non connecté'),
-                  backgroundColor: Colors.red[400],
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-              return;
-            }
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              barrierColor: Colors.transparent, // Fond transparent
-              builder: (_) => CustomLoader(
-                message: 'Envoi du témoignage...',
-                loaderColor: const Color(0xFFF59E0B),
-                size: 56.0,
-                showBackground: true,
-                backgroundColor: Colors.white.withOpacity(0.9),
+      ),
+    );
+  }
+
+  // ── Vue vide (aucun avis) ───────────────────────────────────────────────────────────
+  Widget _buildEmptyAvisView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0288D1).withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-            );
-            try {
-              final result = await TestimonialService.submitTestimonial(
-                codeecole: widget.ecole.parametreCode ?? '',
-                note: _ratingController.text,
-                contenu: _commentController.text,
-                userNumero: currentUser.phone,
-              );
-              Navigator.of(context).pop();
-              if (result['success'] == true) {
-                Navigator.of(context).pop();
-                _ratingController.clear();
-                _commentController.clear();
-                _scaffoldMessengerKey.currentState?.showSnackBar(
-                  SnackBar(
-                    content: const Text('Témoignage envoyé avec succès!'),
-                    backgroundColor: Colors.green[500],
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-                    ),
-                    margin: const EdgeInsets.all(16),
-                  ),
-                );
-              } else {
-                _scaffoldMessengerKey.currentState?.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result['message'] ?? 'Erreur lors de l\'envoi',
-                    ),
-                    backgroundColor: Colors.red[400],
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-                    ),
-                    margin: const EdgeInsets.all(16),
-                  ),
-                );
-              }
-            } catch (_) {
-              Navigator.of(context).pop();
-              _scaffoldMessengerKey.currentState?.showSnackBar(
-                SnackBar(
-                  content: const Text('Erreur lors de l\'envoi du témoignage'),
-                  backgroundColor: Colors.red[400],
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-            }
-          },
+              child: const Icon(
+                Icons.chat_bubble_outline,
+                size: 36,
+                color: Color(0xFF0288D1),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Aucun avis',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.screenTextPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Soyez le premier à donner votre avis !',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-        const SizedBox(height: 20),
-      ],
+      ),
+    );
+  }
+
+  // ── Formatage de date pour avis ───────────────────────────────────────────────────
+  String _formatAvisDate(String dateString) {
+    try {
+      if (dateString.isEmpty) return '';
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final diff = now.difference(date);
+
+      if (diff.inDays == 0) {
+        return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      }
+      if (diff.inDays == 1) return 'Hier';
+      if (diff.inDays < 7) return 'Il y a ${diff.inDays}j';
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  // ── Envoi d'avis ───────────────────────────────────────────────────────────────────
+  Future<void> _sendAvis() async {
+    final rating = _ratingController.text.trim();
+    final comment = _commentController.text.trim();
+
+    if (rating.isEmpty || comment.isEmpty) {
+      _showAvisError('Veuillez donner une note et écrire un commentaire');
+      return;
+    }
+
+    final currentUser = AuthService().getCurrentUser();
+    if (currentUser == null || currentUser.phone.isEmpty) {
+      _showAvisError('Utilisateur non connecté');
+      return;
+    }
+
+    // Ajout optimiste
+    final optimisticAvis = {
+      'auteur': currentUser.fullName,
+      'content': comment,
+      'statut': int.parse(rating),
+      'date': DateTime.now().toIso8601String(),
+      'color': const Color(0xFF0288D1),
+    };
+
+    setState(() {
+      _avis = [optimisticAvis, ..._avis];
+      _ratingController.clear();
+      _commentController.clear();
+    });
+
+    try {
+      final result = await TestimonialService.submitTestimonial(
+        codeecole: widget.ecole.parametreCode ?? '',
+        note: rating,
+        contenu: comment,
+        userNumero: currentUser.phone,
+      );
+
+      if (result['success'] != true) {
+        // Retirer l'avis optimiste en cas d'erreur
+        setState(() {
+          _avis = _avis.where((a) => a != optimisticAvis).toList();
+        });
+        _showAvisError(result['message'] ?? 'Erreur lors de l\'envoi');
+      } else {
+        _showAvisSuccess('Avis envoyé avec succès !');
+        // Recharger les avis pour avoir les données à jour
+        await _loadAvisOnly();
+      }
+    } catch (e) {
+      // Retirer l'avis optimiste en cas d'exception
+      setState(() {
+        _avis = _avis.where((a) => a != optimisticAvis).toList();
+      });
+      _showAvisError('Erreur: $e');
+    }
+  }
+
+  void _showAvisError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.red[400],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 80,
+        ),
+      ),
+    );
+  }
+
+  void _showAvisSuccess(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green[500],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 80,
+        ),
+      ),
     );
   }
 
@@ -6051,7 +6570,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         border: Border.all(color: AppColors.screenOrange.withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -6065,7 +6586,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: AppColors.screenOrange,
-                  borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
                 ),
                 child: const Icon(
                   Icons.school_rounded,
@@ -6125,7 +6648,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.screenCard,
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -6165,7 +6690,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getSmallCardBorderRadius(context),
+        ),
         border: Border.all(color: color.withOpacity(0.2)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -6176,7 +6703,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 32,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             child: Icon(icon, color: color, size: 16),
           ),
@@ -6224,7 +6753,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -6238,7 +6769,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: const Color(0xFF3B82F6),
-                  borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
                 ),
                 child: const Icon(
                   Icons.contact_phone_rounded,
@@ -6332,7 +6865,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getBadgeBorderRadius(context),
+        ),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
@@ -6342,7 +6877,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 34,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             child: Icon(icon, color: color, size: 16),
           ),
@@ -6389,7 +6926,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         border: Border.all(color: Colors.green.withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -6403,7 +6942,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: Colors.green,
-                  borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
                 ),
                 child: const Icon(
                   Icons.info_rounded,
@@ -6480,7 +7021,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getBadgeBorderRadius(context),
+        ),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
@@ -6490,7 +7033,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 34,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             child: Icon(icon, color: color, size: 16),
           ),
@@ -6551,7 +7096,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: AppColors.screenCard,
-                borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.getLargeCardBorderRadius(context),
+                ),
                 boxShadow: const [
                   BoxShadow(
                     color: AppColors.screenShadow,
@@ -6564,7 +7111,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 children: [
                   if (data.logo != null)
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getMediumCardBorderRadius(context),
+                      ),
                       child: Image.network(
                         data.logo!,
                         width: 64,
@@ -6587,7 +7136,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       height: 64,
                       decoration: BoxDecoration(
                         color: AppColors.screenOrangeLight,
-                        borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.getMediumCardBorderRadius(context),
+                        ),
                       ),
                       child: const Icon(
                         Icons.school_rounded,
@@ -6689,7 +7240,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
       child: Column(
@@ -6704,7 +7257,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 16,
                   decoration: BoxDecoration(
                     color: AppColors.screenOrange,
-                    borderRadius: BorderRadius.circular(AppDimensions.getIconContainerBorderRadius(context)),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getIconContainerBorderRadius(context),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -6822,7 +7377,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
-              borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getMediumCardBorderRadius(context),
+              ),
               border: Border.all(
                 color: isDark ? Colors.white24 : AppColors.screenDivider,
               ),
@@ -6915,7 +7472,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 24,
             decoration: BoxDecoration(
               color: const Color(0xFF06B6D4),
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
             ),
             child: Center(
               child: Text(
@@ -7006,7 +7565,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(AppDimensions.getLargeCardBorderRadius(context)),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getLargeCardBorderRadius(context),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -7017,7 +7578,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 60,
                 decoration: BoxDecoration(
                   color: data['statut'] == 2 ? Colors.green : Colors.orange,
-                  borderRadius: BorderRadius.circular(AppDimensions.getHeroCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getHeroCardBorderRadius(context),
+                  ),
                 ),
                 child: Icon(
                   data['statut'] == 2
@@ -7058,7 +7621,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     backgroundColor: const Color(0xFF06B6D4),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.getSmallCardBorderRadius(context),
+                      ),
                     ),
                   ),
                   child: const Text(

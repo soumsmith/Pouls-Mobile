@@ -9,6 +9,7 @@ import '../services/order_service.dart';
 import '../services/lieu_livraison_service.dart';
 import '../widgets/back_button_widget.dart';
 import '../widgets/searchable_dropdown.dart';
+import '../services/auth_service.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -19,10 +20,12 @@ class CartScreen extends StatefulWidget {
   State<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateMixin {
+class _CartScreenState extends State<CartScreen>
+    with SingleTickerProviderStateMixin {
   final CartService _cartService = MockCartService();
   final OrderService _orderService = OrderService();
   final LieuLivraisonService _lieuLivraisonService = LieuLivraisonService();
+  final AuthService _authService = AuthService();
   Cart? _cart;
   bool _isLoading = true;
   bool _isCheckingOut = false;
@@ -42,7 +45,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
     _loadCart();
     _loadLieuxLivraison();
   }
@@ -124,7 +130,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.shopGreen, strokeWidth: 2.5),
+        child: CircularProgressIndicator(
+          color: AppColors.shopGreen,
+          strokeWidth: 2.5,
+        ),
       );
     }
     if (_cart?.isEmpty == true) return _buildEmptyCart();
@@ -161,10 +170,18 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                     color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
-                      BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
+                      BoxShadow(
+                        color: AppColors.screenShadow,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.screenTextPrimary),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 16,
+                    color: AppColors.screenTextPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -205,7 +222,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                       color: const Color(0xFFFFF0F0),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.delete_outline, size: 18, color: Colors.red[400]),
+                    child: Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: Colors.red[400],
+                    ),
                   ),
                 ),
             ],
@@ -233,7 +254,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                       color: AppColors.shopBlueSurface,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.shopping_bag_outlined, size: 48, color: AppColors.shopBlue),
+                    child: const Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 48,
+                      color: AppColors.shopBlue,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   const Text(
@@ -248,7 +273,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                   const Text(
                     'Ajoutez des produits pour\ncommencer vos achats',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: AppColors.screenTextSecondary, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.screenTextSecondary,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   _buildOrangeButton(
@@ -293,7 +322,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
-            BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
+            BoxShadow(
+              color: AppColors.screenShadow,
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
           ],
         ),
         child: Padding(
@@ -359,7 +392,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                               color: const Color(0xFFFFF0F0),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(Icons.delete_outline, size: 15, color: Colors.red[400]),
+                            child: Icon(
+                              Icons.delete_outline,
+                              size: 15,
+                              color: Colors.red[400],
+                            ),
                           ),
                         ),
                       ],
@@ -412,13 +449,17 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             width: 30,
             height: 30,
             decoration: BoxDecoration(
-              color: item.quantity > 1 ? const Color(0xFFF5F5F5) : const Color(0xFFEEEEEE),
+              color: item.quantity > 1
+                  ? const Color(0xFFF5F5F5)
+                  : const Color(0xFFEEEEEE),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.remove,
               size: 15,
-              color: item.quantity > 1 ? AppColors.screenTextPrimary : const Color(0xFFCCCCCC),
+              color: item.quantity > 1
+                  ? AppColors.screenTextPrimary
+                  : const Color(0xFFCCCCCC),
             ),
           ),
         ),
@@ -439,9 +480,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           child: Container(
             width: 30,
             height: 30,
-            decoration: BoxDecoration(
-              color: AppColors.shopGreen,
-            ),
+            decoration: BoxDecoration(color: AppColors.shopGreen),
             child: const Icon(Icons.add, size: 15, color: Colors.white),
           ),
         ),
@@ -456,7 +495,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         color: AppColors.screenCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
-          BoxShadow(color: Color(0x14000000), blurRadius: 20, offset: Offset(0, -4)),
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 20,
+            offset: Offset(0, -4),
+          ),
         ],
       ),
       child: SafeArea(
@@ -488,7 +531,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                     children: [
                       const Text(
                         'Total à payer',
-                        style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.screenTextSecondary,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -504,7 +550,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                   ),
                   // Item count badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.shopBlueSurface,
                       borderRadius: BorderRadius.circular(20),
@@ -528,7 +577,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                 label: _isCheckingOut ? '' : 'Procéder au paiement',
                 onTap: _isCheckingOut ? null : _proceedToCheckout,
                 isLoading: _isCheckingOut,
-                trailing: const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                trailing: const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ],
           ),
@@ -606,14 +659,21 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
     final oldQuantity = _cart!.items[itemIndex].quantity;
     setState(() {
-      _cart!.items[itemIndex] = _cart!.items[itemIndex].copyWith(quantity: newQuantity);
+      _cart!.items[itemIndex] = _cart!.items[itemIndex].copyWith(
+        quantity: newQuantity,
+      );
     });
 
-    final success = await _cartService.updateCartItemQuantity(cartItemId, newQuantity);
+    final success = await _cartService.updateCartItemQuantity(
+      cartItemId,
+      newQuantity,
+    );
     if (!success) {
       // Rollback en cas d'erreur
       setState(() {
-        _cart!.items[itemIndex] = _cart!.items[itemIndex].copyWith(quantity: oldQuantity);
+        _cart!.items[itemIndex] = _cart!.items[itemIndex].copyWith(
+          quantity: oldQuantity,
+        );
       });
       _showError('Erreur lors de la mise à jour de la quantité');
     }
@@ -656,11 +716,20 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler', style: TextStyle(color: AppColors.screenTextSecondary)),
+            child: const Text(
+              'Annuler',
+              style: TextStyle(color: AppColors.screenTextSecondary),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Vider', style: TextStyle(color: Colors.red[400], fontWeight: FontWeight.w700)),
+            child: Text(
+              'Vider',
+              style: TextStyle(
+                color: Colors.red[400],
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -691,6 +760,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
   // ─── ORDER BOTTOM SHEET ───────────────────────────────────────────────────
   Widget _buildOrderBottomSheet() {
+    // Récupérer les informations de l'utilisateur connecté
+    final currentUser = _authService.getCurrentUser();
+
     final _nomController = TextEditingController();
     final _telephoneController = TextEditingController();
     final _adresseController = TextEditingController();
@@ -700,6 +772,17 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     final _communeController = TextEditingController();
     final _ecoleController = TextEditingController();
     final _eleveIdController = TextEditingController();
+
+    // Préremplir les champs avec les informations de l'utilisateur connecté
+    if (currentUser != null) {
+      _nomController.text = currentUser.fullName;
+      _telephoneController.text = currentUser.phone;
+      _emailController.text = currentUser.email ?? '';
+      _adresseController.text = currentUser.adresse ?? '';
+      _villeController.text = currentUser.ville ?? '';
+      _paysController.text = 'Côte d\'Ivoire'; // Valeur par défaut
+    }
+
     String _typeLivraison = 'domicile';
     double _prixLivraison = _selectedLieu?.prixlivraison.toDouble() ?? 2000;
     bool _isSubmitting = false;
@@ -744,7 +827,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                                 color: AppColors.shopBlueSurface,
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: const Icon(Icons.receipt_long_outlined, color: AppColors.shopBlue, size: 22),
+                              child: const Icon(
+                                Icons.receipt_long_outlined,
+                                color: AppColors.shopBlue,
+                                size: 22,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Column(
@@ -763,7 +850,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                                 ),
                                 const Text(
                                   'Remplissez vos informations',
-                                  style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.screenTextSecondary,
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                   softWrap: false,
                                 ),
@@ -772,7 +862,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                           ],
                         ),
                         const SizedBox(height: 16),
-                        const Divider(color: AppColors.screenDivider, height: 1),
+                        const Divider(
+                          color: AppColors.screenDivider,
+                          height: 1,
+                        ),
                       ],
                     ),
                   ),
@@ -875,7 +968,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                                 selected: _typeLivraison == 'domicile',
                                 onTap: () => setSheetState(() {
                                   _typeLivraison = 'domicile';
-                                  _prixLivraison = _selectedLieu?.prixlivraison.toDouble() ?? 2000;
+                                  _prixLivraison =
+                                      _selectedLieu?.prixlivraison.toDouble() ??
+                                      2000;
                                 }),
                               ),
                               const SizedBox(width: 10),
@@ -916,7 +1011,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                             decoration: BoxDecoration(
                               color: AppColors.screenSurface,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.screenDivider),
+                              border: Border.all(
+                                color: AppColors.screenDivider,
+                              ),
                             ),
                             child: Column(
                               children: [
@@ -933,7 +1030,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                                 ),
                                 const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 10),
-                                  child: Divider(color: AppColors.screenDivider, height: 1),
+                                  child: Divider(
+                                    color: AppColors.screenDivider,
+                                    height: 1,
+                                  ),
                                 ),
                                 _recapRow(
                                   'Total',
@@ -954,7 +1054,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                     decoration: const BoxDecoration(
                       color: AppColors.screenCard,
-                      border: Border(top: BorderSide(color: AppColors.screenDivider)),
+                      border: Border(
+                        top: BorderSide(color: AppColors.screenDivider),
+                      ),
                     ),
                     child: SafeArea(
                       top: false,
@@ -968,37 +1070,59 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                                     _telephoneController.text.trim().isEmpty ||
                                     _adresseController.text.trim().isEmpty ||
                                     _communeController.text.trim().isEmpty) {
-                                  _showError('Veuillez remplir tous les champs obligatoires');
+                                  _showError(
+                                    'Veuillez remplir tous les champs obligatoires',
+                                  );
                                   return;
                                 }
                                 setSheetState(() => _isSubmitting = true);
                                 try {
-                                  final result = await _orderService.createOrder(
-                                    items: _cart!.items,
-                                    nom: _nomController.text.trim(),
-                                    telephone: _telephoneController.text.trim(),
-                                    adresse: _adresseController.text.trim(),
-                                    email: _emailController.text.trim().isNotEmpty
-                                        ? _emailController.text.trim()
-                                        : null,
-                                    ville: _villeController.text.trim().isNotEmpty
-                                        ? _villeController.text.trim()
-                                        : null,
-                                    pays: _paysController.text.trim().isNotEmpty
-                                        ? _paysController.text.trim()
-                                        : null,
-                                    commune: _communeController.text.trim(),
-                                    typeLivraison: _typeLivraison,
-                                    prixLivraison: _prixLivraison,
-                                    ecole: _ecoleController.text.trim().isNotEmpty
-                                        ? _ecoleController.text.trim()
-                                        : null,
-                                    eleveId: _eleveIdController.text.trim().isNotEmpty
-                                        ? _eleveIdController.text.trim()
-                                        : null,
-                                  );
+                                  final result = await _orderService
+                                      .createOrder(
+                                        items: _cart!.items,
+                                        nom: _nomController.text.trim(),
+                                        telephone: _telephoneController.text
+                                            .trim(),
+                                        adresse: _adresseController.text.trim(),
+                                        email:
+                                            _emailController.text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? _emailController.text.trim()
+                                            : null,
+                                        ville:
+                                            _villeController.text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? _villeController.text.trim()
+                                            : null,
+                                        pays:
+                                            _paysController.text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? _paysController.text.trim()
+                                            : null,
+                                        commune: _communeController.text.trim(),
+                                        typeLivraison: _typeLivraison,
+                                        prixLivraison: _prixLivraison,
+                                        ecole:
+                                            _ecoleController.text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? _ecoleController.text.trim()
+                                            : null,
+                                        eleveId:
+                                            _eleveIdController.text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? _eleveIdController.text.trim()
+                                            : null,
+                                      );
                                   Navigator.pop(context);
-                                  _showSuccess(result['message']['message'] ?? 'Commande passée avec succès !');
+                                  _showSuccess(
+                                    result['message']['message'] ??
+                                        'Commande passée avec succès !',
+                                  );
                                   await _cartService.clearCart();
                                   _loadCart();
                                 } catch (e) {
@@ -1021,23 +1145,23 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
   // ─── SHEET HELPERS ────────────────────────────────────────────────────────
   Widget _sectionLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: AppColors.screenTextPrimary,
-          letterSpacing: -0.3,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      color: AppColors.screenTextPrimary,
+      letterSpacing: -0.3,
+    ),
+  );
 
   Widget _sectionSubLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: AppColors.screenTextSecondary,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: AppColors.screenTextSecondary,
+    ),
+  );
 
   Widget _deliveryTypeChip({
     required String label,
@@ -1052,17 +1176,27 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
           decoration: BoxDecoration(
-            color: selected ? AppColors.screenOrangeLight : AppColors.screenSurface,
+            color: selected
+                ? AppColors.screenOrangeLight
+                : AppColors.screenSurface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.screenOrange : AppColors.screenDivider,
+              color: selected
+                  ? AppColors.screenOrange
+                  : AppColors.screenDivider,
               width: selected ? 1.5 : 1,
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: selected ? AppColors.screenOrange : AppColors.screenTextSecondary),
+              Icon(
+                icon,
+                size: 16,
+                color: selected
+                    ? AppColors.screenOrange
+                    : AppColors.screenTextSecondary,
+              ),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -1070,7 +1204,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: selected ? AppColors.screenOrange : AppColors.screenTextSecondary,
+                    color: selected
+                        ? AppColors.screenOrange
+                        : AppColors.screenTextSecondary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1082,7 +1218,12 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _recapRow(String label, String value, {bool isSubtitle = false, bool isTotal = false}) {
+  Widget _recapRow(
+    String label,
+    String value, {
+    bool isSubtitle = false,
+    bool isTotal = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1090,7 +1231,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           label,
           style: TextStyle(
             fontSize: isTotal ? 15 : 13,
-            color: isTotal ? AppColors.screenTextPrimary : AppColors.screenTextSecondary,
+            color: isTotal
+                ? AppColors.screenTextPrimary
+                : AppColors.screenTextSecondary,
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
           ),
         ),
@@ -1098,7 +1241,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           value,
           style: TextStyle(
             fontSize: isTotal ? 17 : 13,
-            color: isTotal ? AppColors.screenOrange : AppColors.screenTextPrimary,
+            color: isTotal
+                ? AppColors.screenOrange
+                : AppColors.screenTextPrimary,
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
@@ -1130,7 +1275,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
               ),
             ),
             if (required)
-              const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+              const Text(
+                ' *',
+                style: TextStyle(
+                  color: AppColors.screenOrange,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 6),
@@ -1138,14 +1290,21 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: const TextStyle(fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.screenTextPrimary,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
             prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
             filled: true,
             fillColor: AppColors.screenSurface,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.screenDivider),
@@ -1156,7 +1315,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenOrange, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.screenOrange,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -1200,9 +1362,20 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           children: const [
             Text(
               'Zone de livraison',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.screenTextSecondary,
+              ),
             ),
-            Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(
+              ' *',
+              style: TextStyle(
+                color: AppColors.screenOrange,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -1214,7 +1387,8 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           items: lieuNames,
           onChanged: (String selectedName) {
             final selectedLieu = _lieuxLivraison.firstWhere(
-              (l) => '${l.nomcommune} — ${l.prixlivraison} FCFA' == selectedName,
+              (l) =>
+                  '${l.nomcommune} — ${l.prixlivraison} FCFA' == selectedName,
             );
             onLieuSelected(selectedLieu);
           },
@@ -1230,7 +1404,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             ),
             child: Row(
               children: [
-                const Icon(Icons.local_shipping_outlined, color: AppColors.screenOrange, size: 15),
+                const Icon(
+                  Icons.local_shipping_outlined,
+                  color: AppColors.screenOrange,
+                  size: 15,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Frais de livraison : ${_selectedLieu!.prixlivraison} FCFA',
@@ -1261,10 +1439,19 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           const SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.screenOrange),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.screenOrange,
+            ),
           ),
           const SizedBox(width: 12),
-          Text(msg, style: const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary)),
+          Text(
+            msg,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -1287,7 +1474,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
               const SizedBox(width: 8),
               Text(
                 'Erreur de chargement',
-                style: TextStyle(color: Colors.red[400], fontWeight: FontWeight.w600, fontSize: 13),
+                style: TextStyle(
+                  color: Colors.red[400],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),

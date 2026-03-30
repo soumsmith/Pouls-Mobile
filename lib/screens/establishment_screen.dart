@@ -5,6 +5,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
 import '../services/ecole_api_service.dart';
+import '../services/recommendation_service.dart';
 import '../models/ecole.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_text_field.dart';
@@ -76,12 +77,78 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   final _categorieController = TextEditingController();
   final _codepaysController = TextEditingController();
 
+  // Controllers pour le formulaire de recommandation
+  final _recommenderNameController = TextEditingController();
+  final _etablissementController = TextEditingController();
+  final _paysRecommendController = TextEditingController();
+  final _villeRecommendController = TextEditingController();
+  final _commentsController = TextEditingController();
+  final _parentNomController = TextEditingController();
+  final _parentPrenomController = TextEditingController();
+  final _parentTelephoneController = TextEditingController();
+  final _parentEmailController = TextEditingController();
+  final _ordreController = TextEditingController();
+  final _adresseEtablissementController = TextEditingController();
+  final _paysParentController = TextEditingController();
+  final _villeParentController = TextEditingController();
+  final _adresseParentController = TextEditingController();
+
   // ── Timer pour debounce ───────────────────────────────────────
   Timer? _searchTimer;
+
+  // ── Timer pour slider auto-défilement ────────────────────────
+  Timer? _sliderTimer;
+  final PageController _sliderController = PageController();
+  int _currentSliderIndex = 0;
+  bool _showSliderText = false; // Contrôle d'affichage du texte
 
   // ── Animations ─────────────────────────────────────────────
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
+
+  // ── Données du slider d'écoles ───────────────────────────────
+  final List<Map<String, String>> _featuredSchools = [
+    {
+      'name': 'École Primaire Excellence',
+      'type': 'Primaire',
+      'location': 'Abidjan, Cocody',
+      'image': 'assets/images/ecole.jpg',
+      'rating': '4.8',
+      'description': 'Excellence académique depuis 1995'
+    },
+    {
+      'name': 'Collège La Lumière',
+      'type': 'Collège',
+      'location': 'Yamoussoukro',
+      'image': 'assets/images/ecole-2.jpg',
+      'rating': '4.6',
+      'description': 'Formation complète et moderne'
+    },
+    {
+      'name': 'Lycée Scientifique',
+      'type': 'Lycée',
+      'location': 'Bouaké',
+      'image': 'assets/images/actualite.jpg',
+      'rating': '4.9',
+      'description': 'Excellence en sciences et technologie'
+    },
+    {
+      'name': 'École Bilingue Internationale',
+      'type': 'Privé',
+      'location': 'Abidjan, Plateau',
+      'image': 'assets/images/actualite-2.jpg',
+      'rating': '4.7',
+      'description': 'Programme international reconnu'
+    },
+    {
+      'name': 'Groupe Scolaire Public',
+      'type': 'Public',
+      'location': 'San Pedro',
+      'image': 'assets/images/school-event.jpg',
+      'rating': '4.5',
+      'description': 'Éducation accessible pour tous'
+    },
+  ];
 
   final List<String> _filters = [
     'Tous',
@@ -106,6 +173,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
     _loadEcoles();
+    
+    // Démarrer le slider auto-défilement
+    _startSliderAutoScroll();
   }
 
   @override
@@ -118,6 +188,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   @override
   void dispose() {
     _searchTimer?.cancel(); // Annuler le timer
+    _sliderTimer?.cancel(); // Annuler le timer du slider
+    _sliderController.dispose(); // Libérer le controller du slider
     _textSizeService.removeListener(_onTextSizeChanged);
     _searchController.dispose();
     _paysController.dispose();
@@ -126,6 +198,21 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _nomEtablissementController.dispose();
     _categorieController.dispose();
     _codepaysController.dispose();
+    // Libérer les contrôleurs de recommandation
+    _recommenderNameController.dispose();
+    _etablissementController.dispose();
+    _paysRecommendController.dispose();
+    _villeRecommendController.dispose();
+    _commentsController.dispose();
+    _parentNomController.dispose();
+    _parentPrenomController.dispose();
+    _parentTelephoneController.dispose();
+    _parentEmailController.dispose();
+    _ordreController.dispose();
+    _adresseEtablissementController.dispose();
+    _paysParentController.dispose();
+    _villeParentController.dispose();
+    _adresseParentController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -134,6 +221,33 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     if (mounted) {
       setState(() => _currentTextScale = _textSizeService.getScale());
     }
+  }
+
+  // ── Slider auto-défilement ───────────────────────────────────
+  void _startSliderAutoScroll() {
+    _sliderTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_sliderController.hasClients && mounted) {
+        if (_currentSliderIndex < _featuredSchools.length - 1) {
+          _currentSliderIndex++;
+        } else {
+          _currentSliderIndex = 0;
+        }
+        _sliderController.animateToPage(
+          _currentSliderIndex,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _onSliderPageChanged(int index) {
+    setState(() {
+      _currentSliderIndex = index;
+    });
+    // Redémarrer le timer quand l'utilisateur change manuellement
+    _sliderTimer?.cancel();
+    _startSliderAutoScroll();
   }
 
   // ── Data ───────────────────────────────────────────────────
@@ -607,6 +721,631 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
 
   // ── Body ───────────────────────────────────────────────────
+  Widget _buildActionCards() {
+    return SizedBox(
+      height: 120,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildActionCard(
+            Icons.recommend_rounded,
+            'Recommander',
+            'Suggérer',
+            const Color(0xFF8B5CF6),
+            () {
+              // Action de recommandation
+              _showRecommendationBottomSheet();
+            },
+          ),
+          const SizedBox(width: 12),
+          _buildActionCard(
+            Icons.share_rounded,
+            'Partager',
+            'Diffuser',
+            const Color(0xFFEC4899),
+            () {
+              // Action de partage
+              _showShareBottomSheet();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionCard(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 160,
+        height: 120,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // Dégradé de fond
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.1),
+                      Colors.white,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+              
+              // Contenu
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Icône
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 24,
+                        color: color,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Titre
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Sous-titre
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRecommendationBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildRecommendationBottomSheet(),
+    );
+  }
+
+  Widget _buildRecommendationBottomSheet() {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.screenSurface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.recommend_rounded,
+                    size: 24,
+                    color: Color(0xFF8B5CF6),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Recommander un établissement',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Suggérez une école à la communauté',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Formulaire
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  
+                  // Nom du recommandeur
+                  CustomTextField(
+                    label: 'Votre nom',
+                    hint: 'Entrez votre nom complet',
+                    icon: Icons.person_rounded,
+                    controller: _recommenderNameController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Nom de l'établissement
+                  CustomTextField(
+                    label: 'Nom de l\'établissement',
+                    hint: 'Entrez le nom de l\'école',
+                    icon: Icons.business_rounded,
+                    controller: _etablissementController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Pays
+                  CustomTextField(
+                    label: 'Pays',
+                    hint: 'Entrez le pays',
+                    icon: Icons.public_rounded,
+                    controller: _paysRecommendController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Ville
+                  CustomTextField(
+                    label: 'Ville',
+                    hint: 'Entrez la ville',
+                    icon: Icons.location_city_rounded,
+                    controller: _villeRecommendController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Informations du parent (section)
+                  const Text(
+                    'Informations du parent',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Nom du parent
+                  CustomTextField(
+                    label: 'Nom du parent',
+                    hint: 'Entrez votre nom',
+                    icon: Icons.person_rounded,
+                    controller: _parentNomController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Prénom du parent
+                  CustomTextField(
+                    label: 'Prénom du parent',
+                    hint: 'Entrez votre prénom',
+                    icon: Icons.person_outline_rounded,
+                    controller: _parentPrenomController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Téléphone du parent
+                  CustomTextField(
+                    label: 'Téléphone',
+                    hint: 'Entrez votre numéro de téléphone',
+                    icon: Icons.phone_rounded,
+                    controller: _parentTelephoneController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Email du parent
+                  CustomTextField(
+                    label: 'Email',
+                    hint: 'Entrez votre email',
+                    icon: Icons.email_rounded,
+                    controller: _parentEmailController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Adresse de l'établissement
+                  CustomTextField(
+                    label: 'Adresse de l\'établissement',
+                    hint: 'Entrez l\'adresse (optionnel)',
+                    icon: Icons.location_on_rounded,
+                    controller: _adresseEtablissementController,
+                    iconColor: const Color(0xFF8B5CF6),
+                    focusBorderColor: const Color(0xFF8B5CF6),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Bouton d'envoi
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // Validation et envoi
+                        if (_etablissementController.text.isEmpty ||
+                            _paysRecommendController.text.isEmpty ||
+                            _villeRecommendController.text.isEmpty ||
+                            _parentNomController.text.isEmpty ||
+                            _parentPrenomController.text.isEmpty ||
+                            _parentTelephoneController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Veuillez remplir tous les champs obligatoires'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        try {
+                          await RecommendationService.submitRecommendation(
+                            etablissement: _etablissementController.text,
+                            pays: _paysRecommendController.text,
+                            ville: _villeRecommendController.text,
+                            ordre: _ordreController.text.isEmpty ? '1' : _ordreController.text,
+                            adresseEtablissement: _adresseEtablissementController.text.isEmpty 
+                                ? 'Non spécifiée' 
+                                : _adresseEtablissementController.text,
+                            nomParent: _parentNomController.text,
+                            prenomParent: _parentPrenomController.text,
+                            telephone: _parentTelephoneController.text,
+                            email: _parentEmailController.text.isEmpty 
+                                ? 'email@example.com' 
+                                : _parentEmailController.text,
+                            paysParent: _paysParentController.text.isEmpty 
+                                ? _paysRecommendController.text 
+                                : _paysParentController.text,
+                            villeParent: _villeParentController.text.isEmpty 
+                                ? _villeRecommendController.text 
+                                : _villeParentController.text,
+                            adresseParent: _adresseParentController.text.isEmpty 
+                                ? 'Non spécifiée' 
+                                : _adresseParentController.text,
+                          );
+                          
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Recommandation envoyée avec succès!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          
+                          // Vider les champs
+                          _etablissementController.clear();
+                          _paysRecommendController.clear();
+                          _villeRecommendController.clear();
+                          _parentNomController.clear();
+                          _parentPrenomController.clear();
+                          _parentTelephoneController.clear();
+                          _parentEmailController.clear();
+                          _ordreController.clear();
+                          _adresseEtablissementController.clear();
+                          _paysParentController.clear();
+                          _villeParentController.clear();
+                          _adresseParentController.clear();
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Erreur: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Envoyer la recommandation',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showShareBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildShareBottomSheet(),
+    );
+  }
+
+  Widget _buildShareBottomSheet() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.screenSurface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEC4899).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.share_rounded,
+                    size: 24,
+                    color: Color(0xFFEC4899),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Partager la liste',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Choisissez comment partager',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Options de partage
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildShareOption(
+                      Icons.message,
+                      'WhatsApp',
+                      const Color(0xFF25D366),
+                    ),
+                    _buildShareOption(
+                      Icons.email,
+                      'Email',
+                      const Color(0xFF4285F4),
+                    ),
+                    _buildShareOption(
+                      Icons.link,
+                      'Copier',
+                      const Color(0xFF6366F1),
+                    ),
+                    _buildShareOption(
+                      Icons.share,
+                      'Réseaux',
+                      const Color(0xFFEC4899),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShareOption(IconData icon, String label, Color color) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Partage via $label bientôt disponible'),
+            backgroundColor: color,
+          ),
+        );
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, size: 28, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF666666),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody() {
     if (_isLoading) return _buildLoadingState();
     if (_error != null) return _buildErrorState();
@@ -701,6 +1440,86 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           opacity: _fadeAnim,
           child: CustomScrollView(
             slivers: [
+              // ── Slider des écoles en vedette ─────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    children: [
+                      // Header du slider avec contrôle
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Écoles en vedette',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          // Bouton pour contrôler l'affichage du texte
+                          GestureDetector(
+                            onTap: () => setState(() => _showSliderText = !_showSliderText),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _showSliderText 
+                                    ? AppColors.screenOrange 
+                                    : Colors.grey[300],
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (_showSliderText 
+                                        ? AppColors.screenOrange 
+                                        : Colors.grey[300])!.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _showSliderText 
+                                        ? Icons.visibility_rounded
+                                        : Icons.visibility_off_rounded,
+                                    size: 16,
+                                    color: _showSliderText ? Colors.white : Colors.grey[600],
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _showSliderText ? 'Texte' : 'Image',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _showSliderText ? Colors.white : Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Slider
+                      _FeaturedSchoolsSlider(
+                        featuredSchools: _featuredSchools,
+                        pageController: _sliderController,
+                        onPageChanged: _onSliderPageChanged,
+                        currentIndex: _currentSliderIndex,
+                        showText: _showSliderText,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
               // ── Événements Banner Card ─────────────────────
               SliverToBoxAdapter(
                 child: Padding(
@@ -712,6 +1531,14 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       ),
                     ),
                   ),
+                ),
+              ),
+
+              // ── Actions Cards (Partager, Recommander) ─────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: _buildActionCards(),
                 ),
               ),
 
@@ -1313,6 +2140,312 @@ class _EcoleCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Featured Schools Slider ─────────────────────────────────────────────────────
+class _FeaturedSchoolsSlider extends StatelessWidget {
+  final List<Map<String, String>> featuredSchools;
+  final PageController pageController;
+  final Function(int) onPageChanged;
+  final int currentIndex;
+  final bool showText;
+
+  const _FeaturedSchoolsSlider({
+    required this.featuredSchools,
+    required this.pageController,
+    required this.onPageChanged,
+    required this.currentIndex,
+    required this.showText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // PageView pour le slider
+            PageView.builder(
+              controller: pageController,
+              onPageChanged: onPageChanged,
+              itemCount: featuredSchools.length,
+              itemBuilder: (context, index) {
+                final school = featuredSchools[index];
+                return _FeaturedSchoolCard(
+                  school: school,
+                  showText: showText,
+                );
+              },
+            ),
+            
+            // Indicateurs de pagination (uniquement si le texte est affiché)
+            if (showText)
+              Positioned(
+                bottom: 12,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    featuredSchools.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: currentIndex == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: currentIndex == index 
+                            ? AppColors.screenOrange 
+                            : AppColors.screenOrange.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Featured School Card ───────────────────────────────────────────────────────
+class _FeaturedSchoolCard extends StatelessWidget {
+  final Map<String, String> school;
+  final bool showText;
+
+  const _FeaturedSchoolCard({
+    required this.school,
+    required this.showText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typeColor = _typeColor(school['type'] ?? 'Primaire');
+    
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Image de fond
+        school['image'] != null && school['image']!.startsWith('assets')
+            ? Image.asset(
+                school['image']!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          typeColor.withOpacity(0.9),
+                          typeColor.withOpacity(0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      typeColor.withOpacity(0.9),
+                      typeColor.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+        
+        // Overlay semi-transparent pour la lisibilité du texte (uniquement si le texte est affiché)
+        if (showText)
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(0.6),
+                  Colors.black.withOpacity(0.3),
+                  Colors.transparent,
+                ],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+          ),
+        
+        // Contenu (uniquement si le texte est affiché)
+        if (showText)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Badge de type
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    school['type'] ?? 'Primaire',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(width: 20),
+                
+                // Informations
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Nom de l'école
+                      Text(
+                        school['name'] ?? 'École',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.1,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black26,
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      
+                      const SizedBox(height: 8),
+                      
+                      // Localisation
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              school['location'] ?? 'Localisation',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                height: 1.2,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 8),
+                      
+                      // Rating et description
+                      Row(
+                        children: [
+                          // Rating
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                school['rating'] ?? '4.5',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black26,
+                                      offset: Offset(0, 1),
+                                      blurRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(width: 16),
+                          
+                          // Description
+                          Expanded(
+                            child: Text(
+                              school['description'] ?? 'Description',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.white70,
+                                fontStyle: FontStyle.italic,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

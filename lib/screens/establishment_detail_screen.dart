@@ -7,6 +7,7 @@ import 'package:parents_responsable/widgets/custom_form_button.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
 import 'package:parents_responsable/widgets/image_menu_card.dart';
+import 'package:parents_responsable/widgets/image_menu_card_external_title.dart';
 import 'dart:developer' as developer;
 import '../config/app_colors.dart';
 import '../models/scolarite.dart';
@@ -155,12 +156,12 @@ const _kActions = <String, _ActionDef>{
   'integration': _ActionDef(
     icon: Icons.person_add_alt_1_rounded,
     label: 'Intégrer',
-    subtitle: 'Nous rejoindre',
-    color: Color(0xFF3B82F6),
+    subtitle: 'Inscrire',
+    color: Color(0xFFF59E0B),
   ),
   'rating': _ActionDef(
     icon: Icons.star_rate_rounded,
-    label: 'Avis & commentaire',
+    label: 'Noter',
     subtitle: 'Évaluer',
     color: Color(0xFF10B981),
   ),
@@ -169,18 +170,6 @@ const _kActions = <String, _ActionDef>{
     label: 'Parrainer',
     subtitle: 'Inviter',
     color: Color(0xFFF59E0B),
-  ),
-  'recommend': _ActionDef(
-    icon: Icons.recommend_rounded,
-    label: 'Recommander',
-    subtitle: 'Suggérer',
-    color: Color(0xFF8B5CF6),
-  ),
-  'share': _ActionDef(
-    icon: Icons.share_rounded,
-    label: 'Partager',
-    subtitle: 'Diffuser',
-    color: Color(0xFFEC4899),
   ),
   'informations': _ActionDef(
     icon: Icons.info_rounded,
@@ -2208,8 +2197,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       'integration',
       'rating',
       'sponsorship',
-      'recommend',
-      'share',
     ];
     return SizedBox(
       height: 140,
@@ -2279,7 +2266,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       children: [
         _buildSectionHeader('École', isDark),
         const SizedBox(height: 12),
-        _buildHorizontalMenuCards(ecoleSection, isDark),
+        _buildSchoolHorizontalMenuCards(ecoleSection, isDark),
         const SizedBox(height: 24),
         _buildSectionHeader('Vie école', isDark),
         const SizedBox(height: 12),
@@ -2323,6 +2310,45 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               onTap: () => _showActionBottomSheet(item[0], def),
               //location: _getSchoolLocation(),
               subtitle: "Consulter",
+              backgroundColor: def.color.withOpacity(0.1),
+              textColor: def.color,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Méthode spécifique pour la section École avec titre externe
+  Widget _buildSchoolHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
+    return SizedBox(
+      height: AppDimensions.getHorizontalMenuCardHeight(context) + 40, // Ajouter de la hauteur pour le titre externe
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.getAdaptivePadding(context) / 1.5,
+        ),
+        itemCount: menuItems.length,
+        itemBuilder: (context, index) {
+          final item = menuItems[index];
+          final def = _kActions[item[0]]!;
+          return Padding(
+            padding: EdgeInsets.only(
+              right: AppDimensions.getHorizontalMenuCardSpacing(context),
+            ),
+            child: ImageMenuCardExternalTitle(
+              index: index,
+              cardKey: item[0],
+              title: item[1],
+              subtitle: "En savoir plus", // Sous-titre externe
+              imagePath: item[2],
+              isDark: isDark,
+              icon: def.icon,
+              color: def.color,
+              width: AppDimensions.getHorizontalMenuCardWidth(context),
+              height: AppDimensions.getHorizontalMenuCardHeight(context),
+              externalTitleSpacing: 8.0,
+              onTap: () => _showActionBottomSheet(item[0], def),
               backgroundColor: def.color.withOpacity(0.1),
               textColor: def.color,
             ),

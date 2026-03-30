@@ -5,7 +5,6 @@ import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/models/ecole.dart';
 import 'package:parents_responsable/services/integration_service.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
-import 'package:parents_responsable/widgets/custom_form_button.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
 
@@ -85,11 +84,6 @@ class _DateInputFormatter extends TextInputFormatter {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Affiche le bottom sheet d'intégration pour un établissement donné.
-///
-/// [ecole] : L'établissement cible de la demande d'intégration.
-/// [scaffoldMessengerKey] : Clé pour afficher des SnackBars au-dessus du bottom sheet.
-/// [onSuccess] : Callback appelé avec le demande_uid en cas de succès.
-/// [onError] : Callback appelé avec le message d'erreur en cas d'échec.
 void showIntegrationBottomSheet({
   required BuildContext context,
   Ecole? ecole,
@@ -208,8 +202,9 @@ void showIntegrationBottomSheet({
           ),
 
           // ── Form content ────────────────────────────────────────────────
+          // MODIFIÉ : Padding simple, plus de SingleChildScrollView ici
           Flexible(
-            child: SingleChildScrollView(
+            child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
               child: IntegrationFormContent(
                 ecole: ecole,
@@ -229,20 +224,6 @@ void showIntegrationBottomSheet({
 //  IntegrationBottomSheet — Widget stateful externalisé
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Widget bottom sheet d'intégration, utilisable directement dans un autre écran :
-///
-/// ```dart
-/// showModalBottomSheet(
-///   context: context,
-///   isScrollControlled: true,
-///   backgroundColor: Colors.transparent,
-///   builder: (_) => IntegrationBottomSheet(
-///     ecole: myEcole,
-///     onSuccess: (uid) => print('Demande créée : $uid'),
-///     onError: (err) => print('Erreur : $err'),
-///   ),
-/// );
-/// ```
 class IntegrationBottomSheet extends StatelessWidget {
   final Ecole? ecole;
   final GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
@@ -366,8 +347,9 @@ class IntegrationBottomSheet extends StatelessWidget {
           ),
 
           // ── Form content ────────────────────────────────────────────────
+          // MODIFIÉ : Padding simple, plus de SingleChildScrollView ici
           Flexible(
-            child: SingleChildScrollView(
+            child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
               child: IntegrationFormContent(
                 ecole: ecole,
@@ -387,9 +369,6 @@ class IntegrationBottomSheet extends StatelessWidget {
 //  IntegrationFormContent — Contenu du formulaire (logique + UI)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Widget stateful contenant toute la logique et l'UI du formulaire d'intégration.
-/// Peut être utilisé directement dans n'importe quel conteneur (bottom sheet,
-/// page dédiée, dialog, etc.).
 class IntegrationFormContent extends StatefulWidget {
   final Ecole? ecole;
   final GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
@@ -410,6 +389,28 @@ class IntegrationFormContent extends StatefulWidget {
 
 class _IntegrationFormContentState extends State<IntegrationFormContent> {
   static const _actionColor = Color(0xFF3B82F6);
+
+  // ── Wizard state ────────────────────────────────────────────────────────
+  int _currentStep = 0;
+  final int _totalSteps = 5;
+
+  // ── Step titles ───────────────────────────────────────────────────────────
+  final List<String> _stepTitles = [
+    'Informations de l\'élève',
+    'Contacts et Parents',
+    'Scolarité antérieure',
+    'Documents et finalisation',
+    'Récapitulatif',
+  ];
+
+  // ── Step icons ─────────────────────────────────────────────────────────────
+  final List<IconData> _stepIcons = [
+    Icons.person_rounded,
+    Icons.phone_rounded,
+    Icons.school_rounded,
+    Icons.description_rounded,
+    Icons.summarize_rounded,
+  ];
 
   // ── Champs de formulaire ─────────────────────────────────────────────────
   final _studentNameController = TextEditingController();
@@ -528,9 +529,66 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
   }
 
+  // ── Navigation methods ───────────────────────────────────────────────────
+  void _nextStep() {
+    if (_currentStep < _totalSteps - 1) {
+      if (_validateCurrentStep()) {
+        setState(() => _currentStep++);
+      }
+    } else {
+      _submit();
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
+    }
+  }
+
+  bool _validateCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        if (_studentNameController.text.isEmpty ||
+            _studentFirstNameController.text.isEmpty ||
+            _matriculeController.text.isEmpty ||
+            _birthDateController.text.isEmpty ||
+            _adresseController.text.isEmpty) {
+          _showSnack('Veuillez remplir tous les champs obligatoires');
+          return false;
+        }
+        final dateRegex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
+        if (!dateRegex.hasMatch(_birthDateController.text)) {
+          _showSnack('Format de date invalide. Utilisez JJ/MM/AAAA');
+          return false;
+        }
+        return true;
+
+      case 1:
+        if (_contact1Controller.text.isEmpty ||
+            _nomPereController.text.isEmpty ||
+            _nomMereController.text.isEmpty) {
+          _showSnack('Veuillez remplir tous les champs obligatoires');
+          return false;
+        }
+        return true;
+
+      case 2:
+        return true;
+
+      case 3:
+        return true;
+
+      case 4:
+        return true;
+
+      default:
+        return true;
+    }
+  }
+
   // ── Soumission ────────────────────────────────────────────────────────────
   Future<void> _submit() async {
-    // Reset
     setState(() {
       _studentNameError = false;
       _studentFirstNameError = false;
@@ -629,7 +687,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           : 'primaire',
     };
 
-    // Loader
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -648,18 +705,16 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         widget.ecole?.parametreCode ?? '',
         requestData,
       );
-      Navigator.of(context).pop(); // ferme loader
+      Navigator.of(context).pop();
 
       if (result['success'] == true) {
-        Navigator.of(context).pop(); // ferme bottom sheet
+        Navigator.of(context).pop();
         await Future.delayed(const Duration(milliseconds: 300));
 
         final demandeUid = result['data']?['demande_uid'] as String? ?? '';
 
-        // Callback succès
         widget.onSuccess?.call(demandeUid);
 
-        // SnackBar succès
         final messenger =
             widget.scaffoldMessengerKey?.currentState ??
             ScaffoldMessenger.of(context);
@@ -675,7 +730,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           ),
         );
 
-        // Dialog de confirmation avec UID
         if (demandeUid.isNotEmpty && context.mounted) {
           _showSuccessDialog(demandeUid);
         }
@@ -685,8 +739,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         _showSnack(errMsg, isError: true);
       }
     } catch (e) {
-      Navigator.of(context).pop(); // ferme loader
-      Navigator.of(context).pop(); // ferme bottom sheet
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
       await Future.delayed(const Duration(milliseconds: 300));
       final errMsg = e.toString();
       widget.onError?.call(errMsg);
@@ -820,7 +874,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                           onTap: () {
                             Clipboard.setData(ClipboardData(text: demandeUid));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Numéro copié !')),
+                              const SnackBar(
+                                content: Text('Numéro copié !'),
+                              ),
                             );
                           },
                           child: const Icon(
@@ -850,7 +906,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                   ),
                   child: const Text(
                     'OK, j\'ai compris',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -861,96 +920,298 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  Build — MODIFIÉ : progress + navigation fixes, seul le step scrolle
+  // ═══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      // mainAxisSize: MainAxisSize.min retiré → on veut occuper tout l'espace
+      // disponible pour que Flexible + SingleChildScrollView fonctionnent
       children: [
-        _formSectionCard(
-          title: 'Informations de l\'élève',
-          icon: Icons.person_rounded,
-          children: [
-            CustomTextField(
-              label: 'Nom',
-              hint: 'Entrez le nom complet',
-              icon: Icons.person_rounded,
-              controller: _studentNameController,
-              required: true,
-              hasError: _studentNameError,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'Prénoms',
-              hint: 'Entrez les prénoms',
-              icon: Icons.person_outline_rounded,
-              controller: _studentFirstNameController,
-              required: true,
-              hasError: _studentFirstNameError,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'Matricule',
-              hint: 'Entrez le matricule',
-              icon: Icons.badge_rounded,
-              controller: _matriculeController,
-              required: true,
-              hasError: _matriculeError,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            StatefulBuilder(
-              builder: (context, ss) => _buildDropdown(
-                'Sexe',
-                'Sélectionner le sexe',
-                Icons.person_rounded,
-                value: _selectedSexe,
-                items: ['M', 'F'],
-                onChanged: (v) => ss(() => _selectedSexe = v ?? 'M'),
-              ),
-            ),
-            CustomTextField(
-              label: 'Date de naissance',
-              hint: 'JJ/MM/AAAA',
-              icon: Icons.cake_rounded,
-              controller: _birthDateController,
-              keyboardType: TextInputType.number,
-              required: true,
-              hasError: _birthDateError,
-              inputFormatters: [_DateInputFormatter()],
-            ),
-            CustomTextField(
-              label: 'Lieu de naissance',
-              hint: 'Entrez le lieu de naissance',
-              icon: Icons.location_on_rounded,
-              controller: _lieuNaissanceController,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'Nationalité',
-              hint: 'Entrez la nationalité',
-              icon: Icons.flag_rounded,
-              controller: _nationaliteController,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'Adresse',
-              hint: 'Entrez l\'adresse complète',
-              icon: Icons.home_rounded,
-              controller: _adresseController,
-              maxLines: 2,
-              required: true,
-              hasError: _adresseError,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-          ],
+        // ── Progress indicator (FIXE) ───────────────────────────────────────
+        _buildProgressIndicator(),
+        const SizedBox(height: 20),
+
+        // ── Contenu de l'étape (SCROLLABLE) ────────────────────────────────
+        Flexible(
+          child: SingleChildScrollView(
+            child: _buildCurrentStep(),
+          ),
         ),
 
+        const SizedBox(height: 16),
+
+        // ── Navigation buttons (FIXE) ───────────────────────────────────────
+        _buildNavigationButtons(),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  // ── Progress indicator ─────────────────────────────────────────────────────
+  Widget _buildProgressIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.screenCard,
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getMediumCardBorderRadius(context),
+        ),
+        boxShadow: AppDimensions.getLightShadow(context),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(_totalSteps, (index) {
+              final isCompleted = index < _currentStep;
+              final isCurrent = index == _currentStep;
+
+              return Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isCompleted
+                            ? AppColors.screenOrange
+                            : isCurrent
+                                ? _actionColor
+                                : AppColors.screenDivider,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        isCompleted
+                            ? Icons.check_rounded
+                            : _stepIcons[index],
+                        color: isCompleted || isCurrent
+                            ? Colors.white
+                            : AppColors.screenTextSecondary,
+                        size: 16,
+                      ),
+                    ),
+                    if (index < _totalSteps - 1)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          color: index < _currentStep
+                              ? AppColors.screenOrange
+                              : AppColors.screenDivider,
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Étape ${_currentStep + 1} sur $_totalSteps: ${_stepTitles[_currentStep]}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Current step content ───────────────────────────────────────────────────
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return _buildStep1();
+      case 1:
+        return _buildStep2();
+      case 2:
+        return _buildStep3();
+      case 3:
+        return _buildStep4();
+      case 4:
+        return _buildStep5();
+      default:
+        return Container();
+    }
+  }
+
+  // ── Navigation buttons ─────────────────────────────────────────────────────
+  Widget _buildNavigationButtons() {
+    return Row(
+      children: [
+        if (_currentStep > 0)
+          Expanded(
+            child: SizedBox(
+              height: 50,
+              child: OutlinedButton(
+                onPressed: _previousStep,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.screenDivider),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getButtonBorderRadius(context),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.arrow_back_rounded,
+                      size: 18,
+                      color: AppColors.screenTextSecondary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Précédent',
+                      style: TextStyle(
+                        color: AppColors.screenTextSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (_currentStep > 0) const SizedBox(width: 12),
+        Expanded(
+          child: SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _nextStep,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.screenOrange,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getButtonBorderRadius(context),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _currentStep == _totalSteps - 1
+                        ? 'Envoyer la demande'
+                        : 'Suivant',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (_currentStep < _totalSteps - 1) ...[
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Step 1: Student Information ─────────────────────────────────────────────
+  Widget _buildStep1() {
+    return _formSectionCard(
+      title: 'Informations de l\'élève',
+      icon: Icons.person_rounded,
+      children: [
+        CustomTextField(
+          label: 'Nom',
+          hint: 'Entrez le nom complet',
+          icon: Icons.person_rounded,
+          controller: _studentNameController,
+          required: true,
+          hasError: _studentNameError,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        CustomTextField(
+          label: 'Prénoms',
+          hint: 'Entrez les prénoms',
+          icon: Icons.person_outline_rounded,
+          controller: _studentFirstNameController,
+          required: true,
+          hasError: _studentFirstNameError,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        CustomTextField(
+          label: 'Matricule',
+          hint: 'Entrez le matricule',
+          icon: Icons.badge_rounded,
+          controller: _matriculeController,
+          required: true,
+          hasError: _matriculeError,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        StatefulBuilder(
+          builder: (context, ss) => _buildDropdown(
+            'Sexe',
+            'Sélectionner le sexe',
+            Icons.person_rounded,
+            value: _selectedSexe,
+            items: ['M', 'F'],
+            onChanged: (v) => ss(() => _selectedSexe = v ?? 'M'),
+          ),
+        ),
+        CustomTextField(
+          label: 'Date de naissance',
+          hint: 'JJ/MM/AAAA',
+          icon: Icons.cake_rounded,
+          controller: _birthDateController,
+          keyboardType: TextInputType.number,
+          required: true,
+          hasError: _birthDateError,
+          inputFormatters: [_DateInputFormatter()],
+        ),
+        CustomTextField(
+          label: 'Lieu de naissance',
+          hint: 'Entrez le lieu de naissance',
+          icon: Icons.location_on_rounded,
+          controller: _lieuNaissanceController,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        CustomTextField(
+          label: 'Nationalité',
+          hint: 'Entrez la nationalité',
+          icon: Icons.flag_rounded,
+          controller: _nationaliteController,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        CustomTextField(
+          label: 'Adresse',
+          hint: 'Entrez l\'adresse complète',
+          icon: Icons.home_rounded,
+          controller: _adresseController,
+          maxLines: 2,
+          required: true,
+          hasError: _adresseError,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+      ],
+    );
+  }
+
+  // ── Step 2: Contacts and Parents ─────────────────────────────────────────────
+  Widget _buildStep2() {
+    return Column(
+      children: [
         _formSectionCard(
           title: 'Contacts',
           icon: Icons.phone_rounded,
@@ -977,7 +1238,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             ),
           ],
         ),
-
         _formSectionCard(
           title: 'Informations des parents',
           icon: Icons.family_restroom_rounded,
@@ -1012,56 +1272,64 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             ),
           ],
         ),
+      ],
+    );
+  }
 
-        _formSectionCard(
-          title: 'Scolarité antérieure',
+  // ── Step 3: Previous Schooling ───────────────────────────────────────────────
+  Widget _buildStep3() {
+    return _formSectionCard(
+      title: 'Scolarité antérieure',
+      icon: Icons.school_rounded,
+      children: [
+        CustomTextField(
+          label: 'Niveau antérieur',
+          hint: 'Ex: CP1, 6ème...',
           icon: Icons.school_rounded,
-          children: [
-            CustomTextField(
-              label: 'Niveau antérieur',
-              hint: 'Ex: CP1, 6ème...',
-              icon: Icons.school_rounded,
-              controller: _niveauAntController,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'École antérieure',
-              hint: 'Nom de l\'école précédente',
-              icon: Icons.account_balance_rounded,
-              controller: _ecoleAntController,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'Moyenne antérieure',
-              hint: 'Ex: 12.5',
-              icon: Icons.grade_rounded,
-              controller: _moyenneAntController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'Rang antérieur',
-              hint: 'Ex: 3ème',
-              icon: Icons.format_list_numbered_rounded,
-              controller: _rangAntController,
-              keyboardType: TextInputType.number,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
-            ),
-            CustomTextField(
-              label: 'Décision',
-              hint: 'Ex: Passage, Redoublement...',
-              icon: Icons.gavel_rounded,
-              controller: _decisionAntController,
-            ),
-          ],
+          controller: _niveauAntController,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
         ),
+        CustomTextField(
+          label: 'École antérieure',
+          hint: 'Nom de l\'école précédente',
+          icon: Icons.account_balance_rounded,
+          controller: _ecoleAntController,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        CustomTextField(
+          label: 'Moyenne antérieure',
+          hint: 'Ex: 12.5',
+          icon: Icons.grade_rounded,
+          controller: _moyenneAntController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        CustomTextField(
+          label: 'Rang antérieur',
+          hint: 'Ex: 3ème',
+          icon: Icons.format_list_numbered_rounded,
+          controller: _rangAntController,
+          keyboardType: TextInputType.number,
+          iconColor: _actionColor,
+          focusBorderColor: _actionColor,
+        ),
+        CustomTextField(
+          label: 'Décision',
+          hint: 'Ex: Passage, Redoublement...',
+          icon: Icons.gavel_rounded,
+          controller: _decisionAntController,
+        ),
+      ],
+    );
+  }
 
+  // ── Step 4: Documents and Finalization ─────────────────────────────────────────
+  Widget _buildStep4() {
+    return Column(
+      children: [
         _formSectionCard(
           title: 'Documents à fournir',
           icon: Icons.description_rounded,
@@ -1103,7 +1371,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             ),
           ],
         ),
-
         _formSectionCard(
           title: 'Détails de la demande',
           icon: Icons.note_rounded,
@@ -1121,7 +1388,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                 Icons.assignment_turned_in_rounded,
                 value: _selectedStatutAff,
                 items: ['Affecté', 'En attente', 'Refusé'],
-                onChanged: (v) => ss(() => _selectedStatutAff = v ?? 'Affecté'),
+                onChanged: (v) =>
+                    ss(() => _selectedStatutAff = v ?? 'Affecté'),
               ),
             ),
             CustomTextField(
@@ -1132,15 +1400,129 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             ),
           ],
         ),
-
-        CustomFormButton(
-          text: 'Envoyer la demande',
-          color: AppColors.screenOrange,
-          icon: Icons.send_rounded,
-          onPressed: _submit,
-        ),
-        const SizedBox(height: 20),
       ],
+    );
+  }
+
+  // ── Step 5: Récapitulatif ─────────────────────────────────────────────────────
+  Widget _buildStep5() {
+    return Column(
+      children: [
+        _formSectionCard(
+          title: 'Récapitulatif de la demande',
+          icon: Icons.summarize_rounded,
+          children: [
+            _buildSummaryItem('Informations élève', [
+              'Nom: ${_studentNameController.text}',
+              'Prénoms: ${_studentFirstNameController.text}',
+              'Matricule: ${_matriculeController.text}',
+              'Sexe: ${_selectedSexe}',
+              'Date de naissance: ${_birthDateController.text}',
+              'Lieu: ${_lieuNaissanceController.text}',
+              'Nationalité: ${_nationaliteController.text}',
+              'Adresse: ${_adresseController.text}',
+            ]),
+            const SizedBox(height: 16),
+            _buildSummaryItem('Contacts et Parents', [
+              'Contact 1: ${_contact1Controller.text}',
+              'Contact 2: ${_contact2Controller.text}',
+              'Nom du père: ${_nomPereController.text}',
+              'Nom de la mère: ${_nomMereController.text}',
+              if (_nomTuteurController.text.isNotEmpty)
+                'Nom du tuteur: ${_nomTuteurController.text}',
+            ]),
+            const SizedBox(height: 16),
+            _buildSummaryItem('Scolarité antérieure', [
+              if (_niveauAntController.text.isNotEmpty)
+                'Niveau: ${_niveauAntController.text}',
+              if (_ecoleAntController.text.isNotEmpty)
+                'École: ${_ecoleAntController.text}',
+              if (_moyenneAntController.text.isNotEmpty)
+                'Moyenne: ${_moyenneAntController.text}',
+              if (_rangAntController.text.isNotEmpty)
+                'Rang: ${_rangAntController.text}',
+              if (_decisionAntController.text.isNotEmpty)
+                'Décision: ${_decisionAntController.text}',
+            ]),
+            const SizedBox(height: 16),
+            _buildSummaryItem('Détails de la demande', [
+              'Motif: ${_motifController.text}',
+              'Statut: ${_selectedStatutAff}',
+              'Filière: ${_filiereController.text}',
+            ]),
+            const SizedBox(height: 16),
+            _buildSummaryItem('Documents', [
+              if (_bulletinFile != null) '✅ Bulletin scolaire',
+              if (_certificatVaccinationFile != null)
+                '✅ Certificat de vaccination',
+              if (_certificatScolariteFile != null)
+                '✅ Certificat de scolarité',
+              if (_extraitNaissanceFile != null) '✅ Extrait de naissance',
+              if (_cniParentFile != null) '✅ CNI des parents',
+              if (_bulletinFile == null &&
+                  _certificatVaccinationFile == null &&
+                  _certificatScolariteFile == null &&
+                  _extraitNaissanceFile == null &&
+                  _cniParentFile == null)
+                'Aucun document sélectionné',
+            ]),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryItem(String title, List<String> items) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.screenDivider.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.screenTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...items.where((item) => item.isNotEmpty).map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        margin: const EdgeInsets.only(top: 8, right: 8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.screenOrange,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          item,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.screenTextSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+        ],
+      ),
     );
   }
 
@@ -1151,7 +1533,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         content: Text('Sélection de fichier pour: $fileType'),
         backgroundColor: AppColors.screenOrange,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -1187,7 +1570,11 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                       AppDimensions.getBadgeBorderRadius(context),
                     ),
                   ),
-                  child: Icon(icon, color: AppColors.screenOrange, size: 18),
+                  child: Icon(
+                    icon,
+                    color: AppColors.screenOrange,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -1261,7 +1648,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           items: items
               .map(
                 (i) => DropdownMenuItem(
@@ -1280,8 +1667,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           dropdownColor: Colors.white,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-            prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFFBBBBBB),
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: AppColors.screenOrange,
+              size: 18,
+            ),
             filled: true,
             fillColor: AppColors.screenSurface,
             contentPadding: const EdgeInsets.symmetric(

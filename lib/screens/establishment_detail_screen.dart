@@ -757,7 +757,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         ),
         const SizedBox(height: 24),
         _buildMenuCards(isDark),
-        const SizedBox(height: 32),
+        const SizedBox(height: 102),
       ],
     );
   }
@@ -2229,17 +2229,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     // Section École (pédagogique)
     final ecoleSection = [
       ['informations', 'Informations de l\'école', 'assets/images/ecole.jpg'],
-      ['niveaux', '', 'assets/images/niveau-scolaire.jpg'], //Niveaux scolaire
-      ['communication', '', 'assets/images/actualite-2.jpg'],
-    ];
-
-    // Section Vie école (opérationnel)
-    final vieEcoleSection = [
-      [
-        'school_events',
-        '', //Événements scolaires
-        'assets/images/school-event.jpg', //assets/images/school-event.jpg
-      ],
+      ['niveaux', 'Nos niveaux scolaires', 'assets/images/niveau-scolaire.jpg'], //Niveaux scolaire
       [
         'consult_requests',
         '', //Mes demandes
@@ -2250,6 +2240,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         '', //Scolarité
         'assets/images/scolarite.jpg',
       ],
+    ];
+
+    // Section Vie école (opérationnel)
+    final vieEcoleSection = [
+      [
+        'school_events',
+        'Événements scolaires', //Événements scolaires
+        'assets/images/school-event.jpg', //assets/images/school-event.jpg
+      ],
+      ['communication', 'Notre actualités', 'assets/images/actualite-2.jpg'],
+
     ];
 
     // Section Communauté
@@ -2274,14 +2275,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         const SizedBox(height: 24),
         _buildSectionHeader('Communauté', isDark),
         const SizedBox(height: 12),
-        _buildHorizontalMenuCards(communauteSection, isDark),
+        //_buildHorizontalMenuCards(communauteSection, isDark),
       ],
     );
   }
 
   Widget _buildHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
     return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(context),
+      height: AppDimensions.getHorizontalMenuCardHeight(context) + 80,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -2295,23 +2296,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             padding: EdgeInsets.only(
               right: AppDimensions.getHorizontalMenuCardSpacing(context),
             ),
-            child: ImageMenuCard(
+            child: ImageMenuCardExternalTitle(
               index: index,
               cardKey: item[0],
               title: item[1],
+              subtitle: "En savoir plus",
               imagePath: item[2],
               isDark: isDark,
               icon: def.icon,
               color: def.color,
               width: AppDimensions.getHorizontalMenuCardWidth(context),
-              height: AppDimensions.getHorizontalMenuCardHeight(
-                context,
-              ), // - 10
+              height: AppDimensions.getHorizontalMenuCardHeight(context),
+              externalTitleSpacing: 15.0,
               onTap: () => _showActionBottomSheet(item[0], def),
-              //location: _getSchoolLocation(),
-              subtitle: "Consulter",
               backgroundColor: def.color.withOpacity(0.1),
-              textColor: def.color,
+              //textColor: def.color,
             ),
           );
         },
@@ -2322,7 +2321,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // Méthode spécifique pour la section École avec titre externe
   Widget _buildSchoolHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
     return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(context) + 40, // Ajouter de la hauteur pour le titre externe
+      height: AppDimensions.getHorizontalMenuCardHeight(context) + 70, // Ajouter de la hauteur pour le titre externe
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -2347,10 +2346,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               color: def.color,
               width: AppDimensions.getHorizontalMenuCardWidth(context),
               height: AppDimensions.getHorizontalMenuCardHeight(context),
-              externalTitleSpacing: 8.0,
+              externalTitleSpacing: 10.0,
               onTap: () => _showActionBottomSheet(item[0], def),
               backgroundColor: def.color.withOpacity(0.1),
-              textColor: def.color,
+              //textColor: def.color,
             ),
           );
         },

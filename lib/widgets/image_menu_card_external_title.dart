@@ -145,7 +145,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           // Titre et sous-titre affichés en dehors de la carte
           if (title?.isNotEmpty == true) ...[
             Container(
-              width: width ?? 120, // Même largeur que la carte
+              width: 120, // Même largeur que la carte
               margin: EdgeInsets.only(right: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,10 +163,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               ? Colors.white
                               : AppColors.screenTextPrimary),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2, // Force le titre sur une seule ligne
+                    overflow: TextOverflow.ellipsis, // Ajoute des points de suspension
                   ),
-                  
                   // Sous-titre
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),

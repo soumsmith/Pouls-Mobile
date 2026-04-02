@@ -591,26 +591,26 @@ class AppDimensions {
   /// Hauteur des cartes de menu horizontal selon l'appareil
   static double getHorizontalMenuCardHeight(BuildContext context) {
     if (isMobile(context)) {
-      return 110.0; // Mobile : plus compact
+      return 150.0; // Mobile : plus compact
     } else if (isSmallTablet(context)) {
-      return 90.0; // iPad Mini : hauteur intermédiaire
+      return 150.0; // iPad Mini : hauteur intermédiaire
     } else if (isTablet(context)) {
-      return 100.0; // iPad : hauteur standard
+      return 150.0; // iPad : hauteur standard
     } else {
-      return 110.0; // Desktop : hauteur plus généreuse
+      return 150.0; // Desktop : hauteur plus généreuse
     }
   }
 
   /// Largeur des cartes de menu horizontal selon l'appareil
   static double getHorizontalMenuCardWidth(BuildContext context) {
     if (isMobile(context)) {
-      return 120.0; // Mobile : plus étroit
+      return 150.0; // Mobile : plus étroit
     } else if (isSmallTablet(context)) {
-      return 140.0; // iPad Mini : largeur intermédiaire
+      return 150.0; // iPad Mini : largeur intermédiaire
     } else if (isTablet(context)) {
-      return 160.0; // iPad : largeur standard
+      return 150.0; // iPad : largeur standard
     } else {
-      return 180.0; // Desktop : largeur plus généreuse
+      return 150.0; // Desktop : largeur plus généreuse
     }
   }
 

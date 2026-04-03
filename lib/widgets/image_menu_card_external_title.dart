@@ -70,9 +70,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           GestureDetector(
             onTap: onTap,
             child: Container(
-              width: width ?? 120, //cardWidth,
-              height: height ?? 120, // Hauteur par défaut si non spécifiée
-              margin: EdgeInsets.only(right: 16),
+              width: width ?? 100, //cardWidth,
+              height: height ?? 100, // Hauteur par défaut si non spécifiée
+              margin: EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color:
                     backgroundColor ??
@@ -145,8 +145,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           // Titre et sous-titre affichés en dehors de la carte
           if (title?.isNotEmpty == true) ...[
             Container(
-              width: 120, // Même largeur que la carte
-              margin: EdgeInsets.only(right: 16),
+              width: 100, // Même largeur que la carte
+              margin: EdgeInsets.only(right: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -155,7 +155,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                   Text(
                     title!,
                     style: TextStyle(
-                      fontSize: textSizeService.getScaledFontSize(14),
+                      fontSize: textSizeService.getScaledFontSize(12),
                       fontWeight: FontWeight.w700,
                       color:
                           textColor ??
@@ -163,16 +163,16 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               ? Colors.white
                               : AppColors.screenTextPrimary),
                     ),
-                    maxLines: 2, // Force le titre sur une seule ligne
+                    maxLines: 1, // Force le titre sur une seule ligne
                     overflow: TextOverflow.ellipsis, // Ajoute des points de suspension
                   ),
                   // Sous-titre
                   if (subtitle != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle!,
                       style: TextStyle(
-                        fontSize: textSizeService.getScaledFontSize(11),
+                        fontSize: textSizeService.getScaledFontSize(10),
                         fontWeight: FontWeight.w500,
                         color:
                             textColor?.withOpacity(0.7) ??
@@ -180,7 +180,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                 ? Colors.white70
                                 : AppColors.screenTextSecondary),
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -246,7 +246,41 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
 
   // Méthode pour gérer l'affichage de l'image ou de l'icône
   Widget _buildImageOrIcon(BuildContext context) {
-    // Priorité à l'image si elle est spécifiée et valide
+    // Priorité aux images réseau si elles sont spécifiées
+    if (imagePath != null && imagePath!.startsWith('http')) {
+      return Image.network(
+        imagePath!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Si l'image réseau ne se charge pas, afficher l'image par défaut
+          return Image.asset(
+            'assets/images/img-shcool-not-found.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // Si même l'image par défaut ne se charge pas, afficher l'icône de secours
+              return Icon(
+                icon ?? Icons.image,
+                color: color ?? AppColors.screenOrange,
+                size: 40,
+              );
+            },
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          // Afficher un indicateur de chargement
+          return Center(
+            child: Icon(
+              icon ?? Icons.image,
+              color: color ?? AppColors.screenOrange.withOpacity(0.5),
+              size: 40,
+            ),
+          );
+        },
+      );
+    }
+    
+    // Priorité aux images locales si elles sont spécifiées et valides
     if (imagePath != null && imagePath!.startsWith('assets/')) {
       return Image.asset(
         imagePath!,
@@ -259,6 +293,14 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
             size: 40,
           );
         },
+      );
+    }
+
+    // Si aucune image n'est spécifiée, utiliser l'image par défaut
+    if (imagePath == null) {
+      return Image.asset(
+        'assets/images/img-shcool-not-found.jpg',
+        fit: BoxFit.cover,
       );
     }
 

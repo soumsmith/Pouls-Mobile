@@ -405,13 +405,13 @@ class AppDimensions {
   /// Espacement entre les cartes d'écoles selon l'appareil
   static double getEcoleCardSpacing(BuildContext context) {
     if (isMobile(context)) {
-      return 8.0; // Mobile : compact
+      return 6.0; // Mobile : très compact
     } else if (isSmallTablet(context)) {
-      return 10.0; // iPad Mini : espacement standard
+      return 8.0; // iPad Mini : compact
     } else if (isTablet(context)) {
-      return 12.0; // iPad : espacement plus généreux
+      return 10.0; // iPad : espacement modéré
     } else {
-      return 16.0; // Desktop : espacement maximum
+      return 12.0; // Desktop : espacement standard
     }
   }
 
@@ -457,13 +457,13 @@ class AppDimensions {
   /// Nombre de colonnes pour la grille d'écoles selon l'appareil
   static int getEcolesGridColumns(BuildContext context) {
     if (isMobile(context)) {
-      return 3; // Mobile : 2 colonnes
+      return 2; // Mobile : 2 colonnes
     } else if (isSmallTablet(context)) {
-      return 4; // iPad Mini : 3 colonnes
+      return 4; // Petite tablette : 4 colonnes
     } else if (isTablet(context)) {
-      return 4; // iPad : 4 colonnes
+      return 5; // Grande tablette : 5 colonnes
     } else {
-      return 5; // Desktop : 5 colonnes
+      return 6; // Desktop : 6 colonnes
     }
   }
 
@@ -621,7 +621,7 @@ class AppDimensions {
     } else if (isSmallTablet(context)) {
       return 6.0; // iPad Mini : espacement réduit
     } else if (isTablet(context)) {
-      return 8.0; // iPad : espacement standard
+      return 0.0; // iPad : espacement standard
     } else {
       return 10.0; // Desktop : espacement modéré
     }
@@ -854,12 +854,14 @@ class AppDimensions {
     
     // Ajuster le ratio selon le nombre de colonnes
     switch (crossAxisCount) {
-      case 4: // Mobile
-        return 0.75; // Plus haut pour éviter l'overflow
-      case 3: // Mobile avec plus d'espace ou iPad Mini
-        return 0.62; // Encore plus haut pour éviter l'overflow
-      default: // iPad (4 colonnes) ou Desktop (5+ colonnes)
-        return 0.65; // Plus haut pour tablette/desktop
+      case 2: // Mobile
+        return 0.65; // Format vertical pour mobile
+      case 4: // Petite tablette
+        return 0.75; // Format équilibré
+      case 5: // Grande tablette
+        return 0.8; // Format légèrement plus large
+      default: // Desktop (6+ colonnes)
+        return 0.85; // Format large pour desktop
     }
   }
 
@@ -1151,6 +1153,21 @@ class AppDimensions {
       return 18.0; // iPad : plus grand
     } else {
       return 20.0; // Desktop : maximum
+    }
+  }
+
+  // ── DIMENSIONS POUR LES CARROUSELS ────────────────────────────────────────────────
+  
+  /// Hauteur du carrousel selon l'appareil
+  static double getCarouselHeight(BuildContext context) {
+    if (isMobile(context)) {
+      return 140.0; // Mobile : hauteur compacte
+    } else if (isSmallTablet(context)) {
+      return 320.0; // iPad Mini : hauteur intermédiaire
+    } else if (isTablet(context)) {
+      return 320.0; // iPad : hauteur standard
+    } else {
+      return 260.0; // Desktop : hauteur plus généreuse
     }
   }
 

@@ -24,7 +24,15 @@ class ImageHelper {
                 height: height,
                 fit: fit,
                 errorBuilder: (context, error, stackTrace) {
-                  return _buildPlaceholder(placeholder);
+                  return Image.asset(
+                    'assets/images/img-shcool-not-found.jpg',
+                    width: width,
+                    height: height,
+                    fit: fit,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildPlaceholder(placeholder);
+                    },
+                  );
                 },
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -47,7 +55,15 @@ class ImageHelper {
                   );
                 },
               )
-            : _buildPlaceholder(placeholder),
+            : Image.asset(
+                'assets/images/img-shcool-not-found.jpg',
+                width: width,
+                height: height,
+                fit: fit,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildPlaceholder(placeholder);
+                },
+              ),
       ),
     );
   }

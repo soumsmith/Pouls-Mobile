@@ -69,7 +69,7 @@ class ImageMenuCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: width ?? 120, //cardWidth,
-          height: height ?? 120, // Hauteur par défaut si non spécifiée
+          height: height ?? width ?? 120, // Utiliser la width comme height si height non spécifié pour préserver le carré
           margin: EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
             color:

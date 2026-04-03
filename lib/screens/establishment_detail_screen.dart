@@ -2199,7 +2199,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       'sponsorship',
     ];
     return SizedBox(
-      height: 140,
+      height: AppDimensions.getHorizontalMenuCardHeight(context),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(left: 0),
@@ -2212,6 +2212,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             title: def.label,
             iconData: def.icon,
             isDark: isDark,
+            width: AppDimensions.getHorizontalMenuCardWidth(context),
+            height: AppDimensions.getHorizontalMenuCardHeight(context),
             color: def.color,
             onTap: () => _showActionBottomSheet(actions[i], def),
             actionText: def.subtitle,
@@ -2232,12 +2234,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ['niveaux', 'Nos niveaux scolaires', 'assets/images/niveau-scolaire.jpg'], //Niveaux scolaire
       [
         'consult_requests',
-        '', //Mes demandes
+        'Mes demandes', //
         'assets/images/mes-demande.jpg',
       ],
       [
         'scolarite',
-        '', //Scolarité
+        'Scolarité', //
         'assets/images/scolarite.jpg',
       ],
     ];
@@ -2286,7 +2288,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
-          horizontal: AppDimensions.getAdaptivePadding(context) / 1.5,
+          horizontal: AppDimensions.getAdaptivePadding(context) / 2.5,
         ),
         itemCount: menuItems.length,
         itemBuilder: (context, index) {
@@ -2321,11 +2323,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // Méthode spécifique pour la section École avec titre externe
   Widget _buildSchoolHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
     return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(context) + 70, // Ajouter de la hauteur pour le titre externe
+      height: AppDimensions.getHorizontalMenuCardHeight(context) + 80, // Ajouter de la hauteur pour le titre externe
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
-          horizontal: AppDimensions.getAdaptivePadding(context) / 1.5,
+          horizontal: AppDimensions.getAdaptivePadding(context) / 2.5,
         ),
         itemCount: menuItems.length,
         itemBuilder: (context, index) {

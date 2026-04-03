@@ -86,7 +86,7 @@ class Ecole {
     if (imagefond != null && imagefond!.isNotEmpty) {
       return imagefond!;
     }
-    return 'https://picsum.photos/seed/ecole-default/400/300.jpg';
+    return 'assets/images/img-shcool-not-found.jpg';
   }
 
   /// Retourne le type d'école principal basé sur les filières

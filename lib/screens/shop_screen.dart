@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parents_responsable/widgets/snackbar.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
-import '../utils/image_helper.dart';
 import '../models/product.dart';
 import '../services/library_service.dart';
 import '../services/cart_service.dart';
@@ -20,6 +20,7 @@ import '../widgets/see_more_card.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_row_widget.dart';
+import '../widgets/image_menu_card_external_title.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -72,12 +73,12 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   // ── Responsive Grid Methods ───────────────────────────
   int _getCrossAxisCount(BuildContext context) {
-    return AppDimensions.getProductsGridColumns(context);
+    return AppDimensions.getEcolesGridColumns(context);
   }
 
   // ── Responsive Card Height ───────────────────────────
   double _getCardAspectRatio(BuildContext context) {
-    return AppDimensions.getProductsGridChildAspectRatio(context);
+    return AppDimensions.getEcolesGridChildAspectRatio(context);
   }
 
   // ── Timer pour debounce ───────────────────────────────────────
@@ -353,9 +354,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildFilterTabs()),
             SliverToBoxAdapter(child: _buildResultsHeader()),
-            SliverFillRemaining(
-              child: _buildGrid(),
-            ),
+            SliverFillRemaining(child: _buildGrid()),
           ],
         ),
       ),
@@ -381,12 +380,8 @@ class _LibraryScreenState extends State<LibraryScreen>
     return [
       // Search button
       _buildCustomActionButton(
-        icon: _isSearching
-            ? Icons.search_off_rounded
-            : Icons.search_rounded,
-        color: _isSearching
-            ? AppColors.shopBlue
-            : AppColors.screenTextPrimary,
+        icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
+        color: _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimary,
         bgColor: _isSearching
             ? AppColors.shopBlueSurface
             : AppColors.screenCard,
@@ -1045,16 +1040,49 @@ class _LibraryScreenState extends State<LibraryScreen>
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 300 + index * 60),
+      duration: Duration(milliseconds: 400 + (index % 6) * 60),
       curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Opacity(
-        opacity: value,
+      builder: (_, v, child) => Opacity(
+        opacity: v,
         child: Transform.translate(
-          offset: Offset(0, 16 * (1 - value)),
+          offset: Offset(0, 20 * (1 - v)),
           child: child,
         ),
       ),
-      child: GestureDetector(
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: product.id,
+        title: product.title,
+        subtitle: product.subtitle,
+        imagePath: product.imageUrl,
+        iconData: Icons.shopping_bag,
+        isDark: false,
+        color: accent,
+        tag: product.type,
+        width: AppDimensions.getHorizontalMenuCardWidth(context) + 5,
+        height: AppDimensions.getHorizontalMenuCardHeight(context) - 30,
+        externalTitleSpacing: 8,
+        titleMaxLines: 2,
+        buttonText: 'Ajouter',
+        buttonColor: AppColors.shopGreen,
+        buttonTextColor: Colors.white,
+        // onButtonTap: () {
+        //   // Logique d'ajout au panier ici
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     SnackBar(
+        //       content: Text('${product.title} ajouté au panier'),
+        //       backgroundColor: AppColors.shopGreen,
+        //       duration: const Duration(seconds: 2),
+        //     ),
+        //   );
+        // },
+        onButtonTap: () {
+          CartSnackBar.show(context, productName: product.title);
+        },
+        actionText: product.price > 0
+            ? '${product.price.toStringAsFixed(0)} F'
+            : 'Gratuit',
+        actionTextColor: product.price > 0 ? AppColors.shopGreen : Colors.green,
         onTap: () {
           Navigator.push(
             context,
@@ -1064,144 +1092,6 @@ class _LibraryScreenState extends State<LibraryScreen>
             ),
           ).then((_) => _updateCartItemCount());
         },
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(AppDimensions.getProductCardBorderRadius(context)),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Image ──
-              Expanded(
-                flex: AppDimensions.getProductCardImageFlex(context),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(AppDimensions.getProductCardBorderRadius(context)),
-                      ),
-                      child: ImageHelper.buildNetworkImage(
-                        imageUrl: product.imageUrl,
-                        placeholder: product.title,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    // Availability dot
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Container(
-                        width: AppDimensions.getProductAvailabilityDotSize(context),
-                        height: AppDimensions.getProductAvailabilityDotSize(context),
-                        decoration: BoxDecoration(
-                          color: product.isAvailable
-                              ? Colors.green
-                              : Colors.red,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.screenShadow,
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Info ──
-              Expanded(
-                flex: AppDimensions.getProductCardInfoFlex(context),
-                child: Padding(
-                  padding: AppDimensions.getProductCardPadding(context),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        product.title,
-                        style: TextStyle(
-                          fontSize: AppDimensions.getProductTitleFontSize(context),
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimary,
-                          letterSpacing: -0.2,
-                          height: 1.1,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: AppDimensions.getProductsGridColumns(context) == 3 ? 1 : 2),
-                      Text(
-                        product.subtitle,
-                        style: TextStyle(
-                          fontSize: AppDimensions.getProductSubtitleFontSize(context),
-                          color: AppColors.screenTextSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          // Type badge
-                          Container(
-                            padding: AppDimensions.getProductTypeBadgePadding(context),
-                            decoration: BoxDecoration(
-                              color: accent.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(AppDimensions.getProductTypeBadgeBorderRadius(context)),
-                            ),
-                            child: Text(
-                              product.type,
-                              style: TextStyle(
-                                fontSize: AppDimensions.getProductTypeFontSize(context),
-                                color: accent,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          // Price
-                          if (product.price > 0)
-                            Text(
-                              '${product.price.toStringAsFixed(0)} F',
-                              style: TextStyle(
-                                fontSize: AppDimensions.getProductPriceFontSize(context),
-                                color: AppColors.shopGreen,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            )
-                          else
-                            Text(
-                              'Gratuit',
-                              style: TextStyle(
-                                fontSize: AppDimensions.getProductSubtitleFontSize(context),
-                                color: Colors.green,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

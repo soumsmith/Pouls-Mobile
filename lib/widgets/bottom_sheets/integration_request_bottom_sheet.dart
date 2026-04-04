@@ -249,27 +249,24 @@ class _IntegrationRequestBottomSheetState
 
           // ── Corps ────────────────────────────────────────────────────────
           Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-              child: _IntegrationRequestForm(
-                ecoles: _ecoles,
-                isLoadingEcoles: _isLoadingEcoles,
-                isLoadingRequest: _isLoadingRequest,
-                selectedEcoleName: _selectedEcoleName,
-                selectedEcoleId: _selectedEcoleId,
-                matricule: widget.matricule,
-                isDarkMode: isDark,
-                textSizeService: _textSizeService,
-                onEcoleChanged: (ecoleId, ecoleName) {
-                  setState(() {
-                    _selectedEcoleId = ecoleId;
-                    _selectedEcoleName = ecoleName;
-                  });
-                },
-                onRetryEcoles: _loadEcoles,
-                onConsultWithMatricule: (matricule) =>
-                    _consultRequest(matricule),
-              ),
+            child: _IntegrationRequestForm(
+              ecoles: _ecoles,
+              isLoadingEcoles: _isLoadingEcoles,
+              isLoadingRequest: _isLoadingRequest,
+              selectedEcoleName: _selectedEcoleName,
+              selectedEcoleId: _selectedEcoleId,
+              matricule: widget.matricule,
+              isDarkMode: isDark,
+              textSizeService: _textSizeService,
+              onEcoleChanged: (ecoleId, ecoleName) {
+                setState(() {
+                  _selectedEcoleId = ecoleId;
+                  _selectedEcoleName = ecoleName;
+                });
+              },
+              onRetryEcoles: _loadEcoles,
+              onConsultWithMatricule: (matricule) =>
+                  _consultRequest(matricule),
             ),
           ),
         ],
@@ -316,6 +313,7 @@ class _IntegrationRequestForm extends StatefulWidget {
 
 class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   final TextEditingController _matriculeController = TextEditingController();
+  int _currentStep = 0;
 
   @override
   void initState() {
@@ -340,16 +338,248 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── En-tête avec progression ──────────────────────────────────────
+        _buildHeader(),
+        
+        // ── Indicateur de progression ─────────────────────────────────────
+        _buildProgressIndicator(),
+        
+        // ── Corps du formulaire ───────────────────────────────────────────
+        Flexible(
+          child: SingleChildScrollView(
+            reverse: true, // Permet de voir les champs en bas quand le clavier apparaît
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(
+              left: 20,
+              top: 20,
+              right: 20,
+              bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: _buildCurrentStep(),
+          ),
+        ),
+        
+        // ── Barre de navigation inférieure ────────────────────────────────
+        _buildBottomNavigation(),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    final stepTitles = ['École', 'Matricule', 'Confirmation'];
+    final stepIcons = [Icons.school_outlined, Icons.badge_outlined, Icons.check_circle_outline];
+    
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.shopBlueSurface,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              stepIcons[_currentStep],
+              color: AppColors.shopBlue,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Consultation demande - ${stepTitles[_currentStep]}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.screenTextPrimary,
+                    letterSpacing: -0.4,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Étape ${_currentStep + 1} sur 3',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.screenTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(3, (index) {
+              final isActive = index == _currentStep;
+              final isCompleted = index < _currentStep;
+              
+              return GestureDetector(
+                onTap: () => setState(() => _currentStep = index),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isCompleted
+                            ? Colors.green
+                            : isActive
+                                ? AppColors.shopBlue
+                                : AppColors.screenSurface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isActive
+                              ? AppColors.shopBlue
+                              : isCompleted
+                                  ? Colors.green
+                                  : AppColors.screenDivider,
+                          width: 2,
+                        ),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.shopBlue.withOpacity(0.25),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : isCompleted
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.25),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                      ),
+                      child: isCompleted
+                          ? const Icon(
+                              Icons.check_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            )
+                          : Icon(
+                              [Icons.school_outlined, Icons.badge_outlined, Icons.check_circle_outline][index],
+                              size: 14,
+                              color: isActive
+                                  ? Colors.white
+                                  : AppColors.screenTextSecondary,
+                            ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ['École', 'Matricule', 'Confirmation'][index],
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        color: isActive
+                            ? AppColors.shopBlue
+                            : isCompleted
+                                ? Colors.green
+                                : AppColors.screenTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: List.generate(3, (index) {
+              final isCompleted = index < _currentStep;
+              return Expanded(
+                child: Container(
+                  height: 3,
+                  margin: EdgeInsets.only(
+                    right: index < 2 ? 4 : 0,
+                    left: index > 0 ? 4 : 0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? Colors.green
+                        : AppColors.screenDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return _buildEcoleStep();
+      case 1:
+        return _buildMatriculeStep();
+      case 2:
+        return _buildConfirmationStep();
+      default:
+        return _buildEcoleStep();
+    }
+  }
+
+  Widget _buildEcoleStep() {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Sélecteur d'école ──────────────────────────────────────────────
         _FieldLabel(label: 'École', required: true),
         const SizedBox(height: 6),
         _buildEcoleField(context),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE3F2FD),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF1565C0).withOpacity(0.2)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline, color: Color(0xFF1565C0), size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
+                  style: TextStyle(
+                    color: Color(0xFF1565C0),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-        const SizedBox(height: 14),
-
-        // ── Affichage du matricule ─────────────────────────────────────────
+  Widget _buildMatriculeStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         _FieldLabel(
           label: 'Matricule de l\'élève',
           required: widget.matricule == null,
@@ -415,26 +645,23 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
               ),
             ),
           ),
-
         const SizedBox(height: 12),
-
-        // ── Bandeau d'info ─────────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFE3F2FD),
+            color: const Color(0xFFFFF8E1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1565C0).withOpacity(0.2)),
+            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.2)),
           ),
           child: const Row(
             children: [
-              Icon(Icons.info_outline, color: Color(0xFF1565C0), size: 16),
+              Icon(Icons.info_outline, color: Color(0xFFFFB300), size: 16),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
+                  'Le matricule permet d\'identifier l\'élève dans le système',
                   style: TextStyle(
-                    color: Color(0xFF1565C0),
+                    color: Color(0xFFFFB300),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -443,22 +670,294 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             ],
           ),
         ),
+      ],
+    );
+  }
 
+  Widget _buildConfirmationStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.screenSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.screenDivider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Récapitulatif',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.screenTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildRecapItem('École', widget.selectedEcoleName ?? 'Non sélectionnée'),
+              _buildRecapItem('Matricule', _currentMatricule.isEmpty ? 'Non renseigné' : _currentMatricule),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
-
-        // ── Bouton de consultation ─────────────────────────────────────────
-        _OrangeButton(
-          label: widget.isLoadingRequest
-              ? 'Consultation en cours...'
-              : 'Consulter la demande',
-          onTap: _currentMatricule.isNotEmpty && widget.selectedEcoleId != null
-              ? () => widget.onConsultWithMatricule(_currentMatricule)
-              : null,
-          isLoading: widget.isLoadingRequest,
-          icon: Icons.search_rounded,
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F5E8),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.2)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50), size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Vérifiez les informations avant de consulter',
+                  style: TextStyle(
+                    color: Color(0xFF4CAF50),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  Widget _buildRecapItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.screenTextSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      decoration: const BoxDecoration(
+        color: AppColors.screenCard,
+        border: Border(
+          top: BorderSide(color: AppColors.screenDivider),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: _buildNavigationButtons(),
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    final canNext = _validateCurrentStep();
+    final isLast = _currentStep == 2;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: _currentStep > 0
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.end,
+        children: [
+          if (_currentStep > 0)
+            GestureDetector(
+              onTap: () => setState(() => _currentStep--),
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.screenSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.screenDivider),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.arrow_back_ios_new,
+                      size: 14,
+                      color: AppColors.screenTextSecondary,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'Précédent',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.screenTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (!isLast)
+            GestureDetector(
+              onTap: canNext ? () => setState(() => _currentStep++) : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  gradient: canNext
+                      ? const LinearGradient(
+                          colors: [
+                            AppColors.shopBlueLight,
+                            AppColors.shopBlue,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : LinearGradient(
+                          colors: [
+                            Colors.grey.shade300,
+                            Colors.grey.shade300,
+                          ],
+                        ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: canNext
+                      ? [
+                          BoxShadow(
+                            color: AppColors.shopBlue.withOpacity(0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Suivant',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (isLast)
+            GestureDetector(
+              onTap: canNext ? () => widget.onConsultWithMatricule(_currentMatricule) : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  gradient: canNext && !widget.isLoadingRequest
+                      ? const LinearGradient(
+                          colors: [AppColors.screenOrange, Color(0xFFFF7A3C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : LinearGradient(
+                          colors: [
+                            Colors.grey.shade300,
+                            Colors.grey.shade300,
+                          ],
+                        ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: canNext && !widget.isLoadingRequest
+                      ? [
+                          BoxShadow(
+                            color: AppColors.screenOrange.withOpacity(0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.isLoadingRequest)
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                        ),
+                      )
+                    else ...[
+                      const Text(
+                        'Consulter',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.search_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  bool _validateCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return widget.selectedEcoleId != null;
+      case 1:
+        return _currentMatricule.isNotEmpty;
+      case 2:
+        return widget.selectedEcoleId != null && _currentMatricule.isNotEmpty;
+      default:
+        return false;
+    }
   }
 
   Widget _buildEcoleField(BuildContext context) {

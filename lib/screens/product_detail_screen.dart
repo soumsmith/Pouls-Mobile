@@ -8,6 +8,7 @@ import '../services/cart_service.dart';
 import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/snackbar.dart';
 
 // ─── DESIGN TOKENS LOCAUX ─────────────────────────────────────────────────
 // Tous les tokens utilisent les couleurs originales du projet.
@@ -1047,7 +1048,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         quantity: _quantity,
       );
       if (success) {
-        _showSnackBar('${product.title} ajouté au panier', isSuccess: true);
+        CartSnackBar.show(context, productName: product.title);
         Future.delayed(const Duration(milliseconds: 500), () {
           Navigator.pushNamed(context, '/cart');
         });

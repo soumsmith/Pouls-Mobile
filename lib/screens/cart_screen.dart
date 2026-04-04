@@ -9,7 +9,9 @@ import '../services/order_service.dart';
 import '../services/lieu_livraison_service.dart';
 import '../widgets/back_button_widget.dart';
 import '../widgets/searchable_dropdown.dart';
+import '../widgets/order_wizard_bottom_sheet.dart';
 import '../services/auth_service.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -21,7 +23,7 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final CartService _cartService = MockCartService();
   final OrderService _orderService = OrderService();
   final LieuLivraisonService _lieuLivraisonService = LieuLivraisonService();
@@ -41,6 +43,7 @@ class _CartScreenState extends State<CartScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -55,8 +58,19 @@ class _CartScreenState extends State<CartScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _fadeController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // L'application redevient active, recharger le panier
+      print('DEBUG: CartScreen resumed - rechargement du panier');
+      _loadCart();
+    }
   }
 
   Future<void> _loadCart() async {
@@ -144,7 +158,7 @@ class _CartScreenState extends State<CartScreen>
         children: [
           _buildAppBar(),
           Expanded(child: _buildCartItems()),
-          _buildCheckoutSummary(),
+          _buildModernCheckoutSummary(),
         ],
       ),
     );
@@ -280,9 +294,36 @@ class _CartScreenState extends State<CartScreen>
                     ),
                   ),
                   const SizedBox(height: 32),
-                  _buildOrangeButton(
-                    label: 'Continuer les achats',
-                    onTap: () => Navigator.pop(context),
+                  Center(
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.screenCard,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.screenDivider,
+                            width: 1,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.screenShadow,
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'Continuer les achats',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.screenTextSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -480,7 +521,10 @@ class _CartScreenState extends State<CartScreen>
           child: Container(
             width: 30,
             height: 30,
-            decoration: BoxDecoration(color: AppColors.shopGreen),
+            decoration: BoxDecoration(
+              color: AppColors.shopGreen,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: const Icon(Icons.add, size: 15, color: Colors.white),
           ),
         ),
@@ -488,103 +532,190 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ─── CHECKOUT SUMMARY BAR ─────────────────────────────────────────────────
-  Widget _buildCheckoutSummary() {
+  // ─── MODERN CHECKOUT SUMMARY ───────────────────────────────────────────────────
+  Widget _buildModernCheckoutSummary() {
     return Container(
-      decoration: const BoxDecoration(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 20,
-            offset: Offset(0, -4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: Column(
+        children: [
+          // Header du résumé
+          Row(
             children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.screenDivider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.shopBlueSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.shopping_cart_outlined,
+                  color: AppColors.shopBlue,
+                  size: 20,
                 ),
               ),
-
-              // Price row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Total à payer',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.screenTextSecondary,
-                        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Résumé du panier',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.screenTextPrimary,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_cart!.totalAmount.toStringAsFixed(0)} FCFA',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.screenTextPrimary,
-                          letterSpacing: -0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Item count badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.shopBlueSurface,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${_cart!.totalItems} article${_cart!.totalItems > 1 ? 's' : ''}',
+                    Text(
+                      '${_cart?.totalItems ?? 0} article${(_cart?.totalItems ?? 0) > 1 ? 's' : ''}',
                       style: const TextStyle(
                         fontSize: 13,
-                        color: AppColors.shopBlue,
-                        fontWeight: FontWeight.w600,
+                        color: AppColors.screenTextSecondary,
                       ),
                     ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // CTA button
-              _buildOrangeButton(
-                label: _isCheckingOut ? '' : 'Procéder au paiement',
-                onTap: _isCheckingOut ? null : _proceedToCheckout,
-                isLoading: _isCheckingOut,
-                trailing: const Icon(
-                  Icons.arrow_forward,
-                  color: Colors.white,
-                  size: 18,
+                  ],
                 ),
               ),
             ],
           ),
+          
+          const SizedBox(height: 16),
+          
+          // Détails des prix
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.screenSurface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                _buildPriceRow('Sous-total', '${(_cart?.totalAmount ?? 0).toStringAsFixed(0)} FCFA'),
+                const SizedBox(height: 8),
+                _buildPriceRow('Frais de livraison', 'Calculés à l\'étape suivante'),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(color: AppColors.screenDivider, height: 1),
+                ),
+                _buildPriceRow(
+                  'Total',
+                  '${(_cart?.totalAmount ?? 0).toStringAsFixed(0)} FCFA',
+                  isTotal: true,
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Bouton de commande moderne
+          _buildModernCheckoutButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceRow(String label, String value, {bool isTotal = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 15 : 14,
+            color: isTotal ? AppColors.screenTextPrimary : AppColors.screenTextSecondary,
+            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTotal ? 16 : 14,
+            color: isTotal ? AppColors.shopBlue : AppColors.screenTextPrimary,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernCheckoutButton() {
+    return GestureDetector(
+      onTap: _isCheckingOut ? null : _proceedToCheckout,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: _isCheckingOut
+              ? LinearGradient(
+                  colors: [
+                    Colors.grey.shade300,
+                    Colors.grey.shade300,
+                  ],
+                )
+              : const LinearGradient(
+                  colors: [
+                    AppColors.shopBlueLight,
+                    AppColors.shopBlue,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: !_isCheckingOut
+              ? [
+                  BoxShadow(
+                    color: AppColors.shopBlue.withOpacity(0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: _isCheckingOut
+              ? SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Commander maintenant',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -754,11 +885,43 @@ class _CartScreenState extends State<CartScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildOrderBottomSheet(),
+      builder: (context) => _buildOrderWizardBottomSheet(),
     );
   }
 
-  // ─── ORDER BOTTOM SHEET ───────────────────────────────────────────────────
+  // ─── ORDER WIZARD BOTTOM SHEET ───────────────────────────────────────────────────
+  Widget _buildOrderWizardBottomSheet() {
+    return OrderWizardBottomSheet(
+      cart: _cart!,
+      selectedLieu: _selectedLieu,
+      lieuxLivraison: _lieuxLivraison,
+      isLoadingLieux: _isLoadingLieux,
+      lieuxError: _lieuxError,
+      orderService: _orderService,
+      authService: _authService,
+      cartService: _cartService,
+      onSuccess: (message) {
+        print('DEBUG: CartScreen onSuccess appelé - redirection vers la boutique');
+        _loadCart();
+        // Rediriger vers la boutique (index 1 dans MainScreenWrapper)
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            print('DEBUG: Navigation depuis CartScreen vers MainScreenWrapper');
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (_) => const MainScreenWrapper(initialIndex: 1),
+              ),
+              (route) => false,
+            );
+          }
+        });
+      },
+      onError: (message) => _showError(message),
+      onLoadLieux: _loadLieuxLivraison,
+    );
+  }
+
+  // ─── LEGACY ORDER BOTTOM SHEET (conservé pour référence) ───────────────────────────
   Widget _buildOrderBottomSheet() {
     // Récupérer les informations de l'utilisateur connecté
     final currentUser = _authService.getCurrentUser();

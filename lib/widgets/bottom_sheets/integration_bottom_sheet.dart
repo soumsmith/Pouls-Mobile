@@ -202,10 +202,15 @@ void showIntegrationBottomSheet({
           ),
 
           // ── Form content ────────────────────────────────────────────────
-          // MODIFIÉ : Padding simple, plus de SingleChildScrollView ici
+          // MODIFIÉ : Padding avec gestion du clavier
           Flexible(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              padding: EdgeInsets.only(
+                left: 20,
+                top: 20,
+                right: 20,
+                bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
+              ),
               child: IntegrationFormContent(
                 ecole: ecole,
                 scaffoldMessengerKey: scaffoldMessengerKey,
@@ -347,10 +352,15 @@ class IntegrationBottomSheet extends StatelessWidget {
           ),
 
           // ── Form content ────────────────────────────────────────────────
-          // MODIFIÉ : Padding simple, plus de SingleChildScrollView ici
+          // MODIFIÉ : Padding avec gestion du clavier
           Flexible(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              padding: EdgeInsets.only(
+                left: 20,
+                top: 20,
+                right: 20,
+                bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
+              ),
               child: IntegrationFormContent(
                 ecole: ecole,
                 scaffoldMessengerKey: scaffoldMessengerKey,
@@ -937,6 +947,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         // ── Contenu de l'étape (SCROLLABLE) ────────────────────────────────
         Flexible(
           child: SingleChildScrollView(
+            reverse: true, // Permet de voir les champs en bas quand le clavier apparaît
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: _buildCurrentStep(),
           ),
         ),

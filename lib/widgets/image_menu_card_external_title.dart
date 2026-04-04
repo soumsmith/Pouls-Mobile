@@ -21,6 +21,11 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final double? width;
   final double? height;
   final double? externalTitleSpacing; // Espacement entre la carte et le titre externe
+  final int titleMaxLines; // Nombre maximum de lignes pour le titre
+  final String? buttonText; // Texte du bouton optionnel
+  final Color? buttonColor; // Couleur de fond du bouton
+  final Color? buttonTextColor; // Couleur du texte du bouton
+  final VoidCallback? onButtonTap; // Action du bouton
 
   final VoidCallback onTap;
 
@@ -44,6 +49,11 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.width,
     this.height,
     this.externalTitleSpacing = 8.0, // Espacement par défaut
+    this.titleMaxLines = 1, // Par défaut, le titre sur une seule ligne
+    this.buttonText, // Bouton optionnel
+    this.buttonColor,
+    this.buttonTextColor,
+    this.onButtonTap,
     required this.onTap,
   });
 
@@ -145,7 +155,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           // Titre et sous-titre affichés en dehors de la carte
           if (title?.isNotEmpty == true) ...[
             Container(
-              width: 100, // Même largeur que la carte
+              width: width ?? 100, // Même largeur que la carte
               margin: EdgeInsets.only(right: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +173,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               ? Colors.white
                               : AppColors.screenTextPrimary),
                     ),
-                    maxLines: 1, // Force le titre sur une seule ligne
+                    maxLines: titleMaxLines, // Utilise le paramètre configurable
                     overflow: TextOverflow.ellipsis, // Ajoute des points de suspension
                   ),
                   // Sous-titre
@@ -188,52 +198,155 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                   // Texte d'action ou localisation
                   if (actionText != null) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      actionText!,
-                      style: TextStyle(
-                        fontSize: textSizeService.getScaledFontSize(9),
-                        fontWeight: FontWeight.w600,
-                        color:
-                            actionTextColor ??
-                            color ??
-                            AppColors.screenOrange,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            actionText!,
+                            style: TextStyle(
+                              fontSize: textSizeService.getScaledFontSize(9),
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  actionTextColor ??
+                                  color ??
+                                  AppColors.screenOrange,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (buttonText != null) ...[
+                          const SizedBox(width: 4),
+                          SizedBox(
+                            height: 22,
+                            child: ElevatedButton(
+                              onPressed: onButtonTap ?? () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: buttonColor ?? color ?? AppColors.screenOrange,
+                                foregroundColor: buttonTextColor ?? Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                minimumSize: Size.zero,
+                              ),
+                              child: Text(
+                                buttonText!,
+                                style: TextStyle(
+                                  fontSize: textSizeService.getScaledFontSize(8),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ] else ...[
                     if (location != null) ...[
                       const SizedBox(height: 2),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 10,
-                            color:
-                                textColor?.withOpacity(0.5) ??
-                                (isDark
-                                    ? Colors.white54
-                                    : AppColors.screenTextSecondary),
-                          ),
-                          const SizedBox(width: 2),
                           Expanded(
-                            child: Text(
-                              location!,
-                              style: TextStyle(
-                                fontSize: textSizeService
-                                    .getScaledFontSize(9),
-                                color:
-                                    textColor?.withOpacity(0.5) ??
-                                    (isDark
-                                        ? Colors.white54
-                                        : AppColors.screenTextSecondary),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 10,
+                                  color:
+                                      textColor?.withOpacity(0.5) ??
+                                      (isDark
+                                          ? Colors.white54
+                                          : AppColors.screenTextSecondary),
+                                ),
+                                const SizedBox(width: 2),
+                                Flexible(
+                                  child: Text(
+                                    location!,
+                                    style: TextStyle(
+                                      fontSize: textSizeService
+                                          .getScaledFontSize(9),
+                                      color:
+                                          textColor?.withOpacity(0.5) ??
+                                          (isDark
+                                              ? Colors.white54
+                                              : AppColors.screenTextSecondary),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          if (buttonText != null) ...[
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              height: 22,
+                              child: ElevatedButton(
+                                onPressed: onButtonTap ?? () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: buttonColor ?? color ?? AppColors.screenOrange,
+                                  foregroundColor: buttonTextColor ?? Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  minimumSize: Size.zero,
+                                ),
+                                child: Text(
+                                  buttonText!,
+                                  style: TextStyle(
+                                    fontSize: textSizeService.getScaledFontSize(8),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],
+                  ],
+                  
+                  // Bouton optionnel seul (si ni actionText ni location)
+                  if (buttonText != null && actionText == null && location == null) ...[
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 28,
+                      child: ElevatedButton(
+                        onPressed: onButtonTap ?? () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: buttonColor ?? color ?? AppColors.screenOrange,
+                          foregroundColor: buttonTextColor ?? Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        child: Text(
+                          buttonText!,
+                          style: TextStyle(
+                            fontSize: textSizeService.getScaledFontSize(10),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
                   ],
                 ],
               ),

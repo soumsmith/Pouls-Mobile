@@ -290,15 +290,26 @@ class MockCartService implements CartService {
     await Future.delayed(const Duration(milliseconds: 200));
     
     try {
-      _currentCart = (await getCurrentCart()).copyWith(
+      final cart = await getCurrentCart();
+      print('DEBUG: clearCart - Panier avant vidage: ${cart.items.length} articles');
+      
+      _currentCart = cart.copyWith(
         items: [],
         updatedAt: DateTime.now(),
       );
       
+      print('DEBUG: clearCart - Panier après vidage: ${_currentCart!.items.length} articles');
+      
       // Sauvegarder le panier après modification
       await _saveCart();
+      
+      // Vérifier que la sauvegarde a fonctionné
+      await _loadCart();
+      print('DEBUG: clearCart - Panier après rechargement: ${_currentCart!.items.length} articles');
+      
       return true;
     } catch (e) {
+      print('DEBUG: clearCart - Erreur: $e');
       return false;
     }
   }

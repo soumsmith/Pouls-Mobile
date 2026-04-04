@@ -1277,7 +1277,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           ),
                         ),
                         child: Text(
-                          '${montantReservation!.toStringAsFixed(0)} XOF',
+                          'Montant autorisé = ${montantReservation!.toStringAsFixed(0)} XOF',
                           style: const TextStyle(
                             color: Color(0xFF1E40AF),
                             fontSize: 10,
@@ -6035,9 +6035,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Rating form (Style WhatsApp) ────────────────────────────────────────────────────
   Widget _buildRatingForm() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
         // Header
         // Container(
         //   padding: const EdgeInsets.all(16),
@@ -6104,37 +6108,40 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         // ),
 
         // Liste des avis (style messages WhatsApp)
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.5,
-          ),
-          child: Container(
-            color: const Color(0xFFF5F5F5),
-            child: _isLoadingAvis
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF0288D1),
-                      strokeWidth: 2.5,
+        Flexible(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.4,
+            ),
+            child: Container(
+              color: const Color(0xFFF5F5F5),
+              child: _isLoadingAvis
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF0288D1),
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : _avisError != null
+                  ? _buildErrorView()
+                  : _avis.isEmpty
+                  ? _buildEmptyAvisView()
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                      itemCount: _avis.length,
+                      itemBuilder: (context, index) {
+                        final avis = _avis[index];
+                        return _buildAvisBubble(avis);
+                      },
                     ),
-                  )
-                : _avisError != null
-                ? _buildErrorView()
-                : _avis.isEmpty
-                ? _buildEmptyAvisView()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-                    itemCount: _avis.length,
-                    itemBuilder: (context, index) {
-                      final avis = _avis[index];
-                      return _buildAvisBubble(avis);
-                    },
-                  ),
+            ),
           ),
         ),
 
         // Barre d'envoi (style WhatsApp)
         _buildComposeAvisBar(),
-      ],
+        ],
+      ),
     );
   }
 

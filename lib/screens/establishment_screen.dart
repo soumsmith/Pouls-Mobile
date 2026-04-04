@@ -1278,15 +1278,15 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         itemBuilder: (context, i) {
           final def = _kActions[actions[i]]!;
           return Padding(
-            padding: EdgeInsets.only(right: i < actions.length - 1 ? 6 : 0),
+            padding: EdgeInsets.only(right: i < actions.length - 1 ? 12 : 0),
             child: ImageMenuCard(
               index: i,
               cardKey: actions[i],
               title: def.label,
               iconData: def.icon,
               isDark: isDark,
-              width: AppDimensions.getHorizontalMenuCardWidth(context) - 10,
-              height: AppDimensions.getHorizontalMenuCardHeight(context),
+              width: AppDimensions.getHorizontalMenuCardWidth(context) -20,
+              height: AppDimensions.getHorizontalMenuCardHeight(context) -30,
               color: def.color,
               onTap: () {
                 if (actions[i] == 'events') {

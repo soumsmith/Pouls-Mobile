@@ -78,7 +78,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   // ── Responsive Card Height ───────────────────────────
   double _getCardAspectRatio(BuildContext context) {
-    return AppDimensions.getEcolesGridChildAspectRatio(context);
+    return AppDimensions.getProductsGridChildAspectRatio(context);
   }
 
   // ── Timer pour debounce ───────────────────────────────────────
@@ -1059,23 +1059,13 @@ class _LibraryScreenState extends State<LibraryScreen>
         isDark: false,
         color: accent,
         tag: product.type,
-        width: AppDimensions.getHorizontalMenuCardWidth(context) + 5,
-        height: AppDimensions.getHorizontalMenuCardHeight(context) - 30,
+        width: AppDimensions.getHorizontalMenuCardWidth(context),
+        height: AppDimensions.getHorizontalMenuCardHeight(context),
         externalTitleSpacing: 8,
         titleMaxLines: 2,
         buttonText: 'Ajouter',
         buttonColor: AppColors.shopGreen,
         buttonTextColor: Colors.white,
-        // onButtonTap: () {
-        //   // Logique d'ajout au panier ici
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     SnackBar(
-        //       content: Text('${product.title} ajouté au panier'),
-        //       backgroundColor: AppColors.shopGreen,
-        //       duration: const Duration(seconds: 2),
-        //     ),
-        //   );
-        // },
         onButtonTap: () {
           CartSnackBar.show(context, productName: product.title);
         },

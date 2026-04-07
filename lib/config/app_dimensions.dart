@@ -235,14 +235,13 @@ class AppDimensions {
     }
   }
 
-
   static EdgeInsets getHomePageResponsivePadding(BuildContext context) {
     final screenWidth = getScreenWidth(context);
     if (isMobile(context)) {
       return const EdgeInsets.all(0);
     } else if (isSmallTablet(context)) {
       return EdgeInsets.symmetric(
-        horizontal: 0 ,//screenWidth * 0.15,
+        horizontal: 0, //screenWidth * 0.15,
         vertical: 40.0,
       );
     } else if (isTablet(context)) {
@@ -252,7 +251,7 @@ class AppDimensions {
       );
     } else {
       return EdgeInsets.symmetric(
-        horizontal:  0 ,// screenWidth * 0.25,
+        horizontal: 0, // screenWidth * 0.25,
         vertical: 56.0,
       );
     }
@@ -308,7 +307,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LA PAGINATION ───────────────────────────────────
-  
+
   /// Nombre d'éléments par page selon le type d'appareil
   static int getEventsPerPage(BuildContext context) {
     if (isMobile(context)) {
@@ -388,7 +387,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LA PAGINATION DES ÉCOLES ────────────────────────
-  
+
   /// Nombre d'écoles par page selon le type d'appareil
   static int getEcolesPerPage(BuildContext context) {
     if (isMobile(context)) {
@@ -468,7 +467,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES ARRONDIS DES CARTES ────────────────────────────────
-  
+
   /// Rayon de bordure pour les petites cartes selon l'appareil
   static double getSmallCardBorderRadius(BuildContext context) {
     if (isMobile(context)) {
@@ -587,11 +586,14 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES CARTES DE MENU HORIZONTAL ────────────────────────────
-  
-  /// Hauteur des cartes de menu horizontal selon l'appareil
+
+  /// Hauteur des cartes de menu horizontal selon l'appareil et l'orientation
   static double getHorizontalMenuCardHeight(BuildContext context) {
+    final orientation = MediaQuery.of(context).orientation;
+
     if (isMobile(context)) {
-      return 150.0; // Mobile : plus compact
+      // Pour mobile, différencier portrait et paysage
+      return orientation == Orientation.portrait ? 90.0 : 90.0;
     } else if (isSmallTablet(context)) {
       return 150.0; // iPad Mini : hauteur intermédiaire
     } else if (isTablet(context)) {
@@ -628,49 +630,52 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES OMBRES ────────────────────────────────────────────────
-  
+
   /// Valeur de l'alpha pour les ombres principales (cartes importantes)
   static double getMainShadowAlpha(BuildContext context) {
     return isDarkMode(context) ? 0.4 : 0.1;
   }
-  
+
   /// Valeur de l'alpha pour les ombres légères (cartes secondaires)
   static double getLightShadowAlpha(BuildContext context) {
     return isDarkMode(context) ? 0.15 : 0.02;
   }
-  
+
   /// Valeur de l'alpha pour les ombres très légères (éléments subtils)
   static double getSubtleShadowAlpha(BuildContext context) {
     return isDarkMode(context) ? 0.08 : 0.01;
   }
-  
+
   /// Rayon de flou pour les ombres principales
   static double getMainShadowBlur() => 20.0;
-  
+
   /// Rayon de flou pour les ombres légères
   static double getLightShadowBlur() => 6.0;
-  
+
   /// Rayon de flou pour les ombres très légères
   static double getSubtleShadowBlur() => 3.0;
-  
+
   /// Décalage vertical pour les ombres principales
   static double getMainShadowOffset() => 8.0;
-  
+
   /// Décalage vertical pour les ombres légères
   static double getLightShadowOffset() => 2.0;
-  
+
   /// Décalage vertical pour les ombres très légères
   static double getSubtleShadowOffset() => 1.0;
-  
+
   /// Vérifie si le mode sombre est activé
   static bool isDarkMode(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
   }
-  
+
   /// Crée une ombre principale complète
-  static List<BoxShadow> getMainShadow(BuildContext context, {bool enabled = true}) {
+  static List<BoxShadow> getMainShadow(
+    BuildContext context, {
+    bool enabled = true,
+  }) {
     if (!enabled) return [];
-    
+
     return [
       BoxShadow(
         color: Colors.black.withValues(alpha: getMainShadowAlpha(context)),
@@ -679,11 +684,14 @@ class AppDimensions {
       ),
     ];
   }
-  
+
   /// Crée une ombre légère complète
-  static List<BoxShadow> getLightShadow(BuildContext context, {bool enabled = true}) {
+  static List<BoxShadow> getLightShadow(
+    BuildContext context, {
+    bool enabled = true,
+  }) {
     if (!enabled) return [];
-    
+
     return [
       BoxShadow(
         color: Colors.black.withValues(alpha: getLightShadowAlpha(context)),
@@ -692,11 +700,14 @@ class AppDimensions {
       ),
     ];
   }
-  
+
   /// Crée une ombre très légère complète
-  static List<BoxShadow> getSubtleShadow(BuildContext context, {bool enabled = true}) {
+  static List<BoxShadow> getSubtleShadow(
+    BuildContext context, {
+    bool enabled = true,
+  }) {
     if (!enabled) return [];
-    
+
     return [
       BoxShadow(
         color: Colors.black.withValues(alpha: getSubtleShadowAlpha(context)),
@@ -705,7 +716,7 @@ class AppDimensions {
       ),
     ];
   }
-  
+
   /// Crée une ombre personnalisée
   static List<BoxShadow> getCustomShadow({
     required BuildContext context,
@@ -715,7 +726,7 @@ class AppDimensions {
     bool enabled = true,
   }) {
     if (!enabled) return [];
-    
+
     return [
       BoxShadow(
         color: Colors.black.withValues(
@@ -728,7 +739,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES CARTES D'ÉCOLES ──────────────────────────────────
-  
+
   /// Taille de police pour le titre de la carte d'école selon l'appareil
   static double getEcoleCardTitleFontSize(BuildContext context) {
     if (isMobile(context)) {
@@ -741,7 +752,7 @@ class AppDimensions {
       return 13.0; // Desktop : plus grand
     }
   }
-  
+
   /// Taille de police pour le sous-titre (adresse) de la carte d'école
   static double getEcoleCardSubtitleFontSize(BuildContext context) {
     if (isMobile(context)) {
@@ -754,7 +765,7 @@ class AppDimensions {
       return 11.0; // Desktop : standard
     }
   }
-  
+
   /// Taille de police pour le type d'école (badge)
   static double getEcoleCardTypeFontSize(BuildContext context) {
     if (isMobile(context)) {
@@ -767,7 +778,7 @@ class AppDimensions {
       return 10.0; // Desktop : standard
     }
   }
-  
+
   /// Rayon de bordure pour la carte d'école selon l'appareil
   static double getEcoleCardBorderRadius(BuildContext context) {
     if (isMobile(context)) {
@@ -780,7 +791,7 @@ class AppDimensions {
       return 20.0; // Desktop : arrondis très prononcés
     }
   }
-  
+
   /// Espacement intérieur de la zone d'info de la carte d'école selon l'appareil
   static double getEcoleCardInfoPadding(BuildContext context) {
     if (isMobile(context)) {
@@ -793,7 +804,7 @@ class AppDimensions {
       return 12.0; // Desktop : espacement plus grand
     }
   }
-  
+
   /// Taille de l'icône de localisation selon l'appareil
   static double getEcoleCardIconSize(BuildContext context) {
     if (isMobile(context)) {
@@ -806,7 +817,7 @@ class AppDimensions {
       return 12.0; // Desktop : standard
     }
   }
-  
+
   /// Hauteur du gradient en bas de l'image selon l'appareil
   static double getEcoleCardGradientHeight(BuildContext context) {
     if (isMobile(context)) {
@@ -819,7 +830,7 @@ class AppDimensions {
       return 56.0; // Desktop : plus haut
     }
   }
-  
+
   /// Taille du badge de type selon l'appareil
   static double getEcoleCardBadgePadding(BuildContext context) {
     if (isMobile(context)) {
@@ -832,7 +843,7 @@ class AppDimensions {
       return 10.0; // Desktop : standard
     }
   }
-  
+
   /// Taille de l'indicateur de statut (cercle vert) selon l'appareil
   static double getEcoleCardStatusIndicatorSize(BuildContext context) {
     if (isMobile(context)) {
@@ -847,11 +858,11 @@ class AppDimensions {
   }
 
   // ── MÉTHODES RESPONSIVES POUR LA GRILLE D'ÉCOLES ────────────────────
-  
+
   /// Ratio d'aspect pour les cartes d'écoles selon le nombre de colonnes
   static double getEcolesGridChildAspectRatio(BuildContext context) {
     final crossAxisCount = getEcolesGridColumns(context);
-    
+
     // Ajuster le ratio selon le nombre de colonnes
     switch (crossAxisCount) {
       case 2: // Mobile
@@ -866,7 +877,7 @@ class AppDimensions {
   }
 
   // ── MÉTHODES RESPONSIVES POUR LA GRILLE DE PRODUITS ────────────────────
-  
+
   /// Nombre de colonnes pour la grille de produits selon l'appareil
   static int getProductsGridColumns(BuildContext context) {
     if (isMobile(context)) {
@@ -880,16 +891,23 @@ class AppDimensions {
     }
   }
 
-  /// Ratio d'aspect pour les cartes de produits selon le nombre de colonnes
+  /// Ratio d'aspect pour les cartes de produits selon le nombre de colonnes et l'orientation
   static double getProductsGridChildAspectRatio(BuildContext context) {
     final crossAxisCount = getProductsGridColumns(context);
-    
-    // Ajuster le ratio selon le nombre de colonnes
+    final orientation = MediaQuery.of(context).orientation;
+
+    // Ajuster le ratio selon le nombre de colonnes et l'orientation
     switch (crossAxisCount) {
       case 3: // Mobile et iPad Mini
-        return 0.65; // Plus compact pour éviter l'overflow
+        if (isMobile(context)) {
+          // Pour mobile, différencier portrait et paysage
+          return orientation == Orientation.portrait ? 0.82 : 0.70;
+        } else {
+          // iPad Mini garde le même ratio
+          return 0.82;
+        }
       case 4: // iPad et Desktop
-        return 0.75; // Ratio standard
+        return 0.80; // Ratio standard
       default:
         return 0.75; // Valeur par défaut
     }
@@ -898,13 +916,13 @@ class AppDimensions {
   /// Espacement entre les cartes de produits selon l'appareil
   static double getProductsGridSpacing(BuildContext context) {
     if (isMobile(context)) {
-      return 10.0; // Mobile : plus serré
+      return 4.0; // Mobile : plus serré pour réduire l'espace horizontal
     } else if (isSmallTablet(context)) {
-      return 12.0; // iPad Mini : standard
+      return 8.0; // iPad Mini : standard réduit
     } else if (isTablet(context)) {
-      return 14.0; // iPad : plus espacé
+      return 12.0; // iPad : plus espacé
     } else {
-      return 16.0; // Desktop : maximum d'espacement
+      return 14.0; // Desktop : maximum d'espacement
     }
   }
 
@@ -982,7 +1000,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES FILTRES ──────────────────────────────────────
-  
+
   /// Hauteur du conteneur de filtres selon l'appareil
   static double getFilterContainerHeight(BuildContext context) {
     if (isMobile(context)) {
@@ -995,7 +1013,7 @@ class AppDimensions {
       return 40.0; // Desktop : plus grand
     }
   }
-  
+
   /// Espacement entre les filtres selon l'appareil
   static double getFilterSpacing(BuildContext context) {
     if (isMobile(context)) {
@@ -1008,7 +1026,7 @@ class AppDimensions {
       return 10.0; // Desktop : plus espacé
     }
   }
-  
+
   /// Rayon de bordure pour les filtres selon l'appareil
   static double getFilterBorderRadius(BuildContext context) {
     if (isMobile(context)) {
@@ -1021,7 +1039,7 @@ class AppDimensions {
       return 12.0; // Desktop : arrondis prononcés
     }
   }
-  
+
   /// Padding intérieur des filtres selon l'appareil
   static double getFilterPadding(BuildContext context) {
     if (isMobile(context)) {
@@ -1034,7 +1052,7 @@ class AppDimensions {
       return 16.0; // Desktop : plus grand
     }
   }
-  
+
   /// Taille de police pour les filtres selon l'appareil
   static double getFilterFontSize(BuildContext context) {
     if (isMobile(context)) {
@@ -1049,7 +1067,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES BADGES ────────────────────────────────────────────────
-  
+
   /// Taille de police pour les badges de notification selon l'appareil
   static double getBadgeFontSize(BuildContext context) {
     if (isMobile(context)) {
@@ -1062,7 +1080,7 @@ class AppDimensions {
       return 12.0; // Desktop : standard
     }
   }
-  
+
   /// Taille minimale des badges de notification selon l'appareil
   static double getBadgeMinSize(BuildContext context) {
     if (isMobile(context)) {
@@ -1075,7 +1093,7 @@ class AppDimensions {
       return 22.0; // Desktop : plus grand
     }
   }
-  
+
   /// Padding intérieur des badges de notification selon l'appareil
   static double getBadgePadding(BuildContext context) {
     if (isMobile(context)) {
@@ -1090,7 +1108,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES BOUTONS DE DÉTAILS ───────────────────────────────────────────
-  
+
   /// Taille de police pour les boutons de détails selon l'appareil
   static double getDetailsButtonFontSize(BuildContext context) {
     if (isMobile(context)) {
@@ -1103,7 +1121,7 @@ class AppDimensions {
       return 15.0; // Desktop : plus grand
     }
   }
-  
+
   /// Padding horizontal pour les boutons de détails selon l'appareil
   static double getDetailsButtonPaddingHorizontal(BuildContext context) {
     if (isMobile(context)) {
@@ -1116,7 +1134,7 @@ class AppDimensions {
       return 20.0; // Desktop : maximum
     }
   }
-  
+
   /// Padding vertical pour les boutons de détails selon l'appareil
   static double getDetailsButtonPaddingVertical(BuildContext context) {
     if (isMobile(context)) {
@@ -1129,7 +1147,7 @@ class AppDimensions {
       return 14.0; // Desktop : maximum
     }
   }
-  
+
   /// Rayon de bordure pour les boutons de détails selon l'appareil
   static double getDetailsButtonBorderRadius(BuildContext context) {
     if (isMobile(context)) {
@@ -1142,7 +1160,7 @@ class AppDimensions {
       return 14.0; // Desktop : arrondis maximum
     }
   }
-  
+
   /// Espacement entre les boutons de détails selon l'appareil
   static double getDetailsButtonSpacing(BuildContext context) {
     if (isMobile(context)) {
@@ -1157,7 +1175,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES CARROUSELS ────────────────────────────────────────────────
-  
+
   /// Hauteur du carrousel selon l'appareil
   static double getCarouselHeight(BuildContext context) {
     if (isMobile(context)) {
@@ -1172,7 +1190,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES CONTENEURS PRINCIPAUX ──────────────────────────────────────
-  
+
   /// Padding pour les conteneurs principaux selon l'appareil
   static double getMainContainerPadding(BuildContext context) {
     if (isMobile(context)) {
@@ -1185,7 +1203,7 @@ class AppDimensions {
       return 32.0; // Desktop : maximum
     }
   }
-  
+
   /// Rayon de bordure pour les conteneurs principaux selon l'appareil
   static double getMainContainerBorderRadius(BuildContext context) {
     if (isMobile(context)) {
@@ -1200,7 +1218,7 @@ class AppDimensions {
   }
 
   // ── DIMENSIONS POUR LES DÉTAILS DE PROFIL ───────────────────────────────────────────
-  
+
   /// Padding pour les conteneurs de détails selon l'appareil
   static double getProfileDetailsPadding(BuildContext context) {
     if (isMobile(context)) {
@@ -1213,7 +1231,7 @@ class AppDimensions {
       return 24.0; // Desktop : maximum
     }
   }
-  
+
   /// Rayon de bordure pour les conteneurs de détails selon l'appareil
   static double getProfileDetailsBorderRadius(BuildContext context) {
     if (isMobile(context)) {
@@ -1226,7 +1244,7 @@ class AppDimensions {
       return 24.0; // Desktop : arrondis maximum
     }
   }
-  
+
   /// Espacement entre les éléments de détails selon l'appareil
   static double getProfileDetailsSpacing(BuildContext context) {
     if (isMobile(context)) {
@@ -1239,17 +1257,20 @@ class AppDimensions {
       return 20.0; // Desktop : maximum
     }
   }
-  
+
   /// Largeur pour les éléments de détail en mode deux colonnes
   static double getProfileDetailItemWidth(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double padding = getProfileDetailsPadding(context) * 2; // Padding gauche et droite
-    double spacing = getProfileDetailsSpacing(context) / 2; // Espacement entre colonnes
-    
+    double padding =
+        getProfileDetailsPadding(context) * 2; // Padding gauche et droite
+    double spacing =
+        getProfileDetailsSpacing(context) / 2; // Espacement entre colonnes
+
     if (isMobile(context)) {
       return screenWidth - padding - 32; // Mobile : pleine largeur
     } else {
-      return (screenWidth - padding - spacing) / 2; // Tablettes : moitié de largeur
+      return (screenWidth - padding - spacing) /
+          2; // Tablettes : moitié de largeur
     }
   }
 }

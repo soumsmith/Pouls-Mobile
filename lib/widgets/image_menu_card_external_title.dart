@@ -20,7 +20,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final String? tag;
   final double? width;
   final double? height;
-  final double? externalTitleSpacing; // Espacement entre la carte et le titre externe
+  final double?
+  externalTitleSpacing; // Espacement entre la carte et le titre externe
   final int titleMaxLines; // Nombre maximum de lignes pour le titre
   final String? buttonText; // Texte du bouton optionnel
   final Color? buttonColor; // Couleur de fond du bouton
@@ -82,7 +83,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
             child: Container(
               width: width ?? 100, //cardWidth,
               height: height ?? 100, // Hauteur par défaut si non spécifiée
-              margin: EdgeInsets.only(right: 12),
+              //margin: EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color:
                     backgroundColor ??
@@ -147,11 +148,10 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Espacement entre la carte et le titre externe
-          if (title?.isNotEmpty == true) 
-            SizedBox(height: externalTitleSpacing),
-          
+          if (title?.isNotEmpty == true) SizedBox(height: externalTitleSpacing),
+
           // Titre et sous-titre affichés en dehors de la carte
           if (title?.isNotEmpty == true) ...[
             Container(
@@ -169,12 +169,12 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color:
                           textColor ??
-                          (isDark
-                              ? Colors.white
-                              : AppColors.screenTextPrimary),
+                          (isDark ? Colors.white : AppColors.screenTextPrimary),
                     ),
-                    maxLines: titleMaxLines, // Utilise le paramètre configurable
-                    overflow: TextOverflow.ellipsis, // Ajoute des points de suspension
+                    maxLines:
+                        titleMaxLines, // Utilise le paramètre configurable
+                    overflow: TextOverflow
+                        .ellipsis, // Ajoute des points de suspension
                   ),
                   // Sous-titre
                   if (subtitle != null) ...[
@@ -194,7 +194,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  
+
                   // Texte d'action ou localisation
                   if (actionText != null) ...[
                     const SizedBox(height: 2),
@@ -223,10 +223,17 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: onButtonTap ?? () {},
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: buttonColor ?? color ?? AppColors.screenOrange,
-                                foregroundColor: buttonTextColor ?? Colors.white,
+                                backgroundColor:
+                                    buttonColor ??
+                                    color ??
+                                    AppColors.screenOrange,
+                                foregroundColor:
+                                    buttonTextColor ?? Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(4),
                                 ),
@@ -235,7 +242,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               child: Text(
                                 buttonText!,
                                 style: TextStyle(
-                                  fontSize: textSizeService.getScaledFontSize(8),
+                                  fontSize: textSizeService.getScaledFontSize(
+                                    8,
+                                  ),
                                   fontWeight: FontWeight.w600,
                                 ),
                                 textAlign: TextAlign.center,
@@ -291,10 +300,17 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               child: ElevatedButton(
                                 onPressed: onButtonTap ?? () {},
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: buttonColor ?? color ?? AppColors.screenOrange,
-                                  foregroundColor: buttonTextColor ?? Colors.white,
+                                  backgroundColor:
+                                      buttonColor ??
+                                      color ??
+                                      AppColors.screenOrange,
+                                  foregroundColor:
+                                      buttonTextColor ?? Colors.white,
                                   elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(4),
                                   ),
@@ -303,7 +319,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                 child: Text(
                                   buttonText!,
                                   style: TextStyle(
-                                    fontSize: textSizeService.getScaledFontSize(8),
+                                    fontSize: textSizeService.getScaledFontSize(
+                                      8,
+                                    ),
                                     fontWeight: FontWeight.w600,
                                   ),
                                   textAlign: TextAlign.center,
@@ -317,9 +335,11 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                       ),
                     ],
                   ],
-                  
+
                   // Bouton optionnel seul (si ni actionText ni location)
-                  if (buttonText != null && actionText == null && location == null) ...[
+                  if (buttonText != null &&
+                      actionText == null &&
+                      location == null) ...[
                     const SizedBox(height: 6),
                     SizedBox(
                       width: double.infinity,
@@ -327,10 +347,14 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: onButtonTap ?? () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: buttonColor ?? color ?? AppColors.screenOrange,
+                          backgroundColor:
+                              buttonColor ?? color ?? AppColors.screenOrange,
                           foregroundColor: buttonTextColor ?? Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -392,7 +416,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
         },
       );
     }
-    
+
     // Priorité aux images locales si elles sont spécifiées et valides
     if (imagePath != null && imagePath!.startsWith('assets/')) {
       return Image.asset(

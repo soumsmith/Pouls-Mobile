@@ -9,6 +9,7 @@ import '../screens/messages_screen.dart';
 import '../screens/orders_screen.dart';
 import '../screens/cart_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange        = Color(0xFFFF6B2C);
@@ -326,6 +327,16 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
                     const MainScreenWrapper(child: TutorScreen()),
               ),
             );
+          },
+        ),
+        _MenuItem(
+          title: 'Parrainer',
+          subtitle: 'Inviter des amis à utiliser l\'application',
+          icon: Icons.card_giftcard_rounded,
+          color: const Color(0xFFF59E0B),
+          onTap: () {
+            Navigator.of(context).pop();
+            showSponsorshipBottomSheet(context);
           },
         ),
         _MenuItem(

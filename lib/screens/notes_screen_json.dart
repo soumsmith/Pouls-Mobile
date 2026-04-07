@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
-import '../services/school_service.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/custom_loader.dart';
@@ -29,7 +28,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   Map<String, dynamic>? _bulletinData;
   bool _isLoading = true;
   String? _expandedSubjectId;
-  final SchoolService _schoolService = SchoolService();
   final NotesApiService _notesApiService = NotesApiService();
 
   String? _selectedSubject;
@@ -74,7 +72,6 @@ void initState() {
 
   Future<void> _loadApiData() async {
     try {
-      await _schoolService.loadSchoolDataSilent();
       final periode = _getPeriodeNumberFromString(_selectedTrimester);
       final apiData = await _notesApiService.getNotesForStudent(
         matricule: _studentMatricule!,
@@ -126,7 +123,7 @@ void initState() {
     double total = 0, totalSur = 0;
     for (var n in notes) {
       final note = double.tryParse(n['note']?.toString() ?? '0') ?? 0.0;
-      final sur = double.tryParse(n['sur']?.toString() ?? '20') ?? 20.0;
+      final sur = double.tryParse(n['noteSur']?.toString() ?? '20') ?? 20.0;
       total += note;
       totalSur += sur;
     }
@@ -157,7 +154,7 @@ void initState() {
   List<dynamic> _getFilteredMatieres() {
     if (_bulletinData == null) return [];
     List<dynamic> matieres =
-        List.from(_bulletinData!['list'] as List<dynamic>);
+        List.from(_bulletinData!['details'] as List<dynamic>);
     if (_selectedSubject != null && _selectedSubject!.isNotEmpty) {
       matieres = matieres
           .where((m) => m['matiereLibelle'] == _selectedSubject)
@@ -168,7 +165,7 @@ void initState() {
 
   List<String> get _availableSubjects {
     if (_bulletinData == null) return ['Toutes'];
-    final matieres = _bulletinData!['list'] as List<dynamic>;
+    final matieres = _bulletinData!['details'] as List<dynamic>;
     return ['Toutes', ...matieres.map((m) => m['matiereLibelle'] as String)];
   }
 
@@ -383,7 +380,7 @@ void initState() {
 
   // ─── STUDENT BANNER ───────────────────────────────────────────────────────
   Widget _buildStudentBanner() {
-    final prenom = _bulletinData?['prenom'] ?? '';
+    final prenoms = _bulletinData?['prenoms'] ?? '';
     final nom = _bulletinData?['nom'] ?? '';
     final matricule = _bulletinData?['matricule'] ?? '';
 
@@ -416,7 +413,7 @@ void initState() {
             ),
             child: Center(
               child: Text(
-                prenom.isNotEmpty ? prenom[0].toUpperCase() : 'E',
+                prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -431,7 +428,7 @@ void initState() {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$prenom $nom',
+                  '$prenoms $nom',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -459,7 +456,7 @@ void initState() {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _selectedYear ?? '',
+              _bulletinData?['anneeLibelle'] ?? _selectedYear ?? '',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,
@@ -689,8 +686,8 @@ void initState() {
   // ─── SUBJECT CARD ─────────────────────────────────────────────────────────
   Widget _buildSubjectCard(Map<String, dynamic> matiere, int index) {
     final subjectName = matiere['matiereLibelle'] as String;
-    final notes = matiere['notesEvaluation'] as List<dynamic>;
-    final avg = _calculateAverage(notes);
+    final notes = matiere['notes'] as List<dynamic>;
+    final avg = matiere['moyenne'] ?? _calculateAverage(notes);
     final isExpanded = _expandedSubjectId == subjectName;
     final color = _getAverageColor(avg);
 
@@ -855,15 +852,15 @@ void initState() {
                       children: [
                         Expanded(
                             child: _buildStatBadge(
-                                'Coef', '1.0', const Color(0xFF3B82F6))),
+                                'Coef', '${matiere['coef'] ?? '1.0'}', const Color(0xFF3B82F6))),
                         const SizedBox(width: 8),
                         Expanded(
                             child: _buildStatBadge(
-                                'Rang', '40', const Color(0xFF9C27B0))),
+                                'Appréciation', '${matiere['appreciation'] ?? 'N/A'}', const Color(0xFF9C27B0))),
                         const SizedBox(width: 8),
                         Expanded(
                             child: _buildStatBadge(
-                                'Effectif', '30', AppColors.screenOrange)),
+                                'Moyenne', '${matiere['moyenne']?.toStringAsFixed(1) ?? avg.toStringAsFixed(1)}', AppColors.screenOrange)),
                       ],
                     ),
 

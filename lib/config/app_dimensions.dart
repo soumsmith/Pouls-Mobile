@@ -891,26 +891,43 @@ class AppDimensions {
     }
   }
 
-  /// Ratio d'aspect pour les cartes de produits selon le nombre de colonnes et l'orientation
-  static double getProductsGridChildAspectRatio(BuildContext context) {
-    final crossAxisCount = getProductsGridColumns(context);
+  /// Ratio d'aspect dynamique pour les cartes de produits selon imageFlex et l'orientation
+  /// Calcule le ratio proportionnellement à imageFlex pour un design équilibré
+  static double getProductsGridChildAspectRatio(BuildContext context, {int imageFlex = 7}) {
     final orientation = MediaQuery.of(context).orientation;
-
-    // Ajuster le ratio selon le nombre de colonnes et l'orientation
-    switch (crossAxisCount) {
-      case 3: // Mobile et iPad Mini
-        if (isMobile(context)) {
-          // Pour mobile, différencier portrait et paysage
-          return orientation == Orientation.portrait ? 0.82 : 0.70;
-        } else {
-          // iPad Mini garde le même ratio
-          return 0.82;
-        }
-      case 4: // iPad et Desktop
-        return 0.80; // Ratio standard
-      default:
-        return 0.75; // Valeur par défaut
+    
+    // BaseRatio dynamique calculé en fonction de imageFlex et de l'orientation
+    double baseRatio;
+    if (isMobile(context)) {
+      if (orientation == Orientation.portrait) {
+        // Mode portrait : imageFlex: 4 = ratio plus compact
+        baseRatio = 0.25 * imageFlex; // imageFlex: 4 = 1.0
+      } else {
+        // Mode paysage : imageFlex: 4 = ratio plus large
+        baseRatio = 0.35 * imageFlex; // imageFlex: 4 = 1.4
+      }
+    } else if (isSmallTablet(context)) {
+      // iPad Mini : calcul dynamique selon orientation
+      if (orientation == Orientation.portrait) {
+        baseRatio = 0.3 * imageFlex; // imageFlex: 4 = 1.2
+      } else {
+        baseRatio = 0.4 * imageFlex; // imageFlex: 4 = 1.6
+      }
+    } else if (isTablet(context)) {
+      if (orientation == Orientation.portrait) {
+        baseRatio = 0.28 * imageFlex; // imageFlex: 4 = 1.12
+      } else {
+        baseRatio = 0.38 * imageFlex; // imageFlex: 4 = 1.52
+      }
+    } else {
+      // Desktop : moins impacté par l'orientation
+      baseRatio = 0.30 * imageFlex; // imageFlex: 4 = 1.2
     }
+    
+    final defaultFlex = imageFlex * 1.9;
+    final flexRatio = imageFlex / defaultFlex;
+    
+    return baseRatio * flexRatio;
   }
 
   /// Espacement entre les cartes de produits selon l'appareil
@@ -918,12 +935,29 @@ class AppDimensions {
     if (isMobile(context)) {
       return 4.0; // Mobile : plus serré pour réduire l'espace horizontal
     } else if (isSmallTablet(context)) {
-      return 8.0; // iPad Mini : standard réduit
+      return 12.0; // iPad Mini : standard réduit
     } else if (isTablet(context)) {
       return 12.0; // iPad : plus espacé
     } else {
       return 14.0; // Desktop : maximum d'espacement
     }
+  }
+
+  /// Espacement de grille proportionnel au imageFlex pour un design équilibré
+  /// Quand imageFlex augmente, l'espacement augmente proportionnellement
+  static double getProductsGridSpacingProportional(BuildContext context, int imageFlex) {
+    final baseSpacing = getProductsGridSpacing(context);
+    
+    // Ratio de proportion : imageFlex: 2 = 50% d'espacement supplémentaire
+    // Par défaut imageFlex: 7, donc on calcule le ratio proportionnel
+    final defaultFlex = 1;
+    final flexRatio = imageFlex / defaultFlex;
+    
+    // Appliquer le ratio à l'espacement de base
+    // imageFlex: 2 (plus petit) = espacement réduit
+    // imageFlex: 7 (défaut) = espacement normal  
+    // imageFlex: 10+ (plus grand) = espacement augmenté
+    return baseSpacing * flexRatio;
   }
 
   /// Rayon de bordure pour les cartes de produits selon l'appareil
@@ -1181,9 +1215,9 @@ class AppDimensions {
     if (isMobile(context)) {
       return 140.0; // Mobile : hauteur compacte
     } else if (isSmallTablet(context)) {
-      return 320.0; // iPad Mini : hauteur intermédiaire
+      return 220.0; // iPad Mini : hauteur intermédiaire
     } else if (isTablet(context)) {
-      return 320.0; // iPad : hauteur standard
+      return 220.0; // iPad : hauteur standard
     } else {
       return 260.0; // Desktop : hauteur plus généreuse
     }

@@ -25,8 +25,6 @@ import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
 
-// ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
-
 class LibraryScreen extends StatefulWidget implements MainScreenChild {
   const LibraryScreen({super.key});
 
@@ -55,7 +53,6 @@ class _LibraryScreenState extends State<LibraryScreen>
   int _ordersCount = 0;
   String? _error;
 
-  // ── Paramètres de recherche dynamique ──────────────────────────────
   String? _pays;
   String? _ville;
   String? _quartier;
@@ -63,7 +60,6 @@ class _LibraryScreenState extends State<LibraryScreen>
   String? _nomProduit;
   String? _type;
 
-  // Controllers pour les champs de recherche
   final _paysController = TextEditingController();
   final _villeController = TextEditingController();
   final _quartierController = TextEditingController();
@@ -71,23 +67,18 @@ class _LibraryScreenState extends State<LibraryScreen>
   final _nomProduitController = TextEditingController();
   final _typeController = TextEditingController();
 
-  // ── Responsive Grid Methods ───────────────────────────
-  int _getCrossAxisCount(BuildContext context) {
-    return AppDimensions.getEcolesGridColumns(context);
-  }
-
-  // ── Responsive Card Height ───────────────────────────
-  double _getCardAspectRatio(BuildContext context) {
-    return AppDimensions.getProductsGridChildAspectRatio(context);
-  }
-
-  // ── Timer pour debounce ───────────────────────────────────────
   Timer? _searchTimer;
 
   final List<String> _filters = ['Tous', 'Papeterie', 'Livres', 'Services'];
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+
+  // ✅ FIX: Ratio calculé pour inclure image + texte externe sans overflow.
+  // Formule : largeur_cellule / (hauteur_image + hauteur_texte_estimée)
+  int _getCrossAxisCount(BuildContext context) {
+    return AppDimensions.getEcolesGridColumns(context);
+  }
 
   @override
   void initState() {
@@ -114,7 +105,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   @override
   void dispose() {
-    _searchTimer?.cancel(); // Annuler le timer
+    _searchTimer?.cancel();
     _searchController.dispose();
     _paysController.dispose();
     _villeController.dispose();
@@ -169,9 +160,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   Future<void> _updateCartItemCount() async {
     if (!mounted) return;
     final cart = await _cartService.getCurrentCart();
-    if (mounted) {
-      setState(() => _cartItemCount = cart.totalItems);
-    }
+    if (mounted) setState(() => _cartItemCount = cart.totalItems);
   }
 
   Future<void> _updateOrdersCount() async {
@@ -179,30 +168,19 @@ class _LibraryScreenState extends State<LibraryScreen>
     try {
       final currentUser = AuthService().getCurrentUser();
       if (currentUser == null) {
-        if (mounted) {
-          setState(() => _ordersCount = 0);
-        }
+        if (mounted) setState(() => _ordersCount = 0);
         return;
       }
       final orders = await OrderService().getUserOrders(currentUser.phone);
-      if (mounted) {
-        setState(() => _ordersCount = orders.length);
-      }
+      if (mounted) setState(() => _ordersCount = orders.length);
     } catch (_) {
-      if (mounted) {
-        setState(() => _ordersCount = 0);
-      }
+      if (mounted) setState(() => _ordersCount = 0);
     }
   }
 
-  // ── Load more products ───────────────────────────────────────────
   Future<void> _loadMoreProducts() async {
     if (!_hasMoreProducts || !mounted) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
+    setState(() => _isLoadingMore = true);
     try {
       _currentPage++;
       final newProducts = await _produitService.getProduits(
@@ -215,9 +193,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         nomProduit: _nomProduit,
         type: _type,
       );
-
       if (!mounted) return;
-
       setState(() {
         _products.addAll(newProducts);
         _filteredProducts = _products;
@@ -226,15 +202,13 @@ class _LibraryScreenState extends State<LibraryScreen>
       });
     } catch (e) {
       if (!mounted) return;
-
       setState(() {
         _isLoadingMore = false;
-        _currentPage--; // Revert page number on error
+        _currentPage--;
       });
     }
   }
 
-  // ── Méthodes de recherche avancée ───────────────────────────────
   void _updateSearchParameters() {
     setState(() {
       _pays = _paysController.text.trim().isEmpty
@@ -258,15 +232,11 @@ class _LibraryScreenState extends State<LibraryScreen>
     });
   }
 
-  // ── Recherche avec debounce ───────────────────────────────────
   void _onSearchChanged(String query) {
-    _searchTimer?.cancel(); // Annuler le timer précédent
-
+    _searchTimer?.cancel();
     setState(() {
       _nomProduit = query.trim().isEmpty ? null : query.trim();
     });
-
-    // Créer un nouveau timer de 800ms
     _searchTimer = Timer(const Duration(milliseconds: 800), () {
       _loadProducts();
     });
@@ -274,7 +244,6 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   void _applyAdvancedSearch() {
     _updateSearchParameters();
-    // Synchroniser la barre de recherche principale avec le nom du produit
     if (_nomProduit != null && _nomProduit!.isNotEmpty) {
       _searchController.text = _nomProduit!;
     } else {
@@ -297,21 +266,19 @@ class _LibraryScreenState extends State<LibraryScreen>
       _nomEtablissement = null;
       _nomProduit = null;
       _type = null;
-      _searchController
-          .clear(); // Effacer aussi la barre de recherche principale
+      _searchController.clear();
     });
     _loadProducts();
   }
 
   void _applyFilters() {
-    // Avec la pagination, le filtrage est maintenant géré par l'API
-    // Cette méthode ne fait que synchroniser les filtres locaux
     setState(() {
       _filteredProducts = _products;
       if (_selectedFilter != 'Tous') {
         _filteredProducts = _filteredProducts
             .where(
-              (p) => p.category.toLowerCase() == _selectedFilter.toLowerCase(),
+              (p) =>
+                  p.category.toLowerCase() == _selectedFilter.toLowerCase(),
             )
             .toList();
       }
@@ -339,7 +306,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     }
   }
 
-  // ─── BUILD ─────────────────────────────────────────────────────────────────
+  // ─── BUILD ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -361,7 +328,6 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  // ─── SLIVER APP BAR ─────────────────────────────────────────────────────────────
   Widget _buildSliverAppBar() {
     return CustomSliverAppBar(
       title: 'Boutique',
@@ -375,13 +341,12 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  // ─── CUSTOM ACTIONS ───────────────────────────────────────────────────────────
   List<Widget> _buildCustomActions() {
     return [
-      // Search button
       _buildCustomActionButton(
         icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
-        color: _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimary,
+        color:
+            _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimary,
         bgColor: _isSearching
             ? AppColors.shopBlueSurface
             : AppColors.screenCard,
@@ -398,8 +363,6 @@ class _LibraryScreenState extends State<LibraryScreen>
         },
       ),
       const SizedBox(width: 4),
-
-      // Advanced search button
       _buildCustomActionButton(
         icon: Icons.tune,
         color: AppColors.screenTextPrimary,
@@ -407,8 +370,6 @@ class _LibraryScreenState extends State<LibraryScreen>
         onTap: _showAdvancedSearchBottomSheet,
       ),
       const SizedBox(width: 4),
-
-      // Cart button
       _buildCustomActionButton(
         icon: Icons.shopping_bag_outlined,
         color: AppColors.screenTextPrimary,
@@ -423,8 +384,6 @@ class _LibraryScreenState extends State<LibraryScreen>
         },
       ),
       const SizedBox(width: 4),
-
-      // Orders button
       _buildCustomActionButton(
         icon: Icons.receipt_long_outlined,
         color: AppColors.screenTextPrimary,
@@ -479,7 +438,8 @@ class _LibraryScreenState extends State<LibraryScreen>
               top: -4,
               right: -4,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: badgeColor ?? AppColors.shopGreen,
                   borderRadius: BorderRadius.circular(8),
@@ -503,7 +463,6 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  // ─── SEARCH BAR ────────────────────────────────────────────────────────────
   Widget _buildSearchBar() {
     return SearchBarWidget(
       isSearching: _isSearching,
@@ -521,7 +480,6 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  // ─── FILTER TABS ───────────────────────────────────────────────────────────
   Widget _buildFilterTabs() {
     return FilterRowWidget(
       filters: _filters,
@@ -538,7 +496,6 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  // ─── Advanced Search BottomSheet ─────────────────────────────────
   void _showAdvancedSearchBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -551,9 +508,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _buildAdvancedSearchBottomSheet() {
     return IntrinsicHeight(
       child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
         decoration: const BoxDecoration(
           color: AppColors.screenSurface,
           borderRadius: BorderRadius.only(
@@ -564,7 +520,6 @@ class _LibraryScreenState extends State<LibraryScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle bar
             Container(
               margin: const EdgeInsets.only(top: 8),
               width: 40,
@@ -574,17 +529,12 @@ class _LibraryScreenState extends State<LibraryScreen>
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-
-            // Header
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.tune_rounded,
-                    size: 20,
-                    color: AppColors.shopBlue,
-                  ),
+                  const Icon(Icons.tune_rounded,
+                      size: 20, color: AppColors.shopBlue),
                   const SizedBox(width: 12),
                   const Text(
                     'Recherche avancée',
@@ -601,9 +551,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                     onTap: _clearAdvancedSearch,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: AppColors.shopBlueSurface,
                         borderRadius: BorderRadius.circular(8),
@@ -628,23 +576,17 @@ class _LibraryScreenState extends State<LibraryScreen>
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: Color(0xFF666666),
-                      ),
+                      child: const Icon(Icons.close_rounded,
+                          size: 20, color: Color(0xFF666666)),
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Champs de recherche
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // Première ligne
                   Row(
                     children: [
                       Expanded(
@@ -671,7 +613,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Deuxième ligne
                   Row(
                     children: [
                       Expanded(
@@ -698,7 +639,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Troisième ligne
                   Row(
                     children: [
                       Expanded(
@@ -727,8 +667,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                 ],
               ),
             ),
-
-            // Bouton appliquer
             Padding(
               padding: const EdgeInsets.all(20),
               child: SizedBox(
@@ -749,7 +687,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                   ),
                   child: const Text(
                     'Appliquer les filtres',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -760,7 +699,6 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  // ─── RESULTS HEADER ────────────────────────────────────────────────────────
   Widget _buildResultsHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -777,7 +715,8 @@ class _LibraryScreenState extends State<LibraryScreen>
           if (_selectedFilter != 'Tous') ...[
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: AppColors.shopGreenSurface,
                 borderRadius: BorderRadius.circular(8),
@@ -801,11 +740,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _applyFilters();
                       });
                     },
-                    child: const Icon(
-                      Icons.close_rounded,
-                      size: 12,
-                      color: AppColors.shopGreen,
-                    ),
+                    child: const Icon(Icons.close_rounded,
+                        size: 12, color: AppColors.shopGreen),
                   ),
                 ],
               ),
@@ -827,13 +763,8 @@ class _LibraryScreenState extends State<LibraryScreen>
       );
     }
 
-    if (_error != null) {
-      return _buildErrorState();
-    }
-
-    if (_filteredProducts.isEmpty) {
-      return _buildEmptyState();
-    }
+    if (_error != null) return _buildErrorState();
+    if (_filteredProducts.isEmpty) return _buildEmptyState();
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -842,19 +773,21 @@ class _LibraryScreenState extends State<LibraryScreen>
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
+              // ✅ FIX: childAspectRatio via _getCardAspectRatio() qui inclut
+              // image + texte externe pour éviter tout overflow.
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: _getCrossAxisCount(context),
-                crossAxisSpacing: AppDimensions.getProductsGridSpacing(context),
-                mainAxisSpacing: AppDimensions.getProductsGridSpacing(context),
-                childAspectRatio: _getCardAspectRatio(context),
+                crossAxisSpacing:
+                    AppDimensions.getProductsGridSpacingProportional(context, 2),
+                childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: 4),
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  // Si c'est le dernier élément et qu'il y a plus de produits
                   if (index == _filteredProducts.length && _hasMoreProducts) {
                     return SeeMoreCard(
                       cardColor: AppColors.screenCard,
-                      borderColor: AppColors.shopGreen.withOpacity(0.3),
+                      borderColor:
+                          AppColors.shopGreen.withOpacity(0.3),
                       iconColor: AppColors.shopGreen,
                       textColor: AppColors.shopGreen,
                       subtitleColor: const Color(0xFF999999),
@@ -863,14 +796,14 @@ class _LibraryScreenState extends State<LibraryScreen>
                       onTap: _loadMoreProducts,
                     );
                   }
-                  return _buildProductCard(_filteredProducts[index], index);
+                  return _buildProductCard(
+                      _filteredProducts[index], index);
                 },
-                childCount:
-                    _filteredProducts.length + (_hasMoreProducts ? 1 : 0),
+                childCount: _filteredProducts.length +
+                    (_hasMoreProducts ? 1 : 0),
               ),
             ),
           ),
-          // Espace en bas pour éviter que le bouton soit collé en bas
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -890,11 +823,8 @@ class _LibraryScreenState extends State<LibraryScreen>
               color: AppColors.shopBlueSurface,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.search_off_rounded,
-              size: 44,
-              color: AppColors.shopBlue,
-            ),
+            child: const Icon(Icons.search_off_rounded,
+                size: 44, color: AppColors.shopBlue),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -925,7 +855,8 @@ class _LibraryScreenState extends State<LibraryScreen>
               });
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [AppColors.shopBlueLight, AppColors.shopBlue],
@@ -971,11 +902,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                 color: const Color(0xFFFFECEC),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                size: 36,
-                color: Color(0xFFEF4444),
-              ),
+              child: const Icon(Icons.error_outline_rounded,
+                  size: 36, color: Color(0xFFEF4444)),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -991,18 +919,14 @@ class _LibraryScreenState extends State<LibraryScreen>
               _error ?? 'Une erreur est survenue',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
+                  fontSize: 13, color: AppColors.screenTextSecondary),
             ),
             const SizedBox(height: 24),
             GestureDetector(
               onTap: _loadProducts,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
+                    horizontal: 24, vertical: 14),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.shopBlueLight, AppColors.shopBlue],
@@ -1059,8 +983,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         isDark: false,
         color: accent,
         tag: product.type,
-        width: AppDimensions.getHorizontalMenuCardWidth(context),
-        height: AppDimensions.getHorizontalMenuCardHeight(context),
+        imageFlex: 4, // Image prend 50% de l'espace (5/10), texte 50% (5/10)
         externalTitleSpacing: 8,
         titleMaxLines: 2,
         buttonText: 'Ajouter',
@@ -1072,13 +995,14 @@ class _LibraryScreenState extends State<LibraryScreen>
         actionText: product.price > 0
             ? '${product.price.toStringAsFixed(0)} F'
             : 'Gratuit',
-        actionTextColor: product.price > 0 ? AppColors.shopGreen : Colors.green,
+        actionTextColor:
+            product.price > 0 ? AppColors.shopGreen : Colors.green,
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  ProductDetailScreen(product: product, produitUid: product.id),
+              builder: (_) => ProductDetailScreen(
+                  product: product, produitUid: product.id),
             ),
           ).then((_) => _updateCartItemCount());
         },

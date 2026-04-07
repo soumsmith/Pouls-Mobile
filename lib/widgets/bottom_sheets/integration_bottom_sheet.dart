@@ -4,9 +4,12 @@ import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/models/ecole.dart';
 import 'package:parents_responsable/services/integration_service.dart';
+import 'package:parents_responsable/services/pouls_scolaire_api_service.dart';
+import 'package:parents_responsable/services/text_size_service.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
+import 'package:parents_responsable/widgets/searchable_dropdown.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
 class _DateInputFormatter extends TextInputFormatter {
@@ -399,13 +402,16 @@ class IntegrationFormContent extends StatefulWidget {
 
 class _IntegrationFormContentState extends State<IntegrationFormContent> {
   static const _actionColor = Color(0xFF3B82F6);
+  final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
+  final TextSizeService _textSizeService = TextSizeService();
 
   // ── Wizard state ────────────────────────────────────────────────────────
   int _currentStep = 0;
-  final int _totalSteps = 5;
+  final int _totalSteps = 6;
 
   // ── Step titles ───────────────────────────────────────────────────────────
   final List<String> _stepTitles = [
+    'Sélection de l\'établissement',
     'Informations de l\'élève',
     'Contacts et Parents',
     'Scolarité antérieure',
@@ -415,12 +421,20 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Step icons ─────────────────────────────────────────────────────────────
   final List<IconData> _stepIcons = [
+    Icons.school_rounded,
     Icons.person_rounded,
     Icons.phone_rounded,
     Icons.school_rounded,
     Icons.description_rounded,
     Icons.summarize_rounded,
   ];
+
+  // ── Sélection d'établissement ─────────────────────────────────────────────
+  List<Ecole> _ecoles = [];
+  int? _selectedEcoleId;
+  String? _selectedEcoleName;
+  bool _isLoadingEcoles = false;
+  String? _ecoleErrorMessage;
 
   // ── Champs de formulaire ─────────────────────────────────────────────────
   final _studentNameController = TextEditingController();
@@ -467,6 +481,11 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   @override
   void initState() {
     super.initState();
+    _textSizeService.addListener(() {
+      if (mounted) setState(() {});
+    });
+    _loadEcoles();
+    
     _studentNameController.addListener(() {
       if (_studentNameController.text.isNotEmpty && _studentNameError) {
         setState(() => _studentNameError = false);
@@ -515,6 +534,35 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  Future<void> _loadEcoles() async {
+    setState(() {
+      _isLoadingEcoles = true;
+      _ecoleErrorMessage = null;
+    });
+    try {
+      final ecoles = await _poulsApiService.getAllEcoles();
+      setState(() {
+        _ecoles = ecoles;
+        _isLoadingEcoles = false;
+      });
+      if (ecoles.isEmpty && mounted) {
+        _showSnack('Aucun établissement disponible', isError: true);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingEcoles = false;
+        _ecoleErrorMessage = 'Erreur chargement des établissements';
+      });
+      final isDns =
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('No address associated');
+      if (isDns && mounted)
+        _showSnack('Erreur de connexion. Vérifiez votre internet.', isError: true);
+      else if (mounted)
+        _showSnack('Erreur : ${e.toString()}', isError: true);
+    }
+  }
+
   String _convertDateFormat(String inputDate) {
     if (inputDate.isEmpty) return '';
     final cleaned = inputDate.replaceAll(' ', '');
@@ -559,6 +607,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
+        // Étape de sélection d'établissement
+        if (_selectedEcoleId == null) {
+          _showSnack('Veuillez sélectionner un établissement');
+          return false;
+        }
+        return true;
+
+      case 1:
+        // Ancienne étape 0 (Informations de l'élève)
         if (_studentNameController.text.isEmpty ||
             _studentFirstNameController.text.isEmpty ||
             _matriculeController.text.isEmpty ||
@@ -574,7 +631,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         }
         return true;
 
-      case 1:
+      case 2:
+        // Ancienne étape 1 (Contacts et Parents)
         if (_contact1Controller.text.isEmpty ||
             _nomPereController.text.isEmpty ||
             _nomMereController.text.isEmpty) {
@@ -583,13 +641,58 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         }
         return true;
 
-      case 2:
-        return true;
-
       case 3:
+        // Ancienne étape 2 (Scolarité antérieure)
         return true;
 
       case 4:
+        // Ancienne étape 3 (Documents et finalisation)
+        return true;
+
+      case 5:
+        // Ancienne étape 4 (Récapitulatif)
+        return true;
+
+      default:
+        return true;
+    }
+  }
+
+  // Validation silencieuse pour l'état du bouton (sans SnackBar)
+  bool _canNavigateToNext() {
+    switch (_currentStep) {
+      case 0:
+        // Étape de sélection d'établissement
+        return _selectedEcoleId != null;
+
+      case 1:
+        // Ancienne étape 0 (Informations de l'élève)
+        if (_studentNameController.text.isEmpty ||
+            _studentFirstNameController.text.isEmpty ||
+            _matriculeController.text.isEmpty ||
+            _birthDateController.text.isEmpty ||
+            _adresseController.text.isEmpty) {
+          return false;
+        }
+        final dateRegex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
+        return dateRegex.hasMatch(_birthDateController.text);
+
+      case 2:
+        // Ancienne étape 1 (Contacts et Parents)
+        return _contact1Controller.text.isNotEmpty &&
+               _nomPereController.text.isNotEmpty &&
+               _nomMereController.text.isNotEmpty;
+
+      case 3:
+        // Ancienne étape 2 (Scolarité antérieure)
+        return true;
+
+      case 4:
+        // Ancienne étape 3 (Documents et finalisation)
+        return true;
+
+      case 5:
+        // Ancienne étape 4 (Récapitulatif)
         return true;
 
       default:
@@ -884,9 +987,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                           onTap: () {
                             Clipboard.setData(ClipboardData(text: demandeUid));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Numéro copié !'),
-                              ),
+                              const SnackBar(content: Text('Numéro copié !')),
                             );
                           },
                           child: const Icon(
@@ -916,10 +1017,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                   ),
                   child: const Text(
                     'OK, j\'ai compris',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -947,7 +1045,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         // ── Contenu de l'étape (SCROLLABLE) ────────────────────────────────
         Flexible(
           child: SingleChildScrollView(
-            reverse: true, // Permet de voir les champs en bas quand le clavier apparaît
+            reverse:
+                true, // Permet de voir les champs en bas quand le clavier apparaît
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: _buildCurrentStep(),
           ),
@@ -975,60 +1074,108 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(_totalSteps, (index) {
-              final isCompleted = index < _currentStep;
-              final isCurrent = index == _currentStep;
-
-              return Expanded(
+          Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (_currentStep + 1) / _totalSteps,
+                  backgroundColor: AppColors.screenDivider,
+                  valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
+                  minHeight: 4,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Stepper horizontal avec défilement
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isCompleted
-                            ? AppColors.screenOrange
-                            : isCurrent
-                                ? _actionColor
-                                : AppColors.screenDivider,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        isCompleted
-                            ? Icons.check_rounded
-                            : _stepIcons[index],
-                        color: isCompleted || isCurrent
-                            ? Colors.white
-                            : AppColors.screenTextSecondary,
-                        size: 16,
-                      ),
-                    ),
-                    if (index < _totalSteps - 1)
-                      Expanded(
-                        child: Container(
-                          height: 2,
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          color: index < _currentStep
-                              ? AppColors.screenOrange
-                              : AppColors.screenDivider,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(_totalSteps, (index) {
+                    final isCompleted = index < _currentStep;
+                    final isCurrent = index == _currentStep;
+                    final isClickable = index < _currentStep;
+
+                    return GestureDetector(
+                      onTap: isClickable
+                          ? () {
+                              setState(() => _currentStep = index);
+                            }
+                          : null,
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: Column(
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: isCurrent ? 34 : 28,
+                              height: isCurrent ? 34 : 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isCompleted
+                                    ? Colors.green
+                                    : isCurrent
+                                    ? AppColors.shopBlue
+                                    : AppColors.screenDivider,
+                                boxShadow: isCurrent
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.shopBlue.withOpacity(0.25),
+                                          blurRadius: 6,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : isCompleted
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.green.withOpacity(0.25),
+                                              blurRadius: 4,
+                                              spreadRadius: 1,
+                                            ),
+                                          ]
+                                        : null,
+                              ),
+                              child: Icon(
+                                isCompleted
+                                    ? Icons.check_rounded
+                                    : _stepIcons[index],
+                                color: (isCompleted || isCurrent)
+                                    ? Colors.white
+                                    : AppColors.screenTextSecondary,
+                                size: isCurrent ? 18 : 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            SizedBox(
+                              width: 80, // Largeur fixe pour éviter le overflow
+                              child: Text(
+                                _stepTitles[index],
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: isCurrent
+                                      ? FontWeight.w700
+                                      : isCompleted
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: isCurrent
+                                      ? AppColors.shopBlue
+                                      : isCompleted
+                                      ? Colors.green
+                                      : AppColors.screenTextSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                  ],
+                    );
+                  }),
                 ),
-              );
-            }),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Étape ${_currentStep + 1} sur $_totalSteps: ${_stepTitles[_currentStep]}',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.screenTextSecondary,
-            ),
-            textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ],
       ),
@@ -1039,15 +1186,17 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   Widget _buildCurrentStep() {
     switch (_currentStep) {
       case 0:
-        return _buildStep1();
+        return _buildStep0(); // Nouvelle étape : Sélection de l'établissement
       case 1:
-        return _buildStep2();
+        return _buildStep1(); // Ancienne étape 0
       case 2:
-        return _buildStep3();
+        return _buildStep2(); // Ancienne étape 1
       case 3:
-        return _buildStep4();
+        return _buildStep3(); // Ancienne étape 2
       case 4:
-        return _buildStep5();
+        return _buildStep4(); // Ancienne étape 3
+      case 5:
+        return _buildStep5(); // Ancienne étape 4
       default:
         return Container();
     }
@@ -1055,81 +1204,335 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Navigation buttons ─────────────────────────────────────────────────────
   Widget _buildNavigationButtons() {
+    final canNext = _canNavigateToNext();
+    
     return Row(
       children: [
         if (_currentStep > 0)
-          Expanded(
-            child: SizedBox(
-              height: 50,
-              child: OutlinedButton(
-                onPressed: _previousStep,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.screenDivider),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getButtonBorderRadius(context),
-                    ),
+          GestureDetector(
+            onTap: _previousStep,
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.screenSurface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.screenDivider),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 14,
+                    color: AppColors.screenTextSecondary,
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.arrow_back_rounded,
-                      size: 18,
+                  SizedBox(width: 4),
+                  Text(
+                    'Précédent',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.screenTextSecondary,
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Précédent',
-                      style: TextStyle(
-                        color: AppColors.screenTextSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        if (_currentStep > 0) const SizedBox(width: 12),
-        Expanded(
-          child: SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _nextStep,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.screenOrange,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getButtonBorderRadius(context),
                   ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _currentStep == _totalSteps - 1
-                        ? 'Envoyer la demande'
-                        : 'Suivant',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (_currentStep < _totalSteps - 1) ...[
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded, size: 18),
-                  ],
                 ],
               ),
             ),
           ),
+        const Spacer(),
+        GestureDetector(
+          onTap: canNext ? _nextStep : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              gradient: canNext
+                  ? const LinearGradient(
+                      colors: [
+                        AppColors.shopBlueLight,
+                        AppColors.shopBlue,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : LinearGradient(
+                      colors: [
+                        Colors.grey.shade300,
+                        Colors.grey.shade300,
+                      ],
+                    ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: canNext
+                  ? [
+                      BoxShadow(
+                        color: AppColors.shopBlue.withOpacity(0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _currentStep == _totalSteps - 1
+                      ? 'Envoyer la demande'
+                      : 'Suivant',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: canNext ? Colors.white : Colors.grey.shade500,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+                if (_currentStep < _totalSteps - 1) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: canNext ? Colors.white : Colors.grey.shade500,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  // ── Step 0: Sélection de l'établissement ───────────────────────────────────────
+  Widget _buildStep0() {
+    return _formSectionCard(
+      title: 'Sélection de l\'établissement',
+      icon: Icons.school_rounded,
+      children: [
+        // Description
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.screenOrangeLight.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.screenOrange.withOpacity(0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: AppColors.screenOrange,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Sélectionnez l\'établissement où vous souhaitez intégrer votre enfant.',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(13),
+                    color: AppColors.screenTextSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        
+        // Champ de sélection de l'établissement
+        _buildEcoleField(),
+        
+        // Message d'erreur si nécessaire
+        if (_ecoleErrorMessage != null) ...[
+          const SizedBox(height: 12),
+          _buildErrorBanner(_ecoleErrorMessage!),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEcoleField() {
+    if (_isLoadingEcoles) {
+      return _buildLoadingField('Chargement des établissements...');
+    }
+    if (_ecoles.isEmpty) {
+      return Column(
+        children: [
+          _buildEmptyEcoleField(),
+          if (_ecoleErrorMessage != null) ...[
+            const SizedBox(height: 10),
+            _buildRetryButton(),
+          ],
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('Établissement', required: true),
+        const SizedBox(height: 6),
+        SearchableDropdown(
+          label: 'Établissement',
+          value: _selectedEcoleName ?? 'Sélectionner un établissement...',
+          items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+          onChanged: (String selected) {
+            final ecole = _ecoles.firstWhere(
+              (e) => e.ecoleclibelle == selected,
+            );
+            setState(() {
+              _selectedEcoleId = ecole.ecoleid;
+              _selectedEcoleName = selected;
+              _ecoleErrorMessage = null;
+            });
+          },
+          isDarkMode: false,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingField(String msg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.screenDivider),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.screenOrange,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            msg,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyEcoleField() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400], size: 18),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Aucun établissement disponible',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRetryButton() {
+    return GestureDetector(
+      onTap: _loadEcoles,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.screenOrangeLight,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.refresh_rounded,
+              color: AppColors.screenOrange,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Réessayer',
+              style: TextStyle(
+                color: AppColors.screenOrange,
+                fontWeight: FontWeight.w700,
+                fontSize: _textSizeService.getScaledFontSize(13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fieldLabel(String label, {bool required = false}) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.screenTextSecondary,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (required)
+          const Text(
+            ' *',
+            style: TextStyle(
+              color: AppColors.screenOrange,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildErrorBanner(String message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400], size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Colors.red[700],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1400,8 +1803,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                 Icons.assignment_turned_in_rounded,
                 value: _selectedStatutAff,
                 items: ['Affecté', 'En attente', 'Refusé'],
-                onChanged: (v) =>
-                    ss(() => _selectedStatutAff = v ?? 'Affecté'),
+                onChanged: (v) => ss(() => _selectedStatutAff = v ?? 'Affecté'),
               ),
             ),
             CustomTextField(
@@ -1467,8 +1869,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               if (_bulletinFile != null) '✅ Bulletin scolaire',
               if (_certificatVaccinationFile != null)
                 '✅ Certificat de vaccination',
-              if (_certificatScolariteFile != null)
-                '✅ Certificat de scolarité',
+              if (_certificatScolariteFile != null) '✅ Certificat de scolarité',
               if (_extraitNaissanceFile != null) '✅ Extrait de naissance',
               if (_cniParentFile != null) '✅ CNI des parents',
               if (_bulletinFile == null &&
@@ -1504,7 +1905,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             ),
           ),
           const SizedBox(height: 12),
-          ...items.where((item) => item.isNotEmpty).map(
+          ...items
+              .where((item) => item.isNotEmpty)
+              .map(
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Row(
@@ -1545,8 +1948,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         content: Text('Sélection de fichier pour: $fileType'),
         backgroundColor: AppColors.screenOrange,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -1582,11 +1984,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                       AppDimensions.getBadgeBorderRadius(context),
                     ),
                   ),
-                  child: Icon(
-                    icon,
-                    color: AppColors.screenOrange,
-                    size: 18,
-                  ),
+                  child: Icon(icon, color: AppColors.screenOrange, size: 18),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -1679,15 +2077,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           dropdownColor: Colors.white,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFFBBBBBB),
-            ),
-            prefixIcon: Icon(
-              icon,
-              color: AppColors.screenOrange,
-              size: 18,
-            ),
+            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+            prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
             filled: true,
             fillColor: AppColors.screenSurface,
             contentPadding: const EdgeInsets.symmetric(

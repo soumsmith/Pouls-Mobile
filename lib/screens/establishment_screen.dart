@@ -23,7 +23,7 @@ import '../widgets/image_menu_card.dart';
 import '../widgets/app_loader.dart';
 import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
-import 'package:file_picker/file_picker.dart';
+import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -152,36 +152,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   final _villeParentController = TextEditingController();
   final _adresseParentController = TextEditingController();
 
-  // ── Controllers pour le formulaire d'intégration ──────────────────
-  final _studentNameController = TextEditingController();
-  final _studentFirstNameController = TextEditingController();
-  final _matriculeController = TextEditingController();
-  final _birthDateController = TextEditingController();
-  final _lieuNaissanceController = TextEditingController();
-  final _nationaliteController = TextEditingController();
-  final _adresseController = TextEditingController();
-  final _contact1Controller = TextEditingController();
-  final _contact2Controller = TextEditingController();
-  final _nomPereController = TextEditingController();
-  final _nomMereController = TextEditingController();
-  final _nomTuteurController = TextEditingController();
-  final _niveauAntController = TextEditingController();
-  final _ecoleAntController = TextEditingController();
-  final _moyenneAntController = TextEditingController();
-  final _rangAntController = TextEditingController();
-  final _decisionAntController = TextEditingController();
-  final _motifController = TextEditingController();
-  final _filiereController = TextEditingController();
-
-  // Dropdown & fichiers pour intégration
-  String _selectedSexe = 'M';
-  String _selectedStatutAff = 'Affecté';
-  String? _bulletinFile;
-  String? _certificatVaccinationFile;
-  String? _certificatScolariteFile;
-  String? _extraitNaissanceFile;
-  String? _cniParentFile;
-
   // ── Timer pour debounce ───────────────────────────────────────
   Timer? _searchTimer;
 
@@ -194,6 +164,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Animations ─────────────────────────────────────────────
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
+
+  int _getCrossAxisCount(BuildContext context) {
+    return AppDimensions.getEcolesGridColumns(context);
+  }
 
   // ── Données du slider d'écoles ───────────────────────────────
   final List<Map<String, String>> _featuredSchools = [
@@ -298,26 +272,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _paysParentController.dispose();
     _villeParentController.dispose();
     _adresseParentController.dispose();
-    // Intégration controllers
-    _studentNameController.dispose();
-    _studentFirstNameController.dispose();
-    _matriculeController.dispose();
-    _birthDateController.dispose();
-    _lieuNaissanceController.dispose();
-    _nationaliteController.dispose();
-    _adresseController.dispose();
-    _contact1Controller.dispose();
-    _contact2Controller.dispose();
-    _nomPereController.dispose();
-    _nomMereController.dispose();
-    _nomTuteurController.dispose();
-    _niveauAntController.dispose();
-    _ecoleAntController.dispose();
-    _moyenneAntController.dispose();
-    _rangAntController.dispose();
-    _decisionAntController.dispose();
-    _motifController.dispose();
-    _filiereController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -1165,14 +1119,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                 sliver: SliverGrid(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: AppDimensions.getEcolesGridColumns(context),
-                    crossAxisSpacing: AppDimensions.getEcoleCardSpacing(
-                      context,
-                    ),
-                    mainAxisSpacing: AppDimensions.getEcoleCardSpacing(context),
-                    childAspectRatio:
-                        AppDimensions.getEcolesGridChildAspectRatio(context),
-                  ),
+                crossAxisCount: _getCrossAxisCount(context),
+                crossAxisSpacing:
+                    AppDimensions.getProductsGridSpacingProportional(context, 2),
+                childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: 4),
+              ),
                   delegate: SliverChildBuilderDelegate((_, i) {
                     if (i == items.length && _hasMoreEcoles) {
                       return SeeMoreCard(
@@ -1209,17 +1160,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           color: _typeColor(items[i].typePrincipal),
                           location: items[i].adresse,
                           tag: items[i].typePrincipal,
-                          width:
-                              AppDimensions.getHorizontalMenuCardWidth(
-                                context,
-                              ) +
-                              5,
-                          height:
-                              AppDimensions.getHorizontalMenuCardHeight(
-                                context,
-                              ) -
-                              30,
+                          titleMaxLines: 2,
                           externalTitleSpacing: 8,
+                          imageFlex: 4,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) =>
@@ -1227,6 +1170,41 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             ),
                           ),
                         ),
+
+      //                   child: ImageMenuCardExternalTitle(
+      //   index: index,
+      //   cardKey: product.id,
+      //   title: product.title,
+      //   subtitle: product.subtitle,
+      //   imagePath: product.imageUrl,
+      //   iconData: Icons.shopping_bag,
+      //   isDark: false,
+      //   color: accent,
+      //   tag: product.type,
+      //   imageFlex: 3, // Image prend 50% de l'espace (5/10), texte 50% (5/10)
+      //   externalTitleSpacing: 8,
+      //   titleMaxLines: 2,
+      //   buttonText: 'Ajouter',
+      //   buttonColor: AppColors.shopGreen,
+      //   buttonTextColor: Colors.white,
+      //   onButtonTap: () {
+      //     CartSnackBar.show(context, productName: product.title);
+      //   },
+      //   actionText: product.price > 0
+      //       ? '${product.price.toStringAsFixed(0)} F'
+      //       : 'Gratuit',
+      //   actionTextColor:
+      //       product.price > 0 ? AppColors.shopGreen : Colors.green,
+      //   onTap: () {
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(
+      //         builder: (_) => ProductDetailScreen(
+      //             product: product, produitUid: product.id),
+      //       ),
+      //     ).then((_) => _updateCartItemCount());
+      //   },
+      // ),
                       );
                     }
                     return const SizedBox.shrink();
@@ -1259,13 +1237,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   // ── Action buttons (quick actions) ─────────────────────────────────────────
-  // Includes: Intégrer, Noter, Parrainer + Événements (navigates to AllEventsScreen)
+  // Includes: Intégrer, Noter, Recommander + Événements (navigates to AllEventsScreen)
   Widget _buildActionButtons(bool isDark) {
     final actions = [
       'integration',
       'rating',
-      'sponsorship',
-      'share',
       'recommend',
       'events',
     ];
@@ -1278,15 +1254,15 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         itemBuilder: (context, i) {
           final def = _kActions[actions[i]]!;
           return Padding(
-            padding: EdgeInsets.only(right: i < actions.length - 1 ? 12 : 0),
+            padding: EdgeInsets.only(right: i < actions.length - 1 ? 6 : 0),
             child: ImageMenuCard(
               index: i,
               cardKey: actions[i],
               title: def.label,
               iconData: def.icon,
               isDark: isDark,
-              width: AppDimensions.getHorizontalMenuCardWidth(context) -20,
-              height: AppDimensions.getHorizontalMenuCardHeight(context) -30,
+              width: AppDimensions.getHorizontalMenuCardWidth(context),
+              height: AppDimensions.getHorizontalMenuCardHeight(context),
               color: def.color,
               onTap: () {
                 if (actions[i] == 'events') {
@@ -1391,1089 +1367,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── FORMULAIRE D'INTÉGRATION (migré depuis EstablishmentDetailScreen) ────
-  // ══════════════════════════════════════════════════════════════════════════
 
-  void _showIntegrationBottomSheet() {
-    // Reset file names
-    _bulletinFile = null;
-    _certificatVaccinationFile = null;
-    _certificatScolariteFile = null;
-    _extraitNaissanceFile = null;
-    _cniParentFile = null;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (ctx, setModalState) => Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 20,
-                offset: Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  margin: const EdgeInsets.only(top: 12, bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.screenOrange.withOpacity(0.15),
-                            AppColors.screenOrange.withOpacity(0.05),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.screenOrange.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.person_add_alt_1_rounded,
-                        color: AppColors.screenOrange,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Demande d'intégration",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A1A),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Sélectionnez un établissement dans la liste',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: Colors.grey[600],
-                          size: 20,
-                        ),
-                        iconSize: 20,
-                        splashRadius: 24,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                color: Colors.grey[200],
-              ),
-
-              // Form
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-
-                      // ── Section élève ──────────────────────────
-                      _buildIntegrationSectionHeader("Informations de l'élève"),
-                      _buildIntegrationFormField(
-                        'Nom',
-                        'Entrez le nom complet',
-                        Icons.person_rounded,
-                        controller: _studentNameController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Prénoms',
-                        'Entrez les prénoms',
-                        Icons.person_outline_rounded,
-                        controller: _studentFirstNameController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Matricule',
-                        'Entrez le matricule',
-                        Icons.badge_rounded,
-                        controller: _matriculeController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationDropdownField(
-                        'Sexe',
-                        'Sélectionner le sexe',
-                        Icons.person_rounded,
-                        value: _selectedSexe,
-                        items: ['M', 'F'],
-                        onChanged: (v) =>
-                            setModalState(() => _selectedSexe = v!),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Date de naissance',
-                        'AAAA-MM-JJ',
-                        Icons.cake_rounded,
-                        controller: _birthDateController,
-                        keyboardType: TextInputType.datetime,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Lieu de naissance',
-                        'Entrez le lieu de naissance',
-                        Icons.location_on_rounded,
-                        controller: _lieuNaissanceController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Nationalité',
-                        'Entrez la nationalité',
-                        Icons.flag_rounded,
-                        controller: _nationaliteController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        "Adresse",
-                        "Entrez l'adresse complète",
-                        Icons.home_rounded,
-                        controller: _adresseController,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Section contacts ───────────────────────
-                      _buildIntegrationSectionHeader('Contacts'),
-                      _buildIntegrationFormField(
-                        'Contact 1',
-                        'Numéro principal',
-                        Icons.phone_rounded,
-                        controller: _contact1Controller,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Contact 2',
-                        'Numéro secondaire (optionnel)',
-                        Icons.phone_android_rounded,
-                        controller: _contact2Controller,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Section parents ────────────────────────
-                      _buildIntegrationSectionHeader(
-                        'Informations des parents',
-                      ),
-                      _buildIntegrationFormField(
-                        'Nom du père',
-                        'Nom complet du père',
-                        Icons.person_rounded,
-                        controller: _nomPereController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Nom de la mère',
-                        'Nom complet de la mère',
-                        Icons.person_outline_rounded,
-                        controller: _nomMereController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Nom du tuteur',
-                        'Nom du tuteur (optionnel)',
-                        Icons.supervisor_account_rounded,
-                        controller: _nomTuteurController,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Section scolarité antérieure ───────────
-                      _buildIntegrationSectionHeader('Scolarité antérieure'),
-                      _buildIntegrationFormField(
-                        'Niveau antérieur',
-                        'Ex: CP1, 6ème...',
-                        Icons.school_rounded,
-                        controller: _niveauAntController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        "École antérieure",
-                        "Nom de l'école précédente",
-                        Icons.account_balance_rounded,
-                        controller: _ecoleAntController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Moyenne antérieure',
-                        'Ex: 12.5',
-                        Icons.assessment_rounded,
-                        controller: _moyenneAntController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Rang antérieur',
-                        'Ex: 3',
-                        Icons.format_list_numbered_rounded,
-                        controller: _rangAntController,
-                        keyboardType: TextInputType.number,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Décision antérieure',
-                        'Ex: Passage, Redoublement...',
-                        Icons.gavel_rounded,
-                        controller: _decisionAntController,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Section documents ──────────────────────
-                      _buildIntegrationSectionHeader('Documents à fournir'),
-                      _buildIntegrationFileUploadField(
-                        'Bulletin scolaire',
-                        'Sélectionner le bulletin',
-                        Icons.description_rounded,
-                        fileName: _bulletinFile,
-                        onTap: () async {
-                          final name = await _pickIntegrationFile();
-                          if (name != null)
-                            setModalState(() => _bulletinFile = name);
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFileUploadField(
-                        'Certificat de vaccination',
-                        'Sélectionner le certificat',
-                        Icons.medical_services_rounded,
-                        fileName: _certificatVaccinationFile,
-                        onTap: () async {
-                          final name = await _pickIntegrationFile();
-                          if (name != null)
-                            setModalState(
-                              () => _certificatVaccinationFile = name,
-                            );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFileUploadField(
-                        'Certificat de scolarité',
-                        'Sélectionner le certificat',
-                        Icons.school_rounded,
-                        fileName: _certificatScolariteFile,
-                        onTap: () async {
-                          final name = await _pickIntegrationFile();
-                          if (name != null)
-                            setModalState(
-                              () => _certificatScolariteFile = name,
-                            );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFileUploadField(
-                        "Extrait de naissance",
-                        "Sélectionner l'extrait",
-                        Icons.card_membership_rounded,
-                        fileName: _extraitNaissanceFile,
-                        onTap: () async {
-                          final name = await _pickIntegrationFile();
-                          if (name != null)
-                            setModalState(() => _extraitNaissanceFile = name);
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFileUploadField(
-                        'CNI des parents',
-                        'Sélectionner la CNI',
-                        Icons.credit_card_rounded,
-                        fileName: _cniParentFile,
-                        onTap: () async {
-                          final name = await _pickIntegrationFile();
-                          if (name != null)
-                            setModalState(() => _cniParentFile = name);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Section détails demande ────────────────
-                      _buildIntegrationSectionHeader('Détails de la demande'),
-                      _buildIntegrationFormField(
-                        'Motif',
-                        'Ex: Nouvelle inscription, Transfert...',
-                        Icons.note_rounded,
-                        controller: _motifController,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationDropdownField(
-                        "Statut d'affectation",
-                        'Sélectionner le statut',
-                        Icons.assignment_turned_in_rounded,
-                        value: _selectedStatutAff,
-                        items: ['Affecté', 'En attente', 'Refusé'],
-                        onChanged: (v) =>
-                            setModalState(() => _selectedStatutAff = v!),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildIntegrationFormField(
-                        'Filière',
-                        'Ex: primaire, secondaire, technique...',
-                        Icons.category_rounded,
-                        controller: _filiereController,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // ── Submit ─────────────────────────────────
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _submitIntegrationRequest(context),
-                          icon: const Icon(Icons.send_rounded, size: 18),
-                          label: const Text(
-                            'Envoyer la demande',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.screenOrange,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Helpers pour le formulaire d'intégration ──────────────────────────────
-
-  Widget _buildIntegrationSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: AppColors.screenOrange,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIntegrationFormField(
-    String label,
-    String hint,
-    IconData icon, {
-    TextEditingController? controller,
-    TextInputType keyboardType = TextInputType.text,
-    bool isPassword = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF555555),
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          obscureText: isPassword,
-          keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 13),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
-            prefixIcon: Icon(icon, size: 16, color: AppColors.screenOrange),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenOrange),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIntegrationDropdownField(
-    String label,
-    String hint,
-    IconData icon, {
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF555555),
-          ),
-        ),
-        const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          value: value,
-          onChanged: onChanged,
-          items: items
-              .map(
-                (item) => DropdownMenuItem(
-                  value: item,
-                  child: Text(item, style: const TextStyle(fontSize: 13)),
-                ),
-              )
-              .toList(),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
-            prefixIcon: Icon(icon, size: 16, color: AppColors.screenOrange),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenOrange),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIntegrationFileUploadField(
-    String label,
-    String hint,
-    IconData icon, {
-    String? fileName,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF555555),
-          ),
-        ),
-        const SizedBox(height: 6),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: fileName != null
-                    ? AppColors.screenOrange
-                    : Colors.grey[300]!,
-              ),
-              borderRadius: BorderRadius.circular(8),
-              color: fileName != null
-                  ? AppColors.screenOrange.withOpacity(0.05)
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: fileName != null
-                      ? AppColors.screenOrange
-                      : Colors.grey[600],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    fileName ?? hint,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: fileName != null
-                          ? AppColors.screenOrange
-                          : Colors.grey[500],
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.upload_file,
-                  size: 16,
-                  color: fileName != null
-                      ? AppColors.screenOrange
-                      : Colors.grey[600],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<String?> _pickIntegrationFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
-        allowMultiple: false,
-      );
-      if (result != null && result.files.single.path != null) {
-        final name = result.files.single.name;
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Fichier sélectionné: $name'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-        return name;
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la sélection: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-    return null;
-  }
-
-  Future<void> _submitIntegrationRequest(BuildContext sheetContext) async {
-    if (_studentNameController.text.isEmpty ||
-        _studentFirstNameController.text.isEmpty ||
-        _birthDateController.text.isEmpty ||
-        _contact1Controller.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.warning_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text('Veuillez remplir tous les champs obligatoires'),
-            ],
-          ),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-      return;
-    }
-
-    final requestData = {
-      'nom': _studentNameController.text,
-      'prenoms': _studentFirstNameController.text,
-      'matricule': _matriculeController.text.isNotEmpty
-          ? _matriculeController.text
-          : null,
-      'sexe': _selectedSexe,
-      'date_naissance': _birthDateController.text,
-      'lieu_naissance': _lieuNaissanceController.text.isNotEmpty
-          ? _lieuNaissanceController.text
-          : null,
-      'nationalite': _nationaliteController.text.isNotEmpty
-          ? _nationaliteController.text
-          : 'Ivoirienne',
-      'adresse': _adresseController.text.isNotEmpty
-          ? _adresseController.text
-          : null,
-      'contact_1': _contact1Controller.text,
-      'contact_2': _contact2Controller.text.isNotEmpty
-          ? _contact2Controller.text
-          : null,
-      'nom_pere': _nomPereController.text.isNotEmpty
-          ? _nomPereController.text
-          : null,
-      'nom_mere': _nomMereController.text.isNotEmpty
-          ? _nomMereController.text
-          : null,
-      'nom_tuteur': _nomTuteurController.text.isNotEmpty
-          ? _nomTuteurController.text
-          : null,
-      'niveau_ant': _niveauAntController.text.isNotEmpty
-          ? _niveauAntController.text
-          : null,
-      'ecole_ant': _ecoleAntController.text.isNotEmpty
-          ? _ecoleAntController.text
-          : null,
-      'moyenne_ant': _moyenneAntController.text.isNotEmpty
-          ? _moyenneAntController.text
-          : null,
-      'rang_ant': _rangAntController.text.isNotEmpty
-          ? int.tryParse(_rangAntController.text)
-          : null,
-      'decision_ant': _decisionAntController.text.isNotEmpty
-          ? _decisionAntController.text
-          : null,
-      'bulletin': _bulletinFile,
-      'certificat_vaccination': _certificatVaccinationFile,
-      'certificat_scolarite': _certificatScolariteFile,
-      'extrait_naissance': _extraitNaissanceFile,
-      'cni_parent': _cniParentFile,
-      'motif': _motifController.text.isNotEmpty
-          ? _motifController.text
-          : 'Nouvelle inscription',
-      'statut_aff': _selectedStatutAff,
-      'filiere': _filiereController.text.isNotEmpty
-          ? _filiereController.text
-          : 'primaire',
-    };
-
-    // Fermer le bottom sheet, puis afficher le loader dans le contexte principal
-    Navigator.of(sheetContext).pop();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Container(
-        color: Colors.black54,
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.screenOrange,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Envoi de la demande...",
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    try {
-      // NOTE: écoleCode vide car on est sur l'écran général (pas de détail d'école).
-      // Si vous avez un code école disponible, remplacez '' par la valeur appropriée.
-      final result = await IntegrationService.submitIntegrationRequest(
-        '',
-        requestData,
-      );
-      if (!mounted) return;
-      Navigator.of(context).pop(); // ferme loader
-
-      if (result['success'] == true) {
-        _clearIntegrationForm();
-        final uid = result['data']?['demande_uid'];
-        _showIntegrationSuccessDialog(uid?.toString() ?? 'N/A');
-      } else {
-        _showIntegrationErrorDialog(
-          'Échec de l\'envoi',
-          'Une erreur est survenue.',
-          details: result['error']?.toString(),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      _showIntegrationErrorDialog(
-        'Exception',
-        'Erreur inattendue.',
-        details: e.toString(),
-      );
-    }
-  }
-
-  void _clearIntegrationForm() {
-    _studentNameController.clear();
-    _studentFirstNameController.clear();
-    _matriculeController.clear();
-    _birthDateController.clear();
-    _lieuNaissanceController.clear();
-    _nationaliteController.clear();
-    _adresseController.clear();
-    _contact1Controller.clear();
-    _contact2Controller.clear();
-    _nomPereController.clear();
-    _nomMereController.clear();
-    _nomTuteurController.clear();
-    _niveauAntController.clear();
-    _ecoleAntController.clear();
-    _moyenneAntController.clear();
-    _rangAntController.clear();
-    _decisionAntController.clear();
-    _motifController.clear();
-    _filiereController.clear();
-    setState(() {
-      _selectedSexe = 'M';
-      _selectedStatutAff = 'Affecté';
-      _bulletinFile = null;
-      _certificatVaccinationFile = null;
-      _certificatScolariteFile = null;
-      _extraitNaissanceFile = null;
-      _cniParentFile = null;
-    });
-  }
-
-  void _showIntegrationSuccessDialog(String uid) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Container(
-        color: Colors.black54,
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.green, Colors.green.withOpacity(0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Demande envoyée avec succès !',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Votre demande est maintenant en cours de traitement.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF666666),
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Column(
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.fingerprint_rounded,
-                            color: AppColors.screenOrange,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Numéro de suivi',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        uid,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenOrange,
-                          letterSpacing: 1.2,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.screenOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      "OK, j'ai compris",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showIntegrationErrorDialog(
-    String title,
-    String message, {
-    String? details,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Container(
-        color: Colors.black54,
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.red, Colors.red.withOpacity(0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  child: const Icon(
-                    Icons.error_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF666666),
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                if (details != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_rounded,
-                          color: Colors.grey[600],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            details,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF666666),
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          'Fermer',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF666666),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _showIntegrationBottomSheet();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.screenOrange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Réessayer',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
+          
+  
   // ══════════════════════════════════════════════════════════════════════════
   // ── Action bottom sheet dispatcher ───────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -2481,7 +1377,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   Widget _buildActionContent(String actionType) {
     switch (actionType) {
       case 'integration':
-        // Le vrai formulaire est lancé directement via _showIntegrationBottomSheet
+        // Le formulaire est lancé via le composant integration_bottom_sheet.dart
         // Ce case ne devrait pas être atteint mais on garde un fallback
         return _buildSelectionMessage(
           'Intégration',
@@ -3116,9 +2012,17 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   void _showActionBottomSheet(String actionType, _ActionDef def) {
-    // Pour 'integration', on lance directement le vrai formulaire
+    // Pour 'integration', on utilise le composant integration_bottom_sheet.dart
     if (actionType == 'integration') {
-      _showIntegrationBottomSheet();
+      showIntegrationBottomSheet(
+        context: context,
+        onSuccess: (demandeUid) {
+          // Action de succès si nécessaire
+        },
+        onError: (error) {
+          // Action d'erreur si nécessaire
+        },
+      );
       return;
     }
 

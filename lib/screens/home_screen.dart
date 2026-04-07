@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bottom_sheet.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/image_menu_card.dart';
+import 'package:parents_responsable/widgets/share_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import '../config/app_dimensions.dart';
 import '../models/child.dart';
 import '../services/database_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
@@ -189,69 +192,72 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── SHARE MENU ────────────────────────────────────────────────────────────
   void _showShareMenu() {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    showMenu(
+    showModalBottomSheet(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(
-          MediaQuery.of(context).size.width - 16,
-          kToolbarHeight + 50,
-          0,
-          0,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        Offset.zero & overlay.size,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 8,
-      color: AppColors.screenCard,
-      items: [
-        _shareMenuItem(Icons.email, Colors.red, 'Partager par mail', 'mail'),
-        _shareMenuItem(
-          Icons.message,
-          Colors.green,
-          'Partager par WhatsApp',
-          'whatsapp',
-        ),
-        _shareMenuItem(
-          Icons.facebook,
-          Colors.blue,
-          'Partager sur Facebook',
-          'facebook',
-        ),
-        _shareMenuItem(
-          Icons.share,
-          AppColors.screenTextSecondary,
-          'Autres options',
-          'other',
-        ),
-      ],
-    ).then((value) {
-      if (value != null) _handleShareAction(value);
-    });
-  }
-
-  PopupMenuItem<String> _shareMenuItem(
-    IconData icon,
-    Color color,
-    String label,
-    String value,
-  ) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.screenTextPrimary,
-              fontWeight: FontWeight.w500,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            
+            // Titre
+            Text(
+              'Partager l\'application',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(18),
+                fontWeight: FontWeight.w700,
+                color: AppColors.screenTextPrimary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Boutons de partage
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ShareButton(
+                  label: 'Mail',
+                  icon: Icons.email_rounded,
+                  iconColor: Colors.red,
+                  imagePath: 'assets/images/email_logo.png',
+                  onTap: () => _handleShareAction('mail'),
+                ),
+                const SizedBox(width: 8),
+                ShareButton(
+                  label: 'WhatsApp',
+                  icon: Icons.message_rounded,
+                  iconColor: Colors.green,
+                  imagePath: 'assets/images/whatsapp_logo.png',
+                  onTap: () => _handleShareAction('whatsapp'),
+                ),
+                const SizedBox(width: 8),
+                ShareButton(
+                  label: 'Facebook',
+                  icon: Icons.facebook_rounded,
+                  iconColor: Colors.blue,
+                  imagePath: 'assets/images/facebook_logo.png',
+                  onTap: () => _handleShareAction('facebook'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -263,12 +269,20 @@ class _HomeScreenState extends State<HomeScreen> {
         'Découvrez Pouls École, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !';
     switch (action) {
       case 'mail':
-        final uri = Uri(
-          scheme: 'mailto',
-          query:
-              'subject=${Uri.encodeComponent('Découvrez Pouls École')}&body=${Uri.encodeComponent('$shareText\n\nTéléchargez l\'application ici : $appUrl')}',
-        );
-        if (await canLaunchUrl(uri)) await launchUrl(uri);
+        final subject = Uri.encodeComponent('Découvrez Pouls École');
+        final body = Uri.encodeComponent('$shareText\n\nTéléchargez l\'application ici : $appUrl');
+        final uri = Uri.parse('mailto:?subject=$subject&body=$body');
+        
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Aucune application email trouvée sur cet appareil'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         break;
       case 'whatsapp':
         final uri = Uri(
@@ -358,9 +372,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
                 onTap: _toggleSearch,
                 backgroundColor: _isSearching
-                    ? Colors.grey[300]
-                    : AppColors.screenOrange,
-                iconColor: _isSearching ? Colors.grey[700] : Colors.white,
+                    ? Colors.white
+                    : Colors.white,
+                //iconColor: _isSearching ? Colors.grey[700] : AppColors.screenOrange,
               ),
               const SizedBox(width: 8),
               // Share button
@@ -394,22 +408,31 @@ class _HomeScreenState extends State<HomeScreen> {
     bool showBadge = false,
     int badgeCount = 0,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Stack(
       children: [
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: backgroundColor != null
-                ? BoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: BorderRadius.circular(8),
-                  )
-                : null,
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: backgroundColor ?? (isDark ? const Color(0xFF2A2A2A) : AppColors.screenCard),
+              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.screenShadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
             child: Icon(
               icon,
-              size: 22,
-              color: iconColor ?? AppColors.screenTextSecondary,
+              size: 18,
+              color: iconColor ?? (isDark ? Colors.white70 : AppColors.screenTextPrimary),
             ),
           ),
         ),
@@ -421,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: Colors.red,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
               ),
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
@@ -532,35 +555,29 @@ class _HomeScreenState extends State<HomeScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildStatCard(
-            icon: Icons.child_care_rounded,
-            color: const Color(0xFF4A90D9),
-            value: '${_children.length}',
-            label:
-                'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
-          ),
-          const SizedBox(width: 8),
+         
           ImageMenuCard(
             index: 3,
             cardKey: 'integration_requests',
             title: 'Demandes d\'intégration',
             iconData: Icons.school_rounded,
             isDark: isDark,
-            color: const Color(0xFF1565C0),
+            color: AppColors.customGreen,
             backgroundColor: isDark
-                ? const Color(0xFF0A2540)
-                : const Color(0xFFE3F2FD),
+                ? AppColors.customGreenDark
+                : AppColors.customGreenSurface,
             textColor: isDark
-                ? const Color(0xFF64B5F6)
-                : const Color(0xFF0D47A1),
+                ? AppColors.customGreenLight
+                : AppColors.customGreenDark,
             actionText: 'Consulter',
-            actionTextColor: const Color(0xFF1565C0),
+            actionTextColor: AppColors.customGreen,
             onTap: () => IntegrationRequestBottomSheet.show(
               context,
               //matricule: widget.child.matricule,
               //childFullName: widget.child.fullName,
             ),
           ),
+          
           const SizedBox(width: 8),
           ImageMenuCard(
             index: 3,
@@ -588,12 +605,32 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          _buildStatCard(
-            icon: Icons.school_rounded,
-            color: AppColors.screenOrange,
-            value: '${_getUniqueSchoolsCount()}',
-            label: 'École${_getUniqueSchoolsCount() > 1 ? 's' : ''}',
+          ImageMenuCard(
+            index: 4,
+            cardKey: 'sponsorship',
+            title: 'Parrainage',
+            iconData: Icons.card_giftcard_rounded,
+            isDark: isDark,
+            color: AppColors.customOrange,
+            backgroundColor: isDark
+                ? AppColors.customOrangeDark
+                : AppColors.customOrangeSurface,
+            textColor: isDark
+                ? AppColors.customOrangeLight
+                : AppColors.customOrangeDark,
+            actionText: 'Parrainer',
+            actionTextColor: AppColors.customOrange,
+            onTap: () => showSponsorshipBottomSheet(context),
           ),
+          const SizedBox(width: 8),
+           _buildStatCard(
+            icon: Icons.child_care_rounded,
+            color: const Color(0xFF4A90D9),
+            value: '${_children.length}',
+            label:
+                'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
+          ),
+          const SizedBox(width: 8),
         ],
       ),
     );

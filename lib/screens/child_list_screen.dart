@@ -28,6 +28,7 @@ import '../services/school_service.dart';
 import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
+import '../services/notes_api_service.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
 import '../services/student_message_service.dart';
@@ -323,6 +324,13 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<ParentSuggestion> _suggestions = [];
   bool _isLoadingSuggestions = false;
 
+  // Variables pour les statistiques de notes
+  final NotesApiService _notesApiService = NotesApiService();
+  String? _appreciation;
+  double? _moyFr;
+  double? _moyGeneral;
+  bool _isLoadingNotes = false;
+
   // Variables pour les logs d'accès
   List<AccessLog> _accessLogs = [];
   bool _isLoadingAccessLogs = false;
@@ -349,7 +357,6 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Variables pour les données de notes globales
   GlobalAverage? _globalAverage;
-  bool _isLoadingNotes = false;
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
 
   // Informations de l'enfant pour l'API
@@ -581,8 +588,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('   💬 Messages: ${_messages.length}');
       print('   💰 Fees: ${_fees.length}');
 
-      // Étape 4: Plus de chargement des données de notes globales (API supprimée)
-      print('📊 Étape 4: Chargement des notes désactivé');
+      // Étape 4: Charger les données de statistiques de notes
+      print('Étape 4: Chargement des données de statistiques de notes...');
+      await _loadNotesStatistics();
 
       // Étape 5: Charger les informations détaillées de la classe/école
       print(
@@ -3905,8 +3913,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               children: [
                 _buildModernSummaryCard(
                   'Moyenne',
-                  _globalAverage != null
-                      ? '${_globalAverage!.trimesterAverage.toStringAsFixed(2)}'
+                  _moyGeneral != null
+                      ? '${_moyGeneral!.toStringAsFixed(2)}'
                       : '--',
                   Colors.green,
                   Icons.trending_up,
@@ -3938,9 +3946,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 const SizedBox(width: 12),
                 _buildModernSummaryCard(
                   'Appréciation',
-                  _globalAverage != null
-                      ? _globalAverage!.trimesterMention
-                      : '--',
+                  _appreciation ?? '--',
                   AppColors.secondary,
                   Icons.star,
                   isLoading: _isLoadingNotes,
@@ -7390,6 +7396,78 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (mounted) {
         setState(() {
           _isLoadingReservations = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadNotesStatistics() async {
+    if (_isLoadingNotes) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) {
+      print(' Matricule non disponible pour les statistiques de notes');
+      return;
+    }
+
+    if (_anneeId == null || _classeId == null) {
+      print(' Informations année/classe non disponibles pour les statistiques de notes');
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingNotes = true;
+      });
+    }
+
+    try {
+      print(' Chargement des statistiques de notes pour: $matricule');
+      
+      // Utiliser la période 1 par défaut
+      final periode = '1';
+      
+      final apiData = await _notesApiService.getNotesForStudent(
+        matricule: matricule,
+        anneeId: _anneeId!.toString(),
+        classeId: _classeId!.toString(),
+        periode: periode,
+      );
+
+      if (apiData != null) {
+        print(' Données de statistiques de notes reçues');
+        
+        // Extraire les données de la réponse API
+        final appreciation = apiData['appreciation'] as String?;
+        final moyFr = apiData['moyFr'] as double?;
+        final moyGeneral = apiData['moyGeneral'] as double?;
+        
+        if (mounted) {
+          setState(() {
+            _appreciation = appreciation;
+            _moyFr = moyFr;
+            _moyGeneral = moyGeneral;
+            _isLoadingNotes = false;
+          });
+        }
+        
+        print(' Statistiques mises à jour:');
+        print('   - Appreciation: $appreciation');
+        print('   - Moyenne Français: $moyFr');
+        print('   - Moyenne Générale: $moyGeneral');
+      } else {
+        print(' Erreur lors du chargement des statistiques de notes');
+        if (mounted) {
+          setState(() {
+            _isLoadingNotes = false;
+          });
+        }
+      }
+    } catch (e) {
+      print(' Exception lors du chargement des statistiques de notes: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingNotes = false;
         });
       }
     }

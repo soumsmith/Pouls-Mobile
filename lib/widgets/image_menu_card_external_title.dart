@@ -5,8 +5,8 @@ import '../services/text_size_service.dart';
 class ImageMenuCardExternalTitle extends StatelessWidget {
   final int index;
   final String cardKey;
-  final String? title; // Titre affiché en dehors de la carte
-  final String? subtitle; // Sous-titre affiché en dehors de la carte
+  final String? title;
+  final String? subtitle;
   final String? imagePath;
   final IconData? iconData;
   final bool isDark;
@@ -20,22 +20,21 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final String? tag;
   final double? width;
   final double? height;
-  final double?
-  externalTitleSpacing; // Espacement entre la carte et le titre externe
-  final int titleMaxLines; // Nombre maximum de lignes pour le titre
-  final String? buttonText; // Texte du bouton optionnel
-  final Color? buttonColor; // Couleur de fond du bouton
-  final Color? buttonTextColor; // Couleur du texte du bouton
-  final VoidCallback? onButtonTap; // Action du bouton
-
+  final double? externalTitleSpacing;
+  final int titleMaxLines;
+  final int imageFlex; // Contrôle la hauteur de l'image (défaut: 7)
+  final String? buttonText;
+  final Color? buttonColor;
+  final Color? buttonTextColor;
+  final VoidCallback? onButtonTap;
   final VoidCallback onTap;
 
   const ImageMenuCardExternalTitle({
     super.key,
     required this.index,
     required this.cardKey,
-    this.title, // Titre affiché en dehors de la carte
-    this.subtitle, // Sous-titre affiché en dehors de la carte
+    this.title,
+    this.subtitle,
     this.imagePath,
     this.iconData,
     required this.isDark,
@@ -49,9 +48,10 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.tag,
     this.width,
     this.height,
-    this.externalTitleSpacing = 8.0, // Espacement par défaut
-    this.titleMaxLines = 1, // Par défaut, le titre sur une seule ligne
-    this.buttonText, // Bouton optionnel
+    this.externalTitleSpacing = 8.0,
+    this.titleMaxLines = 2,
+    this.imageFlex = 7,
+    this.buttonText,
     this.buttonColor,
     this.buttonTextColor,
     this.onButtonTap,
@@ -73,194 +73,169 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           child: child,
         ),
       ),
+      // ✅ FIX: Column avec mainAxisSize.min — le contenu dicte la taille,
+      // pas une hauteur arbitraire. Dans une GridView, l'espace est déjà
+      // contraint par childAspectRatio donc pas de risque d'overflow infini.
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Carte principale (sans le titre à l'intérieur)
-          GestureDetector(
-            onTap: onTap,
-            child: Container(
-              width: width ?? 100, //cardWidth,
-              height: height ?? 100, // Hauteur par défaut si non spécifiée
-              //margin: EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color:
-                    backgroundColor ??
-                    (isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          color:
-                              color?.withOpacity(0.1) ??
-                              AppColors.screenCard.withOpacity(0.1),
-                          // Afficher l'image si disponible, sinon l'icône
-                          child: _buildImageOrIcon(context),
-                        ),
-                        // Gradient overlay for better text visibility
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.1),
-                              ],
+          // ── Image card ────────────────────────────────────────────────
+          // ✅ FIX: Flexible avec facteur pour contrôler la hauteur de l'image
+          // imageFlex = hauteur relative de l'image (défaut: 7)
+          Flexible(
+            flex: imageFlex,
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                width: width ?? double.infinity,
+                decoration: BoxDecoration(
+                  color: backgroundColor ??
+                      (isDark
+                          ? const Color(0xFF1E1E1E)
+                          : AppColors.screenCard),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: ColoredBox(
+                              color: color?.withOpacity(0.1) ??
+                                  AppColors.screenCard.withOpacity(0.1),
+                              child: _buildImageOrIcon(context),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (tag != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          tag!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          // Espacement entre la carte et le titre externe
-          if (title?.isNotEmpty == true) SizedBox(height: externalTitleSpacing),
-
-          // Titre et sous-titre affichés en dehors de la carte
-          if (title?.isNotEmpty == true) ...[
-            Container(
-              width: width ?? 100, // Même largeur que la carte
-              margin: EdgeInsets.only(right: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Titre principal
-                  Text(
-                    title!,
-                    style: TextStyle(
-                      fontSize: textSizeService.getScaledFontSize(12),
-                      fontWeight: FontWeight.w700,
-                      color:
-                          textColor ??
-                          (isDark ? Colors.white : AppColors.screenTextPrimary),
-                    ),
-                    maxLines:
-                        titleMaxLines, // Utilise le paramètre configurable
-                    overflow: TextOverflow
-                        .ellipsis, // Ajoute des points de suspension
-                  ),
-                  // Sous-titre
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: TextStyle(
-                        fontSize: textSizeService.getScaledFontSize(10),
-                        fontWeight: FontWeight.w500,
-                        color:
-                            textColor?.withOpacity(0.7) ??
-                            (isDark
-                                ? Colors.white70
-                                : AppColors.screenTextSecondary),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-
-                  // Texte d'action ou localisation
-                  if (actionText != null) ...[
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            actionText!,
-                            style: TextStyle(
-                              fontSize: textSizeService.getScaledFontSize(9),
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  actionTextColor ??
-                                  color ??
-                                  AppColors.screenOrange,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (buttonText != null) ...[
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            height: 22,
-                            child: ElevatedButton(
-                              onPressed: onButtonTap ?? () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    buttonColor ??
-                                    color ??
-                                    AppColors.screenOrange,
-                                foregroundColor:
-                                    buttonTextColor ?? Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
+                          // Gradient overlay
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.1),
+                                  ],
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                minimumSize: Size.zero,
-                              ),
-                              child: Text(
-                                buttonText!,
-                                style: TextStyle(
-                                  fontSize: textSizeService.getScaledFontSize(
-                                    8,
-                                  ),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                  ] else ...[
-                    if (location != null) ...[
+                    if (tag != null)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            tag!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Titre externe ─────────────────────────────────────────────
+          if (title?.isNotEmpty == true) ...[
+            SizedBox(height: externalTitleSpacing ?? 8),
+
+            // ✅ FIX: Flexible avec facteur 3 pour le texte (30% de l'espace)
+            Flexible(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Titre principal
+                    Text(
+                      title!,
+                      style: TextStyle(
+                        fontSize: textSizeService.getScaledFontSize(12),
+                        fontWeight: FontWeight.w700,
+                        color: textColor ??
+                            (isDark
+                                ? Colors.white
+                                : AppColors.screenTextPrimary),
+                      ),
+                      maxLines: titleMaxLines,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    // Sous-titre
+                    if (subtitle?.isNotEmpty == true) ...[
                       const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: textSizeService.getScaledFontSize(10),
+                          fontWeight: FontWeight.w500,
+                          color: textColor?.withOpacity(0.7) ??
+                              (isDark
+                                  ? Colors.white70
+                                  : AppColors.screenTextSecondary),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+
+                    // Prix + bouton Ajouter
+                    if (actionText != null) ...[
+                      const SizedBox(height: 4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              actionText!,
+                              style: TextStyle(
+                                fontSize:
+                                    textSizeService.getScaledFontSize(10),
+                                fontWeight: FontWeight.w700,
+                                color: actionTextColor ??
+                                    color ??
+                                    AppColors.screenOrange,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (buttonText != null) ...[
+                            const SizedBox(width: 4),
+                            _buildSmallButton(textSizeService),
+                          ],
+                        ],
+                      ),
+                    ]
+
+                    // Localisation + bouton
+                    else if (location != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Row(
@@ -268,8 +243,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                 Icon(
                                   Icons.location_on_outlined,
                                   size: 10,
-                                  color:
-                                      textColor?.withOpacity(0.5) ??
+                                  color: textColor?.withOpacity(0.5) ??
                                       (isDark
                                           ? Colors.white54
                                           : AppColors.screenTextSecondary),
@@ -279,15 +253,15 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                   child: Text(
                                     location!,
                                     style: TextStyle(
-                                      fontSize: textSizeService
-                                          .getScaledFontSize(9),
-                                      color:
-                                          textColor?.withOpacity(0.5) ??
+                                      fontSize:
+                                          textSizeService.getScaledFontSize(9),
+                                      color: textColor?.withOpacity(0.5) ??
                                           (isDark
                                               ? Colors.white54
                                               : AppColors.screenTextSecondary),
                                     ),
                                     overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
                                 ),
                               ],
@@ -295,84 +269,45 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                           ),
                           if (buttonText != null) ...[
                             const SizedBox(width: 4),
-                            SizedBox(
-                              height: 22,
-                              child: ElevatedButton(
-                                onPressed: onButtonTap ?? () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      buttonColor ??
-                                      color ??
-                                      AppColors.screenOrange,
-                                  foregroundColor:
-                                      buttonTextColor ?? Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  minimumSize: Size.zero,
-                                ),
-                                child: Text(
-                                  buttonText!,
-                                  style: TextStyle(
-                                    fontSize: textSizeService.getScaledFontSize(
-                                      8,
-                                    ),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
+                            _buildSmallButton(textSizeService),
                           ],
                         ],
                       ),
-                    ],
-                  ],
+                    ]
 
-                  // Bouton optionnel seul (si ni actionText ni location)
-                  if (buttonText != null &&
-                      actionText == null &&
-                      location == null) ...[
-                    const SizedBox(height: 6),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 28,
-                      child: ElevatedButton(
-                        onPressed: onButtonTap ?? () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              buttonColor ?? color ?? AppColors.screenOrange,
-                          foregroundColor: buttonTextColor ?? Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                    // Bouton seul (ni prix ni localisation)
+                    else if (buttonText != null) ...[
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 26,
+                        child: ElevatedButton(
+                          onPressed: onButtonTap ?? () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                buttonColor ?? color ?? AppColors.screenOrange,
+                            foregroundColor: buttonTextColor ?? Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                          child: Text(
+                            buttonText!,
+                            style: TextStyle(
+                              fontSize: textSizeService.getScaledFontSize(10),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        child: Text(
-                          buttonText!,
-                          style: TextStyle(
-                            fontSize: textSizeService.getScaledFontSize(10),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -381,35 +316,58 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     );
   }
 
-  // Méthode pour gérer l'affichage de l'image ou de l'icône
+  // ── Bouton compact réutilisable ──────────────────────────────────────────
+  Widget _buildSmallButton(TextSizeService textSizeService) {
+    return SizedBox(
+      height: 22,
+      child: ElevatedButton(
+        onPressed: onButtonTap ?? () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor ?? color ?? AppColors.screenOrange,
+          foregroundColor: buttonTextColor ?? Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          buttonText!,
+          style: TextStyle(
+            fontSize: textSizeService.getScaledFontSize(8),
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  // ── Image ou icône de secours ────────────────────────────────────────────
   Widget _buildImageOrIcon(BuildContext context) {
-    // Priorité aux images réseau si elles sont spécifiées
     if (imagePath != null && imagePath!.startsWith('http')) {
       return Image.network(
         imagePath!,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          // Si l'image réseau ne se charge pas, afficher l'image par défaut
-          return Image.asset(
-            'assets/images/img-shcool-not-found.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              // Si même l'image par défaut ne se charge pas, afficher l'icône de secours
-              return Icon(
-                icon ?? Icons.image,
-                color: color ?? AppColors.screenOrange,
-                size: 40,
-              );
-            },
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          // Afficher un indicateur de chargement
+        errorBuilder: (_, __, ___) => Image.asset(
+          'assets/images/img-shcool-not-found.jpg',
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            icon ?? Icons.image,
+            color: color ?? AppColors.screenOrange,
+            size: 40,
+          ),
+        ),
+        loadingBuilder: (_, child, progress) {
+          if (progress == null) return child;
           return Center(
             child: Icon(
               icon ?? Icons.image,
-              color: color ?? AppColors.screenOrange.withOpacity(0.5),
+              color: (color ?? AppColors.screenOrange).withOpacity(0.5),
               size: 40,
             ),
           );
@@ -417,23 +375,18 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
       );
     }
 
-    // Priorité aux images locales si elles sont spécifiées et valides
     if (imagePath != null && imagePath!.startsWith('assets/')) {
       return Image.asset(
         imagePath!,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          // Si l'image ne se charge pas, afficher l'icône de secours
-          return Icon(
-            icon ?? Icons.image,
-            color: color ?? AppColors.screenOrange,
-            size: 40,
-          );
-        },
+        errorBuilder: (_, __, ___) => Icon(
+          icon ?? Icons.image,
+          color: color ?? AppColors.screenOrange,
+          size: 40,
+        ),
       );
     }
 
-    // Si aucune image n'est spécifiée, utiliser l'image par défaut
     if (imagePath == null) {
       return Image.asset(
         'assets/images/img-shcool-not-found.jpg',
@@ -441,12 +394,10 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
       );
     }
 
-    // Sinon, afficher l'icône si disponible
     if (iconData != null) {
       return Icon(iconData, color: color ?? AppColors.screenOrange, size: 40);
     }
 
-    // Icône par défaut si aucun des deux n'est spécifié
     return Icon(
       icon ?? Icons.image,
       color: color ?? AppColors.screenOrange,

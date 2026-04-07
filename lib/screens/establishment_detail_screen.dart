@@ -21,13 +21,11 @@ import '../services/events_service.dart';
 import '../services/avis_service.dart';
 import '../services/scolarite_service.dart';
 import '../services/niveau_service.dart';
-import '../services/integration_service.dart';
 import '../services/recommendation_service.dart';
 import '../services/auth_service.dart';
 import '../services/testimonial_service.dart';
 import '../widgets/custom_snackbar.dart';
 import '../services/integration_request_service.dart';
-import '../services/parrainage_service.dart';
 import '../widgets/custom_file_field.dart';
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
@@ -37,7 +35,6 @@ import '../widgets/main_screen_wrapper.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
 import 'all_events_screen.dart';
-import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
 class _DateInputFormatter extends TextInputFormatter {
@@ -165,12 +162,6 @@ const _kActions = <String, _ActionDef>{
     subtitle: 'Évaluer',
     color: Color(0xFF10B981),
   ),
-  'sponsorship': _ActionDef(
-    icon: Icons.card_giftcard_rounded,
-    label: 'Parrainer',
-    subtitle: 'Inviter',
-    color: Color(0xFFF59E0B),
-  ),
   'informations': _ActionDef(
     icon: Icons.info_rounded,
     label: 'Informations',
@@ -268,14 +259,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   String? _expandedBranche;
   late TextEditingController _searchController;
 
-  // Integration controllers
-  final TextEditingController _studentNameController = TextEditingController();
-  final TextEditingController _studentFirstNameController =
-      TextEditingController();
-  final TextEditingController _matriculeController = TextEditingController();
-  final TextEditingController _birthDateController = TextEditingController();
-  final TextEditingController _lieuNaissanceController =
-      TextEditingController();
   final TextEditingController _nationaliteController = TextEditingController();
   final TextEditingController _adresseController = TextEditingController();
   final TextEditingController _contact1Controller = TextEditingController();
@@ -328,10 +311,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   bool _parentPrenomError = false;
   bool _parentTelephoneError = false;
   bool _recommandationEmailError = false;
-  // Sponsorship controllers
-  final TextEditingController _sponsorNameController = TextEditingController();
-  final TextEditingController _sponsorEmailController = TextEditingController();
-  final TextEditingController _promoCodeController = TextEditingController();
   // File upload variables
   String? _bulletinFile;
   String? _certificatVaccinationFile;
@@ -340,14 +319,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   String? _cniParentFile;
 
   // Validation error states
-  bool _studentNameError = false;
-  bool _studentFirstNameError = false;
-  bool _matriculeError = false;
-  bool _birthDateError = false;
-  bool _adresseError = false;
-  bool _contact1Error = false;
-  bool _nomPereError = false;
-  bool _nomMereError = false;
 
   // ── helpers ────────────────────────────────────────────────────────────────
   Color _getTypeColor(String type) {
@@ -388,32 +359,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     // Initialize search controller
     _searchController = TextEditingController();
-
-    // Add listeners to clear error states when user starts typing
-    _studentNameController.addListener(
-      () => _clearErrorIfNotEmpty(
-        _studentNameController.text,
-        () => setState(() => _studentNameError = false),
-      ),
-    );
-    _studentFirstNameController.addListener(
-      () => _clearErrorIfNotEmpty(
-        _studentFirstNameController.text,
-        () => setState(() => _studentFirstNameError = false),
-      ),
-    );
-    _birthDateController.addListener(
-      () => _clearErrorIfNotEmpty(
-        _birthDateController.text,
-        () => setState(() => _birthDateError = false),
-      ),
-    );
-    _contact1Controller.addListener(
-      () => _clearErrorIfNotEmpty(
-        _contact1Controller.text,
-        () => setState(() => _contact1Error = false),
-      ),
-    );
   }
 
   @override
@@ -642,12 +587,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _avisNotifier.dispose();
     _eventsNotifier.dispose();
     _fadeController.dispose();
-    // Integration controllers
-    _studentNameController.dispose();
-    _studentFirstNameController.dispose();
-    _matriculeController.dispose();
-    _birthDateController.dispose();
-    _lieuNaissanceController.dispose();
     _nationaliteController.dispose();
     _adresseController.dispose();
     _contact1Controller.dispose();
@@ -677,10 +616,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _villeController.dispose();
     _ordreController.dispose();
     _adresseEtablissementController.dispose();
-    // Sponsorship controllers
-    _sponsorNameController.dispose();
-    _sponsorEmailController.dispose();
-    _promoCodeController.dispose();
     // Search controller
     _searchController.dispose();
     super.dispose();
@@ -2193,11 +2128,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Action buttons (quick actions) ─────────────────────────────────────────
   Widget _buildActionButtons(bool isDark) {
-    final actions = [
-      'integration',
-      'rating',
-      'sponsorship',
-    ];
+    final actions = ['informations', 'rating'];
     return SizedBox(
       height: AppDimensions.getHorizontalMenuCardHeight(context),
       child: ListView.builder(
@@ -2231,7 +2162,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     // Section École (pédagogique)
     final ecoleSection = [
       ['informations', 'Informations de l\'école', 'assets/images/ecole.jpg'],
-      ['niveaux', 'Nos niveaux scolaires', 'assets/images/niveau-scolaire.jpg'], //Niveaux scolaire
+      [
+        'niveaux',
+        'Nos niveaux scolaires',
+        'assets/images/niveau-scolaire.jpg',
+      ], //Niveaux scolaire
       [
         'consult_requests',
         'Mes demandes', //
@@ -2252,7 +2187,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         'assets/images/school-event.jpg', //assets/images/school-event.jpg
       ],
       ['communication', 'Notre actualités', 'assets/images/actualite-2.jpg'],
-
     ];
 
     // Section Communauté
@@ -2284,7 +2218,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   Widget _buildHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
     return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(context) + 80,
+      height: AppDimensions.getHorizontalMenuCardHeight(context) +50,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -2296,7 +2230,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           final def = _kActions[item[0]]!;
           return Padding(
             padding: EdgeInsets.only(
-              right: AppDimensions.getHorizontalMenuCardSpacing(context),
+              right: AppDimensions.getHorizontalMenuCardSpacing(context) + 10,
             ),
             child: ImageMenuCardExternalTitle(
               index: index,
@@ -2305,11 +2239,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               subtitle: "En savoir plus",
               imagePath: item[2],
               isDark: isDark,
-              icon: def.icon,
-              color: def.color,
               width: AppDimensions.getHorizontalMenuCardWidth(context),
               height: AppDimensions.getHorizontalMenuCardHeight(context),
-              externalTitleSpacing: 15.0,
+              externalTitleSpacing: AppDimensions.getHorizontalMenuCardSpacing(context),
+              icon: def.icon,
+              color: def.color,
+              //externalTitleSpacing: 15.0,
               onTap: () => _showActionBottomSheet(item[0], def),
               backgroundColor: def.color.withOpacity(0.1),
               //textColor: def.color,
@@ -2321,9 +2256,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // Méthode spécifique pour la section École avec titre externe
-  Widget _buildSchoolHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
+  Widget _buildSchoolHorizontalMenuCards(
+    List<List<String>> menuItems,
+    bool isDark,
+  ) {
     return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(context) + 80, // Ajouter de la hauteur pour le titre externe
+      height:
+          AppDimensions.getHorizontalMenuCardHeight(context) +
+          50, // Ajouter de la hauteur pour le titre externe
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -2335,7 +2275,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           final def = _kActions[item[0]]!;
           return Padding(
             padding: EdgeInsets.only(
-              right: AppDimensions.getHorizontalMenuCardSpacing(context),
+              right: AppDimensions.getHorizontalMenuCardSpacing(context) + 10,
             ),
             child: ImageMenuCardExternalTitle(
               index: index,
@@ -2543,21 +2483,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
   Widget _buildActionContent(String actionType) {
     switch (actionType) {
-      // case 'integration':
-      //   return _buildIntegrationForm();
-      case 'integration':
-        return IntegrationFormContent(
-          ecole: widget.ecole,
-          scaffoldMessengerKey: _scaffoldMessengerKey,
-          onSuccess: (uid) {
-            Navigator.of(context).pop();
-            _showSuccessDialog(uid);
-          },
-        );
       case 'rating':
         return _buildRatingForm();
-      case 'sponsorship':
-        return _buildSponsorshipForm();
       case 'recommend':
         return _buildRecommendationForm();
       case 'share':
@@ -2579,297 +2506,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       default:
         return const Center(child: Text('Contenu non disponible'));
     }
-  }
-
-  // ── Sponsorship form ───────────────────────────────────────────────────────
-  Widget _buildSponsorshipForm() {
-    final actionColor = _kActions['sponsorship']!.color;
-    final authService = AuthService();
-    final currentUser = authService.getCurrentUser();
-    final isDark = _themeService.isDarkMode;
-
-    // Pré-remplir le numéro de téléphone de l'utilisateur connecté
-    if (currentUser?.phone != null && _parentTelephoneController.text.isEmpty) {
-      _parentTelephoneController.text = currentUser!.phone;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _formSectionCard(
-          title: 'Vos informations',
-          icon: Icons.person_rounded,
-          children: [
-            CustomTextField(
-              label: 'Téléphone',
-              hint: 'Votre numéro de téléphone',
-              icon: Icons.phone_rounded,
-              controller: _parentTelephoneController,
-              keyboardType: TextInputType.phone,
-              required: true,
-              hasError: _parentTelephoneError,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-              readOnly:
-                  currentUser?.phone !=
-                  null, // Lecture seule si déjà pré-rempli
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Renseignez votre numéro de téléphone pour obtenir votre code de parrainage',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(12),
-                color: isDark ? Colors.white70 : const Color(0xFF6B7280),
-              ),
-            ),
-          ],
-        ),
-        CustomFormButton(
-          text: 'Obtenir mon code de parrainage',
-          color: AppColors.screenOrange,
-          icon: Icons.card_giftcard_rounded,
-          onPressed: () async {
-            // Validation AVANT d'afficher le loader
-            if (_parentTelephoneController.text.isEmpty) {
-              CustomSnackBar.warning(
-                context,
-                'Veuillez renseigner votre numéro de téléphone',
-              );
-              return;
-            }
-
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              barrierColor: Colors.transparent,
-              builder: (_) => CustomLoader(
-                message: 'Récupération en cours...',
-                loaderColor: AppColors.screenOrange,
-                size: 56.0,
-                showBackground: true,
-                backgroundColor: Colors.white.withOpacity(0.9),
-              ),
-            );
-
-            try {
-              // Récupérer les infos de parrainage directement avec le numéro de téléphone
-              final infoResult = await ParrainageService.getInfoParrainage(
-                _parentTelephoneController.text,
-              );
-
-              Navigator.of(context).pop(); // ferme le loader
-
-              if (infoResult['success'] == true && infoResult['data'] != null) {
-                Navigator.of(context).pop(); // ferme le bottom sheet
-
-                // Afficher le modal avec le code de parrainage
-                _showParrainageCodeModal(
-                  infoResult['data']['code_parrainage'] ?? 'Non disponible',
-                );
-              } else {
-                _scaffoldMessengerKey.currentState?.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      infoResult['message'] ??
-                          'Impossible de récupérer les informations de parrainage',
-                    ),
-                    backgroundColor: Colors.red[400],
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.getSmallCardBorderRadius(context),
-                      ),
-                    ),
-                    margin: const EdgeInsets.all(16),
-                  ),
-                );
-              }
-            } catch (e) {
-              Navigator.of(context).pop(); // ferme le loader
-              _scaffoldMessengerKey.currentState?.showSnackBar(
-                SnackBar(
-                  content: Text('Erreur réseau: ${e.toString()}'),
-                  backgroundColor: Colors.red[400],
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getSmallCardBorderRadius(context),
-                    ),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-            }
-          },
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  // ── Parrainage Code Modal ────────────────────────────────────────────────────
-  void _showParrainageCodeModal(String codeParrainage) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        final isDark = _themeService.isDarkMode;
-
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getLargeCardBorderRadius(context),
-              ),
-              boxShadow: AppDimensions.getCustomShadow(
-                context: context,
-                alpha: isDark ? 0.5 : 0.22,
-                blurRadius: 32,
-                offset: 12,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon de succès
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getHeroCardBorderRadius(context),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.card_giftcard_rounded,
-                    size: 40,
-                    color: Color(0xFF10B981),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Titre
-                Text(
-                  'Parrainage réussi!',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(20),
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF1F2937),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-
-                // Sous-titre
-                Text(
-                  'Votre code de parrainage a été généré avec succès',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    color: isDark ? Colors.white70 : const Color(0xFF6B7280),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-
-                // Code de parrainage - Grand et centré
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 32,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getMediumCardBorderRadius(context),
-                    ),
-                    border: Border.all(
-                      color: const Color(0xFFE5E7EB),
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'VOTRE CODE DE PARRAINAGE',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(12),
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF6B7280),
-                          letterSpacing: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        codeParrainage,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(
-                            48,
-                          ), // Très grand
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF3B82F6), // Bleu vif
-                          letterSpacing: 4, // Espacement large
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Bouton de copie
-                SizedBox(
-                  width: double.infinity,
-                  child: CustomFormButton(
-                    text: 'Copier le code',
-                    color: const Color(0xFF3B82F6),
-                    icon: Icons.copy_rounded,
-                    onPressed: () {
-                      // Copier le code dans le presse-papiers
-                      Clipboard.setData(ClipboardData(text: codeParrainage));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text(
-                            'Code copié dans le presse-papiers',
-                          ),
-                          backgroundColor: Colors.green[500],
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.getSmallCardBorderRadius(context),
-                            ),
-                          ),
-                          margin: const EdgeInsets.all(16),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Bouton de fermeture
-                SizedBox(
-                  width: double.infinity,
-                  child: CustomFormButton(
-                    text: 'Fermer',
-                    color: const Color(0xFF10B981),
-                    icon: Icons.check_rounded,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   // ── Recommendation form ────────────────────────────────────────────────────
@@ -5101,211 +4737,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return '$year-$month-$day';
   }
 
-  // ── Submit integration ─────────────────────────────────────────────────────
-  void _submitIntegrationRequest() async {
-    // Reset error states
-    setState(() {
-      _studentNameError = false;
-      _studentFirstNameError = false;
-      _matriculeError = false;
-      _birthDateError = false;
-      _adresseError = false;
-      _contact1Error = false;
-      _nomPereError = false;
-      _nomMereError = false;
-    });
-
-    // Check for empty required fields
-    bool hasError = false;
-
-    if (_studentNameController.text.isEmpty) {
-      setState(() => _studentNameError = true);
-      hasError = true;
-    }
-    if (_studentFirstNameController.text.isEmpty) {
-      setState(() => _studentFirstNameError = true);
-      hasError = true;
-    }
-    if (_matriculeController.text.isEmpty) {
-      setState(() => _matriculeError = true);
-      hasError = true;
-    }
-    if (_birthDateController.text.isEmpty) {
-      setState(() => _birthDateError = true);
-      hasError = true;
-    }
-    if (_adresseController.text.isEmpty) {
-      setState(() => _adresseError = true);
-      hasError = true;
-    }
-    if (_contact1Controller.text.isEmpty) {
-      setState(() => _contact1Error = true);
-      hasError = true;
-    }
-    if (_nomPereController.text.isEmpty) {
-      setState(() => _nomPereError = true);
-      hasError = true;
-    }
-    if (_nomMereController.text.isEmpty) {
-      setState(() => _nomMereError = true);
-      hasError = true;
-    }
-
-    if (hasError) {
-      // Use the GlobalKey to show SnackBar above the bottom sheet
-      _scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: const Text('Veuillez remplir tous les champs obligatoires'),
-          backgroundColor: const Color(0xFFF59E0B),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getSmallCardBorderRadius(context),
-            ),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-      return;
-    }
-
-    // Validation format date (JJ/MM/AAAA)
-    final dateRegex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
-    if (!dateRegex.hasMatch(_birthDateController.text)) {
-      setState(() => _birthDateError = true);
-      _scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: const Text('Format de date invalide. Utilisez JJ/MM/AAAA'),
-          backgroundColor: const Color(0xFFF59E0B),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getSmallCardBorderRadius(context),
-            ),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-      return;
-    }
-    final requestData = <String, dynamic>{
-      'nom': _studentNameController.text,
-      'prenoms': _studentFirstNameController.text,
-      'matricule': _matriculeController.text,
-      'sexe': _selectedSexe,
-      'date_naissance': _convertDateFormat(_birthDateController.text),
-      'lieu_naissance':
-          _lieuNaissanceController.text, // plus de null, chaîne vide si vide
-      'nationalite': _nationaliteController.text.isNotEmpty
-          ? _nationaliteController.text
-          : 'Ivoirienne',
-      'adresse': _adresseController.text, // plus de null
-      'contact_1': _contact1Controller.text,
-      'contact_2': _contact2Controller.text, // plus de null
-      'nom_pere': _nomPereController.text.isNotEmpty
-          ? _nomPereController.text
-          : null,
-      'nom_mere': _nomMereController.text.isNotEmpty
-          ? _nomMereController.text
-          : null,
-      'nom_tuteur': _nomTuteurController.text, // plus de null
-      'niveau_ant': _niveauAntController.text,
-      'ecole_ant': _ecoleAntController.text,
-      'moyenne_ant': _moyenneAntController.text,
-      'rang_ant': _rangAntController.text.isNotEmpty
-          ? int.tryParse(_rangAntController.text)
-          : '',
-      'decision_ant': _decisionAntController.text,
-      'bulletin': _bulletinFile ?? '',
-      'certificat_vaccination': _certificatVaccinationFile ?? '',
-      'certificat_scolarite': _certificatScolariteFile ?? '',
-      'extrait_naissance': _extraitNaissanceFile ?? '',
-      'cni_parent': _cniParentFile ?? '',
-      'motif': _motifController.text.isNotEmpty
-          ? _motifController.text
-          : 'Nouvelle inscription',
-      'statut_aff': _selectedStatutAff,
-      'filiere': _filiereController.text.isNotEmpty
-          ? _filiereController.text
-          : 'primaire',
-    };
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.transparent, // Fond transparent
-      builder: (_) => CustomLoader(
-        message: 'Envoi de la demande...',
-        loaderColor: Colors.red,
-        size: 80.0,
-        showBackground: true,
-        backgroundColor: Colors.white.withOpacity(0.9),
-      ),
-    );
-    try {
-      final result = await IntegrationService.submitIntegrationRequest(
-        widget.ecole.parametreCode ?? '',
-        requestData,
-      );
-      Navigator.of(context).pop(); // ferme le loader
-
-      if (result['success'] == true) {
-        Navigator.of(context).pop(); // ferme le bottom sheet
-        // Attendre la fin de l'animation du bottom sheet
-        await Future.delayed(const Duration(milliseconds: 300));
-        _scaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(
-            content: const Text('Demande d\'intégration envoyée avec succès!'),
-            backgroundColor: Colors.green[500],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-        final responseData = result['data'];
-        if (responseData != null && responseData['demande_uid'] != null) {
-          _showSuccessDialog(responseData['demande_uid']);
-        }
-      } else {
-        Navigator.of(context).pop(); // ferme le bottom sheet
-        await Future.delayed(const Duration(milliseconds: 300));
-        _scaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(
-            content: Text(result['error'] ?? 'Erreur lors de l\'envoi'),
-            backgroundColor: Colors.red[400],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.of(context).pop(); // ferme le loader
-      Navigator.of(context).pop(); // ferme le bottom sheet
-      await Future.delayed(const Duration(milliseconds: 300));
-      _scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red[400],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getSmallCardBorderRadius(context),
-            ),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
-  }
-
   void _showSuccessDialog(String demandeUid) {
     showDialog(
       context: context,
@@ -5738,285 +5169,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return result;
   }
 
-  // ── Integration form ───────────────────────────────────────────────────────
-  Widget _buildIntegrationForm() {
-    final actionColor = _kActions['integration']!.color;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _formSectionCard(
-          title: 'Informations de l\'élève',
-          icon: Icons.person_rounded,
-          children: [
-            CustomTextField(
-              label: 'Nom',
-              hint: 'Entrez le nom complet',
-              icon: Icons.person_rounded,
-              controller: _studentNameController,
-              required: true,
-              hasError: _studentNameError,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Prénoms',
-              hint: 'Entrez les prénoms',
-              icon: Icons.person_outline_rounded,
-              controller: _studentFirstNameController,
-              required: true,
-              hasError: _studentFirstNameError,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Matricule',
-              hint: 'Entrez le matricule',
-              icon: Icons.badge_rounded,
-              controller: _matriculeController,
-              required: true,
-              hasError: _matriculeError,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            StatefulBuilder(
-              builder: (context, ss) => _buildDropdown(
-                'Sexe',
-                'Sélectionner le sexe',
-                Icons.person_rounded,
-                value: _selectedSexe,
-                items: ['M', 'F'],
-                onChanged: (v) => ss(() => _selectedSexe = v ?? 'M'),
-              ),
-            ),
-            CustomTextField(
-              label: 'Date de naissance',
-              hint: 'JJ/MM/AAAA',
-              icon: Icons.cake_rounded,
-              controller: _birthDateController,
-              keyboardType: TextInputType.number,
-              required: true,
-              hasError: _birthDateError,
-              inputFormatters: [_DateInputFormatter()],
-            ),
-            CustomTextField(
-              label: 'Lieu de naissance',
-              hint: 'Entrez le lieu de naissance',
-              icon: Icons.location_on_rounded,
-              controller: _lieuNaissanceController,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Nationalité',
-              hint: 'Entrez la nationalité',
-              icon: Icons.flag_rounded,
-              controller: _nationaliteController,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Adresse',
-              hint: 'Entrez l\'adresse complète',
-              icon: Icons.home_rounded,
-              controller: _adresseController,
-              maxLines: 2,
-              required: true,
-              hasError: _adresseError,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-          ],
-        ),
-        _formSectionCard(
-          title: 'Contacts',
-          icon: Icons.phone_rounded,
-          children: [
-            CustomTextField(
-              label: 'Contact 1',
-              hint: 'Numéro principal',
-              icon: Icons.phone_rounded,
-              controller: _contact1Controller,
-              keyboardType: TextInputType.phone,
-              required: true,
-              hasError: _contact1Error,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Contact 2',
-              hint: 'Numéro secondaire',
-              icon: Icons.phone_android_rounded,
-              controller: _contact2Controller,
-              keyboardType: TextInputType.phone,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-          ],
-        ),
-        _formSectionCard(
-          title: 'Informations des parents',
-          icon: Icons.family_restroom_rounded,
-          children: [
-            CustomTextField(
-              label: 'Nom du père',
-              hint: 'Nom complet du père',
-              icon: Icons.person_rounded,
-              controller: _nomPereController,
-              required: true,
-              hasError: _nomPereError,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Nom de la mère',
-              hint: 'Nom complet de la mère',
-              icon: Icons.person_outline_rounded,
-              controller: _nomMereController,
-              required: true,
-              hasError: _nomMereError,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Nom du tuteur',
-              hint: 'Nom du tuteur (optionnel)',
-              icon: Icons.supervisor_account_rounded,
-              controller: _nomTuteurController,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-          ],
-        ),
-        _formSectionCard(
-          title: 'Scolarité antérieure',
-          icon: Icons.school_rounded,
-          children: [
-            CustomTextField(
-              label: 'Niveau antérieur',
-              hint: 'Ex: CP1, 6ème...',
-              icon: Icons.school_rounded,
-              controller: _niveauAntController,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'École antérieure',
-              hint: 'Nom de l\'école précédente',
-              icon: Icons.account_balance_rounded,
-              controller: _ecoleAntController,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Moyenne antérieure',
-              hint: 'Ex: 12.5',
-              icon: Icons.grade_rounded,
-              controller: _moyenneAntController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Rang antérieur',
-              hint: 'Ex: 3ème',
-              icon: Icons.format_list_numbered_rounded,
-              controller: _rangAntController,
-              keyboardType: TextInputType.number,
-              iconColor: actionColor,
-              focusBorderColor: actionColor,
-            ),
-            CustomTextField(
-              label: 'Décision',
-              hint: 'Ex: Passage, Redoublement...',
-              icon: Icons.gavel_rounded,
-              controller: _decisionAntController,
-            ),
-          ],
-        ),
-        _formSectionCard(
-          title: 'Documents à fournir',
-          icon: Icons.description_rounded,
-          children: [
-            CustomFileField(
-              label: 'Bulletin scolaire',
-              hint: 'Sélectionner le bulletin',
-              icon: Icons.description_rounded,
-              fileName: _bulletinFile,
-              onTap: () => _showFilePickerMessage('bulletin'),
-            ),
-            CustomFileField(
-              label: 'Certificat de vaccination',
-              hint: 'Sélectionner le certificat',
-              icon: Icons.medical_services_rounded,
-              fileName: _certificatVaccinationFile,
-              onTap: () => _showFilePickerMessage('certificat_vaccination'),
-            ),
-            CustomFileField(
-              label: 'Certificat de scolarité',
-              hint: 'Sélectionner le certificat',
-              icon: Icons.school_rounded,
-              fileName: _certificatScolariteFile,
-              onTap: () => _showFilePickerMessage('certificat_scolarite'),
-            ),
-            CustomFileField(
-              label: 'Extrait de naissance',
-              hint: 'Sélectionner l\'extrait',
-              icon: Icons.card_membership_rounded,
-              fileName: _extraitNaissanceFile,
-              onTap: () => _showFilePickerMessage('extrait_naissance'),
-            ),
-            CustomFileField(
-              label: 'CNI des parents',
-              hint: 'Sélectionner la CNI',
-              icon: Icons.credit_card_rounded,
-              fileName: _cniParentFile,
-              onTap: () => _showFilePickerMessage('cni_parent'),
-            ),
-          ],
-        ),
-        _formSectionCard(
-          title: 'Détails de la demande',
-          icon: Icons.note_rounded,
-          children: [
-            CustomTextField(
-              label: 'Motif',
-              hint: 'Ex: Nouvelle inscription, Transfert...',
-              icon: Icons.note_rounded,
-              controller: _motifController,
-            ),
-            StatefulBuilder(
-              builder: (context, ss) => _buildDropdown(
-                'Statut d\'affectation',
-                'Sélectionner le statut',
-                Icons.assignment_turned_in_rounded,
-                value: _selectedStatutAff,
-                items: ['Affecté', 'En attente', 'Refusé'],
-                onChanged: (v) => ss(() => _selectedStatutAff = v ?? 'Affecté'),
-              ),
-            ),
-            CustomTextField(
-              label: 'Filière',
-              hint: 'Ex: primaire, secondaire, technique...',
-              icon: Icons.category_rounded,
-              controller: _filiereController,
-            ),
-          ],
-        ),
-        CustomFormButton(
-          text: 'Envoyer la demande',
-          color: AppColors.screenOrange,
-          icon: Icons.send_rounded,
-          onPressed: () {
-            _submitIntegrationRequest();
-          },
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
   void _showFilePickerMessage(String fileType) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -6042,104 +5194,104 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-        // Header
-        // Container(
-        //   padding: const EdgeInsets.all(16),
-        //   decoration: BoxDecoration(
-        //     color: const Color(0xFF0288D1),
-        //     borderRadius: const BorderRadius.only(
-        //       topLeft: Radius.circular(20),
-        //       topRight: Radius.circular(20),
-        //     ),
-        //   ),
-        //   child: Row(
-        //     children: [
-        //       Container(
-        //         width: 40,
-        //         height: 40,
-        //         decoration: BoxDecoration(
-        //           color: Colors.white.withOpacity(0.15),
-        //           borderRadius: BorderRadius.circular(20),
-        //         ),
-        //         child: const Icon(
-        //           Icons.star_rate_rounded,
-        //           color: Colors.white,
-        //           size: 20,
-        //         ),
-        //       ),
-        //       const SizedBox(width: 12),
-        //       Flexible(
-        //         child: Column(
-        //           crossAxisAlignment: CrossAxisAlignment.start,
-        //           children: [
-        //             Text(
-        //               'Avis & Commentaires',
-        //               style: TextStyle(
-        //                 fontSize: _textSizeService.getScaledFontSize(18),
-        //                 fontWeight: FontWeight.w700,
-        //                 color: Colors.white,
-        //               ),
-        //             ),
-        //             const Text(
-        //               'Partagez votre expérience',
-        //               style: TextStyle(fontSize: 13, color: Colors.white70),
-        //             ),
-        //           ],
-        //         ),
-        //       ),
-        //       GestureDetector(
-        //         onTap: () => _loadAvisOnly(),
-        //         child: Container(
-        //           width: 40,
-        //           height: 40,
-        //           decoration: BoxDecoration(
-        //             color: Colors.white.withOpacity(0.15),
-        //             borderRadius: BorderRadius.circular(20),
-        //           ),
-        //           child: const Icon(
-        //             Icons.refresh_outlined,
-        //             color: Colors.white,
-        //             size: 18,
-        //           ),
-        //         ),
-        //       ),
-        //     ],
-        //   ),
-        // ),
+          // Header
+          // Container(
+          //   padding: const EdgeInsets.all(16),
+          //   decoration: BoxDecoration(
+          //     color: const Color(0xFF0288D1),
+          //     borderRadius: const BorderRadius.only(
+          //       topLeft: Radius.circular(20),
+          //       topRight: Radius.circular(20),
+          //     ),
+          //   ),
+          //   child: Row(
+          //     children: [
+          //       Container(
+          //         width: 40,
+          //         height: 40,
+          //         decoration: BoxDecoration(
+          //           color: Colors.white.withOpacity(0.15),
+          //           borderRadius: BorderRadius.circular(20),
+          //         ),
+          //         child: const Icon(
+          //           Icons.star_rate_rounded,
+          //           color: Colors.white,
+          //           size: 20,
+          //         ),
+          //       ),
+          //       const SizedBox(width: 12),
+          //       Flexible(
+          //         child: Column(
+          //           crossAxisAlignment: CrossAxisAlignment.start,
+          //           children: [
+          //             Text(
+          //               'Avis & Commentaires',
+          //               style: TextStyle(
+          //                 fontSize: _textSizeService.getScaledFontSize(18),
+          //                 fontWeight: FontWeight.w700,
+          //                 color: Colors.white,
+          //               ),
+          //             ),
+          //             const Text(
+          //               'Partagez votre expérience',
+          //               style: TextStyle(fontSize: 13, color: Colors.white70),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //       GestureDetector(
+          //         onTap: () => _loadAvisOnly(),
+          //         child: Container(
+          //           width: 40,
+          //           height: 40,
+          //           decoration: BoxDecoration(
+          //             color: Colors.white.withOpacity(0.15),
+          //             borderRadius: BorderRadius.circular(20),
+          //           ),
+          //           child: const Icon(
+          //             Icons.refresh_outlined,
+          //             color: Colors.white,
+          //             size: 18,
+          //           ),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
-        // Liste des avis (style messages WhatsApp)
-        Flexible(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.4,
-            ),
-            child: Container(
-              color: const Color(0xFFF5F5F5),
-              child: _isLoadingAvis
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF0288D1),
-                        strokeWidth: 2.5,
+          // Liste des avis (style messages WhatsApp)
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4,
+              ),
+              child: Container(
+                color: const Color(0xFFF5F5F5),
+                child: _isLoadingAvis
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF0288D1),
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : _avisError != null
+                    ? _buildErrorView()
+                    : _avis.isEmpty
+                    ? _buildEmptyAvisView()
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                        itemCount: _avis.length,
+                        itemBuilder: (context, index) {
+                          final avis = _avis[index];
+                          return _buildAvisBubble(avis);
+                        },
                       ),
-                    )
-                  : _avisError != null
-                  ? _buildErrorView()
-                  : _avis.isEmpty
-                  ? _buildEmptyAvisView()
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-                      itemCount: _avis.length,
-                      itemBuilder: (context, index) {
-                        final avis = _avis[index];
-                        return _buildAvisBubble(avis);
-                      },
-                    ),
+              ),
             ),
           ),
-        ),
 
-        // Barre d'envoi (style WhatsApp)
-        _buildComposeAvisBar(),
+          // Barre d'envoi (style WhatsApp)
+          _buildComposeAvisBar(),
         ],
       ),
     );
@@ -6579,20 +5731,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildOverviewSection(),
+        _buildSimplifiedOverviewSection(),
         const SizedBox(height: 16),
-        _buildContactSection(),
+        _buildContactInfoSection(),
         const SizedBox(height: 16),
-        _buildInfoSection(),
-        const SizedBox(height: 16),
-        _buildDetailedInfoSection(),
+        _buildAcademicInfoSection(),
         const SizedBox(height: 20),
       ],
     );
   }
 
-  // ── Overview section ───────────────────────────────────────────────────────
-  Widget _buildOverviewSection() {
+  // ── Overview section ────────────────────────────────────────────────────────
+  Widget _buildSimplifiedOverviewSection() {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -7213,7 +6363,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
             const SizedBox(height: 14),
             _infoCard('Informations principales', [
-              _infoDetailRow('Code', data.code),
+              // _infoDetailRow('Code', data.code),
               _infoDetailRow('Type', data.type),
               _infoDetailRow('Statut', data.statut),
               _infoDetailRow('Période', data.periode),
@@ -7673,6 +6823,212 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  //  Simplified contact info section
+  Widget _buildContactInfoSection() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF3B82F6).withOpacity(0.08),
+            const Color(0xFF3B82F6).withOpacity(0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
+        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.15)),
+        boxShadow: AppDimensions.getLightShadow(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.contact_phone_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Contact',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF3B82F6),
+                      ),
+                    ),
+                    Text(
+                      'Informations de contact',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                        color: AppColors.screenTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildContactInfoCard(
+            'Adresse',
+            '${widget.ecole.adresse ?? 'Non disponible'}, ${widget.ecole.ville ?? ''}, ${widget.ecole.pays ?? ''}',
+            Icons.location_on_rounded,
+            const Color(0xFF3B82F6),
+          ),
+          const SizedBox(height: 8),
+          if (widget.ecole.telephone?.isNotEmpty == true) ...[
+            _buildContactInfoCard(
+              'Téléphone',
+              widget.ecole.telephone!,
+              Icons.phone_rounded,
+              Colors.green,
+            ),
+            const SizedBox(height: 8),
+          ],
+          FutureBuilder<EcoleDetail>(
+            future: EcoleApiService.getEcoleDetail(
+              widget.ecole.parametreCode ?? '',
+            ),
+            builder: (_, snap) {
+              if (!snap.hasData) return const SizedBox.shrink();
+              final d = snap.data!.data;
+              return Column(
+                children: [
+                  if (d.email?.isNotEmpty == true) ...[
+                    _buildContactInfoCard(
+                      'Email',
+                      d.email!,
+                      Icons.email_rounded,
+                      Colors.orange,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (d.site?.isNotEmpty == true)
+                    _buildContactInfoCard(
+                      'Site web',
+                      d.site!,
+                      Icons.web_rounded,
+                      Colors.purple,
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  //  Academic info section
+  Widget _buildAcademicInfoSection() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.green.withOpacity(0.08),
+            Colors.green.withOpacity(0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getLargeCardBorderRadius(context),
+        ),
+        border: Border.all(color: Colors.green.withOpacity(0.15)),
+        boxShadow: AppDimensions.getLightShadow(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.school_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Informations académiques',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                    Text(
+                      'Détails de l\'établissement',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                        color: AppColors.screenTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // const SizedBox(height: 16),
+          // _buildInfoDetailCard(
+          //   'Type',
+          //   widget.ecole.typePrincipal,
+          //   Icons.category_rounded,
+          //   Colors.orange,
+          // ),
+          // const SizedBox(height: 8),
+          // _buildInfoDetailCard(
+          //   'Statut',
+          //   widget.ecole.statut ?? 'Actif',
+          //   Icons.verified_rounded,
+          //   Colors.purple,
+          // ),
+          const SizedBox(height: 8),
+          if (widget.ecole.filiereNom.isNotEmpty)
+            _buildInfoDetailCard(
+              'Filières',
+              widget.ecole.filiereNom.join(', '),
+              Icons.school_rounded,
+              const Color(0xFF10B981),
+            ),
+        ],
       ),
     );
   }

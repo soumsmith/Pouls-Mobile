@@ -13,7 +13,7 @@ class NotesApiService {
   }) async {
     try {
       final url = Uri.parse(
-        '$baseUrl/notes/eleve/$matricule?annee=$anneeId&classe=$classeId&periode=$periode',
+        '$baseUrl/notes/list-matricule-notes-moyennes/$matricule/?annee=$anneeId&classe=$classeId&periode=$periode',
       );
 
       print('🌐 Appel API: $url');
@@ -30,7 +30,7 @@ class NotesApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Données reçues: ${data['list']?.length ?? 0} matières');
+        print('✅ Données reçues: ${data['details']?.length ?? 0} matières');
         return data;
       } else {
         print('❌ Erreur API: ${response.statusCode} - ${response.body}');

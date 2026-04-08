@@ -16,7 +16,7 @@ class ShareButton extends StatelessWidget {
     required this.iconColor,
     this.imagePath,
     required this.onTap,
-    this.width = 100,
+    this.width = 80,
   });
 
   @override
@@ -27,19 +27,19 @@ class ShareButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: width,
-        padding: const EdgeInsets.all(16),
+        // padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 224, 222, 222),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: _buildButtonContent(),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
@@ -61,8 +61,8 @@ class ShareButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(50),
         child: Image.asset(
           imagePath!,
-          width: 48,
-          height: 48,
+          width: 40,
+          height: 40,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             // Si l'image ne peut pas être chargée, afficher l'icône par défaut
@@ -79,7 +79,7 @@ class ShareButton extends StatelessWidget {
   Widget _buildDefaultIcon() {
     return Icon(
       icon ?? Icons.share_rounded,
-      size: 24,
+      size: 20,
       color: iconColor,
     );
   }

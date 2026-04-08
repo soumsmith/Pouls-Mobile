@@ -777,9 +777,8 @@ class _LibraryScreenState extends State<LibraryScreen>
               // image + texte externe pour éviter tout overflow.
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: _getCrossAxisCount(context),
-                crossAxisSpacing:
-                    AppDimensions.getProductsGridSpacingProportional(context, 2),
-                childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: 4),
+                crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+                childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: AppDimensions.getGridImageFlex(context)),
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -983,10 +982,10 @@ class _LibraryScreenState extends State<LibraryScreen>
         isDark: false,
         color: accent,
         tag: product.type,
-        imageFlex: 4, // Image prend 50% de l'espace (5/10), texte 50% (5/10)
+        imageFlex: AppDimensions.getProductCardImageFlex(context), // Adaptatif selon taille de l'appareil
         externalTitleSpacing: 8,
         titleMaxLines: 2,
-        buttonText: 'Ajouter',
+        //buttonText: 'Ajouter',
         buttonColor: AppColors.shopGreen,
         buttonTextColor: Colors.white,
         onButtonTap: () {

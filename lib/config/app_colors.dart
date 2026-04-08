@@ -241,22 +241,24 @@ class AppColors {
   // Surface spécifique aux écrans
   static const Color screenSurface = Color(0xFFFFFFFF);
   static const Color screenCard = Color(0xFFFFFFFF);
-  static const Color screenTextPrimary = Color(0xFF1A1A1A);
-  static const Color screenTextSecondary = Color(0xFF8A8A8A);
-  static const Color screenDivider = Color(0xFFF0F0F0);
-  static const Color screenShadow = Color(0x0D000000);
   
   // Couleurs pour icônes de settings
+  static const Color screenBlue = Color(0xFF2196F3);
+  static const Color screenPurple = Color(0xFF9C27B0);
+  static const Color screenGreen = Color(0xFF4CAF50);
+  static const Color screenTextPrimary = Color(0xFF212121);
+  static const Color screenTextSecondary = Color(0xFF757575);
+  static const Color screenDivider = Color(0xFFE0E0E0);
+  static const Color screenShadow = Color(0x1A000000);
+  static const Color settingsRed = Color(0xFFF44336);
+  static const Color settingsBrown = Color(0xFF795548);
+  static const Color settingsGrey = Color(0xFF607D8B);
+  static const Color settingsOrange = Color(0xFFFF6B2C);
   static const Color settingsBlue = Color(0xFF3B82F6);
   static const Color settingsGreen = Color(0xFF4CAF50);
   static const Color settingsPurple = Color(0xFF9C27B0);
   static const Color settingsAmber = Color(0xFFF59E0B);
   static const Color settingsCyan = Color(0xFF00BCD4);
-  static const Color settingsBlueGrey = Color(0xFF607D8B);
-  static const Color settingsRed = Color(0xFFF44336);
-  static const Color settingsBrown = Color(0xFF795548);
-  static const Color settingsGrey = Color(0xFF607D8B);
-  static const Color settingsOrange = Color(0xFFFF6B2C);
   
   // Gris supplémentaire
   static const Color grey666 = Color(0xFF666666);

@@ -62,27 +62,61 @@ class AppDimensions {
   static const double spacingXXL = 48.0;
 
   // Méthodes utilitaires pour obtenir les dimensions selon le contexte
+  // Utilisent la plus petite dimension pour éviter les problèmes en mode paysage
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < mobileBreakpoint;
+    final size = MediaQuery.of(context).size;
+    final smallestDimension = size.width < size.height ? size.width : size.height;
+    return smallestDimension < mobileBreakpoint;
   }
 
   static bool isSmallTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return width >= smallTabletBreakpoint && width < tabletBreakpoint;
+    final size = MediaQuery.of(context).size;
+    final smallestDimension = size.width < size.height ? size.width : size.height;
+    return smallestDimension >= smallTabletBreakpoint && smallestDimension < tabletBreakpoint;
   }
 
   static bool isTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return width >= tabletBreakpoint && width < largeTabletBreakpoint;
+    final size = MediaQuery.of(context).size;
+    final smallestDimension = size.width < size.height ? size.width : size.height;
+    return smallestDimension >= tabletBreakpoint && smallestDimension < largeTabletBreakpoint;
   }
 
   static bool isLargeTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return width >= largeTabletBreakpoint && width < desktopBreakpoint;
+    final size = MediaQuery.of(context).size;
+    final smallestDimension = size.width < size.height ? size.width : size.height;
+    return smallestDimension >= largeTabletBreakpoint && smallestDimension < desktopBreakpoint;
   }
 
   static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= desktopBreakpoint;
+    final size = MediaQuery.of(context).size;
+    final smallestDimension = size.width < size.height ? size.width : size.height;
+    return smallestDimension >= desktopBreakpoint;
+  }
+
+  // Méthodes utilitaires pour l'orientation de l'écran
+  static bool isPortrait(BuildContext context) {
+    return MediaQuery.of(context).orientation == Orientation.portrait;
+  }
+
+  static bool isLandscape(BuildContext context) {
+    return MediaQuery.of(context).orientation == Orientation.landscape;
+  }
+
+  // Méthodes pour détecter la résolution exacte des mobiles
+  static int getMobileColumnsByResolution(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = isPortrait(context) ? size.width : size.height; // Utiliser la largeur en portrait
+    
+    if (isMobile(context)) {
+      if (width < 360) {
+        return 2; // Petits téléphones (ex: iPhone SE, anciens Android)
+      } else if (width < 400) {
+        return 3; // Téléphones standards (ex: iPhone 12/13 mini)
+      } else {
+        return 3; // Grands téléphones (ex: iPhone Pro Max, Galaxy S Ultra)
+      }
+    }
+    return 3; // Valeur par défaut si ce n'est pas un mobile
   }
 
   static double getScreenWidth(BuildContext context) {
@@ -196,6 +230,106 @@ class AppDimensions {
       return 48.0;
     } else {
       return 56.0;
+    }
+  }
+
+  // Dimensions pour les cartes de produits (flex ratio image/texte)
+  // Pour le composant ImageMenuCardExternalTitle
+  static double getProductCardImageFlex(BuildContext context) {
+    if (isMobile(context)) {
+      if (isLandscape(context)) {
+        return 3.0; // Mobile paysage : image plus petite pour optimiser l'espace horizontal
+      } else {
+        return 3.0; // Mobile portrait : image plus grande pour meilleure visibilité
+      }
+    } else if (isSmallTablet(context)) {
+      if (isLandscape(context)) {
+        return 5.0; // iPad Mini paysage : image réduite
+      } else {
+        return 4.0; // iPad Mini portrait : équilibré
+      }
+    } else if (isTablet(context)) {
+      if (isLandscape(context)) {
+        return 3.0; // iPad paysage : image réduite
+      } else {
+        return 4.0; // iPad portrait : équilibré
+      }
+    } else {
+      if (isLandscape(context)) {
+        return 3.0; // Desktop paysage : image réduite
+      } else {
+        return 4.0; // Desktop portrait : équilibré
+      }
+    }
+  }
+
+  // Pour le calcul du ratio de la grille selon le nombre de colonnes
+  /// Plus il y a de colonnes, plus l'image est réduite pour optimiser l'espace
+  static int getGridImageFlex(BuildContext context) {
+    final columns = getEcolesGridColumns(context);
+    
+    if (isMobile(context)) {
+      if (isLandscape(context)) {
+        // Mobile paysage : image selon nombre de colonnes
+        switch (columns) {
+          case 5: return 3; // 5 colonnes : image très réduite
+          case 4: return 3; // 4 colonnes : image réduite
+          case 3: return 2; // 3 colonnes : image modérément réduite
+          case 2: return 5; // 2 colonnes : image standard
+          default: return 4;
+        }
+      } else {
+        // Mobile portrait : image selon nombre de colonnes
+        switch (columns) {
+          case 3: return 4; // 3 colonnes : image standard
+          case 2: return 6; // 2 colonnes : image plus grande
+          default: return 5;
+        }
+      }
+    } else if (isSmallTablet(context)) {
+      if (isLandscape(context)) {
+        // iPad Mini paysage
+        switch (columns) {
+          case 5: return 2; // 5 colonnes : image très réduite
+          case 4: return 3; // 4 colonnes : image réduite
+          default: return 3;
+        }
+      } else {
+        // iPad Mini portrait
+        switch (columns) {
+          case 4: return 4; // 4 colonnes : image standard
+          default: return 4;
+        }
+      }
+    } else if (isTablet(context)) {
+      if (isLandscape(context)) {
+        // iPad paysage
+        switch (columns) {
+          case 6: return 3; // 6 colonnes : image réduite
+          case 5: return 4; // 5 colonnes : image standard
+          default: return 4;
+        }
+      } else {
+        // iPad portrait
+        switch (columns) {
+          case 5: return 5; // 5 colonnes : image confortable
+          default: return 5;
+        }
+      }
+    } else {
+      // Desktop
+      if (isLandscape(context)) {
+        switch (columns) {
+          case 8: return 4; // 8 colonnes : image réduite
+          case 6: return 5; // 6 colonnes : image standard
+          default: return 5;
+        }
+      } else {
+        switch (columns) {
+          case 6: return 6; // 6 colonnes : image grande
+          default: return 6;
+        }
+      }
     }
   }
 
@@ -453,16 +587,32 @@ class AppDimensions {
     }
   }
 
-  /// Nombre de colonnes pour la grille d'écoles selon l'appareil
+  /// Nombre de colonnes pour la grille d'écoles selon l'appareil et l'orientation
   static int getEcolesGridColumns(BuildContext context) {
     if (isMobile(context)) {
-      return 2; // Mobile : 2 colonnes
+      if (isPortrait(context)) {
+        return getMobileColumnsByResolution(context); // Mobile portrait : selon la résolution
+      } else {
+        return 5; // Mobile paysage : 5 colonnes
+      }
     } else if (isSmallTablet(context)) {
-      return 4; // Petite tablette : 4 colonnes
+      if (isPortrait(context)) {
+        return 4; // iPad Mini portrait : 4 colonnes
+      } else {
+        return 5; // iPad Mini paysage : 5 colonnes
+      }
     } else if (isTablet(context)) {
-      return 5; // Grande tablette : 5 colonnes
+      if (isPortrait(context)) {
+        return 5; // iPad portrait : 5 colonnes
+      } else {
+        return 6; // iPad paysage : 6 colonnes
+      }
     } else {
-      return 6; // Desktop : 6 colonnes
+      if (isPortrait(context)) {
+        return 6; // Desktop portrait : 6 colonnes
+      } else {
+        return 8; // Desktop paysage : 8 colonnes
+      }
     }
   }
 
@@ -593,7 +743,7 @@ class AppDimensions {
 
     if (isMobile(context)) {
       // Pour mobile, différencier portrait et paysage
-      return orientation == Orientation.portrait ? 90.0 : 90.0;
+      return orientation == Orientation.portrait ? 120.0 : 120.0;
     } else if (isSmallTablet(context)) {
       return 150.0; // iPad Mini : hauteur intermédiaire
     } else if (isTablet(context)) {
@@ -606,7 +756,7 @@ class AppDimensions {
   /// Largeur des cartes de menu horizontal selon l'appareil
   static double getHorizontalMenuCardWidth(BuildContext context) {
     if (isMobile(context)) {
-      return 150.0; // Mobile : plus étroit
+      return 120.0; // Mobile : plus étroit
     } else if (isSmallTablet(context)) {
       return 150.0; // iPad Mini : largeur intermédiaire
     } else if (isTablet(context)) {
@@ -960,6 +1110,76 @@ class AppDimensions {
     return baseSpacing * flexRatio;
   }
 
+  /// Espacement de grille adaptatif selon le nombre d'éléments par ligne
+  /// Plus il y a de colonnes, plus l'espacement est réduit pour optimiser l'espace
+  static double getAdaptiveGridSpacing(BuildContext context) {
+    final columns = getEcolesGridColumns(context);
+    
+    if (isMobile(context)) {
+      if (isLandscape(context)) {
+        // Mobile paysage : espacement selon nombre de colonnes
+        switch (columns) {
+          case 5: return 25.0;  // 5 colonnes : espacement très réduit
+          case 4: return 10.0; // 4 colonnes : espacement réduit
+          case 3: return 12.0; // 3 colonnes : espacement standard
+          case 2: return 14.0; // 2 colonnes : espacement confortable
+          default: return 12.0;
+        }
+      } else {
+        // Mobile portrait : espacement selon nombre de colonnes
+        switch (columns) {
+          case 3: return 20.0; // 3 colonnes : espacement confortable
+          case 2: return 30.0; // 2 colonnes : espacement généreux
+          default: return 20.0;
+        }
+      }
+    } else if (isSmallTablet(context)) {
+      if (isLandscape(context)) {
+        // iPad Mini paysage
+        switch (columns) {
+          case 5: return 8.0;  // 5 colonnes : espacement très réduit
+          case 4: return 10.0; // 4 colonnes : espacement réduit
+          default: return 10.0;
+        }
+      } else {
+        // iPad Mini portrait
+        switch (columns) {
+          case 4: return 12.0; // 4 colonnes : espacement standard
+          default: return 12.0;
+        }
+      }
+    } else if (isTablet(context)) {
+      if (isLandscape(context)) {
+        // iPad paysage
+        switch (columns) {
+          case 6: return 10.0; // 6 colonnes : espacement réduit
+          case 5: return 12.0; // 5 colonnes : espacement standard
+          default: return 12.0;
+        }
+      } else {
+        // iPad portrait
+        switch (columns) {
+          case 5: return 16.0; // 5 colonnes : espacement confortable
+          default: return 16.0;
+        }
+      }
+    } else {
+      // Desktop
+      if (isLandscape(context)) {
+        switch (columns) {
+          case 8: return 12.0; // 8 colonnes : espacement réduit
+          case 6: return 14.0; // 6 colonnes : espacement standard
+          default: return 14.0;
+        }
+      } else {
+        switch (columns) {
+          case 6: return 20.0; // 6 colonnes : espacement généreux
+          default: return 20.0;
+        }
+      }
+    }
+  }
+
   /// Rayon de bordure pour les cartes de produits selon l'appareil
   static double getProductCardBorderRadius(BuildContext context) {
     if (isMobile(context)) {
@@ -973,11 +1193,7 @@ class AppDimensions {
     }
   }
 
-  /// Flex ratio pour la partie image des cartes de produits
-  static int getProductCardImageFlex(BuildContext context) {
-    return getProductsGridColumns(context) == 3 ? 4 : 5;
-  }
-
+  
   /// Flex ratio pour la partie informations des cartes de produits
   static int getProductCardInfoFlex(BuildContext context) {
     return getProductsGridColumns(context) == 3 ? 2 : 3;

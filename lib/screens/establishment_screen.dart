@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:parents_responsable/widgets/section_header_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
@@ -24,6 +26,7 @@ import '../widgets/app_loader.dart';
 import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
+import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -210,6 +213,14 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       'image': 'assets/images/school-event.jpg',
       'rating': '4.5',
       'description': 'Éducation accessible pour tous',
+    },
+    {
+      'name': 'Présentation Vidéo',
+      'type': 'Vidéo',
+      'location': 'Abidjan',
+      'video': 'https://www.youtube.com/watch?v=0HhNxMNQ2ko',
+      'rating': '4.9',
+      'description': 'Découvrez notre établissement en vidéo',
     },
   ];
 
@@ -494,14 +505,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 hintText: 'Rechercher un établissement...',
               ),
             ),
-            SliverToBoxAdapter(
-              child: FilterRowWidget(
-                filters: _filters,
-                selectedFilter: _selectedFilter,
-                onFilterSelected: (filter) =>
-                    setState(() => _selectedFilter = filter),
-              ),
-            ),
             SliverFillRemaining(child: _buildBody()),
           ],
         ),
@@ -531,7 +534,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Advanced Search BottomSheet ─────────────────────────────────
+  // ── Advanced Search BottomSheet ─────────────────────────────────//  Advanced Search BottomSheet 
   void _showAdvancedSearchBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -540,6 +543,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       builder: (context) => _buildAdvancedSearchBottomSheet(),
     );
   }
+
+
 
   Widget _buildAdvancedSearchBottomSheet() {
     return IntrinsicHeight(
@@ -838,99 +843,91 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           child: CustomScrollView(
             slivers: [
               // ── Slider des écoles en vedette ─────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Écoles en vedette',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A1A),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => setState(
-                              () => _showSliderText = !_showSliderText,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _showSliderText
-                                    ? AppColors.screenOrange
-                                    : Colors.grey[300],
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        (_showSliderText
-                                                ? AppColors.screenOrange
-                                                : Colors.grey[300])!
-                                            .withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _showSliderText
-                                        ? Icons.visibility_rounded
-                                        : Icons.visibility_off_rounded,
-                                    size: 16,
-                                    color: _showSliderText
-                                        ? Colors.white
-                                        : Colors.grey[600],
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _showSliderText ? 'Texte' : 'Image',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: _showSliderText
-                                          ? Colors.white
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _FeaturedSchoolsSlider(
-                        featuredSchools: _featuredSchools,
-                        pageController: _sliderController,
-                        onPageChanged: _onSliderPageChanged,
-                        currentIndex: _currentSliderIndex,
-                        showText: _showSliderText,
-                      ),
-                    ],
+              if (_featuredSchools.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Column(
+                      children: [
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //   children: [
+                        //     const Text(
+                        //       'Écoles en vedette',
+                        //       style: TextStyle(
+                        //         fontSize: 16,
+                        //         fontWeight: FontWeight.w700,
+                        //         color: Color(0xFF1A1A1A),
+                        //       ),
+                        //     ),
+                        //     GestureDetector(
+                        //       onTap: () => setState(
+                        //         () => _showSliderText = !_showSliderText,
+                        //       ),
+                        //       child: Container(
+                        //         padding: const EdgeInsets.symmetric(
+                        //           horizontal: 12,
+                        //           vertical: 6,
+                        //         ),
+                        //         decoration: BoxDecoration(
+                        //           color: _showSliderText
+                        //               ? AppColors.screenOrange
+                        //               : Colors.grey[300],
+                        //           borderRadius: BorderRadius.circular(20),
+                        //           boxShadow: [
+                        //             BoxShadow(
+                        //               color:
+                        //                   (_showSliderText
+                        //                           ? AppColors.screenOrange
+                        //                           : Colors.grey[300])!
+                        //                       .withOpacity(0.3),
+                        //               blurRadius: 4,
+                        //               offset: const Offset(0, 2),
+                        //             ),
+                        //           ],
+                        //         ),
+                        //         child: Row(
+                        //           mainAxisSize: MainAxisSize.min,
+                        //           children: [
+                        //             Icon(
+                        //               _showSliderText
+                        //                   ? Icons.visibility_rounded
+                        //                   : Icons.visibility_off_rounded,
+                        //               size: 16,
+                        //               color: _showSliderText
+                        //                   ? Colors.white
+                        //                   : Colors.grey[600],
+                        //             ),
+                        //             const SizedBox(width: 6),
+                        //             Text(
+                        //               _showSliderText ? 'Texte' : 'Image',
+                        //               style: TextStyle(
+                        //                 fontSize: 12,
+                        //                 fontWeight: FontWeight.w600,
+                        //                 color: _showSliderText
+                        //                     ? Colors.white
+                        //                     : Colors.grey[600],
+                        //               ),
+                        //             ),
+                        //           ],
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
+                        const SizedBox(height: 12),
+                        _FeaturedSchoolsSlider(
+                          featuredSchools: _featuredSchools,
+                          pageController: _sliderController,
+                          onPageChanged: _onSliderPageChanged,
+                          currentIndex: _currentSliderIndex,
+                          showText: _showSliderText,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // ── Événements Banner Card ─────────────────────
-              // SliverToBoxAdapter(
-              //   child: Padding(
-              //     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              //     child: _EventsBannerCard(
-              //       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AllEventsScreen())),
-              //     ),
-              //   ),
-              // ),
               SliverToBoxAdapter(child: const SizedBox(height: 24)),
               SliverToBoxAdapter(
                 child: _buildSectionHeader(
@@ -938,9 +935,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   Theme.of(context).brightness == Brightness.dark,
                 ),
               ),
-              SliverToBoxAdapter(child: const SizedBox(height: 24)),
 
-              // ── Actions Buttons (Intégrer, Noter, Parrainer, Événements) ──
+              // ── Actions Buttons ──
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -950,12 +946,20 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 ),
               ),
 
-
-                SliverToBoxAdapter(child: const SizedBox(height: 24)),
               SliverToBoxAdapter(
                 child: _buildSectionHeader(
                   'Nos etablissements',
                   Theme.of(context).brightness == Brightness.dark,
+                ),
+              ),
+
+              // ── Filtre horizontal ─────────────────────────────
+              SliverToBoxAdapter(
+                child: FilterRowWidget(
+                  filters: _filters,
+                  selectedFilter: _selectedFilter,
+                  onFilterSelected: (filter) =>
+                      setState(() => _selectedFilter = filter),
                 ),
               ),
 
@@ -1035,8 +1039,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 ),
               ),
 
-            
-
               // ── Empty state ────────────────────────────────
               if (items.isEmpty)
                 SliverFillRemaining(
@@ -1113,17 +1115,17 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   ),
                 )
               else
-                // ── Grid ──────────────────────────────────────
                 SliverToBoxAdapter(child: const SizedBox(height: 24)),
+
+              // ── Grid ──────────────────────────────────────
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                 sliver: SliverGrid(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _getCrossAxisCount(context),
-                crossAxisSpacing:
-                    AppDimensions.getProductsGridSpacingProportional(context, 2),
-                childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: 4),
-              ),
+                    crossAxisCount: _getCrossAxisCount(context),
+                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+                    childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: 4),
+                  ),
                   delegate: SliverChildBuilderDelegate((_, i) {
                     if (i == items.length && _hasMoreEcoles) {
                       return SeeMoreCard(
@@ -1162,7 +1164,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           tag: items[i].typePrincipal,
                           titleMaxLines: 2,
                           externalTitleSpacing: 8,
-                          imageFlex: 4,
+                          imageFlex: AppDimensions.getProductCardImageFlex(context),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) =>
@@ -1170,41 +1172,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             ),
                           ),
                         ),
-
-      //                   child: ImageMenuCardExternalTitle(
-      //   index: index,
-      //   cardKey: product.id,
-      //   title: product.title,
-      //   subtitle: product.subtitle,
-      //   imagePath: product.imageUrl,
-      //   iconData: Icons.shopping_bag,
-      //   isDark: false,
-      //   color: accent,
-      //   tag: product.type,
-      //   imageFlex: 3, // Image prend 50% de l'espace (5/10), texte 50% (5/10)
-      //   externalTitleSpacing: 8,
-      //   titleMaxLines: 2,
-      //   buttonText: 'Ajouter',
-      //   buttonColor: AppColors.shopGreen,
-      //   buttonTextColor: Colors.white,
-      //   onButtonTap: () {
-      //     CartSnackBar.show(context, productName: product.title);
-      //   },
-      //   actionText: product.price > 0
-      //       ? '${product.price.toStringAsFixed(0)} F'
-      //       : 'Gratuit',
-      //   actionTextColor:
-      //       product.price > 0 ? AppColors.shopGreen : Colors.green,
-      //   onTap: () {
-      //     Navigator.push(
-      //       context,
-      //       MaterialPageRoute(
-      //         builder: (_) => ProductDetailScreen(
-      //             product: product, produitUid: product.id),
-      //       ),
-      //     ).then((_) => _updateCartItemCount());
-      //   },
-      // ),
                       );
                     }
                     return const SizedBox.shrink();
@@ -1219,7 +1186,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           bottom: 0,
           left: 0,
           right: 0,
-          height: 60,
+          height: 80,
           child: IgnorePointer(
             child: Container(
               decoration: const BoxDecoration(
@@ -1237,7 +1204,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   // ── Action buttons (quick actions) ─────────────────────────────────────────
-  // Includes: Intégrer, Noter, Recommander + Événements (navigates to AllEventsScreen)
   Widget _buildActionButtons(bool isDark) {
     final actions = [
       'integration',
@@ -1266,10 +1232,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               color: def.color,
               onTap: () {
                 if (actions[i] == 'events') {
-                  // Bouton événements : navigation directe vers AllEventsScreen
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => AllEventsScreen()));
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => AllEventsScreen()),
+                  );
                 } else {
                   _showActionBottomSheet(actions[i], def);
                 }
@@ -1367,9 +1332,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-
-          
-  
   // ══════════════════════════════════════════════════════════════════════════
   // ── Action bottom sheet dispatcher ───────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -1377,8 +1339,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   Widget _buildActionContent(String actionType) {
     switch (actionType) {
       case 'integration':
-        // Le formulaire est lancé via le composant integration_bottom_sheet.dart
-        // Ce case ne devrait pas être atteint mais on garde un fallback
         return _buildSelectionMessage(
           'Intégration',
           "Veuillez sélectionner un établissement pour faire une demande d'intégration.",
@@ -1445,54 +1405,21 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   Widget _buildRatingForm() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final actionColor = _kActions['rating']!.color;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Noter un établissement',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black,
+    return RatingBottomSheet(
+      schoolId: 'general',
+      schoolName: 'Établissements',
+      schoolColor: _kActions['rating']!.color,
+      onRatingSubmitted: (rating, comment) async {
+        // Fermer le bottom sheet parent
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Avis soumis pour les établissements'),
+            backgroundColor: AppColors.success,
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Veuillez sélectionner un établissement dans la liste pour pouvoir le noter.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: isDark ? Colors.grey[400] : Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            5,
-            (index) => Icon(
-              index < 3 ? Icons.star : Icons.star_border,
-              size: 32,
-              color: actionColor,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: actionColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: const Text('Sélectionner un établissement'),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -1950,7 +1877,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             villeParent: _villeParentController.text.isEmpty
                                 ? _villeRecommendController.text
                                 : _villeParentController.text,
-                            adresseParent: _adresseParentController.text.isEmpty
+                            adresseParent:
+                                _adresseParentController.text.isEmpty
                                 ? 'Non spécifiée'
                                 : _adresseParentController.text,
                           );
@@ -2012,16 +1940,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   void _showActionBottomSheet(String actionType, _ActionDef def) {
-    // Pour 'integration', on utilise le composant integration_bottom_sheet.dart
     if (actionType == 'integration') {
       showIntegrationBottomSheet(
         context: context,
-        onSuccess: (demandeUid) {
-          // Action de succès si nécessaire
-        },
-        onError: (error) {
-          // Action d'erreur si nécessaire
-        },
+        onSuccess: (demandeUid) {},
+        onError: (error) {},
       );
       return;
     }
@@ -2219,30 +2142,6 @@ class _EventsBannerCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                top: 18,
-                right: 110,
-                child: Container(
-                  width: 5,
-                  height: 5,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white30,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 22,
-                right: 88,
-                child: Container(
-                  width: 3,
-                  height: 3,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white24,
-                  ),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -2344,7 +2243,6 @@ class _FeaturedSchoolsSlider extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           AppDimensions.getHeroCardBorderRadius(context),
         ),
-        //boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(
@@ -2399,149 +2297,496 @@ class _FeaturedSchoolCard extends StatelessWidget {
 
   const _FeaturedSchoolCard({required this.school, required this.showText});
 
-  @override
-  Widget build(BuildContext context) {
-    final typeColor = _typeColor(school['type'] ?? 'Primaire');
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        school['image'] != null && school['image']!.startsWith('assets')
-            ? Image.asset(
-                school['image']!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        typeColor.withOpacity(0.9),
-                        typeColor.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                ),
-              )
-            : Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      typeColor.withOpacity(0.9),
-                      typeColor.withOpacity(0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-        if (showText)
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(0.6),
-                  Colors.black.withOpacity(0.3),
-                  Colors.transparent,
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
-          ),
-        if (showText)
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
+  // Extraire l'ID YouTube d'une URL
+  String? _extractYouTubeId(String url) {
+    final RegExp regex = RegExp(
+      r'^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*',
+      caseSensitive: false,
+    );
+    final Match? match = regex.firstMatch(url);
+    if (match != null && match.groupCount >= 7) {
+      return match.group(7);
+    }
+    return null;
+  }
+
+  // URL miniature YouTube
+  String? _getYouTubeThumbnailUrl(String videoUrl) {
+    final String? videoId = _extractYouTubeId(videoUrl);
+    if (videoId != null) {
+      return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+    }
+    return null;
+  }
+
+  Future<void> _launchVideo(BuildContext context, String videoUrl) async {
+    String? videoId = _extractYouTubeId(videoUrl);
+    if (videoId != null) {
+      _showVideoPlayer(context, videoId);
+    } else {
+      // Pour les vidéos non-YouTube, on pourrait utiliser un autre lecteur
+      _showUnsupportedVideoDialog(context);
+    }
+  }
+
+  // Lecteur YouTube intégré avec gestion d'erreurs et fallback
+  void _showVideoPlayer(BuildContext context, String videoId) {
+    // Tenter d'initialiser le lecteur YouTube avec gestion d'erreurs
+    try {
+      YoutubePlayerController controller = YoutubePlayerController(
+        initialVideoId: videoId,
+        flags: const YoutubePlayerFlags(
+          autoPlay: true,
+          mute: false,
+          forceHD: false,
+          enableCaption: false,
+          loop: false,
+          disableDragSeek: true,
+          hideControls: false,
+          controlsVisibleAtStart: true,
+          useHybridComposition: false, // Désactivé pour éviter les erreurs iOS
+          isLive: false,
+        ),
+      );
+
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext dialogContext) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(20),
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
+                // Conteneur principal avec le player YouTube
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
                   ),
-                  child: Text(
-                    school['type'] ?? 'Primaire',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: YoutubePlayer(
+                        controller: controller,
+                        showVideoProgressIndicator: true,
+                        progressIndicatorColor: Colors.red,
+                        progressColors: const ProgressBarColors(
+                          playedColor: Colors.red,
+                          handleColor: Colors.redAccent,
+                        ),
+                        onReady: () {
+                          // Vidéo prête à être jouée
+                        },
+                        onEnded: (metaData) {
+                          // Vidéo terminée
+                        },
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        school['name'] ?? 'École',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.1,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black26,
-                              offset: Offset(0, 1),
-                              blurRadius: 2,
+                // Bouton fermer
+                Positioned(
+                  top: -14,
+                  right: -14,
+                  child: GestureDetector(
+                    onTap: () {
+                      controller.dispose();
+                      Navigator.of(dialogContext).pop();
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      // Fallback : si le lecteur YouTube échoue, proposer le lecteur externe
+      _showYouTubeFallbackDialog(context, videoId);
+    }
+  }
+
+  // Dialog de fallback vers YouTube externe
+  void _showYouTubeFallbackDialog(BuildContext context, String videoId) {
+    final youtubeUrl = 'https://www.youtube.com/watch?v=$videoId';
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      color: Colors.black,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.play_circle_outline_rounded,
+                              size: 64,
+                              color: Colors.white54,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Lecteur vidéo non disponible',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Ouvrir la vidéo dans YouTube',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                Navigator.of(dialogContext).pop();
+                                final Uri uri = Uri.parse(youtubeUrl);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.open_in_new, size: 16),
+                              label: const Text('Ouvrir dans YouTube'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              school['location'] ?? '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black26,
-                                    offset: Offset(0, 1),
-                                    blurRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -14,
+                right: -14,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Dialog pour vidéos non supportées
+  void _showUnsupportedVideoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      color: Colors.black,
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.video_file_outlined,
+                              size: 64,
+                              color: Colors.white54,
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 14,
-                                color: Colors.white,
+                            SizedBox(height: 16),
+                            Text(
+                              'Format vidéo non supporté',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                school['rating'] ?? '4.5',
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Seules les vidéos YouTube sont\nsupportées actuellement',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -14,
+                right: -14,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typeColor = _typeColor(school['type'] ?? 'Primaire');
+    final bool isVideo =
+        school['video'] != null && school['video']!.isNotEmpty;
+
+    return GestureDetector(
+      onTap: () {
+        if (isVideo) {
+          _launchVideo(context, school['video']!);
+        }
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── Background : image ou vidéo ──────────────────────────
+          if (isVideo) ...[
+            // Miniature YouTube
+            Builder(builder: (context) {
+              final thumb = _getYouTubeThumbnailUrl(school['video']!);
+              return thumb != null
+                  ? Image.network(
+                      thumb,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _colorBackground(typeColor),
+                    )
+                  : _colorBackground(typeColor);
+            }),
+            // Overlay sombre
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.4),
+                    Colors.black.withOpacity(0.1),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            // Bouton play centré
+            Center(
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  size: 36,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            // Badge VIDÉO
+            Positioned(
+              top: 16,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Text(
+                  'VIDÉO',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ] else if (school['image'] != null &&
+              school['image']!.startsWith('assets')) ...[
+            Image.asset(
+              school['image']!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _colorBackground(typeColor),
+            ),
+          ] else
+            _colorBackground(typeColor),
+
+          // ── Overlay texte (si showText activé) ───────────────────
+          if (showText) ...[
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.6),
+                    Colors.black.withOpacity(0.3),
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(16),
+                      border:
+                          Border.all(color: Colors.white.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      school['type'] ?? 'Primaire',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          school['name'] ?? 'École',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.1,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black26,
+                                offset: Offset(0, 1),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                school['location'] ?? '',
                                 style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
@@ -2551,38 +2796,65 @@ class _FeaturedSchoolCard extends StatelessWidget {
                                     ),
                                   ],
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              school['description'] ?? '',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.white70,
-                                fontStyle: FontStyle.italic,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black26,
-                                    offset: Offset(0, 1),
-                                    blurRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              school['rating'] ?? '4.5',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                school['description'] ?? '',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white70,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-      ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _colorBackground(Color color) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.9), color.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
     );
   }
 }

@@ -22,7 +22,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final double? height;
   final double? externalTitleSpacing;
   final int titleMaxLines;
-  final int imageFlex; // Contrôle la hauteur de l'image (défaut: 7)
+  final double imageFlex; // Contrôle la hauteur de l'image (défaut: 7.0)
   final String? buttonText;
   final Color? buttonColor;
   final Color? buttonTextColor;
@@ -50,7 +50,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.height,
     this.externalTitleSpacing = 8.0,
     this.titleMaxLines = 2,
-    this.imageFlex = 7,
+    this.imageFlex = 7.0,
     this.buttonText,
     this.buttonColor,
     this.buttonTextColor,
@@ -82,9 +82,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
         children: [
           // ── Image card ────────────────────────────────────────────────
           // ✅ FIX: Flexible avec facteur pour contrôler la hauteur de l'image
-          // imageFlex = hauteur relative de l'image (défaut: 7)
+          // imageFlex = hauteur relative de l'image (défaut: 7.0)
           Flexible(
-            flex: imageFlex,
+            flex: imageFlex.round(),
             child: GestureDetector(
               onTap: onTap,
               child: Container(

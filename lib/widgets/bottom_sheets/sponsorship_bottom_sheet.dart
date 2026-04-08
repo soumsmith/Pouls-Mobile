@@ -407,7 +407,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                             codeParrainage,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(48),
+                              fontSize: _textSizeService.getScaledFontSize(28),
                               fontWeight: FontWeight.w900,
                               color: const Color(0xFF3B82F6),
                               letterSpacing: 4,
@@ -418,10 +418,13 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Boutons d'action personnalisés
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: _buildShareButtons(codeParrainage),
+                    // Boutons d'action personnalisés avec défilement horizontal
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: _buildShareButtons(codeParrainage),
+                      ),
                     )],
                 ),
               ),
@@ -478,7 +481,6 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
           );
         },
       ),
-      const SizedBox(width: 4),
       ShareButton(
         label: 'SMS',
         icon: Icons.sms_rounded,
@@ -502,7 +504,6 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
           }
         },
       ),
-      const SizedBox(width: 4),
       ShareButton(
         label: 'Email',
         icon: Icons.email_rounded,
@@ -527,7 +528,6 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
           }
         },
       ),
-      const SizedBox(width: 4),
       ShareButton(
         label: 'WhatsApp',
         icon: Icons.message_rounded,

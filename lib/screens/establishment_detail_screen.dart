@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/widgets/custom_form_button.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
@@ -9,10 +10,41 @@ import 'package:parents_responsable/widgets/custom_text_field.dart';
 import 'package:parents_responsable/widgets/image_menu_card.dart';
 import 'package:parents_responsable/widgets/image_menu_card_external_title.dart';
 import 'dart:developer' as developer;
-import '../config/app_colors.dart';
+import '../models/ecole.dart';
+import '../models/ecole_detail.dart';
+import '../models/blog.dart';
+import '../models/event.dart';
+import '../models/avis.dart';
+import '../models/fee.dart';
 import '../models/scolarite.dart';
 import '../models/niveau.dart';
-import '../models/avis.dart';
+import '../models/user.dart';
+import '../models/child.dart';
+import '../models/message.dart';
+import '../models/conversation.dart';
+import '../models/group_message.dart';
+import '../models/order.dart';
+import '../models/cart_item.dart';
+import '../models/product.dart';
+import '../models/student_class_info.dart';
+import '../models/student_scolarite.dart';
+import '../models/student_message.dart';
+import '../models/student_timetable.dart';
+import '../models/timetable_entry.dart';
+import '../models/parent_suggestion.dart';
+import '../models/lieu_livraison.dart';
+import '../models/school_supply.dart';
+import '../models/place_reservation.dart';
+import '../models/classe.dart';
+import '../models/matiere.dart';
+import '../models/eleve.dart';
+import '../models/periode.dart';
+import '../models/note.dart';
+import '../models/note_api.dart';
+import '../models/note_classe_dto.dart';
+import '../models/annee_scolaire.dart';
+import '../models/access_control.dart';
+import '../models/access_log.dart';
 import '../services/text_size_service.dart';
 import '../services/ecole_api_service.dart';
 import '../services/theme_service.dart';
@@ -26,12 +58,14 @@ import '../services/auth_service.dart';
 import '../services/testimonial_service.dart';
 import '../widgets/custom_snackbar.dart';
 import '../services/integration_request_service.dart';
-import '../widgets/custom_file_field.dart';
-import '../models/ecole.dart';
-import '../models/ecole_detail.dart';
+import '../widgets/main_screen_wrapper.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/share_button.dart';
+import '../widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
+import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
+import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
-import '../widgets/main_screen_wrapper.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
 import 'all_events_screen.dart';
@@ -5185,116 +5219,55 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     );
   }
 
-  // ── Rating form (Style WhatsApp) ────────────────────────────────────────────────────
+  // ── Rating form (Style WhatsApp) ────────────────────────────────────────────────────// Rating form - utilise le widget externalisé RatingBottomSheet
   Widget _buildRatingForm() {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          // Container(
-          //   padding: const EdgeInsets.all(16),
-          //   decoration: BoxDecoration(
-          //     color: const Color(0xFF0288D1),
-          //     borderRadius: const BorderRadius.only(
-          //       topLeft: Radius.circular(20),
-          //       topRight: Radius.circular(20),
-          //     ),
-          //   ),
-          //   child: Row(
-          //     children: [
-          //       Container(
-          //         width: 40,
-          //         height: 40,
-          //         decoration: BoxDecoration(
-          //           color: Colors.white.withOpacity(0.15),
-          //           borderRadius: BorderRadius.circular(20),
-          //         ),
-          //         child: const Icon(
-          //           Icons.star_rate_rounded,
-          //           color: Colors.white,
-          //           size: 20,
-          //         ),
-          //       ),
-          //       const SizedBox(width: 12),
-          //       Flexible(
-          //         child: Column(
-          //           crossAxisAlignment: CrossAxisAlignment.start,
-          //           children: [
-          //             Text(
-          //               'Avis & Commentaires',
-          //               style: TextStyle(
-          //                 fontSize: _textSizeService.getScaledFontSize(18),
-          //                 fontWeight: FontWeight.w700,
-          //                 color: Colors.white,
-          //               ),
-          //             ),
-          //             const Text(
-          //               'Partagez votre expérience',
-          //               style: TextStyle(fontSize: 13, color: Colors.white70),
-          //             ),
-          //           ],
-          //         ),
-          //       ),
-          //       GestureDetector(
-          //         onTap: () => _loadAvisOnly(),
-          //         child: Container(
-          //           width: 40,
-          //           height: 40,
-          //           decoration: BoxDecoration(
-          //             color: Colors.white.withOpacity(0.15),
-          //             borderRadius: BorderRadius.circular(20),
-          //           ),
-          //           child: const Icon(
-          //             Icons.refresh_outlined,
-          //             color: Colors.white,
-          //             size: 18,
-          //           ),
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
-
-          // Liste des avis (style messages WhatsApp)
-          Flexible(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.4,
-              ),
-              child: Container(
-                color: const Color(0xFFF5F5F5),
-                child: _isLoadingAvis
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF0288D1),
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : _avisError != null
-                    ? _buildErrorView()
-                    : _avis.isEmpty
-                    ? _buildEmptyAvisView()
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-                        itemCount: _avis.length,
-                        itemBuilder: (context, index) {
-                          final avis = _avis[index];
-                          return _buildAvisBubble(avis);
-                        },
-                      ),
-              ),
-            ),
-          ),
-
-          // Barre d'envoi (style WhatsApp)
-          _buildComposeAvisBar(),
-        ],
-      ),
+    return RatingBottomSheet(
+      schoolId: widget.ecole.id ?? '',
+      schoolName: widget.ecole.parametreNom ?? 'Établissement',
+      schoolColor: _getSchoolColor(),
+      onRatingSubmitted: (rating, comment) async {
+        // Logique de soumission d'avis - à adapter selon votre API
+        await _submitRating(rating, comment);
+      },
     );
+  }
+
+  // Helper pour obtenir la couleur de l'école
+  Color _getSchoolColor() {
+    // Adapter selon votre logique de couleur
+    switch (widget.ecole.type?.toLowerCase()) {
+      case 'primaire':
+        return AppColors.screenOrange;
+      case 'collège':
+      case 'college':
+        return AppColors.screenBlue;
+      case 'lycée':
+        return AppColors.screenPurple;
+      default:
+        return AppColors.screenOrange;
+    }
+  }
+
+  // Soumission d'avis - à implémenter selon votre API
+  Future<void> _submitRating(String rating, String comment) async {
+    try {
+      // Implémenter votre logique d'envoi d'avis ici
+      // Exemple: await RatingService.submitRating(widget.ecole.id, rating, comment);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Avis envoyé avec succès!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de l\'envoi: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // ── Bulle d'avis (style WhatsApp) ───────────────────────────────────────────────────

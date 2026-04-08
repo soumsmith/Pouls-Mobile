@@ -17,6 +17,10 @@ class Ecole {
   String get ecolecode => _ecolecode ?? parametreCode;
   String get ecoleclibelle => parametreNom;
   
+  // Getters pour la compatibilité avec le code existant
+  String get id => _ecoleid?.toString() ?? parametreCode;
+  String get type => typePrincipal ?? 'Primaire';
+  
   // Champs privés pour stocker les valeurs réelles de l'API
   final int? _ecoleid;
   final String? _ecolecode;

@@ -27,6 +27,7 @@ import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
+import '../widgets/bottom_fade_gradient.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -1140,18 +1141,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       );
                     }
                     if (i < items.length) {
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: 1),
-                        duration: Duration(milliseconds: 400 + (i % 6) * 60),
-                        curve: Curves.easeOutCubic,
-                        builder: (_, v, child) => Opacity(
-                          opacity: v,
-                          child: Transform.translate(
-                            offset: Offset(0, 20 * (1 - v)),
-                            child: child,
-                          ),
-                        ),
-                        child: ImageMenuCardExternalTitle(
+                      return ImageMenuCardExternalTitle(
                           index: i,
                           cardKey: items[i].ecoleid.toString(),
                           title: items[i].parametreNom ?? 'École sans nom',
@@ -1171,7 +1161,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                                   EstablishmentDetailScreen(ecole: items[i]),
                             ),
                           ),
-                        ),
                       );
                     }
                     return const SizedBox.shrink();
@@ -1182,23 +1171,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           ),
         ),
         // Gradient fade at bottom
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 80,
-          child: IgnorePointer(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x00F8F8F8), AppColors.screenSurface],
-                ),
-              ),
-            ),
-          ),
-        ),
+        const BottomFadeGradient(),
       ],
     );
   }

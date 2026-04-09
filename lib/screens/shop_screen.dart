@@ -21,6 +21,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_row_widget.dart';
 import '../widgets/image_menu_card_external_title.dart';
+import '../widgets/bottom_fade_gradient.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -422,7 +423,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
               boxShadow: const [
                 BoxShadow(
                   color: AppColors.screenShadow,
@@ -435,14 +436,14 @@ class _LibraryScreenState extends State<LibraryScreen>
           ),
           if (badge != null)
             Positioned(
-              top: -4,
-              right: -4,
+              top: 0,
+              right: 0,
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: badgeColor ?? AppColors.shopGreen,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
                   border: Border.all(
                     color: AppColors.screenSurface,
                     width: 1.5,
@@ -768,42 +769,48 @@ class _LibraryScreenState extends State<LibraryScreen>
 
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              // ✅ FIX: childAspectRatio via _getCardAspectRatio() qui inclut
-              // image + texte externe pour éviter tout overflow.
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _getCrossAxisCount(context),
-                crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
-                childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: AppDimensions.getGridImageFlex(context)),
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverGrid(
+                  // ✅ FIX: childAspectRatio via _getCardAspectRatio() qui inclut
+                  // image + texte externe pour éviter tout overflow.
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _getCrossAxisCount(context),
+                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+                    childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: AppDimensions.getGridImageFlex(context)),
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index == _filteredProducts.length && _hasMoreProducts) {
+                        return SeeMoreCard(
+                          cardColor: AppColors.screenCard,
+                          borderColor:
+                              AppColors.shopGreen.withOpacity(0.3),
+                          iconColor: AppColors.shopGreen,
+                          textColor: AppColors.shopGreen,
+                          subtitleColor: const Color(0xFF999999),
+                          title: 'Voir plus',
+                          subtitle: 'produits',
+                          onTap: _loadMoreProducts,
+                        );
+                      }
+                      return _buildProductCard(
+                          _filteredProducts[index], index);
+                    },
+                    childCount: _filteredProducts.length +
+                        (_hasMoreProducts ? 1 : 0),
+                  ),
+                ),
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  if (index == _filteredProducts.length && _hasMoreProducts) {
-                    return SeeMoreCard(
-                      cardColor: AppColors.screenCard,
-                      borderColor:
-                          AppColors.shopGreen.withOpacity(0.3),
-                      iconColor: AppColors.shopGreen,
-                      textColor: AppColors.shopGreen,
-                      subtitleColor: const Color(0xFF999999),
-                      title: 'Voir plus',
-                      subtitle: 'produits',
-                      onTap: _loadMoreProducts,
-                    );
-                  }
-                  return _buildProductCard(
-                      _filteredProducts[index], index);
-                },
-                childCount: _filteredProducts.length +
-                    (_hasMoreProducts ? 1 : 0),
-              ),
-            ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          // Gradient fade at bottom
+          const BottomFadeGradient(),
         ],
       ),
     );

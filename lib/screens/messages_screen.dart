@@ -13,6 +13,7 @@ import '../models/conversation.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/snackbar.dart';
 
 // ─── ENUM : types de pièce jointe ────────────────────────────────────────────
 enum AttachmentType { none, image, audio }
@@ -192,6 +193,19 @@ class _MessagesScreenState extends State<MessagesScreen>
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
+      
+      // Vérifier si l'erreur est un 404 (élève non trouvé)
+      if (e.toString().contains('404') || e.toString().contains('Élève non trouvé')) {
+        // Afficher une notification snackbar pour l'erreur 404
+        CartSnackBar.show(
+          context,
+          productName: 'Élève non trouvé',
+          message: 'Vérifiez le matricule de l\'élève',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        );
+      }
+      
       setState(() => _isLoading = false);
       _showError('Erreur chargement: $e');
     }

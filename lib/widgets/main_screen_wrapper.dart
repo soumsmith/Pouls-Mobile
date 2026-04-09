@@ -194,7 +194,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             _getCurrentScreen(),
           // Bottom navigation with SafeArea to handle system padding
           Positioned(
-            bottom: 0,
+            bottom: -15,
             left: 0,
             right: 0,
             child: SafeArea(

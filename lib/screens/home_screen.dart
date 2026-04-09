@@ -18,6 +18,7 @@ import '../services/auth_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/search_bar_widget.dart';
+import '../widgets/bottom_fade_gradient.dart';
 import '../config/app_colors.dart';
 import 'add_child_screen.dart';
 
@@ -879,25 +880,10 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildChildCard(_filteredChildren[index], index),
         ),
         // Gradient fade at bottom
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
+        BottomFadeGradient(
           height: 80,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.screenCard.withOpacity(0),
-                    AppColors.screenCard,
-                  ],
-                ),
-              ),
-            ),
-          ),
+          startColor: AppColors.screenCard.withOpacity(0),
+          endColor: AppColors.screenCard,
         ),
       ],
     );
@@ -910,25 +896,19 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.screenShadow,
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+          boxShadow: AppDimensions.getLightShadow(context),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(7),
           child: Row(
             children: [
               // Photo / avatar
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  width: 56,
-                  height: 56,
+                  width: 38,
+                  height: 38,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
@@ -943,10 +923,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           errorBuilder: (_, __, ___) => const Icon(
                             Icons.person,
                             color: Colors.white,
-                            size: 26,
+                            size: 22,
                           ),
                         )
-                      : const Icon(Icons.person, color: Colors.white, size: 26),
+                      : const Icon(Icons.person, color: Colors.white, size: 22),
                 ),
               ),
               const SizedBox(width: 14),
@@ -964,6 +944,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: AppColors.screenTextPrimary,
                         letterSpacing: -0.3,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -979,43 +961,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-                    // Grade badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.screenOrangeLight,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        child.grade.isNotEmpty
-                            ? child.grade
-                            : 'Classe non renseignée',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(11),
-                          color: AppColors.screenOrange,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
 
-              // Arrow
+              // Grade badge (déplacé à droite)
               Container(
-                width: 32,
-                height: 32,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.screenOrangeLight,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: AppColors.screenOrange,
-                  size: 14,
+                child: Text(
+                  child.grade.isNotEmpty
+                      ? child.grade
+                      : 'Classe non renseignée',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(11),
+                    color: AppColors.screenOrange,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],

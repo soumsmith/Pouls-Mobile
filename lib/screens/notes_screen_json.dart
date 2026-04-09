@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/snackbar.dart';
+import '../widgets/subtle_retry_button.dart';
+import '../widgets/custom_sliver_app_bar_fixed.dart';
 
 class NotesScreenJson extends StatefulWidget {
   final String matricule;
@@ -42,14 +46,16 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   late Animation<double> _fadeAnimation;
 
   @override
-void initState() {
+  void initState() {
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _fadeAnimation =
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
 
     _studentMatricule = widget.matricule;
     _anneeId = widget.anneeId;
@@ -69,7 +75,6 @@ void initState() {
     super.dispose();
   }
 
-
   Future<void> _loadApiData() async {
     try {
       final periode = _getPeriodeNumberFromString(_selectedTrimester);
@@ -87,26 +92,54 @@ void initState() {
           _isLoading = false;
         });
         _fadeController.forward(from: 0);
+
+        // Notification de succès
+        final matieres = apiData['details'] as List<dynamic>? ?? [];
+        _showSuccess(
+          'Notes chargées : ${matieres.length} matière${matieres.length > 1 ? 's' : ''}',
+        );
       } else {
         setState(() => _isLoading = false);
-        _showError('Erreur lors du chargement des notes. Veuillez réessayer.');
+        _showError('Aucune note trouvée pour cette période');
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('Erreur: $e');
+
+      // Gestion spécifique des erreurs 400
+      if (e.toString().contains('No result found for query')) {
+        _showInfo('Aucune note disponible pour cette période scolaire');
+      } else if (e.toString().contains('400')) {
+        _showError('Requête invalide : vérifiez les paramètres');
+      } else {
+        _showError('Erreur lors du chargement: ${e.toString()}');
+      }
     }
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+    CartSnackBar.show(
+      context,
+      productName: 'Erreur',
+      message: msg,
+      backgroundColor: Colors.red[400] ?? Colors.red,
+    );
+  }
+
+  void _showSuccess(String msg) {
+    CartSnackBar.show(
+      context,
+      productName: 'Succès',
+      message: msg,
+      backgroundColor: AppColors.screenGreen,
+    );
+  }
+
+  void _showInfo(String msg) {
+    CartSnackBar.show(
+      context,
+      productName: 'Information',
+      message: msg,
+      backgroundColor: const Color(0xFF3B82F6),
     );
   }
 
@@ -144,7 +177,8 @@ void initState() {
     if (s.contains('histoir')) return Icons.public_outlined;
     if (s.contains('phys')) return Icons.science_outlined;
     if (s.contains('angl')) return Icons.language_outlined;
-    if (s.contains('sport') || s.contains('eps')) return Icons.sports_soccer_outlined;
+    if (s.contains('sport') || s.contains('eps'))
+      return Icons.sports_soccer_outlined;
     if (s.contains('mus')) return Icons.music_note_outlined;
     if (s.contains('art')) return Icons.palette_outlined;
     if (s.contains('arab')) return Icons.translate_outlined;
@@ -153,8 +187,9 @@ void initState() {
 
   List<dynamic> _getFilteredMatieres() {
     if (_bulletinData == null) return [];
-    List<dynamic> matieres =
-        List.from(_bulletinData!['details'] as List<dynamic>);
+    List<dynamic> matieres = List.from(
+      _bulletinData!['details'] as List<dynamic>,
+    );
     if (_selectedSubject != null && _selectedSubject!.isNotEmpty) {
       matieres = matieres
           .where((m) => m['matiereLibelle'] == _selectedSubject)
@@ -169,8 +204,12 @@ void initState() {
     return ['Toutes', ...matieres.map((m) => m['matiereLibelle'] as String)];
   }
 
-  List<String> get _availableTrimesters =>
-      ['Tous', 'Premier Trimestre', 'Deuxième Trimestre', 'Troisième Trimestre'];
+  List<String> get _availableTrimesters => [
+    'Tous',
+    'Premier Trimestre',
+    'Deuxième Trimestre',
+    'Troisième Trimestre',
+  ];
 
   void _onSubjectChanged(String value) =>
       setState(() => _selectedSubject = value == 'Toutes' ? null : value);
@@ -184,29 +223,49 @@ void initState() {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark
-          .copyWith(statusBarColor: Colors.transparent),
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
       child: Scaffold(
         backgroundColor: AppColors.screenSurface,
-        body: _isLoading ? _buildLoadingState() : _buildContent(),
+        body: CustomScrollView(
+          slivers: [
+            CustomSliverAppBarFixed(
+              title: 'Mes Notes',
+              isDark: false,
+              pinned: true,
+              floating: false,
+              elevation: 0,
+              actions: [
+                AppBarIconButton(
+                  icon: Icons.refresh_outlined,
+                  isDark: false,
+                  onTap: () {
+                    setState(() => _isLoading = true);
+                    _loadApiData();
+                    _showInfo('Actualisation des notes en cours...');
+                  },
+                  tooltip: 'Actualiser',
+                ),
+              ],
+            ),
+            if (_isLoading)
+              SliverFillRemaining(child: _buildLoadingState())
+            else
+              ..._buildContentSlivers(),
+          ],
+        ),
       ),
     );
   }
 
   // ─── LOADING ──────────────────────────────────────────────────────────────
   Widget _buildLoadingState() {
-    return Column(
-      children: [
-        _buildAppBar(),
-        Expanded(
-          child: CustomLoader(
-            message: 'Chargement des notes...',
-            loaderColor: AppColors.screenOrange,
-            backgroundColor: AppColors.screenSurface,
-            showBackground: false,
-          ),
-        ),
-      ],
+    return CustomLoader(
+      message: 'Chargement des notes...',
+      loaderColor: AppColors.screenOrange,
+      backgroundColor: AppColors.screenSurface,
+      showBackground: false,
     );
   }
 
@@ -230,15 +289,12 @@ void initState() {
                   decoration: BoxDecoration(
                     color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 2)),
-                    ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      size: 16, color: AppColors.screenTextPrimary),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 16,
+                    color: AppColors.screenTextPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -269,21 +325,13 @@ void initState() {
                 ),
               ),
               // Refresh button
-              GestureDetector(
+              SubtleRetryButton(
                 onTap: () {
                   setState(() => _isLoading = true);
                   _loadApiData();
+                  _showInfo('Actualisation des notes en cours...');
                 },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenOrangeLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.refresh_outlined,
-                      size: 18, color: AppColors.screenOrange),
-                ),
+                color: AppColors.screenOrange,
               ),
             ],
           ),
@@ -292,90 +340,93 @@ void initState() {
     );
   }
 
-  // ─── CONTENT ──────────────────────────────────────────────────────────────
-  Widget _buildContent() {
+  // ─── CONTENT SLIVERS ────────────────────────────────────────────────────────
+  List<Widget> _buildContentSlivers() {
     if (_bulletinData == null) {
-      return Column(
-        children: [
-          _buildAppBar(),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: const BoxDecoration(
-                      color: AppColors.screenOrangeLight,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.assignment_outlined,
-                        size: 48, color: AppColors.screenOrange),
+      return [
+        SliverFillRemaining(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: const BoxDecoration(
+                    color: AppColors.screenOrangeLight,
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Erreur de chargement',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary),
+                  child: const Icon(
+                    Icons.assignment_outlined,
+                    size: 48,
+                    color: AppColors.screenOrange,
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Impossible de charger les données.',
-                    style: TextStyle(fontSize: 14, color: AppColors.screenTextSecondary),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Erreur de chargement',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.screenTextPrimary,
                   ),
-                  const SizedBox(height: 32),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 48),
-                    child: _buildOrangeButton(
-                      label: 'Réessayer',
-                      onTap: () {
-                        setState(() => _isLoading = true);
-                        _loadApiData();
-                      },
-                      trailing: const Icon(Icons.refresh_outlined,
-                          color: Colors.white, size: 16),
-                    ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Impossible de charger les données.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.screenTextSecondary,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: SubtleRetryButtonWithText(
+                    onTap: () {
+                      setState(() => _isLoading = true);
+                      _loadApiData();
+                    },
+                    color: AppColors.screenOrange,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      );
+        ),
+      ];
     }
 
     final matieres = _getFilteredMatieres();
 
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Column(
-        children: [
-          _buildAppBar(),
-          // Student info banner
-          _buildStudentBanner(),
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildFiltersSection(),
-                  const SizedBox(height: 16),
-                  if (matieres.isNotEmpty)
-                    _buildNotesSection(matieres)
-                  else
-                    _buildEmptyState(),
-                ],
+    return [
+      SliverToBoxAdapter(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Column(
+            children: [
+              // Student info banner
+              _buildStudentBanner(),
+              // Content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildFiltersSection(),
+                    const SizedBox(height: 16),
+                    if (matieres.isNotEmpty)
+                      _buildNotesSection(matieres)
+                    else
+                      _buildEmptyState(),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
-    );
+    ];
   }
 
   // ─── STUDENT BANNER ───────────────────────────────────────────────────────
@@ -449,8 +500,7 @@ void initState() {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
@@ -476,9 +526,13 @@ void initState() {
       decoration: BoxDecoration(
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
-        ],
+        // boxShadow: const [
+        //   BoxShadow(
+        //     color: AppColors.screenShadow,
+        //     blurRadius: 12,
+        //     offset: Offset(0, 4),
+        //   ),
+        // ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,8 +547,11 @@ void initState() {
                   color: AppColors.screenOrangeLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child:
-                    const Icon(Icons.tune, color: AppColors.screenOrange, size: 16),
+                child: const Icon(
+                  Icons.tune,
+                  color: AppColors.screenOrange,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: 10),
               const Text(
@@ -528,7 +585,9 @@ void initState() {
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.screenSurface,
                   borderRadius: BorderRadius.circular(12),
@@ -536,8 +595,11 @@ void initState() {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined,
-                        color: AppColors.screenOrange, size: 16),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      color: AppColors.screenOrange,
+                      size: 16,
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       _selectedYear ?? 'Chargement...',
@@ -593,19 +655,11 @@ void initState() {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+              colors: [AppColors.customLightBlue, AppColors.customLightBlueDark],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.screenOrange.withOpacity(0.25),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Row(
             children: [
@@ -616,8 +670,11 @@ void initState() {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.analytics_outlined,
-                    color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.analytics_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 10),
               const Text(
@@ -632,7 +689,9 @@ void initState() {
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -654,14 +713,14 @@ void initState() {
         Container(
           decoration: const BoxDecoration(
             color: AppColors.screenCard,
-            borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.screenShadow,
-                  blurRadius: 12,
-                  offset: Offset(0, 4)),
-            ],
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: AppColors.screenShadow,
+            //     blurRadius: 12,
+            //     offset: Offset(0, 4),
+            //   ),
+            // ],
           ),
           child: Column(
             children: matieres.asMap().entries.map((entry) {
@@ -698,209 +757,231 @@ void initState() {
       builder: (context, value, child) => Opacity(
         opacity: value,
         child: Transform.translate(
-            offset: Offset(0, 12 * (1 - value)), child: child),
+          offset: Offset(0, 12 * (1 - value)),
+          child: child,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => setState(() =>
-              _expandedSubjectId = isExpanded ? null : subjectName),
+          onTap: () => setState(
+            () => _expandedSubjectId = isExpanded ? null : subjectName,
+          ),
           splashColor: AppColors.screenOrange.withOpacity(0.06),
           highlightColor: AppColors.screenOrange.withOpacity(0.04),
           child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header de la matière
-              Row(
-                children: [
-                  // Icône matière
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(_getSubjectIcon(subjectName),
-                        color: color, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  // Nom + nb évaluations
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          subjectName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.screenTextPrimary,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${notes.length} évaluation${notes.length > 1 ? 's' : ''}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.screenTextSecondary,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Badge moyenne
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: color.withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      avg.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header de la matière
+                Row(
+                  children: [
+                    // Icône matière
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        _getSubjectIcon(subjectName),
                         color: color,
+                        size: 20,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 250),
-                    child: Icon(Icons.keyboard_arrow_down,
-                        color: AppColors.screenTextSecondary, size: 20),
-                  ),
-                ],
-              ),
-
-              // Expanded detail
-              AnimatedCrossFade(
-                duration: const Duration(milliseconds: 250),
-                crossFadeState: isExpanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                firstChild: const SizedBox.shrink(),
-                secondChild: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 14),
-                    const Divider(color: AppColors.screenDivider, height: 1),
-                    const SizedBox(height: 14),
-
-                    // Titre détail
-                    Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(2),
+                    const SizedBox(width: 12),
+                    // Nom + nb évaluations
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            subjectName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.screenTextPrimary,
+                              letterSpacing: -0.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Détail des notes',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                            letterSpacing: 0.1,
+                          const SizedBox(height: 2),
+                          Text(
+                            '${notes.length} évaluation${notes.length > 1 ? 's' : ''}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.screenTextSecondary,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    _buildNotesList(notes),
-
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+                    // Badge moyenne
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: color.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        avg.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: color,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Statistiques',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                            child: _buildStatBadge(
-                                'Coef', '${matiere['coef'] ?? '1.0'}', const Color(0xFF3B82F6))),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: _buildStatBadge(
-                                'Appréciation', '${matiere['appreciation'] ?? 'N/A'}', const Color(0xFF9C27B0))),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: _buildStatBadge(
-                                'Moyenne', '${matiere['moyenne']?.toStringAsFixed(1) ?? avg.toStringAsFixed(1)}', AppColors.screenOrange)),
-                      ],
+                    const SizedBox(width: 8),
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: AppColors.screenTextSecondary,
+                        size: 20,
+                      ),
                     ),
-
-                    const SizedBox(height: 14),
-                    // Bouton marquer consulté
-                    // GestureDetector(
-                    //   onTap: () {},
-                    //   child: Container(
-                    //     padding: const EdgeInsets.symmetric(
-                    //         horizontal: 12, vertical: 8),
-                    //     decoration: BoxDecoration(
-                    //       color: AppColors.screenOrangeLight,
-                    //       borderRadius: BorderRadius.circular(10),
-                    //       border: Border.all(
-                    //           color: AppColors.screenOrange.withOpacity(0.2)),
-                    //     ),
-                    //     child: const Row(
-                    //       mainAxisSize: MainAxisSize.min,
-                    //       children: [
-                    //         Icon(Icons.visibility_outlined,
-                    //             color: AppColors.screenOrange, size: 15),
-                    //         SizedBox(width: 6),
-                    //         Text(
-                    //           'Marquer consulté',
-                    //           style: TextStyle(
-                    //             color: AppColors.screenOrange,
-                    //             fontSize: 12,
-                    //             fontWeight: FontWeight.w600,
-                    //           ),
-                    //         ),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // ),
                   ],
                 ),
-              ),
-            ],
+
+                // Expanded detail
+                AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 250),
+                  crossFadeState: isExpanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 14),
+                      const Divider(color: AppColors.screenDivider, height: 1),
+                      const SizedBox(height: 14),
+
+                      // Titre détail
+                      Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Détail des notes',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: color,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildNotesList(notes),
+
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Statistiques',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: color,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatBadge(
+                              'Coef',
+                              '${matiere['coef'] ?? '1.0'}',
+                              const Color(0xFF3B82F6),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildStatBadge(
+                              'Appréciation',
+                              '${matiere['appreciation'] ?? 'N/A'}',
+                              const Color(0xFF9C27B0),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildStatBadge(
+                              'Moyenne',
+                              '${matiere['moyenne']?.toStringAsFixed(1) ?? avg.toStringAsFixed(1)}',
+                              AppColors.screenOrange,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+                      // Bouton marquer consulté
+                      // GestureDetector(
+                      //   onTap: () {},
+                      //   child: Container(
+                      //     padding: const EdgeInsets.symmetric(
+                      //         horizontal: 12, vertical: 8),
+                      //     decoration: BoxDecoration(
+                      //       color: AppColors.screenOrangeLight,
+                      //       borderRadius: BorderRadius.circular(10),
+                      //       border: Border.all(
+                      //           color: AppColors.screenOrange.withOpacity(0.2)),
+                      //     ),
+                      //     child: const Row(
+                      //       mainAxisSize: MainAxisSize.min,
+                      //       children: [
+                      //         Icon(Icons.visibility_outlined,
+                      //             color: AppColors.screenOrange, size: 15),
+                      //         SizedBox(width: 6),
+                      //         Text(
+                      //           'Marquer consulté',
+                      //           style: TextStyle(
+                      //             color: AppColors.screenOrange,
+                      //             fontSize: 12,
+                      //             fontWeight: FontWeight.w600,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -914,15 +995,13 @@ void initState() {
       children: notes.asMap().entries.map((entry) {
         final i = entry.key;
         final note = entry.value;
-        final val =
-            double.tryParse(note['note']?.toString() ?? '0') ?? 0.0;
+        final val = double.tryParse(note['note']?.toString() ?? '0') ?? 0.0;
         final sur =
             double.tryParse(note['noteSur']?.toString() ?? '20') ?? 20.0;
         final color = _getAverageColor((val / sur) * 20);
 
         return Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.screenSurface,
             borderRadius: BorderRadius.circular(12),
@@ -1003,9 +1082,13 @@ void initState() {
       decoration: BoxDecoration(
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
-        ],
+        // boxShadow: const [
+        //   BoxShadow(
+        //     color: AppColors.screenShadow,
+        //     blurRadius: 12,
+        //     offset: Offset(0, 4),
+        //   ),
+        // ],
       ),
       child: Column(
         children: [
@@ -1016,8 +1099,11 @@ void initState() {
               color: AppColors.screenOrangeLight,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.assignment_outlined,
-                size: 40, color: AppColors.screenOrange),
+            child: const Icon(
+              Icons.assignment_outlined,
+              size: 40,
+              color: AppColors.screenOrange,
+            ),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -1032,7 +1118,10 @@ void initState() {
           const Text(
             'Modifiez les filtres pour afficher des résultats',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
           ),
         ],
       ),
@@ -1078,10 +1167,7 @@ void initState() {
                   letterSpacing: 0.2,
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 8),
-                trailing,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 8), trailing],
             ],
           ),
         ),

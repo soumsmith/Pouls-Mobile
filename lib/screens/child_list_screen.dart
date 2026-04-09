@@ -28,6 +28,7 @@ import '../services/school_service.dart';
 import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
+import '../widgets/bottom_fade_gradient.dart';
 import '../services/notes_api_service.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
@@ -38,6 +39,7 @@ import '../models/student_scolarite.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/snackbar.dart';
 import '../models/parent_suggestion.dart';
 import '../services/parent_suggestion_service.dart';
 import '../services/access_log_service.dart';
@@ -791,26 +793,34 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
-      body: CustomScrollView(
-        slivers: [
-          _buildModernSliverAppBar(),
-          SliverToBoxAdapter(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                children: [
-                  _buildModernProfileHeader(),
-                  // const SizedBox(height: 20),
-                  // _buildEleveDetailSection(),
-                  const SizedBox(height: 16),
-                  _buildModernSummaryCards(),
-                  const SizedBox(height: 16),
-                  _buildPaymentBannerCard(),
-                  const SizedBox(height: 24),
-                  const SizedBox(height: 150),
-                ],
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              _buildModernSliverAppBar(),
+              SliverToBoxAdapter(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    children: [
+                      _buildModernProfileHeader(),
+                      // const SizedBox(height: 20),
+                      // _buildEleveDetailSection(),
+                      const SizedBox(height: 16),
+                      _buildModernSummaryCards(),
+                      const SizedBox(height: 16),
+                      _buildPaymentBannerCard(),
+                      const SizedBox(height: 24),
+                      const SizedBox(height: 150),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
+          ),
+          // Gradient fade at bottom
+          BottomFadeGradient(
+            endColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
           ),
         ],
       ),
@@ -7184,7 +7194,20 @@ class _ChildListScreenState extends State<ChildListScreen>
         print('📊 Mise à jour de l\'UI terminée');
       }
     } catch (e) {
-      print('❌ Erreur lors du chargement des messages: $e');
+      print('??? Erreur lors du chargement des messages: $e');
+      
+      // Vérifier si l'erreur est un 404 (élève non trouvé)
+      if (e.toString().contains('404') || e.toString().contains('Élève non trouvé')) {
+        // Afficher une notification snackbar pour l'erreur 404
+        CartSnackBar.show(
+          context,
+          productName: 'Élève non trouvé',
+          message: 'Vérifiez le matricule de l\'élève',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        );
+      }
+      
       if (mounted) {
         setState(() {
           _isLoadingMessages = false;

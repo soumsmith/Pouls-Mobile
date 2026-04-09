@@ -6,6 +6,7 @@ import '../services/text_size_service.dart';
 import '../services/auth_service.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart' as text_service;
+import '../widgets/snackbar.dart';
 
 /// Écran de messagerie spécifique à un élève
 class StudentMessagesScreen extends StatefulWidget {
@@ -97,7 +98,20 @@ class _StudentMessagesScreenState extends State<StudentMessagesScreen>
       
       print('✅ Messages chargés: ${messages.length}');
     } catch (e) {
-      print('❌ Erreur lors du chargement des messages: $e');
+      print('??? Erreur lors du chargement des messages: $e');
+      
+      // Vérifier si l'erreur est un 404 (élève non trouvé)
+      if (e.toString().contains('404') || e.toString().contains('Élève non trouvé')) {
+        // Afficher une notification snackbar pour l'erreur 404
+        CartSnackBar.show(
+          context,
+          productName: 'Élève non trouvé',
+          message: 'Vérifiez le matricule de l\'élève',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        );
+      }
+      
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;

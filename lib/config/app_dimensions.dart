@@ -779,7 +779,21 @@ class AppDimensions {
     }
   }
 
-  // ── DIMENSIONS POUR LES OMBRES ────────────────────────────────────────────────
+  // ── CONFIGURATION GLOBALE POUR LES APP BARS ────────────────────────────────
+
+  /// Configuration globale pour le centrage du titre dans les AppBars
+  /// Changez cette valeur pour affecter toutes les AppBars du projet
+  static bool getGlobalAppBarCenterTitle() => false;
+
+  /// Permet de vérifier si le centrage du titre doit être appliqué globalement
+  static bool shouldCenterAppBarTitle({bool? overrideValue}) {
+    // Si une valeur de remplacement est fournie, l'utiliser
+    if (overrideValue != null) return overrideValue;
+    // Sinon, utiliser la configuration globale
+    return getGlobalAppBarCenterTitle();
+  }
+
+// ── DIMENSIONS POUR LES OMBRES ────────────────────────────────────────────────
 
   /// Valeur de l'alpha pour les ombres principales (cartes importantes)
   static double getMainShadowAlpha(BuildContext context) {

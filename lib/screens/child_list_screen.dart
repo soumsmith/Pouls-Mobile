@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
 import 'package:parents_responsable/widgets/image_menu_card.dart';
+import '../widgets/image_menu_card_external_title.dart';
+import '../widgets/school_life_item_card.dart';
 import '../widgets/custom_loader.dart';
 import '../models/child.dart';
 import '../models/note.dart';
@@ -374,9 +376,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Détails complets de l'élève
   Map<String, dynamic>? _eleveDetail;
 
-  // État pour l'affichage des informations détaillées
-  bool _showEleveDetails = false;
-
+  
   @override
   void initState() {
     super.initState();
@@ -806,9 +806,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       _buildModernProfileHeader(),
                       // const SizedBox(height: 20),
                       // _buildEleveDetailSection(),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       _buildModernSummaryCards(),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       _buildPaymentBannerCard(),
                       const SizedBox(height: 24),
                       const SizedBox(height: 150),
@@ -1613,7 +1613,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     return CustomSliverAppBar(
       title: widget.child.fullName,
       isDark: isDarkMode,
-      expandedHeight: 80,
+      expandedHeight: 70,
       actions: [_buildNotificationButton(), _buildMoreButton()],
       titleTextStyle: TextStyle(
         fontSize: _textSizeService.getScaledFontSize(16),
@@ -1693,7 +1693,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildMoreButton() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
-
     return Container(
       margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
       decoration: BoxDecoration(
@@ -1718,7 +1717,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildModernProfileHeader() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.getMainContainerPadding(context),
         vertical: 16,
@@ -1728,13 +1727,13 @@ class _ChildListScreenState extends State<ChildListScreen>
         borderRadius: BorderRadius.circular(
           AppDimensions.getMainContainerBorderRadius(context),
         ),
-        boxShadow: [
+        /*boxShadow: [
           BoxShadow(
             color: AppColors.screenOrange.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
-        ],
+        ],*/
       ),
       child: Column(
         children: [
@@ -1841,6 +1840,32 @@ class _ChildListScreenState extends State<ChildListScreen>
                               maxLines: 1,
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _showFamilyBottomSheet(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Text(
+                                'Voir +',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -1850,442 +1875,13 @@ class _ChildListScreenState extends State<ChildListScreen>
             ],
           ),
 
-          // Section des informations détaillées de l'élève
-          if (_showEleveDetails && _eleveDetail != null) ...[
-            const SizedBox(height: 20),
-            Container(
-              padding: EdgeInsets.all(
-                AppDimensions.getProfileDetailsPadding(context),
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(
-                  AppDimensions.getProfileDetailsBorderRadius(context),
-                ),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Titre Informations personnelles
-                  _buildSectionTitle('Informations personnelles'),
-                  SizedBox(
-                    height: AppDimensions.getProfileDetailsSpacing(context),
-                  ),
-
-                  // Layout responsive pour les informations personnelles
-                  if (AppDimensions.isMobile(context)) ...[
-                    // Mobile : une seule colonne
-                    _buildProfileDetailItem(
-                      icon: Icons.badge,
-                      label: 'Matricule',
-                      value: _eleveDetail!['matricule']?.toString() ?? 'N/A',
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    _buildProfileDetailItem(
-                      icon: Icons.cake,
-                      label: 'Né(e)',
-                      value: _formatDate(
-                        _eleveDetail!['datenaissance']?.toString() ?? 'N/A',
-                      ),
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    _buildProfileDetailItem(
-                      icon: Icons.wc,
-                      label: 'Sexe',
-                      value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    _buildProfileDetailItem(
-                      icon: Icons.location_on,
-                      label: 'Lieu',
-                      value: _eleveDetail!['lieun']?.toString() ?? 'N/A',
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    _buildProfileDetailItem(
-                      icon: Icons.phone,
-                      label: 'Mobile',
-                      value: _eleveDetail!['mobile']?.toString() ?? 'N/A',
-                      isClickable: true,
-                      onTap: () => _makePhoneCall(
-                        _eleveDetail!['mobile']?.toString() ?? '',
-                      ),
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    _buildProfileDetailItem(
-                      icon: Icons.flag,
-                      label: 'Nationalité',
-                      value: _eleveDetail!['nationalite']?.toString() ?? 'N/A',
-                    ),
-                  ] else ...[
-                    // Tablettes : deux colonnes
-                    Row(
-                      children: [
-                        _buildProfileDetailItem(
-                          icon: Icons.badge,
-                          label: 'Matricule',
-                          value:
-                              _eleveDetail!['matricule']?.toString() ?? 'N/A',
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getProfileDetailsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildProfileDetailItem(
-                          icon: Icons.cake,
-                          label: 'Né(e)',
-                          value: _formatDate(
-                            _eleveDetail!['datenaissance']?.toString() ?? 'N/A',
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    Row(
-                      children: [
-                        _buildProfileDetailItem(
-                          icon: Icons.wc,
-                          label: 'Sexe',
-                          value: _eleveDetail!['sexe']?.toString() ?? 'N/A',
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getProfileDetailsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildProfileDetailItem(
-                          icon: Icons.location_on,
-                          label: 'Lieu',
-                          value: _eleveDetail!['lieun']?.toString() ?? 'N/A',
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    Row(
-                      children: [
-                        _buildProfileDetailItem(
-                          icon: Icons.phone,
-                          label: 'Mobile',
-                          value: _eleveDetail!['mobile']?.toString() ?? 'N/A',
-                          isClickable: true,
-                          onTap: () => _makePhoneCall(
-                            _eleveDetail!['mobile']?.toString() ?? '',
-                          ),
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getProfileDetailsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildProfileDetailItem(
-                          icon: Icons.flag,
-                          label: 'Nationalité',
-                          value:
-                              _eleveDetail!['nationalite']?.toString() ?? 'N/A',
-                        ),
-                      ],
-                    ),
-                  ],
-
-                  SizedBox(
-                    height:
-                        AppDimensions.getProfileDetailsSpacing(context) * 1.5,
-                  ),
-
-                  // Titre Informations scolaires
-                  _buildSectionTitle('Informations scolaires'),
-                  SizedBox(
-                    height: AppDimensions.getProfileDetailsSpacing(context),
-                  ),
-
-                  // Layout responsive pour les informations scolaires
-                  if (AppDimensions.isMobile(context)) ...[
-                    // Mobile : une seule colonne
-                    _buildProfileDetailItem(
-                      icon: Icons.grade,
-                      label: 'Niveau',
-                      value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    _buildProfileDetailItem(
-                      icon: Icons.category,
-                      label: 'Filière',
-                      value: _eleveDetail!['filiere']?.toString() ?? 'N/A',
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    // _buildProfileDetailItem(
-                    //   icon: Icons.book,
-                    //   label: 'Branche',
-                    //   value: _eleveDetail!['branche']?.toString() ?? 'N/A',
-                    // ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    _buildProfileDetailItem(
-                      icon: Icons.auto_stories,
-                      label: 'Série',
-                      value: _eleveDetail!['serie']?.toString() ?? 'N/A',
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    Row(
-                      children: [
-                        _buildProfileDetailItem(
-                          icon: Icons.refresh,
-                          label: 'Redoublant',
-                          value:
-                              _eleveDetail!['redoublant']?.toString() ?? 'N/A',
-                          valueColor:
-                              _eleveDetail!['redoublant']
-                                      ?.toString()
-                                      .toLowerCase() ==
-                                  'oui'
-                              ? Colors.orange
-                              : Colors.green,
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getProfileDetailsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildProfileDetailItem(
-                          icon: Icons.family_restroom,
-                          label: 'Famille',
-                          value: 'Voir détails',
-                          isClickable: true,
-                          onTap: () => _showFamilyBottomSheet(),
-                        ),
-                      ],
-                    ),
-                  ] else ...[
-                    // Tablettes : deux colonnes
-                    Row(
-                      children: [
-                        _buildProfileDetailItem(
-                          icon: Icons.grade,
-                          label: 'Niveau',
-                          value: _eleveDetail!['niveau']?.toString() ?? 'N/A',
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getProfileDetailsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildProfileDetailItem(
-                          icon: Icons.category,
-                          label: 'Filière',
-                          value: _eleveDetail!['filiere']?.toString() ?? 'N/A',
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    Row(
-                      children: [
-                        _buildProfileDetailItem(
-                          icon: Icons.book,
-                          label: 'Branche',
-                          value: _eleveDetail!['branche']?.toString() ?? 'N/A',
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getProfileDetailsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildProfileDetailItem(
-                          icon: Icons.auto_stories,
-                          label: 'Série',
-                          value: _eleveDetail!['serie']?.toString() ?? 'N/A',
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: AppDimensions.getProfileDetailsSpacing(context),
-                    ),
-                    Row(
-                      children: [
-                        _buildProfileDetailItem(
-                          icon: Icons.refresh,
-                          label: 'Redoublant',
-                          value:
-                              _eleveDetail!['redoublant']?.toString() ?? 'N/A',
-                          valueColor:
-                              _eleveDetail!['redoublant']
-                                      ?.toString()
-                                      .toLowerCase() ==
-                                  'oui'
-                              ? Colors.orange
-                              : Colors.green,
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getProfileDetailsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildProfileDetailItem(
-                          icon: Icons.family_restroom,
-                          label: 'Famille',
-                          value: 'Voir détails',
-                          isClickable: true,
-                          onTap: () => _showFamilyBottomSheet(),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 20),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildEleveDetailsButton(),
-                SizedBox(width: AppDimensions.getDetailsButtonSpacing(context)),
-                _buildFamilyDetailsButton(),
-              ],
-            ),
-          ),
+          
         ],
       ),
     );
   }
 
-  Widget _buildFamilyDetailsButton() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: () => _showFamilyBottomSheet(),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(
-              context,
-            ),
-            vertical: AppDimensions.getDetailsButtonPaddingVertical(context),
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getDetailsButtonBorderRadius(context),
-            ),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon(
-              //   Icons.family_restroom,
-              //   size: AppDimensions.getActionButtonSize(context) * 0.45,
-              //   color: Colors.white.withOpacity(0.9),
-              // ),
-              // SizedBox(width: AppDimensions.getDetailsButtonSpacing(context) * 0.66),
-              Text(
-                'Infos Familles',
-                style: TextStyle(
-                  fontSize: AppDimensions.getDetailsButtonFontSize(context),
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(
-                width: AppDimensions.getDetailsButtonSpacing(context) * 0.66,
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: AppDimensions.getActionButtonSize(context) * 0.35,
-                color: Colors.white.withOpacity(0.7),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEleveDetailsButton() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _showEleveDetails = !_showEleveDetails;
-          });
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.getDetailsButtonPaddingHorizontal(
-              context,
-            ),
-            vertical: AppDimensions.getDetailsButtonPaddingVertical(context),
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getDetailsButtonBorderRadius(context),
-            ),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _showEleveDetails ? Icons.info : Icons.info_outline,
-                size: AppDimensions.getActionButtonSize(context) * 0.45,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              SizedBox(
-                width: AppDimensions.getDetailsButtonSpacing(context) * 0.66,
-              ),
-              Text(
-                _showEleveDetails ? 'Moins d\'infos' : 'Plus d\'infos',
-                style: TextStyle(
-                  fontSize: AppDimensions.getDetailsButtonFontSize(context),
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(
-                width: AppDimensions.getDetailsButtonSpacing(context) * 0.66,
-              ),
-              Icon(
-                _showEleveDetails
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
-                size: AppDimensions.getActionButtonSize(context) * 0.35,
-                color: Colors.white.withOpacity(0.7),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
+  
   Widget _buildProfileDetailItem({
     required IconData icon,
     required String label,
@@ -2456,7 +2052,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        Icons.family_restroom,
+                        Icons.info_outline,
                         color: Colors.blue,
                         size: 22,
                       ),
@@ -2464,7 +2060,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
-                        'Informations familiales',
+                        'Informations complètes',
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(18),
                           fontWeight: FontWeight.w700,
@@ -2497,12 +2093,81 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
               ),
 
-              // Contenu familial
+              // Contenu complet
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
+                      // Informations personnelles
+                      _buildFamilySection(
+                        title: 'Informations personnelles',
+                        icon: Icons.person,
+                        iconColor: Colors.blue,
+                        children: [
+                          _buildFamilyItem(
+                            icon: Icons.badge,
+                            label: 'Matricule',
+                            value: eleve['matricule']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.cake,
+                            label: 'Né(e)',
+                            value: _formatDate(
+                              eleve['datenaissance']?.toString() ?? 'N/A',
+                            ),
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.wc,
+                            label: 'Sexe',
+                            value: eleve['sexe']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.location_on,
+                            label: 'Lieu',
+                            value: eleve['lieun']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.flag,
+                            label: 'Nationalité',
+                            value: eleve['nationalite']?.toString() ?? 'N/A',
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Informations scolaires
+                      _buildFamilySection(
+                        title: 'Informations scolaires',
+                        icon: Icons.school,
+                        iconColor: Colors.orange,
+                        children: [
+                          _buildFamilyItem(
+                            icon: Icons.grade,
+                            label: 'Niveau',
+                            value: eleve['niveau']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.category,
+                            label: 'Filière',
+                            value: eleve['filiere']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.auto_stories,
+                            label: 'Série',
+                            value: eleve['serie']?.toString() ?? 'N/A',
+                          ),
+                          _buildFamilyItem(
+                            icon: Icons.refresh,
+                            label: 'Redoublant',
+                            value: eleve['redoublant']?.toString() ?? 'N/A',
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
                       // Contact
                       _buildFamilySection(
                         title: 'Contact',
@@ -2704,19 +2369,32 @@ class _ChildListScreenState extends State<ChildListScreen>
     // await launchUrl(launchUri);
   }
 
-  // ─── Helper : En-tête de section (barre colorée + titre) ──────────────────
-  Widget _buildSectionHeader(String title, Color accentColor) {
+  // ─── Helper : En-tête de section (barre colorée + titre) 
+  Widget _buildSectionHeader(
+    String title,
+    Color accentColor, {
+    EdgeInsets? padding,
+    bool showLeftIndicator = true,
+    bool showBottomDivider = false,
+    Color? dividerColor,
+    double? dividerHeight,
+  }) {
     return SectionHeaderWidget(
       title: title,
       isDark: _themeService.isDarkMode,
       accentColor: accentColor,
+      padding: padding, // on passe le padding custom
+      showLeftIndicator: showLeftIndicator,
+      showBottomDivider: showBottomDivider,
+      dividerColor: dividerColor,
+      dividerHeight: dividerHeight,
     );
   }
 
   // ─── Helper : Rangée horizontale scrollable de ImageMenuCard ──────────────
   Widget _buildHorizontalCards(List<Widget> cards) {
     return SizedBox(
-      height: 140,
+      height: 120,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(left: 16, right: 4),
@@ -2735,14 +2413,20 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 1 : Paiements & Inscription
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Paiements & Inscription', const Color(0xFF10B981)),
+        _buildSectionHeader('Paiements & Inscription', const Color(0xFF10B981), padding: const EdgeInsets.fromLTRB(16,0,16,8), showLeftIndicator: false, showBottomDivider: true),
+        const SizedBox(height: 16),
         _buildHorizontalCards([
-          ImageMenuCard(
+          ImageMenuCardExternalTitle(
             index: 0,
             cardKey: 'paiement',
-            title: 'Paiement en ligne',
+            title: 'Payé en ligne',
+            width: 100,
+            height: 100,
+            imageFlex:2,
             iconData: Icons.payments_rounded,
             isDark: isDark,
+            titleFontSize: 14,
+            imageBorderRadius: 14,
             color: const Color(0xFF10B981),
             backgroundColor: isDark
                 ? const Color(0xFF0D2E20)
@@ -2754,22 +2438,29 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFF10B981),
             onTap: _showPaiementBottomSheet,
           ),
-          ImageMenuCard(
-            index: 1,
+          const SizedBox(width: 10),
+
+          ImageMenuCardExternalTitle(
+            index: 0,
             cardKey: 'inscription',
-            title: 'Inscription',
+            title: 'Inscription en ligne',
+            width: 100,
+            height: 100,
+            imageFlex:2,
+            //iconData: Icons.payments_rounded,
             isDark: isDark,
-            width: 200,
             imagePath: 'assets/images/inscription.png',
-            color: const Color(0xFF3B82F6),
+            titleFontSize: 14,
+            imageBorderRadius: 14,
+            color: const Color(0xFF10B981),
             backgroundColor: isDark
-                ? const Color(0xFF0D1B35)
-                : const Color(0xFFEFF6FF),
+                ? const Color(0xFF0D2E20)
+                : const Color(0xFFECFDF5),
             textColor: isDark
-                ? const Color(0xFF93C5FD)
-                : const Color(0xFF1E40AF),
-            actionText: 'Gérer',
-            actionTextColor: const Color(0xFF3B82F6),
+                ? const Color(0xFF6EE7B7)
+                : const Color(0xFF065F46),
+            actionText: 'Commencer',
+            actionTextColor: const Color(0xFF10B981),
             onTap: () {
               print('🎯 Navigation vers InscriptionWizardScreen');
               print('👤 Élève: ${widget.child.fullName}');
@@ -2797,22 +2488,27 @@ class _ChildListScreenState extends State<ChildListScreen>
               );
             },
           ),
-          ImageMenuCard(
-            index: 2,
+          const SizedBox(width: 10),
+          ImageMenuCardExternalTitle(
+            index: 0,
             cardKey: 'scolarite',
             title: 'Scolarité',
-            iconData: Icons.account_balance_wallet_rounded,
+            width: 100,
+            height: 100,
+            imageFlex:2,
+            iconData: Icons.payments_rounded,
             isDark: isDark,
-            //imagePath: 'assets/images/intro_background.jpg',
-            color: const Color(0xFFF59E0B),
+            titleFontSize: 14,
+            imageBorderRadius: 14,
+            color: const Color(0xFF10B981),
             backgroundColor: isDark
-                ? const Color(0xFF2D1E00)
-                : const Color(0xFFFFFBEB),
+                ? const Color(0xFF0D2E20)
+                : const Color(0xFFECFDF5),
             textColor: isDark
-                ? const Color(0xFFFCD34D)
-                : const Color(0xFF92400E),
-            actionText: 'Voir échéances',
-            actionTextColor: const Color(0xFFF59E0B),
+                ? const Color(0xFF6EE7B7)
+                : const Color(0xFF065F46),
+            actionText: 'Consulter',
+            actionTextColor: const Color(0xFF10B981),
             onTap: () async {
               if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
                 await _loadScolariteData();
@@ -2825,21 +2521,28 @@ class _ChildListScreenState extends State<ChildListScreen>
               }
             },
           ),
-          ImageMenuCard(
-            index: 3,
+          const SizedBox(width: 10),
+
+          ImageMenuCardExternalTitle(
+            index: 0,
             cardKey: 'integration_requests',
             title: 'Demandes d\'intégration',
-            iconData: Icons.school_rounded,
+            width: 100,
+            height: 100,
+            imageFlex:2,
+            iconData: Icons.payments_rounded,
             isDark: isDark,
-            color: const Color(0xFF1565C0),
+            titleFontSize: 14,
+            imageBorderRadius: 14,
+            color: const Color(0xFF10B981),
             backgroundColor: isDark
-                ? const Color(0xFF0A2540)
-                : const Color(0xFFE3F2FD),
+                ? const Color(0xFF0D2E20)
+                : const Color(0xFFECFDF5),
             textColor: isDark
-                ? const Color(0xFF64B5F6)
-                : const Color(0xFF0D47A1),
+                ? const Color(0xFF6EE7B7)
+                : const Color(0xFF065F46),
             actionText: 'Consulter',
-            actionTextColor: const Color(0xFF1565C0),
+            actionTextColor: const Color(0xFF10B981),
             onTap: () => IntegrationRequestBottomSheet.show(
               context,
               matricule: widget.child.matricule,
@@ -2848,12 +2551,10 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         ]),
 
-        const SizedBox(height: 24),
-
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Suivi scolaire', const Color(0xFF1976D2)),
+        _buildSectionHeader('Suivi scolaire', const Color(0xFF1976D2), padding: const EdgeInsets.all(16)),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2862,6 +2563,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             imagePath: 'assets/images/notes.jpg',
             iconData: Icons.bar_chart_rounded,
             isDark: isDark,
+            height: 100,
             color: const Color(0xFF1976D2),
             backgroundColor: isDark
                 ? const Color(0xFF0D1A2E)
@@ -2893,26 +2595,6 @@ class _ChildListScreenState extends State<ChildListScreen>
               }
             },
           ),
-          // ImageMenuCard(
-          //   index: 1,
-          //   cardKey: 'bulletins',
-          //   title: 'Bulletins',
-          //   iconData: Icons.description_rounded,
-          //   isDark: isDark,
-          //   color: const Color(0xFF2E7D32),
-          //   backgroundColor: isDark
-          //       ? const Color(0xFF0D2010)
-          //       : const Color(0xFFE8F5E9),
-          //   textColor: isDark
-          //       ? const Color(0xFFA5D6A7)
-          //       : const Color(0xFF1B5E20),
-          //   actionText: 'Voir bulletins',
-          //   actionTextColor: const Color(0xFF2E7D32),
-          //   onTap: () => _showStudentMenuBottomSheet(
-          //     'bulletins',
-          //     _getStudentMenuCardItem('bulletins'),
-          //   ),
-          // ),
           ImageMenuCard(
             index: 2,
             cardKey: 'timetable',
@@ -2984,108 +2666,126 @@ class _ChildListScreenState extends State<ChildListScreen>
           // ),
         ]),
 
-        const SizedBox(height: 24),
-
         // ════════════════════════════════════════════════════════════════
         // SECTION 3 : Vie scolaire
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Vie scolaire', const Color(0xFF00796B)),
-        _buildHorizontalCards([
-          // ImageMenuCard(
-          //   index: 0,
-          //   cardKey: 'attendance',
-          //   title: 'Présence & Conduite',
-          //   iconData: Icons.person_off_rounded,
-          //   isDark: isDark,
-          //   color: const Color(0xFF00796B),
-          //   backgroundColor: isDark
-          //       ? const Color(0xFF00201A)
-          //       : const Color(0xFFE0F2F1),
-          //   textColor: isDark
-          //       ? const Color(0xFF80CBC4)
-          //       : const Color(0xFF004D40),
-          //   actionText: 'Voir présence',
-          //   actionTextColor: const Color(0xFF00796B),
-          //   onTap: () => _showStudentMenuBottomSheet(
-          //     'attendance',
-          //     _getStudentMenuCardItem('attendance'),
-          //   ),
-          // ),
-          ImageMenuCard(
-            index: 1,
-            cardKey: 'accessControl',
-            title: 'Contrôle accès',
-            iconData: Icons.fingerprint_rounded,
-            isDark: isDark,
-            color: const Color(0xFFC2185B),
-            backgroundColor: isDark
-                ? const Color(0xFF2E0618)
-                : const Color(0xFFFCE4EC),
-            textColor: isDark
-                ? const Color(0xFFF48FB1)
-                : const Color(0xFF880E4F),
-            actionText: 'Voir accès',
-            actionTextColor: const Color(0xFFC2185B),
-            onTap: () async {
-              if (_accessEntries.isEmpty && !_isLoadingAccessControl) {
-                await _loadAccessControlData();
-              }
-              if (mounted) {
-                _showStudentMenuBottomSheet(
-                  'accessControl',
-                  _getStudentMenuCardItem('accessControl'),
+        _buildSectionHeader(
+          'Vie scolaire',
+          const Color(0xFF00796B),
+          padding: const EdgeInsets.all(16),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = constraints.maxWidth;
+              final crossAxisCount = screenWidth > 600 ? 2 : 1;
+
+              final schoolLifeItems = [
+                {
+                  'title': 'Présence & Conduite',
+                  'subtitle': 'Suivi des absences et retards',
+                  'imagePath': 'assets/images/messages.jpg',
+                  'iconData': null,
+                  'color': const Color(0xFF00796B),
+                  'buttonText': 'Voir présence',
+                  'key': 'attendance',
+                },
+                {
+                  'title': 'Contrôle accès',
+                  'subtitle': 'Historique des pointages',
+                  'imagePath': null,
+                  'iconData': Icons.fingerprint_rounded,
+                  'color': const Color(0xFFC2185B),
+                  'buttonText': 'Voir accès',
+                  'key': 'accessControl',
+                },
+                {
+                  'title': 'Sanctions',
+                  'subtitle': 'Rapports de comportement',
+                  'imagePath': null,
+                  'iconData': Icons.warning_rounded,
+                  'color': const Color(0xFFD32F2F),
+                  'buttonText': 'Voir sanctions',
+                  'key': 'sanctions',
+                },
+                {
+                  'title': 'Événements',
+                  'subtitle': 'Activités et sorties scolaires',
+                  'imagePath': null,
+                  'iconData': Icons.event_rounded,
+                  'color': const Color(0xFF3F51B5),
+                  'buttonText': 'Voir events',
+                  'key': 'events',
+                },
+              ];
+
+              Widget buildCard(Map<String, Object?> item) {
+                return SchoolLifeItemCard(
+                  title: item['title'] as String,
+                  subtitle: item['subtitle'] as String,
+                  imagePath: item['imagePath'] as String?,
+                  iconData: item['iconData'] as IconData?,
+                  isDark: isDark,
+                  color: item['color'] as Color,
+                  buttonText: item['buttonText'] as String,
+                  onTap: () {
+                    if (item['key'] == 'accessControl') {
+                      return () async {
+                        if (_accessEntries.isEmpty &&
+                            !_isLoadingAccessControl) {
+                          await _loadAccessControlData();
+                        }
+                        if (mounted) {
+                          _showStudentMenuBottomSheet(
+                            'accessControl',
+                            _getStudentMenuCardItem('accessControl'),
+                          );
+                        }
+                      };
+                    } else {
+                      return () => _showStudentMenuBottomSheet(
+                        item['key'] as String,
+                        _getStudentMenuCardItem(item['key'] as String),
+                      );
+                    }
+                  }(),
                 );
               }
+
+              // Mobile : Column pour éviter l'espace inutile du GridView
+              if (crossAxisCount == 1) {
+                return Column(
+                  children: schoolLifeItems
+                      .map((item) => buildCard(item))
+                      .toList(),
+                );
+              }
+
+              // Tablette/Desktop : GridView 2 colonnes
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 50,
+                  mainAxisSpacing: 0,
+                  childAspectRatio: 6,
+                ),
+                itemCount: schoolLifeItems.length,
+                itemBuilder: (context, index) =>
+                    buildCard(schoolLifeItems[index]),
+              );
             },
           ),
-          ImageMenuCard(
-            index: 2,
-            cardKey: 'sanctions',
-            title: 'Sanctions',
-            iconData: Icons.warning_rounded,
-            isDark: isDark,
-            color: const Color(0xFFD32F2F),
-            backgroundColor: isDark
-                ? const Color(0xFF2E0000)
-                : const Color(0xFFFFEBEE),
-            textColor: isDark
-                ? const Color(0xFFEF9A9A)
-                : const Color(0xFFB71C1C),
-            actionText: 'Voir sanctions',
-            actionTextColor: const Color(0xFFD32F2F),
-            onTap: () => _showStudentMenuBottomSheet(
-              'sanctions',
-              _getStudentMenuCardItem('sanctions'),
-            ),
-          ),
-          ImageMenuCard(
-            index: 3,
-            cardKey: 'school_events',
-            title: 'Événements',
-            iconData: Icons.event_rounded,
-            isDark: isDark,
-            color: const Color(0xFF3F51B5),
-            backgroundColor: isDark
-                ? const Color(0xFF0D1024)
-                : const Color(0xFFE8EAF6),
-            textColor: isDark
-                ? const Color(0xFF9FA8DA)
-                : const Color(0xFF283593),
-            actionText: 'Voir events',
-            actionTextColor: const Color(0xFF3F51B5),
-            onTap: () => _showStudentMenuBottomSheet(
-              'events',
-              _getStudentMenuCardItem('events'),
-            ),
-          ),
-        ]),
+        ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 0),
 
         // ════════════════════════════════════════════════════════════════
         // SECTION 4 : Communications
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Communications', const Color(0xFF0288D1)),
+        _buildSectionHeader('Communications', const Color(0xFF0288D1), padding: const EdgeInsets.all(16),),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -3347,30 +3047,32 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Paiement en ligne',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.screenTextPrimary,
-                                        letterSpacing: -0.4,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Paiement en ligne',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.screenTextPrimary,
+                                          letterSpacing: -0.4,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: false,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: false,
-                                    ),
-                                    Text(
-                                      'Entrez le montant à payer pour ${widget.child.firstName}',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: AppColors.screenTextSecondary,
+                                      Text(
+                                        'Entrez le montant à payer pour ${widget.child.firstName}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.screenTextSecondary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: false,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: false,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                                 const Spacer(),
                                 IconButton(
@@ -3881,116 +3583,113 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildModernSummaryCards() {
+    // Vérifier si toutes les données nécessaires sont chargées
+    bool allDataLoaded = !_isLoading && !_isLoadingNotes && _eleveDetail != null;
+    
+    if (!allDataLoaded) {
+      // Afficher un CustomLoader pendant le chargement avec hauteur réduite
+      return const SizedBox(
+        height: 50,
+        child: Center(
+          child: CustomLoader(
+            message: '',
+            loaderColor: AppColors.screenOrange,
+            size: 18,
+            showBackground: false,
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.screenOrangeLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.analytics_outlined,
-                  color: AppColors.screenOrange,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Statistiques',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
         SizedBox(
           height: 120,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              children: [
-                _buildModernSummaryCard(
-                  'Moyenne',
-                  _moyGeneral != null
-                      ? '${_moyGeneral!.toStringAsFixed(2)}'
-                      : '--',
-                  Colors.green,
-                  Icons.trending_up,
-                  isLoading: _isLoadingNotes,
-                ),
-                const SizedBox(width: 12),
-                _buildModernSummaryCard(
-                  'Rang',
-                  _globalAverage != null && _globalAverage!.trimesterRank > 0
-                      ? '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}'
-                      : '--',
-                  Colors.blue,
-                  Icons.emoji_events,
-                  isLoading: _isLoadingNotes,
-                ),
-                const SizedBox(width: 12),
-                _buildModernSummaryCard(
-                  'Présence',
-                  _eleveDetail != null && _eleveDetail!['pt_in_jour'] != null
-                      ? _eleveDetail!['pt_in_jour'] == 1
-                            ? 'Présent'
-                            : 'Absent'
-                      : '--',
-                  _eleveDetail != null && _eleveDetail!['pt_in_jour'] == 1
-                      ? AppColors.success
-                      : AppColors.error,
-                  Icons.check_circle,
-                ),
-                const SizedBox(width: 12),
-                _buildModernSummaryCard(
-                  'Appréciation',
-                  _appreciation ?? '--',
-                  AppColors.secondary,
-                  Icons.star,
-                  isLoading: _isLoadingNotes,
-                ),
-                const SizedBox(width: 12),
-                _buildModernSummaryCard(
-                  'Scolarité',
-                  _eleveDetail != null && _eleveDetail!['msolde'] != null
-                      ? '${(_eleveDetail!['msolde'] as int).toString()}F'
-                      : '--',
-                  _eleveDetail != null &&
-                          _eleveDetail!['msolde'] != null &&
-                          (_eleveDetail!['msolde'] as int) > 0
-                      ? Colors.orange
-                      : AppColors.success,
-                  Icons.account_balance_wallet,
-                ),
-                const SizedBox(width: 12),
-                _buildModernSummaryCard(
-                  'Redoublant',
-                  _eleveDetail != null
-                      ? _eleveDetail!['redoublant']?.toString() ?? 'Non'
-                      : '--',
-                  _eleveDetail != null && _eleveDetail!['redoublant'] == 'OUI'
-                      ? Colors.red
-                      : AppColors.success,
-                  Icons.refresh,
-                ),
-              ],
+              children: _buildAvailableSummaryCards(),
             ),
           ),
         ),
       ],
     );
+  }
+
+  List<Widget> _buildAvailableSummaryCards() {
+    List<Widget> cards = [];
+
+    // Carte Moyenne
+    if (_moyGeneral != null) {
+      cards.add(_buildModernSummaryCard(
+        'Moyenne',
+        '${_moyGeneral!.toStringAsFixed(2)}',
+        Colors.green,
+        Icons.trending_up,
+        isLoading: _isLoadingNotes,
+      ));
+    }
+
+    // Carte Rang
+    if (_globalAverage != null && _globalAverage!.trimesterRank > 0) {
+      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      cards.add(_buildModernSummaryCard(
+        'Rang',
+        '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}',
+        Colors.blue,
+        Icons.emoji_events,
+        isLoading: _isLoadingNotes,
+      ));
+    }
+
+    // Carte Présence
+    if (_eleveDetail != null && _eleveDetail!['pt_in_jour'] != null) {
+      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      cards.add(_buildModernSummaryCard(
+        'Présence',
+        _eleveDetail!['pt_in_jour'] == 1 ? 'Présent' : 'Absent',
+        _eleveDetail!['pt_in_jour'] == 1 ? AppColors.success : AppColors.error,
+        Icons.check_circle,
+      ));
+    }
+
+    // Carte Appréciation
+    if (_appreciation != null && _appreciation!.isNotEmpty) {
+      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      cards.add(_buildModernSummaryCard(
+        'Appréciation',
+        _appreciation!,
+        AppColors.secondary,
+        Icons.star,
+        isLoading: _isLoadingNotes,
+      ));
+    }
+
+    // Carte Scolarité
+    if (_eleveDetail != null && _eleveDetail!['msolde'] != null) {
+      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      cards.add(_buildModernSummaryCard(
+        'Scolarité',
+        '${(_eleveDetail!['msolde'] as int).toString()}F',
+        (_eleveDetail!['msolde'] as int) > 0 ? Colors.orange : AppColors.success,
+        Icons.account_balance_wallet,
+      ));
+    }
+
+    // Carte Redoublant
+    if (_eleveDetail != null && _eleveDetail!['redoublant'] != null) {
+      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      cards.add(_buildModernSummaryCard(
+        'Redoublant',
+        _eleveDetail!['redoublant']?.toString() ?? 'Non',
+        _eleveDetail!['redoublant'] == 'OUI' ? Colors.red : AppColors.success,
+        Icons.refresh,
+      ));
+    }
+
+    return cards;
   }
 
   Widget _buildModernSummaryCard(
@@ -4014,7 +3713,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
       ),
       child: SizedBox(
-        width: 140,
+        width: 100,
+        height: 95,
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -4035,39 +3735,19 @@ class _ChildListScreenState extends State<ChildListScreen>
               Row(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
-                    padding: const EdgeInsets.all(6),
+                    width: 24,
+                    height: 24,
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Icon(icon, color: color, size: 18),
+                    child: Icon(icon, color: color, size: 14),
                   ),
                   const Spacer(),
-                  if (isLoading)
-                    SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CustomLoader(
-                        message: '',
-                        loaderColor: color,
-                        size: 14,
-                        showBackground: false,
-                      ),
-                    )
-                  else
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               if (isLoading)
                 Container(
                   height: 18,
@@ -4082,7 +3762,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(16),
+                    fontSize: _textSizeService.getScaledFontSize(14),
                     fontWeight: FontWeight.w800,
                     color: color,
                     letterSpacing: -0.8,
@@ -4092,7 +3772,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(11),
+                  fontSize: _textSizeService.getScaledFontSize(9),
                   color: isDarkMode
                       ? Colors.grey[400]
                       : AppColors.screenTextSecondary,
@@ -7195,9 +6875,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
     } catch (e) {
       print('??? Erreur lors du chargement des messages: $e');
-      
+
       // Vérifier si l'erreur est un 404 (élève non trouvé)
-      if (e.toString().contains('404') || e.toString().contains('Élève non trouvé')) {
+      if (e.toString().contains('404') ||
+          e.toString().contains('Élève non trouvé')) {
         // Afficher une notification snackbar pour l'erreur 404
         CartSnackBar.show(
           context,
@@ -7207,7 +6888,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           duration: const Duration(seconds: 3),
         );
       }
-      
+
       if (mounted) {
         setState(() {
           _isLoadingMessages = false;
@@ -7434,7 +7115,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_anneeId == null || _classeId == null) {
-      print(' Informations année/classe non disponibles pour les statistiques de notes');
+      print(
+        ' Informations année/classe non disponibles pour les statistiques de notes',
+      );
       return;
     }
 
@@ -7446,10 +7129,10 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       print(' Chargement des statistiques de notes pour: $matricule');
-      
+
       // Utiliser la période 1 par défaut
       final periode = '1';
-      
+
       final apiData = await _notesApiService.getNotesForStudent(
         matricule: matricule,
         anneeId: _anneeId!.toString(),
@@ -7459,12 +7142,12 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       if (apiData != null) {
         print(' Données de statistiques de notes reçues');
-        
+
         // Extraire les données de la réponse API
         final appreciation = apiData['appreciation'] as String?;
         final moyFr = apiData['moyFr'] as double?;
         final moyGeneral = apiData['moyGeneral'] as double?;
-        
+
         if (mounted) {
           setState(() {
             _appreciation = appreciation;
@@ -7473,7 +7156,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             _isLoadingNotes = false;
           });
         }
-        
+
         print(' Statistiques mises à jour:');
         print('   - Appreciation: $appreciation');
         print('   - Moyenne Français: $moyFr');

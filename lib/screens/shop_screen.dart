@@ -6,12 +6,14 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
 import '../models/product.dart';
+import '../models/category.dart';
 import '../services/library_service.dart';
 import '../services/cart_service.dart';
 import '../services/produit_service.dart';
 import '../services/auth_service.dart';
 import '../services/order_service.dart';
 import '../services/text_size_service.dart';
+import '../services/category_api_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_search_bar.dart';
 import '../widgets/custom_loader.dart';
@@ -70,7 +72,10 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   Timer? _searchTimer;
 
-  final List<String> _filters = ['Tous', 'Papeterie', 'Livres', 'Services'];
+  List<Category> _categories = [];
+  List<String> _filters = ['Tous'];
+  bool _isLoadingCategories = false;
+  String? _categoryError;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -93,6 +98,7 @@ class _LibraryScreenState extends State<LibraryScreen>
       curve: Curves.easeOut,
     );
     _loadProducts();
+    _loadCategories();
     _updateCartItemCount();
     _updateOrdersCount();
   }
@@ -177,6 +183,45 @@ class _LibraryScreenState extends State<LibraryScreen>
     } catch (_) {
       if (mounted) setState(() => _ordersCount = 0);
     }
+  }
+
+  // Charger les catégories depuis l'API
+  Future<void> _loadCategories() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingCategories = true;
+      _categoryError = null;
+    });
+    
+    try {
+      final categories = await CategoryApiService.getCategories();
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _isLoadingCategories = false;
+          _buildFiltersFromCategories();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _categoryError = e.toString();
+          _isLoadingCategories = false;
+        });
+      }
+    }
+  }
+
+  // Construire la liste des filtres à partir des catégories
+  void _buildFiltersFromCategories() {
+    final List<String> categoryNames = _categories
+        .map((category) => category.nom)
+        .toSet() // Éviter les doublons
+        .toList();
+    
+    setState(() {
+      _filters = ['Tous', ...categoryNames];
+    });
   }
 
   Future<void> _loadMoreProducts() async {
@@ -774,7 +819,7 @@ class _LibraryScreenState extends State<LibraryScreen>
           CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 sliver: SliverGrid(
                   // ✅ FIX: childAspectRatio via _getCardAspectRatio() qui inclut
                   // image + texte externe pour éviter tout overflow.
@@ -989,8 +1034,9 @@ class _LibraryScreenState extends State<LibraryScreen>
         isDark: false,
         color: accent,
         tag: product.type,
-        imageFlex: AppDimensions.getProductCardImageFlex(context), // Adaptatif selon taille de l'appareil
-        externalTitleSpacing: 8,
+        height: 120,
+        //imageFlex: AppDimensions.getProductCardImageFlex(context), // Adaptatif selon taille de l'appareil
+        externalTitleSpacing: 4,
         titleMaxLines: 2,
         //buttonText: 'Ajouter',
         buttonColor: AppColors.shopGreen,

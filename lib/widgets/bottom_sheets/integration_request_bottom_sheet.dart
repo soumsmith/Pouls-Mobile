@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../config/app_colors.dart';
+import 'bottom_sheet_header.dart';
 import '../../config/app_config.dart';
 import '../../models/ecole.dart';
 import '../../services/pouls_scolaire_api_service.dart';
@@ -176,75 +177,20 @@ class _IntegrationRequestBottomSheetState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Poignée ─────────────────────────────────────────────────────
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(top: 14, bottom: 4),
-              decoration: BoxDecoration(
-                color: AppColors.screenDivider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
           // ── En-tête du bottom sheet ──────────────────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE3F2FD),
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.school_rounded,
-                    color: Color(0xFF1565C0),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Consultation demande',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(18),
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF0D47A1),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Vérifier le statut d\'intégration scolaire',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(13),
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Color(0xFF0D47A1)),
-                ),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.school_rounded,
+            iconColor: const Color(0xFF1565C0),
+            title: 'Consultation demande',
+            description: 'Vérifier le statut d\'intégration scolaire',
+            onClose: () => Navigator.of(context).pop(),
+            titleColor: const Color(0xFF0D47A1),
+            descriptionColor: isDark ? Colors.grey[400] : Colors.grey[600],
+            backgroundColor: Colors.transparent,
+            iconSize: 22,
+            titleFontSize: _textSizeService.getScaledFontSize(18),
+            descriptionFontSize: _textSizeService.getScaledFontSize(13),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           ),
 
           // ── Corps ────────────────────────────────────────────────────────
@@ -340,9 +286,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ── En-tête avec progression ──────────────────────────────────────
-        _buildHeader(),
-        
+
         // ── Indicateur de progression ─────────────────────────────────────
         _buildProgressIndicator(),
         
@@ -364,57 +308,6 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
         // ── Barre de navigation inférieure ────────────────────────────────
         _buildBottomNavigation(),
       ],
-    );
-  }
-
-  Widget _buildHeader() {
-    final stepTitles = ['École', 'Matricule', 'Confirmation'];
-    final stepIcons = [Icons.school_outlined, Icons.badge_outlined, Icons.check_circle_outline];
-    
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.shopBlueSurface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              stepIcons[_currentStep],
-              color: AppColors.shopBlue,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Consultation demande - ${stepTitles[_currentStep]}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.screenTextPrimary,
-                    letterSpacing: -0.4,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  'Étape ${_currentStep + 1} sur 3',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.screenTextSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

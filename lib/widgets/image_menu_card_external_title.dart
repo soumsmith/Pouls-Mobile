@@ -22,7 +22,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final double? height;
   final double? externalTitleSpacing;
   final int titleMaxLines;
-  final double imageFlex; // Contrôle la hauteur de l'image (défaut: 7.0)
+  final double imageFlex;
+  final double? imageBorderRadius;
+  final double? titleFontSize;
   final String? buttonText;
   final Color? buttonColor;
   final Color? buttonTextColor;
@@ -51,6 +53,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.externalTitleSpacing = 8.0,
     this.titleMaxLines = 2,
     this.imageFlex = 7.0,
+    this.imageBorderRadius = 20.0,
+    this.titleFontSize = 12.0,
     this.buttonText,
     this.buttonColor,
     this.buttonTextColor,
@@ -70,253 +74,246 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
         opacity: v,
         child: Transform.translate(
           offset: Offset(20 * (1 - v), 0),
-          child: child,
-        ),
-      ),
-      // ✅ FIX: Column avec mainAxisSize.min — le contenu dicte la taille,
-      // pas une hauteur arbitraire. Dans une GridView, l'espace est déjà
-      // contraint par childAspectRatio donc pas de risque d'overflow infini.
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Image card ────────────────────────────────────────────────
-          // ✅ FIX: Flexible avec facteur pour contrôler la hauteur de l'image
-          // imageFlex = hauteur relative de l'image (défaut: 7.0)
-          Flexible(
-            flex: imageFlex.round(),
-            child: GestureDetector(
-              onTap: onTap,
-              child: Container(
-                width: width ?? double.infinity,
-                decoration: BoxDecoration(
-                  color: backgroundColor ??
-                      (isDark
-                          ? const Color(0xFF1E1E1E)
-                          : AppColors.screenCard),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: ColoredBox(
-                              color: color?.withOpacity(0.1) ??
-                                  AppColors.screenCard.withOpacity(0.1),
-                              child: _buildImageOrIcon(context),
-                            ),
-                          ),
-                          // Gradient overlay
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.1),
-                                  ],
+          child: GestureDetector(
+            onTap: onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Image card ──────────────────────────────────────────
+                SizedBox(
+                  height: height != null ? height! * 0.7 : 70,
+                  child: Container(
+                    width: width ?? double.infinity,
+                    decoration: BoxDecoration(
+                      color: backgroundColor ??
+                          (isDark
+                              ? const Color(0xFF1E1E1E)
+                              : AppColors.screenCard),
+                      borderRadius:
+                          BorderRadius.circular(imageBorderRadius ?? 20),
+                    ),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(imageBorderRadius ?? 20),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: ColoredBox(
+                                  color: color?.withOpacity(0.1) ??
+                                      AppColors.screenCard.withOpacity(0.1),
+                                  child: _buildImageOrIcon(context),
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (tag != null)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            tag!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // ── Titre externe ─────────────────────────────────────────────
-          if (title?.isNotEmpty == true) ...[
-            SizedBox(height: externalTitleSpacing ?? 8),
-
-            // ✅ FIX: Flexible avec facteur 3 pour le texte (30% de l'espace)
-            Flexible(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Titre principal
-                    Text(
-                      title!,
-                      style: TextStyle(
-                        fontSize: textSizeService.getScaledFontSize(12),
-                        fontWeight: FontWeight.w700,
-                        color: textColor ??
-                            (isDark
-                                ? Colors.white
-                                : AppColors.screenTextPrimary),
-                      ),
-                      maxLines: titleMaxLines,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    // Sous-titre
-                    if (subtitle?.isNotEmpty == true) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        style: TextStyle(
-                          fontSize: textSizeService.getScaledFontSize(10),
-                          fontWeight: FontWeight.w500,
-                          color: textColor?.withOpacity(0.7) ??
-                              (isDark
-                                  ? Colors.white70
-                                  : AppColors.screenTextSecondary),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-
-                    // Prix + bouton Ajouter
-                    if (actionText != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              actionText!,
-                              style: TextStyle(
-                                fontSize:
-                                    textSizeService.getScaledFontSize(10),
-                                fontWeight: FontWeight.w700,
-                                color: actionTextColor ??
-                                    color ??
-                                    AppColors.screenOrange,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (buttonText != null) ...[
-                            const SizedBox(width: 4),
-                            _buildSmallButton(textSizeService),
-                          ],
-                        ],
-                      ),
-                    ]
-
-                    // Localisation + bouton
-                    else if (location != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  size: 10,
-                                  color: textColor?.withOpacity(0.5) ??
-                                      (isDark
-                                          ? Colors.white54
-                                          : AppColors.screenTextSecondary),
-                                ),
-                                const SizedBox(width: 2),
-                                Flexible(
-                                  child: Text(
-                                    location!,
-                                    style: TextStyle(
-                                      fontSize:
-                                          textSizeService.getScaledFontSize(9),
-                                      color: textColor?.withOpacity(0.5) ??
-                                          (isDark
-                                              ? Colors.white54
-                                              : AppColors.screenTextSecondary),
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.black.withOpacity(0.1),
+                                      ],
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
                                   ),
                                 ),
-                              ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (tag != null)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                tag!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
-                          if (buttonText != null) ...[
-                            const SizedBox(width: 4),
-                            _buildSmallButton(textSizeService),
-                          ],
-                        ],
-                      ),
-                    ]
+                      ],
+                    ),
+                  ),
+                ),
 
-                    // Bouton seul (ni prix ni localisation)
-                    else if (buttonText != null) ...[
-                      const SizedBox(height: 6),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 26,
-                        child: ElevatedButton(
-                          onPressed: onButtonTap ?? () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                buttonColor ?? color ?? AppColors.screenOrange,
-                            foregroundColor: buttonTextColor ?? Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          child: Text(
-                            buttonText!,
+                // ── Titre externe ───────────────────────────────────────
+                if (title?.isNotEmpty == true) ...[
+                  SizedBox(height: externalTitleSpacing ?? 4),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: width ?? double.infinity,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title!,
                             style: TextStyle(
-                              fontSize: textSizeService.getScaledFontSize(10),
-                              fontWeight: FontWeight.w600,
+                              fontSize: textSizeService
+                                  .getScaledFontSize(titleFontSize ?? 11),
+                              fontWeight: FontWeight.w700,
+                              color: textColor ??
+                                  (isDark
+                                      ? Colors.white
+                                      : AppColors.screenTextPrimary),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
+                          if (subtitle?.isNotEmpty == true) ...[
+                            const SizedBox(height: 1),
+                            Text(
+                              subtitle!,
+                              style: TextStyle(
+                                fontSize:
+                                    textSizeService.getScaledFontSize(9),
+                                fontWeight: FontWeight.w500,
+                                color: textColor?.withOpacity(0.7) ??
+                                    (isDark
+                                        ? Colors.white70
+                                        : AppColors.screenTextSecondary),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          if (actionText != null) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    actionText!,
+                                    style: TextStyle(
+                                      fontSize:
+                                          textSizeService.getScaledFontSize(10),
+                                      fontWeight: FontWeight.w700,
+                                      color: actionTextColor ??
+                                          color ??
+                                          AppColors.screenOrange,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (buttonText != null) ...[
+                                  const SizedBox(width: 4),
+                                  _buildSmallButton(textSizeService),
+                                ],
+                              ],
+                            ),
+                          ] else if (location != null) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on_outlined,
+                                        size: 10,
+                                        color: textColor?.withOpacity(0.5) ??
+                                            (isDark
+                                                ? Colors.white54
+                                                : AppColors.screenTextSecondary),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Flexible(
+                                        child: Text(
+                                          location!,
+                                          style: TextStyle(
+                                            fontSize: textSizeService
+                                                .getScaledFontSize(9),
+                                            color:
+                                                textColor?.withOpacity(0.5) ??
+                                                    (isDark
+                                                        ? Colors.white54
+                                                        : AppColors
+                                                            .screenTextSecondary),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (buttonText != null) ...[
+                                  const SizedBox(width: 4),
+                                  _buildSmallButton(textSizeService),
+                                ],
+                              ],
+                            ),
+                          ] else if (buttonText != null) ...[
+                            const SizedBox(height: 2),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 26,
+                              child: ElevatedButton(
+                                onPressed: onButtonTap ?? () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: buttonColor ??
+                                      color ??
+                                      AppColors.screenOrange,
+                                  foregroundColor:
+                                      buttonTextColor ?? Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                                child: Text(
+                                  buttonText!,
+                                  style: TextStyle(
+                                    fontSize:
+                                        textSizeService.getScaledFontSize(10),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ],
-                ),
-              ),
+                    ),
+                  ),
+                ],
+              ],
+
             ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
 
-  // ── Bouton compact réutilisable ──────────────────────────────────────────
   Widget _buildSmallButton(TextSizeService textSizeService) {
     return SizedBox(
       height: 22,
@@ -347,7 +344,6 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     );
   }
 
-  // ── Image ou icône de secours ────────────────────────────────────────────
   Widget _buildImageOrIcon(BuildContext context) {
     if (imagePath != null && imagePath!.startsWith('http')) {
       return Image.network(

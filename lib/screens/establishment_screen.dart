@@ -10,7 +10,9 @@ import '../services/text_size_service.dart';
 import '../services/ecole_api_service.dart';
 import '../services/recommendation_service.dart';
 import '../services/integration_service.dart';
+import '../services/video_api_service.dart';
 import '../models/ecole.dart';
+import '../models/video.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/see_more_card.dart';
@@ -174,56 +176,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   // ── Données du slider d'écoles ───────────────────────────────
-  final List<Map<String, String>> _featuredSchools = [
-    {
-      'name': 'École Primaire Excellence',
-      'type': 'Primaire',
-      'location': 'Abidjan, Cocody',
-      'image': 'assets/images/ecole.jpg',
-      'rating': '4.8',
-      'description': 'Excellence académique depuis 1995',
-    },
-    {
-      'name': 'Collège La Lumière',
-      'type': 'Collège',
-      'location': 'Yamoussoukro',
-      'image': 'assets/images/ecole-2.jpg',
-      'rating': '4.6',
-      'description': 'Formation complète et moderne',
-    },
-    {
-      'name': 'Lycée Scientifique',
-      'type': 'Lycée',
-      'location': 'Bouaké',
-      'image': 'assets/images/actualite.jpg',
-      'rating': '4.9',
-      'description': 'Excellence en sciences et technologie',
-    },
-    {
-      'name': 'École Bilingue Internationale',
-      'type': 'Privé',
-      'location': 'Abidjan, Plateau',
-      'image': 'assets/images/actualite-2.jpg',
-      'rating': '4.7',
-      'description': 'Programme international reconnu',
-    },
-    {
-      'name': 'Groupe Scolaire Public',
-      'type': 'Public',
-      'location': 'San Pedro',
-      'image': 'assets/images/school-event.jpg',
-      'rating': '4.5',
-      'description': 'Éducation accessible pour tous',
-    },
-    {
-      'name': 'Présentation Vidéo',
-      'type': 'Vidéo',
-      'location': 'Abidjan',
-      'video': 'https://www.youtube.com/watch?v=0HhNxMNQ2ko',
-      'rating': '4.9',
-      'description': 'Découvrez notre établissement en vidéo',
-    },
-  ];
+  List<Map<String, String>> _featuredSchools = [];
+  List<Video> _videos = [];
+  bool _isLoadingVideos = false;
+  String? _videoError;
 
   final List<String> _filters = [
     'Tous',
@@ -248,6 +204,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
     _loadEcoles();
+    _loadVideos();
+    _initializeFeaturedSchools();
     _startSliderAutoScroll();
   }
 
@@ -321,6 +279,81 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   // ── Data ───────────────────────────────────────────────────
+  
+  // Initialiser les écoles statiques de base (vides pour ne garder que les vidéos de l'API)
+  void _initializeFeaturedSchools() {
+    _featuredSchools = [];
+  }
+
+  // Charger les vidéos depuis l'API
+  Future<void> _loadVideos() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingVideos = true;
+      _videoError = null;
+    });
+    
+    try {
+      final videos = await VideoApiService.getVideosForSchool('gainhs');
+      if (mounted) {
+        setState(() {
+          _videos = videos;
+          _isLoadingVideos = false;
+          _addVideosToSlider();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _videoError = e.toString();
+          _isLoadingVideos = false;
+        });
+      }
+    }
+  }
+
+  // Ajouter les vidéos au slider
+  void _addVideosToSlider() {
+    final List<Map<String, String>> videoItems = _videos.map((video) {
+      return {
+        'name': _getVideoDisplayName(video.typeVideo),
+        'type': 'Vidéo',
+        'location': 'Abidjan',
+        'video': video.youtubeUrl,
+        'rating': '4.9',
+        'description': _getVideoDescription(video.typeVideo),
+        'videoType': video.typeVideo,
+      };
+    }).toList();
+    
+    setState(() {
+      _featuredSchools = videoItems;
+    });
+  }
+
+  // Obtenir le nom d'affichage selon le type de vidéo
+  String _getVideoDisplayName(String typeVideo) {
+    switch (typeVideo.toLowerCase()) {
+      case 'visiteguide':
+        return 'Visite Guidée';
+      case 'presentation':
+        return 'Présentation';
+      default:
+        return 'Vidéo';
+    }
+  }
+
+  // Obtenir la description selon le type de vidéo
+  String _getVideoDescription(String typeVideo) {
+    switch (typeVideo.toLowerCase()) {
+      case 'visiteguide':
+        return 'Découvrez nos installations en vidéo';
+      case 'presentation':
+        return 'Présentation de notre établissement';
+      default:
+        return 'Découvrez notre établissement en vidéo';
+    }
+  }
   Future<void> _loadEcoles() async {
     if (!mounted) return;
     setState(() {
@@ -1125,7 +1158,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: _getCrossAxisCount(context),
                     crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
-                    childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: 4),
+                    childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: AppDimensions.getGridImageFlex(context)),
                   ),
                   delegate: SliverChildBuilderDelegate((_, i) {
                     if (i == items.length && _hasMoreEcoles) {
@@ -1154,7 +1187,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           tag: items[i].typePrincipal,
                           titleMaxLines: 2,
                           externalTitleSpacing: 8,
-                          imageFlex: AppDimensions.getProductCardImageFlex(context),
+                        height: 120,
+                          //imageFlex: AppDimensions.getProductCardImageFlex(context),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) =>
@@ -2651,7 +2685,7 @@ class _FeaturedSchoolCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Badge VIDÉO
+            // Badge VIDÉO avec type
             Positioned(
               top: 16,
               left: 16,
@@ -2661,14 +2695,25 @@ class _FeaturedSchoolCard extends StatelessWidget {
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Text(
-                  'VIDÉO',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.play_circle_fill,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      school['videoType']?.toUpperCase() ?? 'VIDÉO',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

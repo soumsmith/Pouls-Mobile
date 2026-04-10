@@ -281,7 +281,7 @@ class AppDimensions {
       } else {
         // Mobile portrait : image selon nombre de colonnes
         switch (columns) {
-          case 3: return 4; // 3 colonnes : image standard
+          case 3: return 5; // 3 colonnes : image standard
           case 2: return 6; // 2 colonnes : image plus grande
           default: return 5;
         }

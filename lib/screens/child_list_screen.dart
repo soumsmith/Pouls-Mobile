@@ -58,6 +58,7 @@ import '../services/ecole_eleve_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
+import '../widgets/subtle_retry_button.dart';
 
 // ─── MODÈLE POUR CARTE DE MENU D'ÉLÈVE ────────────────────────────────────────
 class StudentMenuCardItem {
@@ -1134,11 +1135,18 @@ class _ChildListScreenState extends State<ChildListScreen>
             // ✅ Déclencher le chargement UNE SEULE FOIS à l'intérieur du modal
             if (!_notificationsLoaded && !_isLoadingNotifications) {
               _isLoadingNotifications = true;
+              // Afficher le loader au-dessus de la bottom sheet
+              CustomLoaderOverlay.show(
+                context,
+                message: 'Chargement des notifications...',
+                loaderColor: AppColors.screenOrange,
+              );
               final matricule = _matricule ?? widget.child.matricule;
               if (matricule != null && matricule.isNotEmpty) {
                 GroupMessageService.getGroupMessages(matricule)
                     .then((notifications) {
                       if (mounted) {
+                        CustomLoaderOverlay.hide();
                         setModalState(() {
                           _notifications = notifications;
                           _isLoadingNotifications = false;
@@ -1154,6 +1162,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     .catchError((e) {
                       print('❌ Erreur notifications: $e');
                       if (mounted) {
+                        CustomLoaderOverlay.hide();
                         setModalState(() {
                           _isLoadingNotifications = false;
                           _notificationsLoaded = true;
@@ -1165,6 +1174,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       }
                     });
               } else {
+                CustomLoaderOverlay.hide();
                 _isLoadingNotifications = false;
                 _notificationsLoaded = true;
               }
@@ -3273,14 +3283,22 @@ class _ChildListScreenState extends State<ChildListScreen>
         .toList();
 
     if (echeancesSelectionnees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner au moins une échéance'),
-          backgroundColor: Colors.red,
-        ),
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Sélection requise',
+        message: 'Veuillez sélectionner au moins une échéance',
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
+
+    // Afficher le loader au-dessus de la bottom sheet
+    CustomLoaderOverlay.show(
+      context,
+      message: 'Traitement de l\'inscription...',
+      loaderColor: AppColors.screenOrange,
+    );
 
     try {
       // Créer la requête d'inscription
@@ -3333,14 +3351,12 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Inscription de ${widget.child.firstName} enregistrée avec succès!',
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 4),
-            ),
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Inscription réussie',
+            message: 'Inscription de ${widget.child.firstName} enregistrée avec succès!',
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
           );
         }
       } else {
@@ -3355,28 +3371,28 @@ class _ChildListScreenState extends State<ChildListScreen>
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 4),
-            ),
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur d\'inscription',
+            message: errorMessage,
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           );
         }
       }
     } catch (e) {
       print('❌ Erreur lors de l\'inscription: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur réseau: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur réseau',
+          message: 'Erreur lors de l\'inscription: $e',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         );
       }
     } finally {
-      setLoadingFalse();
+      CustomLoaderOverlay.hide();
     }
   }
 
@@ -3444,28 +3460,45 @@ class _ChildListScreenState extends State<ChildListScreen>
     VoidCallback setLoadingFalse,
   ) async {
     if (montantStr.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez entrer un montant')),
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Montant requis',
+        message: 'Veuillez entrer un montant',
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
     final montant = int.tryParse(montantStr);
     if (montant == null || montant <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez entrer un montant valide')),
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Montant invalide',
+        message: 'Veuillez entrer un montant valide',
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
     if (_matricule == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informations élève non disponibles')),
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Informations manquantes',
+        message: 'Informations élève non disponibles',
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
-    setLoading();
+    // Afficher le loader au-dessus de la bottom sheet
+    CustomLoaderOverlay.show(
+      context,
+      message: 'Traitement du paiement...',
+      loaderColor: AppColors.screenOrange,
+    );
 
     try {
       print(
@@ -3493,13 +3526,12 @@ class _ChildListScreenState extends State<ChildListScreen>
           paiementResponse.url,
         );
         if (!launched) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Impossible d\'ouvrir la page de paiement. Veuillez réessayer.',
-              ),
-              backgroundColor: Colors.orange,
-            ),
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur d\'ouverture',
+            message: 'Impossible d\'ouvrir la page de paiement. Veuillez réessayer.',
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
           );
         }
       } else {
@@ -3508,14 +3540,15 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
     } catch (e) {
       print('❌ Erreur lors du paiement: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors du paiement: $e'),
-          backgroundColor: Colors.red,
-        ),
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Erreur de paiement',
+        message: 'Erreur lors du paiement: $e',
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
       );
     } finally {
-      setLoadingFalse();
+      CustomLoaderOverlay.hide();
     }
   }
 
@@ -4171,19 +4204,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildSimpleFeesTab() {
     final isDarkMode = _themeService.isDarkMode;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // _buildInfoCard(
-          //   '💰 Scolarité & Paiements',
-          //   'Consultez les échéances de scolarité et l\'état des paiements.',
-          //   Colors.amber,
-          // ),
-          // const SizedBox(height: 20),
-          _buildDynamicScolarite(),
-        ],
+      child: Center(
+        child: _buildDynamicScolarite(),
       ),
     );
   }
@@ -4248,41 +4272,34 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
 
       return Container(
+        width: double.infinity,
+        height: MediaQuery.of(context).size.height * 0.6,
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _themeService.isDarkMode
-                ? Colors.grey[700]!
-                : Colors.grey[200]!,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.school, size: 48, color: Colors.amber[400]),
+              const SizedBox(height: 12),
+              Text(
+                'Aucune échéance disponible',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _themeService.isDarkMode
+                      ? Colors.white70
+                      : Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SubtleRetryButtonWithText(
+                onTap: () => _loadScolariteData(),
+                color: Colors.amber,
+                text: 'Actualiser',
+                icon: Icons.refresh_outlined,
+                showIcon: true,
+              ),
+            ],
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.school, size: 48, color: Colors.amber[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Aucune échéance disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadScolariteData(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Actualiser'),
-            ),
-          ],
         ),
       );
     }
@@ -6947,6 +6964,14 @@ class _ChildListScreenState extends State<ChildListScreen>
         setState(() {
           _isLoadingScolarite = false;
         });
+        // Afficher une notification d'erreur au-dessus de la bottom sheet
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur de chargement',
+          message: 'Impossible de charger les échéances de scolarité',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        );
       }
     }
   }

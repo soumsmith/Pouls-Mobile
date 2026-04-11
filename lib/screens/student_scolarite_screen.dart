@@ -4,6 +4,7 @@ import '../models/student_scolarite.dart';
 import '../services/student_scolarite_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
+import '../widgets/custom_loader.dart';
 
 /// Écran de scolarité spécifique à un élève
 class StudentScolariteScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _StudentScolariteScreenState extends State<StudentScolariteScreen>
     with TickerProviderStateMixin {
   List<StudentScolariteEntry> _scolariteEntries = [];
   bool _isLoading = true;
+  bool _isRefreshing = false;
   String? _errorMessage;
   final TextSizeService _textSizeService = TextSizeService();
   final StudentScolariteService _scolariteService = StudentScolariteService();
@@ -93,7 +95,34 @@ class _StudentScolariteScreenState extends State<StudentScolariteScreen>
   }
 
   Future<void> _refreshScolarite() async {
-    await _loadScolarite();
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      final studentMatricule = widget.child.matricule ?? widget.child.id;
+      
+      print(' Rafraîchissement de la scolarité pour ${widget.child.firstName} (matricule: $studentMatricule)');
+      
+      final entries = await _scolariteService.getScolariteEntriesForStudent(studentMatricule);
+      
+      setState(() {
+        _scolariteEntries = entries;
+        _errorMessage = null;
+        _isRefreshing = false;
+      });
+      
+      print(' Scolarité rafraîchie: ${entries.length} échéances');
+    } catch (e) {
+      print(' Erreur lors du rafraîchissement de la scolarité: $e');
+      setState(() {
+        _errorMessage = e.toString();
+        _isRefreshing = false;
+      });
+      
+      // Afficher une notification d'erreur au premier plan absolu
+      _showTopLevelNotification('Erreur de chargement', 'Impossible de rafraîchir la scolarité');
+    }
   }
 
   @override
@@ -109,7 +138,20 @@ class _StudentScolariteScreenState extends State<StudentScolariteScreen>
             position: _slideAnimation,
             child: Scaffold(
               backgroundColor: AppColors.getSurfaceColor(isDark),
-              body: _buildBody(isDark),
+              body: Stack(
+                children: [
+                  _buildBody(isDark),
+                  if (_isRefreshing)
+                    Container(
+                      color: Colors.black.withOpacity(0.3),
+                      child: const CustomLoader(
+                        message: 'Actualisation en cours...',
+                        loaderColor: Colors.white,
+                        showBackground: false,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -692,5 +734,79 @@ class _StudentScolariteScreenState extends State<StudentScolariteScreen>
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]} ',
         )} FCFA';
+  }
+
+  void _showTopLevelNotification(String title, String message) {
+    final overlay = Navigator.of(context).overlay;
+    if (overlay == null) return;
+    
+    late OverlayEntry overlayEntry;
+    
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 0,
+        left: 0,
+        right: 0,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.all(0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: RichText(
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(text: ' $message'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => overlayEntry.remove(),
+                  child: Icon(
+                    Icons.close,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    
+    overlay.insert(overlayEntry);
+    
+    // Auto-remove après 3 secondes
+    Future.delayed(const Duration(seconds: 3), () {
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+    });
   }
 }

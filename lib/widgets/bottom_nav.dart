@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/cart_service.dart';
 import '../config/app_colors.dart';
@@ -157,19 +158,20 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
 
     return Container(
       // Hauteur fixe + padding système en bas
-      height: 92,
+      height: 70,
       margin: EdgeInsets.fromLTRB(
-        16,
-        20 + bottomPadding,
-        16,
-        0, //20 + bottomPadding,
+        isAndroid ? 0 : 16,
+        12 + bottomPadding,
+        isAndroid ? 0 : 16,
+        0, //12 + bottomPadding,
       ),
       decoration: BoxDecoration(
         color: _kCard.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFEEEEEE), width: 0.8),
         boxShadow: const [
           BoxShadow(
@@ -187,7 +189,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Row(
@@ -237,11 +239,11 @@ class _NavItemWidget extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: 72,
+        height: 50,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // ── Icon container avec bounce + indicateur ───────
+            // ── Icon avec bounce ───────
             AnimatedBuilder(
               animation: bounceAnim,
               builder: (_, child) =>
@@ -250,37 +252,12 @@ class _NavItemWidget extends StatelessWidget {
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
-                  // Fond animé (pill orange quand actif, vert pour boutique)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    width: isSelected ? 52 : 40,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? (item.label == 'Boutique'
-                                ? _kShopGreenGradient
-                                : _kOrangeGradient)
-                          : null,
-                      color: isSelected ? null : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: item.label == 'Boutique'
-                                    ? _kShopGreen.withOpacity(0.35)
-                                    : _kOrange.withOpacity(0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: Icon(
-                      isSelected ? item.activeIcon : item.icon,
-                      size: 22,
-                      color: isSelected ? Colors.white : _kTextSecondary,
-                    ),
+                  Icon(
+                    isSelected ? item.activeIcon : item.icon,
+                    size: 24,
+                    color: isSelected
+                        ? (item.label == 'Boutique' ? _kShopGreen : _kOrange)
+                        : _kTextSecondary,
                   ),
 
                   // Badge panier (top-right)
@@ -294,7 +271,7 @@ class _NavItemWidget extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
 
             // ── Label ─────────────────────────────────────────
             AnimatedDefaultTextStyle(
@@ -311,7 +288,7 @@ class _NavItemWidget extends StatelessWidget {
             ),
 
             // ── Dot indicateur sous le label ──────────────────
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,

@@ -190,7 +190,7 @@ class _IntegrationRequestBottomSheetState
             iconSize: 22,
             titleFontSize: _textSizeService.getScaledFontSize(18),
             descriptionFontSize: _textSizeService.getScaledFontSize(13),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            //padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           ),
 
           // ── Corps ────────────────────────────────────────────────────────

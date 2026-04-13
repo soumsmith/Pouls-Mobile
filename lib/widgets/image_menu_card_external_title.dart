@@ -30,6 +30,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final Color? buttonTextColor;
   final VoidCallback? onButtonTap;
   final VoidCallback onTap;
+  final bool enableGradient;
+  final bool enableBorder;
+  final Color? borderColor;
 
   const ImageMenuCardExternalTitle({
     super.key,
@@ -59,6 +62,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.buttonColor,
     this.buttonTextColor,
     this.onButtonTap,
+    this.enableGradient = false,
+    this.enableBorder = false,
+    this.borderColor,
     required this.onTap,
   });
 
@@ -92,6 +98,12 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               : AppColors.screenCard),
                       borderRadius:
                           BorderRadius.circular(imageBorderRadius ?? 20),
+                      border: enableBorder
+                          ? Border.all(
+                              color: borderColor ?? (color ?? AppColors.screenOrange).withOpacity(0.3),
+                              width: 0.5,
+                            )
+                          : null,
                     ),
                     child: Stack(
                       children: [
@@ -107,20 +119,21 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                   child: _buildImageOrIcon(context),
                                 ),
                               ),
-                              Positioned.fill(
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.black.withOpacity(0.1),
-                                      ],
+                              if (enableGradient)
+                                Positioned.fill(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.1),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

@@ -6,10 +6,14 @@ import 'package:parents_responsable/models/ecole.dart';
 import 'package:parents_responsable/services/integration_service.dart';
 import 'package:parents_responsable/services/pouls_scolaire_api_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/bottom_sheet_header.dart';
+import 'package:parents_responsable/widgets/components/custom_date_input.dart';
+import 'package:parents_responsable/widgets/components/custom_select_input.dart';
+import 'package:parents_responsable/widgets/components/custom_text_input.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
-import 'package:parents_responsable/widgets/searchable_dropdown.dart';
+import 'package:parents_responsable/widgets/snackbar.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
 class _DateInputFormatter extends TextInputFormatter {
@@ -119,99 +123,27 @@ void showIntegrationBottomSheet({
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Handle bar ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.screenDivider,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.person_add_alt_1_rounded,
-                        color: Color(0xFF3B82F6),
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Intégrer',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.screenTextPrimary,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                          const Text(
-                            'Nous rejoindre',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.screenTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2A2A2A)
-                              : AppColors.screenSurface,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: isDark
-                              ? Colors.white54
-                              : AppColors.screenTextSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Divider(color: AppColors.screenDivider, height: 1),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.person_add_alt_1_rounded,
+            iconColor: const Color(0xFF3B82F6),
+            title: 'Intégrer',
+            description: 'Nous rejoindre',
+            onClose: () => Navigator.of(context).pop(),
+            titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
+            descriptionColor: AppColors.screenTextSecondary,
+            titleFontSize: 18,
+            descriptionFontSize: 13,
+            titleFontWeight: FontWeight.w800,
+            iconSize: 22,
           ),
-
           // ── Form content ────────────────────────────────────────────────
           // MODIFIÉ : Padding avec gestion du clavier
           Flexible(
             child: Padding(
               padding: EdgeInsets.only(
-                left: 20,
+                left: 0,
                 top: 20,
-                right: 20,
+                right: 0,
                 bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
               ),
               child: IntegrationFormContent(
@@ -249,6 +181,7 @@ class IntegrationBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final TextSizeService _textSizeService = TextSizeService();
 
     return Container(
       constraints: BoxConstraints(
@@ -269,89 +202,16 @@ class IntegrationBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Handle bar ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.screenDivider,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.person_add_alt_1_rounded,
-                        color: Color(0xFF3B82F6),
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Intégrer',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.screenTextPrimary,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                          const Text(
-                            'Nous rejoindre',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.screenTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2A2A2A)
-                              : AppColors.screenSurface,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: isDark
-                              ? Colors.white54
-                              : AppColors.screenTextSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Divider(color: AppColors.screenDivider, height: 1),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.person_add_alt_1_rounded,
+            iconColor: const Color(0xFF3B82F6),
+            title: 'Intégrer',
+            description: 'Nous rejoindre',
+            onClose: () => Navigator.of(context).pop(),
+            titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
+            descriptionColor: AppColors.screenTextSecondary,
+            titleFontSize: _textSizeService.getScaledFontSize(18),
+            iconSize: 22,
           ),
 
           // ── Form content ────────────────────────────────────────────────
@@ -359,9 +219,9 @@ class IntegrationBottomSheet extends StatelessWidget {
           Flexible(
             child: Padding(
               padding: EdgeInsets.only(
-                left: 20,
+                left: 0,
                 top: 20,
-                right: 20,
+                right: 0,
                 bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
               ),
               child: IntegrationFormContent(
@@ -433,6 +293,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   List<Ecole> _ecoles = [];
   int? _selectedEcoleId;
   String? _selectedEcoleName;
+  String? _selectedEcoleParametre;
   bool _isLoadingEcoles = false;
   String? _ecoleErrorMessage;
 
@@ -456,6 +317,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   final _decisionAntController = TextEditingController();
   final _motifController = TextEditingController();
   final _filiereController = TextEditingController();
+
+  // Scroll controller pour le défilement automatique
+  final _scrollController = ScrollController();
 
   // ── Sélecteurs ───────────────────────────────────────────────────────────
   String _selectedSexe = 'M';
@@ -485,27 +349,88 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       if (mounted) setState(() {});
     });
     _loadEcoles();
-    
+
     _studentNameController.addListener(() {
       if (_studentNameController.text.isNotEmpty && _studentNameError) {
         setState(() => _studentNameError = false);
       }
+      setState(() {}); // Rafraîchir le bouton Suivant
     });
     _studentFirstNameController.addListener(() {
       if (_studentFirstNameController.text.isNotEmpty &&
           _studentFirstNameError) {
         setState(() => _studentFirstNameError = false);
       }
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _matriculeController.addListener(() {
+      if (_matriculeController.text.isNotEmpty && _matriculeError) {
+        setState(() => _matriculeError = false);
+      }
+      setState(() {}); // Rafraîchir le bouton Suivant
     });
     _birthDateController.addListener(() {
       if (_birthDateController.text.isNotEmpty && _birthDateError) {
         setState(() => _birthDateError = false);
       }
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _lieuNaissanceController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _nationaliteController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _adresseController.addListener(() {
+      if (_adresseController.text.isNotEmpty && _adresseError) {
+        setState(() => _adresseError = false);
+      }
+      setState(() {}); // Rafraîchir le bouton Suivant
     });
     _contact1Controller.addListener(() {
       if (_contact1Controller.text.isNotEmpty && _contact1Error) {
         setState(() => _contact1Error = false);
       }
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _contact2Controller.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _nomPereController.addListener(() {
+      if (_nomPereController.text.isNotEmpty && _nomPereError) {
+        setState(() => _nomPereError = false);
+      }
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _nomMereController.addListener(() {
+      if (_nomMereController.text.isNotEmpty && _nomMereError) {
+        setState(() => _nomMereError = false);
+      }
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _nomTuteurController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _niveauAntController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _ecoleAntController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _moyenneAntController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _rangAntController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _decisionAntController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _motifController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
+    });
+    _filiereController.addListener(() {
+      setState(() {}); // Rafraîchir le bouton Suivant
     });
   }
 
@@ -530,6 +455,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     _decisionAntController.dispose();
     _motifController.dispose();
     _filiereController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -557,7 +483,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('No address associated');
       if (isDns && mounted)
-        _showSnack('Erreur de connexion. Vérifiez votre internet.', isError: true);
+        _showSnack(
+          'Erreur de connexion. Vérifiez votre internet.',
+          isError: true,
+        );
       else if (mounted)
         _showSnack('Erreur : ${e.toString()}', isError: true);
     }
@@ -592,6 +521,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     if (_currentStep < _totalSteps - 1) {
       if (_validateCurrentStep()) {
         setState(() => _currentStep++);
+        // Remonter automatiquement en haut après le changement d'étape
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        });
       }
     } else {
       _submit();
@@ -601,6 +538,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   void _previousStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
+      // Remonter automatiquement en haut après le changement d'étape
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
     }
   }
 
@@ -609,7 +554,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       case 0:
         // Étape de sélection d'établissement
         if (_selectedEcoleId == null) {
-          _showSnack('Veuillez sélectionner un établissement');
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur',
+            message: 'Veuillez sélectionner un établissement',
+            backgroundColor: Colors.red[400],
+          );
           return false;
         }
         return true;
@@ -621,12 +571,22 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             _matriculeController.text.isEmpty ||
             _birthDateController.text.isEmpty ||
             _adresseController.text.isEmpty) {
-          _showSnack('Veuillez remplir tous les champs obligatoires');
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur',
+            message: 'Veuillez remplir tous les champs obligatoires',
+            backgroundColor: Colors.red[400],
+          );
           return false;
         }
         final dateRegex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
         if (!dateRegex.hasMatch(_birthDateController.text)) {
-          _showSnack('Format de date invalide. Utilisez JJ/MM/AAAA');
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur',
+            message: 'Format de date invalide. Utilisez JJ/MM/AAAA',
+            backgroundColor: Colors.red[400],
+          );
           return false;
         }
         return true;
@@ -636,7 +596,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         if (_contact1Controller.text.isEmpty ||
             _nomPereController.text.isEmpty ||
             _nomMereController.text.isEmpty) {
-          _showSnack('Veuillez remplir tous les champs obligatoires');
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur',
+            message: 'Veuillez remplir tous les champs obligatoires',
+            backgroundColor: Colors.red[400],
+          );
           return false;
         }
         return true;
@@ -666,33 +631,33 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         return _selectedEcoleId != null;
 
       case 1:
-        // Ancienne étape 0 (Informations de l'élève)
-        if (_studentNameController.text.isEmpty ||
-            _studentFirstNameController.text.isEmpty ||
-            _matriculeController.text.isEmpty ||
-            _birthDateController.text.isEmpty ||
-            _adresseController.text.isEmpty) {
-          return false;
-        }
-        final dateRegex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
-        return dateRegex.hasMatch(_birthDateController.text);
+        // Informations de l'élève - Permet la navigation si au moins un champ est rempli
+        return _studentNameController.text.isNotEmpty ||
+            _studentFirstNameController.text.isNotEmpty ||
+            _matriculeController.text.isNotEmpty ||
+            _birthDateController.text.isNotEmpty ||
+            _adresseController.text.isNotEmpty ||
+            _lieuNaissanceController.text.isNotEmpty ||
+            _nationaliteController.text.isNotEmpty;
 
       case 2:
-        // Ancienne étape 1 (Contacts et Parents)
-        return _contact1Controller.text.isNotEmpty &&
-               _nomPereController.text.isNotEmpty &&
-               _nomMereController.text.isNotEmpty;
+        // Contacts et Parents - Permet la navigation si au moins un champ est rempli
+        return _contact1Controller.text.isNotEmpty ||
+            _contact2Controller.text.isNotEmpty ||
+            _nomPereController.text.isNotEmpty ||
+            _nomMereController.text.isNotEmpty ||
+            _nomTuteurController.text.isNotEmpty;
 
       case 3:
-        // Ancienne étape 2 (Scolarité antérieure)
+        // Scolarité antérieure - Permet la navigation sans obligation
         return true;
 
       case 4:
-        // Ancienne étape 3 (Documents et finalisation)
+        // Documents et finalisation - Permet la navigation sans obligation
         return true;
 
       case 5:
-        // Ancienne étape 4 (Récapitulatif)
+        // Récapitulatif - Permet toujours la navigation vers la soumission
         return true;
 
       default:
@@ -814,42 +779,52 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
 
     try {
+      print('DEBUG: paramecole utilisé: "${_selectedEcoleParametre}"');
       final result = await IntegrationService.submitIntegrationRequest(
-        widget.ecole?.parametreCode ?? '',
+        _selectedEcoleParametre ?? '',
         requestData,
       );
+      // Fermer le loader
       Navigator.of(context).pop();
 
       if (result['success'] == true) {
-        Navigator.of(context).pop();
-        await Future.delayed(const Duration(milliseconds: 300));
-
         final demandeUid = result['data']?['demande_uid'] as String? ?? '';
+
+        // Afficher la notification de succès AVANT de fermer le bottom sheet
+        if (mounted) {
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Succès',
+            message: 'Demande d\'intégration envoyée avec succès!',
+            backgroundColor: Colors.green[500],
+          );
+        }
 
         widget.onSuccess?.call(demandeUid);
 
-        final messenger =
-            widget.scaffoldMessengerKey?.currentState ??
-            ScaffoldMessenger.of(context);
-        messenger.showSnackBar(
-          SnackBar(
-            content: const Text('Demande d\'intégration envoyée avec succès!'),
-            backgroundColor: Colors.green[500],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+        // Attendre un peu pour que l'utilisateur voie la notification
+        await Future.delayed(const Duration(milliseconds: 1500));
 
-        if (demandeUid.isNotEmpty && context.mounted) {
+        // Fermer le bottom sheet après la notification
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+
+        // Afficher le dialogue de succès si disponible
+        if (demandeUid.isNotEmpty && mounted) {
           _showSuccessDialog(demandeUid);
         }
       } else {
         final errMsg = result['error'] ?? 'Erreur lors de l\'envoi';
         widget.onError?.call(errMsg);
-        _showSnack(errMsg, isError: true);
+        if (mounted) {
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur',
+            message: errMsg,
+            backgroundColor: Colors.red[400],
+          );
+        }
       }
     } catch (e) {
       Navigator.of(context).pop();
@@ -857,7 +832,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       await Future.delayed(const Duration(milliseconds: 300));
       final errMsg = e.toString();
       widget.onError?.call(errMsg);
-      _showSnack('Erreur: $errMsg', isError: true);
+      if (mounted) {
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur',
+          message: 'Erreur: $errMsg',
+          backgroundColor: Colors.red[400],
+        );
+      }
     }
   }
 
@@ -1005,7 +987,11 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.screenOrange,
                     foregroundColor: Colors.white,
@@ -1045,6 +1031,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         // ── Contenu de l'étape (SCROLLABLE) ────────────────────────────────
         Flexible(
           child: SingleChildScrollView(
+            controller: _scrollController,
             reverse:
                 true, // Permet de voir les champs en bas quand le clavier apparaît
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -1055,7 +1042,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         const SizedBox(height: 16),
 
         // ── Navigation buttons (FIXE) ───────────────────────────────────────
-        _buildNavigationButtons(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: _buildNavigationButtons(),
+        ),
         const SizedBox(height: 20),
       ],
     );
@@ -1063,121 +1053,129 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Progress indicator ─────────────────────────────────────────────────────
   Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getMediumCardBorderRadius(context),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.screenCard,
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getMediumCardBorderRadius(context),
+          ),
+          boxShadow: AppDimensions.getLightShadow(context),
         ),
-        boxShadow: AppDimensions.getLightShadow(context),
-      ),
-      child: Column(
-        children: [
-          Column(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: (_currentStep + 1) / _totalSteps,
-                  backgroundColor: AppColors.screenDivider,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
-                  minHeight: 4,
+        child: Column(
+          children: [
+            Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (_currentStep + 1) / _totalSteps,
+                    backgroundColor: AppColors.screenDivider,
+                    valueColor: const AlwaysStoppedAnimation(
+                      AppColors.shopBlue,
+                    ),
+                    minHeight: 4,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              // Stepper horizontal avec défilement
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(_totalSteps, (index) {
-                    final isCompleted = index < _currentStep;
-                    final isCurrent = index == _currentStep;
-                    final isClickable = index < _currentStep;
+                const SizedBox(height: 14),
+                // Stepper horizontal avec défilement
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(_totalSteps, (index) {
+                      final isCompleted = index < _currentStep;
+                      final isCurrent = index == _currentStep;
+                      final isClickable = index < _currentStep;
 
-                    return GestureDetector(
-                      onTap: isClickable
-                          ? () {
-                              setState(() => _currentStep = index);
-                            }
-                          : null,
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: Column(
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: isCurrent ? 34 : 28,
-                              height: isCurrent ? 34 : 28,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isCompleted
-                                    ? Colors.green
-                                    : isCurrent
-                                    ? AppColors.shopBlue
-                                    : AppColors.screenDivider,
-                                boxShadow: isCurrent
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.shopBlue.withOpacity(0.25),
-                                          blurRadius: 6,
-                                          spreadRadius: 1,
-                                        ),
-                                      ]
-                                    : isCompleted
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.green.withOpacity(0.25),
-                                              blurRadius: 4,
-                                              spreadRadius: 1,
-                                            ),
-                                          ]
-                                        : null,
-                              ),
-                              child: Icon(
-                                isCompleted
-                                    ? Icons.check_rounded
-                                    : _stepIcons[index],
-                                color: (isCompleted || isCurrent)
-                                    ? Colors.white
-                                    : AppColors.screenTextSecondary,
-                                size: isCurrent ? 18 : 14,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            SizedBox(
-                              width: 80, // Largeur fixe pour éviter le overflow
-                              child: Text(
-                                _stepTitles[index],
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: isCurrent
-                                      ? FontWeight.w700
-                                      : isCompleted
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                  color: isCurrent
-                                      ? AppColors.shopBlue
-                                      : isCompleted
+                      return GestureDetector(
+                        onTap: isClickable
+                            ? () {
+                                setState(() => _currentStep = index);
+                              }
+                            : null,
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: Column(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                width: isCurrent ? 34 : 28,
+                                height: isCurrent ? 34 : 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isCompleted
                                       ? Colors.green
+                                      : isCurrent
+                                      ? AppColors.shopBlue
+                                      : AppColors.screenDivider,
+                                  boxShadow: isCurrent
+                                      ? [
+                                          BoxShadow(
+                                            color: AppColors.shopBlue
+                                                .withOpacity(0.25),
+                                            blurRadius: 6,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : isCompleted
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.green.withOpacity(
+                                              0.25,
+                                            ),
+                                            blurRadius: 4,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Icon(
+                                  isCompleted
+                                      ? Icons.check_rounded
+                                      : _stepIcons[index],
+                                  color: (isCompleted || isCurrent)
+                                      ? Colors.white
                                       : AppColors.screenTextSecondary,
+                                  size: isCurrent ? 18 : 14,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              SizedBox(
+                                width:
+                                    80, // Largeur fixe pour éviter le overflow
+                                child: Text(
+                                  _stepTitles[index],
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: isCurrent
+                                        ? FontWeight.w700
+                                        : isCompleted
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color: isCurrent
+                                        ? AppColors.shopBlue
+                                        : isCompleted
+                                        ? Colors.green
+                                        : AppColors.screenTextSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1205,7 +1203,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   // ── Navigation buttons ─────────────────────────────────────────────────────
   Widget _buildNavigationButtons() {
     final canNext = _canNavigateToNext();
-    
+
     return Row(
       children: [
         if (_currentStep > 0)
@@ -1250,18 +1248,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             decoration: BoxDecoration(
               gradient: canNext
                   ? const LinearGradient(
-                      colors: [
-                        AppColors.shopBlueLight,
-                        AppColors.shopBlue,
-                      ],
+                      colors: [AppColors.shopBlueLight, AppColors.shopBlue],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
                   : LinearGradient(
-                      colors: [
-                        Colors.grey.shade300,
-                        Colors.grey.shade300,
-                      ],
+                      colors: [Colors.grey.shade300, Colors.grey.shade300],
                     ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: canNext
@@ -1316,17 +1308,11 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           decoration: BoxDecoration(
             color: AppColors.screenOrangeLight.withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.screenOrange.withOpacity(0.2),
-            ),
+            border: Border.all(color: AppColors.screenOrange.withOpacity(0.2)),
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: AppColors.screenOrange,
-                size: 20,
-              ),
+              Icon(Icons.info_outline, color: AppColors.screenOrange, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -1342,10 +1328,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           ),
         ),
         const SizedBox(height: 20),
-        
+
         // Champ de sélection de l'établissement
         _buildEcoleField(),
-        
+
         // Message d'erreur si nécessaire
         if (_ecoleErrorMessage != null) ...[
           const SizedBox(height: 12),
@@ -1375,7 +1361,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       children: [
         _fieldLabel('Établissement', required: true),
         const SizedBox(height: 6),
-        SearchableDropdown(
+        CustomSelectInput(
           label: 'Établissement',
           value: _selectedEcoleName ?? 'Sélectionner un établissement...',
           items: _ecoles.map((e) => e.ecoleclibelle).toList(),
@@ -1386,10 +1372,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             setState(() {
               _selectedEcoleId = ecole.ecoleid;
               _selectedEcoleName = selected;
+              // Utiliser paramecole, sinon parametreCode comme repli
+              _selectedEcoleParametre = (ecole.paramecole?.isNotEmpty == true) 
+                  ? ecole.paramecole 
+                  : ecole.parametreCode;
               _ecoleErrorMessage = null;
             });
           },
-          isDarkMode: false,
+          isDarkMode: Theme.of(context).brightness == Brightness.dark,
+          required: true,
         ),
       ],
     );
@@ -1542,35 +1533,29 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       title: 'Informations de l\'élève',
       icon: Icons.person_rounded,
       children: [
-        CustomTextField(
+        CustomTextInput(
           label: 'Nom',
           hint: 'Entrez le nom complet',
           icon: Icons.person_rounded,
           controller: _studentNameController,
           required: true,
           hasError: _studentNameError,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Prénoms',
           hint: 'Entrez les prénoms',
           icon: Icons.person_outline_rounded,
           controller: _studentFirstNameController,
           required: true,
           hasError: _studentFirstNameError,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Matricule',
           hint: 'Entrez le matricule',
           icon: Icons.badge_rounded,
           controller: _matriculeController,
           required: true,
           hasError: _matriculeError,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
         StatefulBuilder(
           builder: (context, ss) => _buildDropdown(
@@ -1582,33 +1567,28 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             onChanged: (v) => ss(() => _selectedSexe = v ?? 'M'),
           ),
         ),
-        CustomTextField(
+        CustomDateInput(
           label: 'Date de naissance',
           hint: 'JJ/MM/AAAA',
           icon: Icons.cake_rounded,
           controller: _birthDateController,
-          keyboardType: TextInputType.number,
           required: true,
           hasError: _birthDateError,
           inputFormatters: [_DateInputFormatter()],
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Lieu de naissance',
           hint: 'Entrez le lieu de naissance',
           icon: Icons.location_on_rounded,
           controller: _lieuNaissanceController,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Nationalité',
           hint: 'Entrez la nationalité',
           icon: Icons.flag_rounded,
           controller: _nationaliteController,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Adresse',
           hint: 'Entrez l\'adresse complète',
           icon: Icons.home_rounded,
@@ -1616,8 +1596,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           maxLines: 2,
           required: true,
           hasError: _adresseError,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
       ],
     );
@@ -1631,7 +1609,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           title: 'Contacts',
           icon: Icons.phone_rounded,
           children: [
-            CustomTextField(
+            CustomTextInput(
               label: 'Contact 1',
               hint: 'Numéro principal',
               icon: Icons.phone_rounded,
@@ -1639,17 +1617,13 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               keyboardType: TextInputType.phone,
               required: true,
               hasError: _contact1Error,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
             ),
-            CustomTextField(
+            CustomTextInput(
               label: 'Contact 2',
               hint: 'Numéro secondaire',
               icon: Icons.phone_android_rounded,
               controller: _contact2Controller,
               keyboardType: TextInputType.phone,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
             ),
           ],
         ),
@@ -1657,33 +1631,27 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           title: 'Informations des parents',
           icon: Icons.family_restroom_rounded,
           children: [
-            CustomTextField(
+            CustomTextInput(
               label: 'Nom du père',
               hint: 'Nom complet du père',
               icon: Icons.person_rounded,
               controller: _nomPereController,
               required: true,
               hasError: _nomPereError,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
             ),
-            CustomTextField(
+            CustomTextInput(
               label: 'Nom de la mère',
               hint: 'Nom complet de la mère',
               icon: Icons.person_outline_rounded,
               controller: _nomMereController,
               required: true,
               hasError: _nomMereError,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
             ),
-            CustomTextField(
+            CustomTextInput(
               label: 'Nom du tuteur',
               hint: 'Nom du tuteur (optionnel)',
               icon: Icons.supervisor_account_rounded,
               controller: _nomTuteurController,
-              iconColor: _actionColor,
-              focusBorderColor: _actionColor,
             ),
           ],
         ),
@@ -1697,41 +1665,33 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       title: 'Scolarité antérieure',
       icon: Icons.school_rounded,
       children: [
-        CustomTextField(
+        CustomTextInput(
           label: 'Niveau antérieur',
           hint: 'Ex: CP1, 6ème...',
           icon: Icons.school_rounded,
           controller: _niveauAntController,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'École antérieure',
           hint: 'Nom de l\'école précédente',
           icon: Icons.account_balance_rounded,
           controller: _ecoleAntController,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Moyenne antérieure',
           hint: 'Ex: 12.5',
           icon: Icons.grade_rounded,
           controller: _moyenneAntController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Rang antérieur',
           hint: 'Ex: 3ème',
           icon: Icons.format_list_numbered_rounded,
           controller: _rangAntController,
           keyboardType: TextInputType.number,
-          iconColor: _actionColor,
-          focusBorderColor: _actionColor,
         ),
-        CustomTextField(
+        CustomTextInput(
           label: 'Décision',
           hint: 'Ex: Passage, Redoublement...',
           icon: Icons.gavel_rounded,
@@ -1790,7 +1750,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           title: 'Détails de la demande',
           icon: Icons.note_rounded,
           children: [
-            CustomTextField(
+            CustomTextInput(
               label: 'Motif',
               hint: 'Ex: Nouvelle inscription, Transfert...',
               icon: Icons.note_rounded,
@@ -1806,7 +1766,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                 onChanged: (v) => ss(() => _selectedStatutAff = v ?? 'Affecté'),
               ),
             ),
-            CustomTextField(
+            CustomTextInput(
               label: 'Filière',
               hint: 'Ex: primaire, secondaire, technique...',
               icon: Icons.category_rounded,
@@ -2032,83 +1992,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     required Function(String?) onChanged,
     bool required = false,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.screenTextSecondary,
-              ),
-            ),
-            if (required)
-              const Text(
-                ' *',
-                style: TextStyle(
-                  color: AppColors.screenOrange,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          initialValue: value,
-          items: items
-              .map(
-                (i) => DropdownMenuItem(
-                  value: i,
-                  child: Text(
-                    i,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.screenTextPrimary,
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: onChanged,
-          dropdownColor: Colors.white,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-            prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
-            filled: true,
-            fillColor: AppColors.screenSurface,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
-              borderSide: const BorderSide(
-                color: AppColors.screenOrange,
-                width: 1.5,
-              ),
-            ),
-          ),
-        ),
-      ],
+    return CustomSelectInput(
+      label: label,
+      value: value ?? hint,
+      items: items,
+      onChanged: (String selected) {
+        onChanged(selected);
+      },
+      isDarkMode: Theme.of(context).brightness == Brightness.dark,
+      required: required,
     );
   }
 }

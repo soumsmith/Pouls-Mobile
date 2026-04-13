@@ -8,6 +8,7 @@ import '../custom_snackbar.dart';
 import '../custom_loader.dart';
 import '../snackbar.dart';
 import '../share_button.dart';
+import 'bottom_sheet_header.dart';
 import '../../services/parrainage_service.dart';
 import '../../services/auth_service.dart';
 import '../../config/app_colors.dart';
@@ -61,85 +62,18 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 14, bottom: 6),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE0E0E0),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 6, 12, 20),
-            child: Row(
-              children: [
-                // Icon box
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF7A3C), Color(0xFFFF6B2C)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(11),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF6B2C).withOpacity(0.30),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.card_giftcard_rounded,
-                      size: 18, color: Colors.white),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Title
-                const Expanded(
-                  child: Text(
-                    'Parrainer',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                      letterSpacing: -0.5,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                  ),
-                ),
-
-                // Close button
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8F8F8),
-                      borderRadius: BorderRadius.circular(11),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x0D000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.close_rounded,
-                        size: 18, color: Color(0xFF8A8A8A)),
-                  ),
-                ),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.card_giftcard_rounded,
+            iconColor: const Color(0xFFFF7A3C),
+            title: 'Parrainer',
+            description: 'Invitez vos amis',
+            onClose: () => Navigator.of(context).pop(),
+            titleColor: isDark ? Colors.white : const Color(0xFF1A1A1A),
+            descriptionColor: const Color(0xFF8A8A8A),
+            titleFontSize: _textSizeService.getScaledFontSize(18),
+            descriptionFontSize: _textSizeService.getScaledFontSize(13),
+            //titleFontWeight: FontWeight.w700,
+            iconSize: 18,
           ),
 
           // Content

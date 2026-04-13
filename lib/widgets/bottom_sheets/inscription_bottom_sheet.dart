@@ -9,6 +9,7 @@ import '../../services/pouls_scolaire_api_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/searchable_dropdown.dart';
+import '../../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../../screens/inscription_screen.dart' as inscription;
 
 class InscriptionBottomSheet extends StatefulWidget {
@@ -218,97 +219,30 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
           ),
         ],
       ),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        maxChildSize: 0.95,
-        minChildSize: 0.7,
-        expand: false,
-        builder: (context, scrollController) {
-          return Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.school,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Nouvelle Inscription',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(
-                                    18,
-                                  ),
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : _kTextPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Sélectionnez une école et entrez le matricule',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(
-                                    13,
-                                  ),
-                                  color: isDark
-                                      ? Colors.white70
-                                      : _kTextSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: Icon(
-                            Icons.close,
-                            color: isDark ? Colors.white70 : _kTextSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            BottomSheetHeader(
+              icon: Icons.school,
+              iconColor: const Color(0xFF4CAF50),
+              title: 'Nouvelle Inscription',
+              description: 'Sélectionnez une école et entrez le matricule',
+              titleColor: isDark ? Colors.white : _kTextPrimary,
+              descriptionColor: isDark ? Colors.white70 : _kTextSecondary,
+              onClose: () => Navigator.of(context).pop(),
+              titleFontSize: _textSizeService.getScaledFontSize(18),
+              descriptionFontSize: _textSizeService.getScaledFontSize(13),
+              //titleFontWeight: FontWeight.w700,
+            ),
 
-              // Formulaire
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+            // Formulaire
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                       // Sélection de l'école
                       Text(
                         'École',
@@ -491,12 +425,10 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
                         ),
                       ),
                     ],
-                  ),
-                ),
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }

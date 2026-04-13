@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
-import 'package:parents_responsable/widgets/image_menu_card.dart';
-import 'package:parents_responsable/widgets/share_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../config/app_dimensions.dart';
@@ -18,13 +16,34 @@ import '../services/auth_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/search_bar_widget.dart';
-import '../widgets/bottom_fade_gradient.dart';
 import '../config/app_colors.dart';
+import '../widgets/image_menu_card_external_title.dart';
+import 'cart_screen.dart';
+import 'orders_screen.dart';
+import 'shop_screen.dart';
+import 'profile_screen.dart';
 import 'add_child_screen.dart';
+import 'inscription_screen.dart' as inscription;
+import '../widgets/payment_bottom_sheet.dart';
+import '../services/paiement_service.dart';
+import '../widgets/bottom_sheets/inscription_bottom_sheet.dart';
 
-// ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
+// ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
+const _kDarkBg = Color(0xFF0F0F14);
+const _kDarkCard = Color(0xFF1E1E2A);
+const _kDarkBorder = Color(0xFF2A2A35);
+const _kDarkAlert = Color(0xFF1A1020);
+const _kDarkAlertBorder = Color(0xFF2D1830);
+const _kOrange = Color(0xFFFF7A3C);
+const _kOrangeDeep = Color(0xFFFF5C1B);
+const _kSheetBg = Color(0xFFF5F5F7);
+const _kSheetCard = Color(0xFFFFFFFF);
+const _kTextPrimary = Color(0xFF1A1A2A);
+const _kTextSecondary = Color(0xFF8A8A9E);
+const _kDivider = Color(0xFFD1D1D6);
+const _kChipActive = Color(0xFF1A1A2A);
+const _kChipBg = Color(0xFFEBEBEF);
 
-/// Écran d'accueil avec liste des enfants
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -43,9 +62,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
-  // Variables pour les notifications
   int _unreadNotificationsCount = 0;
   bool _notificationsLoading = false;
+  String _activeFilter = 'Tout';
+  int _selectedChildIndex = 0;
+
+  final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
   @override
   void initState() {
@@ -65,24 +87,15 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Charge le nombre de notifications non lues
   Future<void> _loadUnreadNotificationsCount() async {
     if (!mounted) return;
-
-    setState(() {
-      _notificationsLoading = true;
-    });
-
+    setState(() => _notificationsLoading = true);
     try {
       final authService = AuthService.instance;
       final currentUser = authService.getCurrentUser();
-
       if (currentUser != null) {
-        final databaseService = DatabaseService.instance;
-        final unreadCount = await databaseService.getUnreadNotificationsCount(
-          currentUser.id,
-        );
-
+        final unreadCount = await DatabaseService.instance
+            .getUnreadNotificationsCount(currentUser.id);
         if (mounted) {
           setState(() {
             _unreadNotificationsCount = unreadCount;
@@ -91,12 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      print('Erreur lors du chargement des notifications: $e');
-      if (mounted) {
-        setState(() {
-          _notificationsLoading = false;
-        });
-      }
+      if (mounted) setState(() => _notificationsLoading = false);
     }
   }
 
@@ -105,22 +113,17 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = true;
       _error = null;
     });
-
     try {
       MainScreenWrapper.of(context).refreshCurrentUser();
       final parentId = MainScreenWrapper.of(context).currentUserId ?? 'parent1';
       final apiService = MainScreenWrapper.of(context).apiService;
       final children = await apiService.getChildrenForParent(parentId);
-
-      // ✅ Affichage immédiat des enfants sans attendre les photos
       if (!mounted) return;
       setState(() {
         _children = List.from(children);
         _filteredChildren = List.from(children);
         _isLoading = false;
       });
-
-      // 🔄 Mise à jour des photos en arrière-plan (sans bloquer l'UI)
       _updatePhotosInBackground(children);
     } catch (e) {
       if (!mounted) return;
@@ -131,7 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Met à jour les photos enfant par enfant sans bloquer l'affichage
   Future<void> _updatePhotosInBackground(List<Child> children) async {
     final poulsApiService = PoulsScolaireApiService();
     for (final child in children) {
@@ -161,7 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   eleve.urlPhoto,
                 );
                 if (!mounted) return;
-                // Mise à jour optimiste : seule la carte concernée se rafraîchit
                 setState(() {
                   final index = _children.indexWhere((c) => c.id == child.id);
                   if (index >= 0) {
@@ -174,13 +175,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       photoUrl: eleve.urlPhoto,
                       parentId: child.parentId,
                     );
-                    // Update filtered children if needed
-                    final filteredIndex = _filteredChildren.indexWhere(
+                    final fi = _filteredChildren.indexWhere(
                       (c) => c.id == child.id,
                     );
-                    if (filteredIndex >= 0) {
-                      _filteredChildren[filteredIndex] = _children[index];
-                    }
+                    if (fi >= 0) _filteredChildren[fi] = _children[index];
                   }
                 });
               }
@@ -189,6 +187,311 @@ class _HomeScreenState extends State<HomeScreen> {
         } catch (_) {}
       }
     }
+  }
+
+  // ─── BUILD ─────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        backgroundColor: _kDarkBg,
+        body: Column(
+          children: [
+            // ── Dark top section ──
+            _buildDarkHeader(),
+            // ── Light bottom sheet ──
+            Expanded(child: _buildBottomSheet()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── DARK HEADER SECTION ───────────────────────────────────────────────────
+  Widget _buildDarkHeader() {
+    return Container(
+      color: _kDarkBg,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAppBar(),
+            _buildSearchBar(),
+            _buildAlertBanner(),
+            _buildChildrenSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── APP BAR ───────────────────────────────────────────────────────────────
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dimanche 12 avril',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(11),
+                    color: _kOrange,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Bonjour, ${AuthService.instance.getCurrentUser()?.firstName ?? ''}',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(24),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Row(
+            children: [
+              // Bouton recherche
+              _darkIconButton(
+                icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                onTap: _toggleSearch,
+              ),
+              const SizedBox(width: 8),
+              // Bouton partage
+              _darkIconButton(
+                icon: Icons.share_outlined,
+                onTap: _showShareMenu,
+              ),
+              const SizedBox(width: 8),
+              // Bouton notifications
+              _darkIconButton(
+                icon: Icons.notifications_outlined,
+                onTap: () {},
+                showBadge: _unreadNotificationsCount > 0,
+                badgeCount: _unreadNotificationsCount,
+              ),
+              const SizedBox(width: 8),
+              // User avatar
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [_kOrange, _kOrangeDeep],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _getUserInitials(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _darkIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool showBadge = false,
+    int badgeCount = 0,
+  }) {
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: _kDarkCard,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 17, color: Colors.white),
+          ),
+        ),
+        if (showBadge && badgeCount > 0)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                border: Border.all(color: _kDarkBg, width: 1.5),
+              ),
+              child: Center(
+                child: Text(
+                  badgeCount > 9 ? '9+' : '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ─── ALERT BANNER ──────────────────────────────────────────────────────────
+  Widget _buildAlertBanner() {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+        decoration: BoxDecoration(
+          color: _kDarkAlert,
+          border: Border.all(color: _kDarkAlertBorder),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(
+                color: _kOrange,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Absence signalée — Fatoumat, 6ème G',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Ce matin · Collège Hînneh Biabou',
+                    style: TextStyle(
+                      color: _kTextSecondary,
+                      fontSize: _textSizeService.getScaledFontSize(10),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: _kTextSecondary, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── SEARCH BAR ────────────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return AnimatedCrossFade(
+      duration: const Duration(milliseconds: 250),
+      crossFadeState: _isSearching
+          ? CrossFadeState.showSecond
+          : CrossFadeState.showFirst,
+      firstChild: const SizedBox.shrink(),
+      secondChild: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+        child: Container(
+          height: 42,
+          decoration: BoxDecoration(
+            color: _kDarkCard,
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: _kDarkBorder),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              const Icon(
+                Icons.search_rounded,
+                color: _kTextSecondary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: _textSizeService.getScaledFontSize(13),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher par nom ou ecole...',
+                    hintStyle: TextStyle(
+                      color: _kTextSecondary,
+                      fontSize: _textSizeService.getScaledFontSize(13),
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onChanged: _onSearchChanged,
+                ),
+              ),
+              if (_searchController.text.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    _onSearchChanged('');
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: _kTextSecondary,
+                      size: 16,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ─── SHARE MENU ────────────────────────────────────────────────────────────
@@ -200,14 +503,13 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
                 color: Colors.grey[300],
@@ -215,44 +517,68 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            
-            // Titre
             Text(
               'Partager l\'application',
               style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(18),
+                fontSize: _textSizeService.getScaledFontSize(17),
                 fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
+                color: _kTextPrimary,
               ),
             ),
-            const SizedBox(height: 20),
-            
-            // Boutons de partage
+            const SizedBox(height: 8),
+            Text(
+              'Invitez vos amis a suivre leurs enfants',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(12),
+                color: _kTextSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ShareButton(
+                _shareButton(
                   label: 'Mail',
                   icon: Icons.email_rounded,
+                  bg: const Color(0xFFFFEEEE),
                   iconColor: Colors.red,
-                  imagePath: 'assets/images/email_logo.png',
-                  onTap: () => _handleShareAction('mail'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleShareAction('mail');
+                  },
                 ),
-                const SizedBox(width: 8),
-                ShareButton(
+                const SizedBox(width: 12),
+                _shareButton(
                   label: 'WhatsApp',
-                  icon: Icons.message_rounded,
-                  iconColor: Colors.green,
-                  imagePath: 'assets/images/whatsapp_logo.png',
-                  onTap: () => _handleShareAction('whatsapp'),
+                  icon: Icons.chat_rounded,
+                  bg: const Color(0xFFEAF7EE),
+                  iconColor: const Color(0xFF25D366),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleShareAction('whatsapp');
+                  },
                 ),
-                const SizedBox(width: 8),
-                ShareButton(
+                const SizedBox(width: 12),
+                _shareButton(
                   label: 'Facebook',
                   icon: Icons.facebook_rounded,
-                  iconColor: Colors.blue,
-                  imagePath: 'assets/images/facebook_logo.png',
-                  onTap: () => _handleShareAction('facebook'),
+                  bg: const Color(0xFFE8F0FE),
+                  iconColor: const Color(0xFF1877F2),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleShareAction('facebook');
+                  },
+                ),
+                const SizedBox(width: 12),
+                _shareButton(
+                  label: 'Autre',
+                  icon: Icons.more_horiz_rounded,
+                  bg: _kSheetBg,
+                  iconColor: _kTextSecondary,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleShareAction('other');
+                  },
                 ),
               ],
             ),
@@ -263,23 +589,58 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _shareButton({
+    required String label,
+    required IconData icon,
+    required Color bg,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: iconColor, size: 26),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(11),
+              color: _kTextPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleShareAction(String action) async {
     const appUrl =
         'https://play.google.com/store/apps/details?id=com.pouls.ecole';
     const shareText =
-        'Découvrez Pouls École, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !';
+        'Decouvrez Pouls Ecole, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps reel !';
     switch (action) {
       case 'mail':
-        final subject = Uri.encodeComponent('Découvrez Pouls École');
-        final body = Uri.encodeComponent('$shareText\n\nTéléchargez l\'application ici : $appUrl');
+        final subject = Uri.encodeComponent('Decouvrez Pouls Ecole');
+        final body = Uri.encodeComponent(
+          '$shareText\n\nTelechargez l\'application ici : $appUrl',
+        );
         final uri = Uri.parse('mailto:?subject=$subject&body=$body');
-        
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Aucune application email trouvée sur cet appareil'),
+              content: Text('Aucune application email trouvee'),
               backgroundColor: Colors.red,
             ),
           );
@@ -290,7 +651,7 @@ class _HomeScreenState extends State<HomeScreen> {
           scheme: 'https',
           host: 'wa.me',
           queryParameters: {
-            'text': '$shareText\n\nTéléchargez l\'application ici : $appUrl',
+            'text': '$shareText\n\nTelechargez l\'application ici : $appUrl',
           },
         );
         if (await canLaunchUrl(uri)) await launchUrl(uri);
@@ -306,506 +667,1033 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'other':
         await Share.share(
-          '$shareText\n\nTéléchargez l\'application ici : $appUrl',
-          subject: 'Découvrez Pouls École',
+          '$shareText\n\nTelechargez l\'application ici : $appUrl',
+          subject: 'Decouvrez Pouls Ecole',
         );
         break;
     }
   }
 
-  // ─── BUILD ─────────────────────────────────────────────────────────────────
-  @override
-  Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
-        body: Column(
+  // ─── CHILDREN SECTION ──────────────────────────────────────────────────────
+  Widget _buildChildrenSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: Text(
+            'MES ENFANTS',
+            style: TextStyle(
+              color: _kTextSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 88,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            children: [
+              ..._children.asMap().entries.map(
+                (e) => _buildChildAvatar(e.value, e.key),
+              ),
+              _buildAddChildButton(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildChildAvatar(Child child, int index) {
+    final isSelected = index == _selectedChildIndex;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedChildIndex = index);
+        MainScreenWrapper.of(context).navigateToChildDetail(child);
+      },
+      child: Container(
+        width: 68,
+        margin: const EdgeInsets.only(right: 14),
+        child: Column(
           children: [
-            _buildAppBar(),
-            Expanded(child: _buildBody()),
+            Stack(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _kDarkCard,
+                    border: Border.all(
+                      color: isSelected ? _kOrange : _kDarkBorder,
+                      width: 2.5,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: child.photoUrl != null && child.photoUrl!.isNotEmpty
+                        ? Image.network(
+                            child.photoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _defaultChildIcon(),
+                          )
+                        : _defaultChildIcon(),
+                  ),
+                ),
+                // Notification dot
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: 13,
+                    height: 13,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _kDarkBg, width: 2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              child.firstName,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: _textSizeService.getScaledFontSize(10),
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              child.grade.isNotEmpty ? child.grade : '—',
+              style: TextStyle(
+                color: _kOrange,
+                fontSize: _textSizeService.getScaledFontSize(9),
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ─── APP BAR ───────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
+  Widget _defaultChildIcon() {
     return Container(
-      color: AppColors.screenSurface,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
-          child: Row(
-            children: [
-              // Logo / title
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Parent responsable',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(22),
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.6,
-                      ),
-                    ),
-                    Text(
-                      'Suivi scolaire en temps réel',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(12),
-                        color: AppColors.screenTextSecondary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
+      color: const Color(0xFF22223A),
+      child: const Icon(Icons.person, color: Color(0xFF8A8AFF), size: 26),
+    );
+  }
+
+  Widget _buildAddChildButton() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
+        if (result == true) _loadChildren();
+      },
+      child: SizedBox(
+        width: 68,
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _kDarkBorder,
+                  width: 2,
+                  style: BorderStyle
+                      .solid, // dashed not directly supported; use a package for dashed
                 ),
               ),
-
-              // Consultation demandes button
-              _appBarIconButton(
-                icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                onTap: _toggleSearch,
-                backgroundColor: _isSearching
-                    ? Colors.white
-                    : Colors.white,
-                //iconColor: _isSearching ? Colors.grey[700] : AppColors.screenOrange,
+              child: const Icon(Icons.add, color: _kDarkBorder, size: 20),
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'Nouveau',
+              style: TextStyle(
+                color: _kTextSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(width: 8),
-              // Share button
-              _appBarIconButton(
-                icon: Icons.share_outlined,
-                onTap: _showShareMenu,
-              ),
-              const SizedBox(width: 8),
-              // Notifications button
-              _appBarIconButton(
-                icon: Icons.notifications_outlined,
-                onTap: () {
-                  /* TODO: Notifications */
-                },
-                showBadge: true,
-                badgeCount: _unreadNotificationsCount,
-              ),
-              const SizedBox(width: 4),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _appBarIconButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    Color? backgroundColor,
-    Color? iconColor,
-    bool showBadge = false,
-    int badgeCount = 0,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 40,
-            height: 40,
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+  // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
+  Widget _buildBottomSheet() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _kSheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            width: 34,
+            height: 4,
+            margin: const EdgeInsets.only(top: 10, bottom: 14),
             decoration: BoxDecoration(
-              color: backgroundColor ?? (isDark ? const Color(0xFF2A2A2A) : AppColors.screenCard),
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.screenShadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: iconColor ?? (isDark ? Colors.white70 : AppColors.screenTextPrimary),
+              color: _kDivider,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        ),
-        if (showBadge && badgeCount > 0)
-          Positioned(
-            right: 6,
-            top: 6,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(AppDimensions.getBadgeBorderRadius(context)),
-              ),
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Text(
-                badgeCount > 99 ? '99+' : badgeCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  // ─── BODY ──────────────────────────────────────────────────────────────────
-  Widget _buildBody() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Search bar
-        SearchBarWidget(
-          isSearching: _isSearching,
-          searchController: _searchController,
-          onChanged: _onSearchChanged,
-          onClear: _onSearchCleared,
-          hintText: 'Rechercher par nom ou école...',
-        ),
-        // ── Section fixe : hero + stats ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero text
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  'Suivez le parcours scolaire\nde vos enfants',
+          // Quick access header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Row(
+              children: [
+                const Text(
+                  'ACCÈS RAPIDE',
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(22),
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.screenTextPrimary,
-                    letterSpacing: -0.6,
-                    height: 1.25,
+                    color: _kTextPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-
-              // Stats grid
-              _buildStatsGrid(),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-
-        // ── Panneau scrollable : header + liste ──
-        Expanded(
-          child: Container(
-            decoration: const BoxDecoration(
-              color: AppColors.screenCard,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x10000000),
-                  blurRadius: 20,
-                  offset: Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 12, bottom: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.screenDivider,
-                      borderRadius: BorderRadius.circular(2),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {},
+                  child: const Text(
+                    '+ Ajouter',
+                    style: TextStyle(
+                      color: _kOrange,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                // Section header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                  child: _buildSectionHeader(),
-                ),
-                // Scrollable list
-                Expanded(child: _buildChildrenContent()),
               ],
             ),
+          ),
+          // Quick access icons
+          _buildQuickAccess(),
+          // Boutique section
+          _buildBoutiqueSection(),
+          // Filter chips
+          _buildFilterRow(),
+          // Activity list
+          Expanded(child: _buildActivityList()),
+        ],
+      ),
+    );
+  }
+
+  // BOUTIQUE SECTION
+  Widget _buildBoutiqueSection() {
+    final isDark = _themeService.isDarkMode;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Text(
+            'BOUTIQUE',
+            style: TextStyle(
+              color: _kTextSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(left: 16, right: 4),
+            children: [
+              // Mon panier
+              ImageMenuCardExternalTitle(
+                index: 0,
+                cardKey: 'panier',
+                title: 'Mon panier',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/mes-commandes.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: _kOrange,
+                backgroundColor: isDark
+                    ? const Color(0xFF2A1A0F)
+                    : const Color(0xFFFFF4EE),
+                textColor: isDark
+                    ? const Color(0xC0FB923C)
+                    : const Color(0xFF9A3412),
+                actionText: 'Voir',
+                actionTextColor: _kOrange,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const MainScreenWrapper(child: CartScreen()),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 10),
+
+              // Mes commandes
+              ImageMenuCardExternalTitle(
+                index: 1,
+                cardKey: 'commandes',
+                title: 'Mes commandes',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/mes-demande.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: const Color(0xFF10B981),
+                backgroundColor: isDark
+                    ? const Color(0xFF0A2E2A)
+                    : const Color(0xFFECFDF5),
+                textColor: isDark
+                    ? const Color(0xC06EE7B7)
+                    : const Color(0xFF065F46),
+                actionText: 'Voir',
+                actionTextColor: const Color(0xFF10B981),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const MainScreenWrapper(child: OrdersScreen()),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 10),
+
+              // Boutique (Libouli)
+              ImageMenuCardExternalTitle(
+                index: 2,
+                cardKey: 'boutique_libouli',
+                title: 'Boutique\n(Libouli)',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/ecole.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: const Color(0xFF8B5CF6),
+                backgroundColor: isDark
+                    ? const Color(0xFF2E1A4E)
+                    : const Color(0xFFF3E8FF),
+                textColor: isDark
+                    ? const Color(0xC08B5CF6)
+                    : const Color(0xFF6B21A8),
+                actionText: 'Accéder',
+                actionTextColor: const Color(0xFF8B5CF6),
+                onTap: () {
+                  final wrapper = MainScreenWrapper.maybeOf(context);
+                  if (wrapper != null) {
+                    wrapper.updateCurrentIndex(1);
+                  } else {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const MainScreenWrapper(initialIndex: 1),
+                      ),
+                      (r) => false,
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 10),
+
+              // Fournitures scolaires
+              ImageMenuCardExternalTitle(
+                index: 4,
+                cardKey: 'fournitures',
+                title: 'Fournitures',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/foutnitures-scolaire.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: const Color(0xFF8B5CF6),
+                backgroundColor: isDark
+                    ? const Color(0xFF2E1A4E)
+                    : const Color(0xFFF3E8FF),
+                textColor: isDark
+                    ? const Color(0xC08B5CF6)
+                    : const Color(0xFF6B21A8),
+                actionText: 'Acheter',
+                actionTextColor: const Color(0xFF8B5CF6),
+                onTap: () {},
+              ),
+              const SizedBox(width: 10),
+
+              // Uniformes
+              ImageMenuCardExternalTitle(
+                index: 5,
+                cardKey: 'uniformes',
+                title: 'Uniformes',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/ecole.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: const Color(0xFF06B6D4),
+                backgroundColor: isDark
+                    ? const Color(0xFF0E2A2A)
+                    : const Color(0xFFECFEFF),
+                textColor: isDark
+                    ? const Color(0xC006B6D4)
+                    : const Color(0xFF0E7490),
+                actionText: 'Voir',
+                actionTextColor: const Color(0xFF06B6D4),
+                onTap: () {},
+              ),
+              const SizedBox(width: 10),
+
+              // Livres scolaires
+              ImageMenuCardExternalTitle(
+                index: 5,
+                cardKey: 'livres',
+                title: 'Livres',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/notes.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: const Color(0xFF10B981),
+                backgroundColor: isDark
+                    ? const Color(0xFF0A2E2A)
+                    : const Color(0xFFECFDF5),
+                textColor: isDark
+                    ? const Color(0xC010B981)
+                    : const Color(0xFF047857),
+                actionText: 'Acheter',
+                actionTextColor: const Color(0xFF10B981),
+                onTap: () {},
+              ),
+              const SizedBox(width: 10),
+
+              // Articles sport
+              ImageMenuCardExternalTitle(
+                index: 6,
+                cardKey: 'sports',
+                title: 'Sports',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/school-event.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: const Color(0xFFF59E0B),
+                backgroundColor: isDark
+                    ? const Color(0xFF2A1E0F)
+                    : const Color(0xFFFFF8E8),
+                textColor: isDark
+                    ? const Color(0xC0F59E0B)
+                    : const Color(0xFF92400E),
+                actionText: 'Voir',
+                actionTextColor: const Color(0xFFF59E0B),
+                onTap: () {},
+              ),
+              const SizedBox(width: 10),
+
+              // Accessoires
+              ImageMenuCardExternalTitle(
+                index: 7,
+                cardKey: 'accessoires',
+                title: 'Accessoires',
+                width: 80,
+                height: 100,
+                imageFlex: 2,
+                imagePath: 'assets/images/mes-commandes.jpg',
+                isDark: isDark,
+                titleFontSize: 11,
+                imageBorderRadius: 14,
+                color: const Color(0xFFEC4899),
+                backgroundColor: isDark
+                    ? const Color(0xFF2A1A2E)
+                    : const Color(0xFFFDF2F8),
+                textColor: isDark
+                    ? const Color(0xC0EC4899)
+                    : const Color(0xFFBE185D),
+                actionText: 'Voir',
+                actionTextColor: const Color(0xFFEC4899),
+                onTap: () {},
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  // ─── STATS GRID ────────────────────────────────────────────────────────────
-  Widget _buildStatsGrid() {
+  // ─── QUICK ACCESS ──────────────────────────────────────────────────────────
+  Widget _buildQuickAccess() {
     final isDark = _themeService.isDarkMode;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
+    return SizedBox(
+      height: 120,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 16, right: 4),
         children: [
-         
-          ImageMenuCard(
-            index: 3,
-            cardKey: 'integration_requests',
-            title: 'Demandes d\'intégration',
-            iconData: Icons.school_rounded,
+          // Messages
+          ImageMenuCardExternalTitle(
+            index: 0,
+            cardKey: 'messages',
+            title: 'Messages',
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/messages.jpg',
             isDark: isDark,
-            color: AppColors.customGreen,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
+            color: const Color(0xFF6366F1),
             backgroundColor: isDark
-                ? AppColors.customGreenDark
-                : AppColors.customGreenSurface,
+                ? const Color(0xFF1E1E2A)
+                : const Color(0xFFEEF2FF),
             textColor: isDark
-                ? AppColors.customGreenLight
-                : AppColors.customGreenDark,
-            actionText: 'Consulter',
-            actionTextColor: AppColors.customGreen,
-            onTap: () => IntegrationRequestBottomSheet.show(
-              context,
-              //matricule: widget.child.matricule,
-              //childFullName: widget.child.fullName,
-            ),
+                ? const Color(0xFFA5B4FC)
+                : const Color(0xFF4338CA),
+            actionText: 'Voir',
+            actionTextColor: const Color(0xFF6366F1),
+            onTap: () {},
           ),
-          
-          const SizedBox(width: 8),
-          ImageMenuCard(
-            index: 3,
-            cardKey: 'integration_requests',
-            title: 'Demandes d\'intégration',
-            iconData: Icons.school_rounded,
+          const SizedBox(width: 10),
+
+          // Agenda
+          ImageMenuCardExternalTitle(
+            index: 1,
+            cardKey: 'agenda',
+            title: 'Agenda',
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/emploi-du-temps.jpg',
             isDark: isDark,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
+            color: const Color(0xFF22C55E),
+            backgroundColor: isDark
+                ? const Color(0xFF1E2A1E)
+                : const Color(0xFFE8F8F0),
+            textColor: isDark
+                ? const Color(0xFF86EFAC)
+                : const Color(0xFF166534),
+            actionText: 'Voir',
+            actionTextColor: const Color(0xFF22C55E),
+            onTap: () {},
+          ),
+          const SizedBox(width: 10),
+
+          // Paiements
+          ImageMenuCardExternalTitle(
+            index: 2,
+            cardKey: 'paiements',
+            title: 'Paiements',
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/mes-commandes.jpg',
+            isDark: isDark,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
+            color: const Color(0xFFF5A623),
+            backgroundColor: isDark
+                ? const Color(0xFF2A1E0F)
+                : const Color(0xFFFFF8E8),
+            textColor: isDark
+                ? const Color(0xFFFCD34D)
+                : const Color(0xFF92400E),
+            actionText: 'Payer',
+            actionTextColor: const Color(0xFFF5A623),
+            onTap: () {
+              PaymentBottomSheet.show(
+                context: context,
+                childName: null,
+                matricule: null,
+                onPayment: (montant, matricule) async {
+                  try {
+                    // Convertir le montant en entier
+                    final montantInt = int.tryParse(montant);
+                    if (montantInt == null || montantInt <= 0) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Montant invalide'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    // Initialiser le paiement
+                    final paiementService = PaiementService();
+                    final paiementResponse = await paiementService
+                        .initierPaiementEnLigne(matricule, montantInt);
+
+                    if (paiementResponse.success &&
+                        paiementResponse.url.isNotEmpty) {
+                      // Lancer l'URL de paiement
+                      final launched = await paiementService.lancerUrlPaiement(
+                        paiementResponse.url,
+                      );
+
+                      if (!launched && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Impossible d\'ouvrir la page de paiement',
+                            ),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(paiementResponse.message),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erreur lors du paiement: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
+                },
+              );
+            },
+          ),
+          const SizedBox(width: 10),
+
+          // Bulletins
+          ImageMenuCardExternalTitle(
+            index: 3,
+            cardKey: 'bulletins',
+            title: 'Bulletins',
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/notes.jpg',
+            isDark: isDark,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
+            color: const Color(0xFFEF4444),
+            backgroundColor: isDark
+                ? const Color(0xFF2A0F0F)
+                : const Color(0xFFFFF0F0),
+            textColor: isDark
+                ? const Color(0xFFF87171)
+                : const Color(0xFF991B1B),
+            actionText: 'Voir',
+            actionTextColor: const Color(0xFFEF4444),
+            onTap: () {},
+          ),
+          const SizedBox(width: 10),
+
+          // Consulter demande
+          ImageMenuCardExternalTitle(
+            index: 4,
+            cardKey: 'consulter_demande',
+            title: 'Consulter\ndemande',
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/mes-demande.jpg',
+            isDark: isDark,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
+            color: const Color(0xFF1B8A56),
+            backgroundColor: isDark
+                ? const Color(0xFF0F2A1E)
+                : const Color(0xFFEAF7F0),
+            textColor: isDark
+                ? const Color(0xFF6EE7B7)
+                : const Color(0xFF065F46),
+            actionText: 'Consulter',
+            actionTextColor: const Color(0xFF1B8A56),
+            onTap: () => IntegrationRequestBottomSheet.show(context),
+          ),
+          const SizedBox(width: 10),
+
+          // Intégration
+          ImageMenuCardExternalTitle(
+            index: 5,
+            cardKey: 'integration',
+            title: 'Intégration',
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/inscription.jpg',
+            isDark: isDark,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
             color: const Color(0xFF1565C0),
             backgroundColor: isDark
-                ? const Color(0xFF0A2540)
+                ? const Color(0xFF0F1A2A)
                 : const Color(0xFFE3F2FD),
             textColor: isDark
-                ? const Color(0xFF64B5F6)
+                ? const Color(0xFF90CAF9)
                 : const Color(0xFF0D47A1),
-            actionText: 'Consulter',
+            actionText: 'Commencer',
             actionTextColor: const Color(0xFF1565C0),
             onTap: () => showModalBottomSheet(
               context: context,
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
-              builder: (_) => IntegrationBottomSheet(
-                //ecole: monEcole,
-                //onSuccess: (uid) => _showSuccessDialog(uid),
-              ),
+              builder: (_) => const IntegrationBottomSheet(),
             ),
           ),
-          const SizedBox(width: 8),
-          ImageMenuCard(
-            index: 4,
-            cardKey: 'sponsorship',
+          const SizedBox(width: 10),
+
+          // Parrainage
+          ImageMenuCardExternalTitle(
+            index: 6,
+            cardKey: 'parrainage',
             title: 'Parrainage',
-            iconData: Icons.card_giftcard_rounded,
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/scolarite.jpg',
             isDark: isDark,
-            color: AppColors.customOrange,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
+            color: _kOrange,
             backgroundColor: isDark
-                ? AppColors.customOrangeDark
-                : AppColors.customOrangeSurface,
+                ? const Color(0xFF2A1A0F)
+                : const Color(0xFFFFF4EE),
             textColor: isDark
-                ? AppColors.customOrangeLight
-                : AppColors.customOrangeDark,
-            actionText: 'Parrainer',
-            actionTextColor: AppColors.customOrange,
+                ? const Color(0xFFFB923C)
+                : const Color(0xFF9A3412),
+            actionText: 'Inviter',
+            actionTextColor: _kOrange,
             onTap: () => showSponsorshipBottomSheet(context),
           ),
-          const SizedBox(width: 8),
-           _buildStatCard(
-            icon: Icons.child_care_rounded,
-            color: const Color(0xFF4A90D9),
-            value: '${_children.length}',
-            label:
-                'Enfant${_children.length > 1 ? 's' : ''} inscrit${_children.length > 1 ? 's' : ''}',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-    );
-  }
+          const SizedBox(width: 10),
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required Color color,
-    required String value,
-    required String label,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(22),
-              fontWeight: FontWeight.w800,
-              color: AppColors.screenTextPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(11),
-              color: AppColors.screenTextSecondary,
-              fontWeight: FontWeight.w400,
-            ),
+          // Inscription
+          ImageMenuCardExternalTitle(
+            index: 7,
+            cardKey: 'inscription',
+            title: 'Inscription',
+            width: 80,
+            height: 100,
+            imageFlex: 2,
+            imagePath: 'assets/images/34915683_8228822.jpg',
+            isDark: isDark,
+            titleFontSize: 11,
+            imageBorderRadius: 14,
+            color: const Color(0xFF8B5CF6),
+            backgroundColor: isDark
+                ? const Color(0xFF2E1A4A)
+                : const Color(0xFFF3E8FF),
+            textColor: isDark
+                ? const Color(0xFFA78BFA)
+                : const Color(0xFF5B21B6),
+            actionText: 'S\'inscrire',
+            actionTextColor: const Color(0xFF8B5CF6),
+            onTap: () {
+              InscriptionBottomSheet.show(context);
+            },
           ),
         ],
       ),
     );
   }
 
-  // ─── SECTION HEADER ────────────────────────────────────────────────────────
-  Widget _buildSectionHeader() {
-    return Row(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            'Mes Enfants',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(17),
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-        ),
-        const Spacer(),
-        GestureDetector(
-          onTap: () async {
-            final result = await Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
-            if (result == true) _loadChildren();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+  // ─── FILTER ROW ────────────────────────────────────────────────────────────
+  Widget _buildFilterRow() {
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        children: _filters.map((f) {
+          final isActive = f == _activeFilter;
+          return GestureDetector(
+            onTap: () => setState(() => _activeFilter = f),
+            child: Container(
+              margin: const EdgeInsets.only(right: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+              decoration: BoxDecoration(
+                color: isActive ? _kChipActive : _kChipBg,
+                borderRadius: BorderRadius.circular(18),
               ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.screenOrange.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+              child: Text(
+                f,
+                style: TextStyle(
+                  color: isActive ? Colors.white : _kTextSecondary,
+                  fontSize: _textSizeService.getScaledFontSize(11),
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add, color: Colors.white, size: 15),
-                const SizedBox(width: 5),
-                Text(
-                  'Ajouter un enfant',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: _textSizeService.getScaledFontSize(12),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ─── ACTIVITY LIST ─────────────────────────────────────────────────────────
+  Widget _buildActivityList() {
+    if (_isLoading) {
+      return CustomLoader(
+        message: 'Chargement...',
+        loaderColor: _kOrange,
+        backgroundColor: _kSheetBg,
+        showBackground: false,
+      );
+    }
+    if (_error != null) {
+      return _buildErrorState();
+    }
+
+    // Dummy activity cards — replace with real data from your API
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+      children: [
+        _buildActivityCard(
+          type: 'Absence signalée',
+          typeColor: _kOrange,
+          typeIcon: Icons.warning_amber_rounded,
+          accentColor: _kOrange,
+          title: 'Fatoumat-Zara Kante',
+          subtitle: 'Non justifiée · 6ème G · Collège Hînneh Biabou',
+          time: '08h30',
+          actions: [
+            _ActivityAction('Justifier', false, null, () {}),
+            _ActivityAction('Contacter', false, null, () {}),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildActivityCard(
+          type: 'Paiement dû',
+          typeColor: const Color(0xFFF5A623),
+          typeIcon: Icons.info_outline_rounded,
+          accentColor: const Color(0xFFF5A623),
+          title: 'Scolarité Trimestre 3 — 25 000 FCFA',
+          subtitle: 'Abdoul Kader · Collège Privé BKB',
+          time: 'Hier',
+          actions: [
+            _ActivityAction(
+              'Payer maintenant',
+              true,
+              const Color(0xFFF5A623),
+              () {},
             ),
-          ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildActivityCard(
+          type: 'Message professeur',
+          typeColor: const Color(0xFF378ADD),
+          typeIcon: Icons.chat_bubble_outline_rounded,
+          accentColor: const Color(0xFF378ADD),
+          title: 'M. Koné — SVT',
+          subtitle: 'Abdoul Kader · Résultats devoir sur table disponibles',
+          time: 'Lun.',
+          actions: [
+            _ActivityAction('Lire', false, null, () {}),
+            _ActivityAction('Répondre', false, null, () {}),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildActivityCard(
+          type: 'Bulletin disponible',
+          typeColor: const Color(0xFF4CAF50),
+          typeIcon: Icons.description_outlined,
+          accentColor: const Color(0xFF4CAF50),
+          title: 'Trimestre 2 — Fatoumat-Zara',
+          subtitle: '6ème G · Collège Hînneh Biabou',
+          time: 'Dim.',
+          actions: [
+            _ActivityAction('Consulter le bulletin', false, null, () {}),
+          ],
         ),
       ],
     );
   }
 
-  // ─── CHILDREN CONTENT ──────────────────────────────────────────────────────
-  Widget _buildChildrenContent() {
-    if (_isLoading) {
-      return CustomLoader(
-        message: 'Chargement de vos enfants...',
-        loaderColor: AppColors.screenOrange,
-        backgroundColor: AppColors.screenSurface,
-        showBackground: false,
-      );
-    }
-
-    if (_error != null) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-        child: _buildErrorState(),
-      );
-    }
-    if (_children.isEmpty) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-        child: _buildEmptyState(),
-      );
-    }
-    return _buildChildrenList();
+  Widget _buildActivityCard({
+    required String type,
+    required Color typeColor,
+    required IconData typeIcon,
+    required Color accentColor,
+    required String title,
+    required String subtitle,
+    required String time,
+    required List<_ActivityAction> actions,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _kSheetCard,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            // Left accent bar
+            Container(width: 3.5, color: accentColor),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(typeIcon, color: typeColor, size: 13),
+                        const SizedBox(width: 5),
+                        Text(
+                          type,
+                          style: TextStyle(
+                            color: typeColor,
+                            fontSize: _textSizeService.getScaledFontSize(10),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          time,
+                          style: TextStyle(
+                            color: _kTextSecondary,
+                            fontSize: _textSizeService.getScaledFontSize(10),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: _kTextPrimary,
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: _kTextSecondary,
+                        fontSize: _textSizeService.getScaledFontSize(11),
+                      ),
+                    ),
+                    const SizedBox(height: 9),
+                    Row(
+                      children: actions.map((a) {
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: actions.last == a ? 0 : 7,
+                            ),
+                            child: GestureDetector(
+                              onTap: a.onTap,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: a.isPrimary
+                                      ? (a.primaryColor ?? _kOrange)
+                                      : _kSheetBg,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Text(
+                                  a.label,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: a.isPrimary
+                                        ? Colors.white
+                                        : _kTextPrimary,
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(11),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
+  // ─── ERROR STATE ───────────────────────────────────────────────────────────
   Widget _buildErrorState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
-      child: Center(
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF0F0),
+              width: 60,
+              height: 60,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF0F0),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.error_outline,
-                size: 36,
+                size: 30,
                 color: Colors.red[400],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               'Une erreur est survenue',
               style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(17),
+                fontSize: _textSizeService.getScaledFontSize(16),
                 fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
+                color: _kTextPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -814,507 +1702,55 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(13),
-                color: AppColors.screenTextSecondary,
-                height: 1.5,
+                color: _kTextSecondary,
               ),
             ),
-            const SizedBox(height: 24),
-            _buildOrangeButton(label: 'Réessayer', onTap: _loadChildren),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
-      child: Center(
-        child: Column(
-          children: [
-            Container(
-              width: 90,
-              height: 90,
-              decoration: const BoxDecoration(
-                color: AppColors.screenOrangeLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.child_care_rounded,
-                size: 44,
-                color: AppColors.screenOrange,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Commencez votre parcours',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(19),
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Ajoutez votre premier enfant\npour suivre son évolution',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(13),
-                color: AppColors.screenTextSecondary,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChildrenList() {
-    return Stack(
-      children: [
-        ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
-          itemCount: _filteredChildren.length,
-          itemBuilder: (context, index) =>
-              _buildChildCard(_filteredChildren[index], index),
-        ),
-        // Gradient fade at bottom
-        BottomFadeGradient(
-          height: 80,
-          startColor: AppColors.screenCard.withOpacity(0),
-          endColor: AppColors.screenCard,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChildCard(Child child, int index) {
-    return GestureDetector(
-      onTap: () => MainScreenWrapper.of(context).navigateToChildDetail(child),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-          boxShadow: AppDimensions.getLightShadow(context),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(7),
-          child: Row(
-            children: [
-              // Photo / avatar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: child.photoUrl != null && child.photoUrl!.isNotEmpty
-                      ? Image.network(
-                          child.photoUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        )
-                      : const Icon(Icons.person, color: Colors.white, size: 22),
-                ),
-              ),
-              const SizedBox(width: 14),
-
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      child.fullName,
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(15),
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      child.establishment.isNotEmpty
-                          ? child.establishment
-                          : 'Établissement non renseigné',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(12),
-                        color: AppColors.screenTextSecondary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                  ],
-                ),
-              ),
-
-              // Grade badge (déplacé à droite)
-              Container(
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: _loadChildren,
+              child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: 24,
+                  vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.screenOrangeLight,
-                  borderRadius: BorderRadius.circular(20),
+                  color: _kOrange,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  child.grade.isNotEmpty
-                      ? child.grade
-                      : 'Classe non renseignée',
+                child: const Text(
+                  'Réessayer',
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(11),
-                    color: AppColors.screenOrange,
+                    color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── ORANGE BUTTON (same as CartScreen) ───────────────────────────────────
-  Widget _buildOrangeButton({
-    required String label,
-    VoidCallback? onTap,
-    bool isLoading = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-        ),
       ),
     );
   }
 
-  // ─── HELPERS ───────────────────────────────────────────────────────────────
-  int _getUniqueClassesCount() => _children.map((c) => c.grade).toSet().length;
+  // ─── HELPER FUNCTIONS ───────────────────────────────────────────────────────
+  String _getUserInitials() {
+    final currentUser = AuthService.instance.getCurrentUser();
+    if (currentUser == null) return 'AK';
 
-  int _getUniqueSchoolsCount() =>
-      _children.map((c) => c.establishment).toSet().length;
+    final firstName = currentUser.firstName?.trim() ?? '';
+    final lastName = currentUser.lastName?.trim() ?? '';
 
-  String _getAverageGradeDisplay() {
-    if (_children.isEmpty) return '-';
-    final levels = _children.map((child) {
-      final g = child.grade.toLowerCase();
-      if (g.contains('cp') || g.contains('1ère')) return 1;
-      if (g.contains('ce1') || g.contains('2ème')) return 2;
-      if (g.contains('ce2') || g.contains('3ème')) return 3;
-      if (g.contains('cm1') || g.contains('4ème')) return 4;
-      if (g.contains('cm2') || g.contains('5ème')) return 5;
-      if (g.contains('6ème')) return 6;
-      if (g.contains('seconde')) return 10;
-      if (g.contains('première')) return 11;
-      if (g.contains('terminale')) return 12;
-      return 3;
-    }).toList();
-    final avg = levels.reduce((a, b) => a + b) / levels.length;
-    if (avg <= 1) return 'CP';
-    if (avg <= 2) return 'CE1';
-    if (avg <= 3) return 'CE2';
-    if (avg <= 4) return 'CM1';
-    if (avg <= 5) return 'CM2';
-    if (avg <= 6) return '6ème';
-    if (avg <= 10) return 'Collège';
-    if (avg <= 11) return 'Première';
-    return 'Lycée';
-  }
-
-  // ─── INTEGRATION REQUEST BOTTOM SHEET ───────────────────────────────────────
-  void _showIntegrationRequestBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.4,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              // Title
-              const Text(
-                'Consulter ma demande',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
-                ),
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Entrez votre matricule pour vérifier le statut de votre demande d\'intégration',
-                style: TextStyle(fontSize: 14, color: Color(0xFF8A8A9A)),
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-              ),
-              const SizedBox(height: 24),
-              // Matricule field
-              TextField(
-                controller: _matriculeController,
-                decoration: InputDecoration(
-                  labelText: 'Matricule',
-                  hintText: 'Ex: 1234RTFGHJ',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.screenOrange),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Submit button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitIntegrationRequest,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.screenOrange,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Consulter',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── SUBMIT INTEGRATION REQUEST ───────────────────────────────────────────────
-  Future<void> _submitIntegrationRequest() async {
-    if (_matriculeController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer un matricule'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+      return '${firstName[0]}${lastName[0]}'.toUpperCase();
+    } else if (firstName.isNotEmpty) {
+      return firstName.substring(0, 1).toUpperCase();
+    } else if (lastName.isNotEmpty) {
+      return lastName.substring(0, 1).toUpperCase();
     }
 
-    // Close bottom sheet
-    Navigator.of(context).pop();
-
-    // Show loader
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const CustomLoader(
-        message: 'Consultation en cours...',
-        loaderColor: AppColors.screenOrange,
-      ),
-    );
-
-    try {
-      // Pour le moment, utiliser un code d'école par défaut
-      // TODO: Récupérer le code de l'école actuelle dynamiquement
-      final schoolCode = 'gainhs';
-
-      final result = await IntegrationRequestService.consultIntegrationRequest(
-        ecoleCode: schoolCode,
-        matricule: _matriculeController.text,
-      );
-
-      // Close loader
-      Navigator.of(context).pop();
-
-      if (result['success'] == true) {
-        _showIntegrationResultDialog(result['data']);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['error'] ?? 'Erreur lors de la consultation'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      // Close loader
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    return 'AK';
   }
 
-  // ─── SHOW INTEGRATION RESULT DIALOG ───────────────────────────────────────────
-  void _showIntegrationResultDialog(Map<String, dynamic> data) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: data['statut'] == 2 ? Colors.green : Colors.orange,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Icon(
-                  data['statut'] == 2
-                      ? Icons.check_rounded
-                      : Icons.info_rounded,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Title
-              const Text(
-                'Résultat de votre demande',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Message
-              Text(
-                data['message'] ?? 'Aucun message disponible',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF8A8A9A),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              // Close button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.screenOrange,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── SEARCH FUNCTIONALITY ─────────────────────────────────────────────────────
   void _toggleSearch() {
     setState(() {
       _isSearching = !_isSearching;
@@ -1327,25 +1763,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onSearchChanged(String query) {
     if (query.isEmpty) {
-      setState(() {
-        _filteredChildren = List.from(_children);
-      });
+      setState(() => _filteredChildren = List.from(_children));
       return;
     }
-
-    final lowerQuery = query.toLowerCase();
+    final lq = query.toLowerCase();
     setState(() {
-      _filteredChildren = _children.where((child) {
-        final fullName = '${child.firstName} ${child.lastName}'.toLowerCase();
-        final schoolName = child.establishment.toLowerCase();
-        return fullName.contains(lowerQuery) || schoolName.contains(lowerQuery);
+      _filteredChildren = _children.where((c) {
+        final name = '${c.firstName} ${c.lastName}'.toLowerCase();
+        return name.contains(lq) || c.establishment.toLowerCase().contains(lq);
       }).toList();
     });
   }
+}
 
-  void _onSearchCleared() {
-    setState(() {
-      _filteredChildren = List.from(_children);
-    });
-  }
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+class _ActivityAction {
+  final String label;
+  final bool isPrimary;
+  final Color? primaryColor;
+  final VoidCallback onTap;
+  const _ActivityAction(
+    this.label,
+    this.isPrimary,
+    this.primaryColor,
+    this.onTap,
+  );
 }

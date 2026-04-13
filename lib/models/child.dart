@@ -9,6 +9,8 @@ class Child {
   final String parentId;
   final String? matricule; // Matricule de l'élève
   final String? ecoleCode; // Code de l'école pour l'API
+  final String?
+  paramEcole; // Paramètre de l'école (paramecole) utilisé comme code école
 
   Child({
     required this.id,
@@ -20,6 +22,7 @@ class Child {
     required this.parentId,
     this.matricule,
     this.ecoleCode,
+    this.paramEcole,
   });
 
   String get fullName => '$firstName $lastName';
@@ -35,6 +38,7 @@ class Child {
     String? parentId,
     String? matricule,
     String? ecoleCode,
+    String? paramEcole,
   }) {
     return Child(
       id: id ?? this.id,
@@ -46,6 +50,7 @@ class Child {
       parentId: parentId ?? this.parentId,
       matricule: matricule ?? this.matricule,
       ecoleCode: ecoleCode ?? this.ecoleCode,
+      paramEcole: paramEcole ?? this.paramEcole,
     );
   }
 
@@ -60,6 +65,7 @@ class Child {
       parentId: json['parentId'] as String,
       matricule: json['matricule'] as String?,
       ecoleCode: json['ecoleCode'] as String?,
+      paramEcole: json['paramEcole'] as String?,
     );
   }
 
@@ -74,7 +80,7 @@ class Child {
       'parentId': parentId,
       'matricule': matricule,
       'ecoleCode': ecoleCode,
+      'paramEcole': paramEcole,
     };
   }
 }
-

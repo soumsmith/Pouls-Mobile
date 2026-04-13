@@ -12,13 +12,13 @@ import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialiser les services de l'application
   try {
     // Initialiser la base de données
     await DatabaseService.instance.database;
     print('✅ Base de données initialisée');
-    
+
     // Charger la session sauvegardée
     await AuthService.instance.loadSavedSession();
     print('✅ Service d\'authentification initialisé');
@@ -26,7 +26,7 @@ void main() async {
     print('⚠️ Erreur lors de l\'initialisation des services: $e');
     // Continuer même si l'initialisation échoue
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -61,7 +61,9 @@ class _MyAppState extends State<MyApp> {
               debugShowCheckedModeBanner: false,
               theme: _themeService.lightTheme,
               darkTheme: _themeService.darkTheme,
-              themeMode: _themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              themeMode: _themeService.isDarkMode
+                  ? ThemeMode.dark
+                  : ThemeMode.light,
               home: const SplashScreen(),
               // home: InscriptionWizardScreen(
               //   child: Child(

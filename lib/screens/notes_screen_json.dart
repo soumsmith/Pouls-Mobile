@@ -655,7 +655,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [AppColors.customLightBlue, AppColors.customLightBlueDark],
+              colors: [
+                AppColors.customLightBlue,
+                AppColors.customLightBlueDark,
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

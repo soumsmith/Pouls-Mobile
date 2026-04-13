@@ -81,66 +81,103 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   // ── Accesseurs utilitaires ──────────────────────────────────────────────────
   String get _matricule => widget.child.matricule ?? '';
-  String get _ecoleCode =>
-      widget.child.ecoleCode ?? ''; //widget.child.ecoleCode
-  
+  String get _ecoleCode {
+    // Priorité 0 : depuis le paramEcole du Child (stocké localement)
+    final fromParamEcole = widget.child.paramEcole ?? '';
+    if (fromParamEcole.isNotEmpty) {
+      print('_ecoleCode: depuis widget.child.paramEcole = "$fromParamEcole"');
+      return fromParamEcole;
+    }
+
+    final fromEleveDetail =
+        widget.eleveDetail?['ecole']?.toString() ??
+        widget.eleveDetail?['ecole_code']?.toString() ??
+        '';
+    if (fromEleveDetail.isNotEmpty) {
+      print('_ecoleCode: depuis eleveDetail = "$fromEleveDetail"');
+      return fromEleveDetail;
+    }
+
+    // Priorité 2 : depuis _eleveDetailData chargé localement
+    final fromLocalData =
+        _eleveDetailData?['ecole']?.toString() ??
+        _eleveDetailData?['ecole_code']?.toString() ??
+        '';
+    if (fromLocalData.isNotEmpty) {
+      print('_ecoleCode: depuis _eleveDetailData = "$fromLocalData"');
+      return fromLocalData;
+    }
+
+    // Priorité 3 : depuis le Child (peut être une valeur factice)
+    final fromChild = widget.child.ecoleCode ?? '';
+    print('_ecoleCode: depuis widget.child = "$fromChild"');
+    return fromChild;
+  }
+
   String get _uid_eleve {
-    print('🔍 Recherche de l\'UID élève...');
+    print('Recherche de l\'UID élève...');
     print('   - widget.uid: ${widget.uid ?? 'null'}');
     print('   - widget.eleveDetail disponible: ${widget.eleveDetail != null}');
     print('   - _eleveDetailData disponible: ${_eleveDetailData != null}');
-    
+    print('   - _ecoleCode: "$_ecoleCode"');
+
     // Priorité 1: UID passé directement en paramètre
     if (widget.uid != null && widget.uid!.isNotEmpty) {
       print('✅ UID trouvé dans widget.uid: ${widget.uid}');
       return widget.uid!;
     }
-    
+
     // Priorité 2: UID depuis les détails de l'élève
     if (widget.eleveDetail != null && widget.eleveDetail!['uid'] != null) {
-      print('✅ UID trouvé dans widget.eleveDetail["uid"]: ${widget.eleveDetail!['uid']}');
+      print(
+        '✅ UID trouvé dans widget.eleveDetail["uid"]: ${widget.eleveDetail!['uid']}',
+      );
       return widget.eleveDetail!['uid'].toString();
     }
-    
+
     // Priorité 3: UID depuis les données locales
     if (_eleveDetailData != null && _eleveDetailData!['uid'] != null) {
-      print('✅ UID trouvé dans _eleveDetailData["uid"]: ${_eleveDetailData!['uid']}');
+      print(
+        '✅ UID trouvé dans _eleveDetailData["uid"]: ${_eleveDetailData!['uid']}',
+      );
       return _eleveDetailData!['uid'].toString();
     }
-    
+
     // Log détaillé des données disponibles pour debugging
     if (widget.eleveDetail != null) {
       print('📊 widget.eleveDetail contenu:');
       widget.eleveDetail!.forEach((key, value) {
         print('   - $key: $value (${value.runtimeType})');
       });
-      
+
       // Priorité 4: Essayer depuis d'autres champs disponibles
       final idEleve = widget.eleveDetail!['id_eleve'];
       if (idEleve != null) {
-        print('⚠️ UID manquant, utilisation de id_eleve comme fallback: $idEleve');
+        print(
+          '⚠️ UID manquant, utilisation de id_eleve comme fallback: $idEleve',
+        );
         return idEleve.toString();
       }
     }
-    
+
     if (_eleveDetailData != null) {
       print('📊 _eleveDetailData contenu:');
       _eleveDetailData!.forEach((key, value) {
         print('   - $key: $value (${value.runtimeType})');
       });
     }
-    
+
     print('❌ Aucun UID trouvé');
     return '';
   }
 
   bool _dejaInscrit = false;
   Map<String, dynamic>? _eleveDetailData; // reçu en paramètre
-  
+
   // ── Gestion des erreurs critiques ─────────────────────────────────────────────
   bool _hasCriticalError = false;
   String? _criticalErrorMessage;
-  
+
   // ── État de chargement initial ───────────────────────────────────────────────
   bool _isInitialLoading = true;
   bool _studentDataReady = false;
@@ -254,7 +291,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     print('📋 Matricule: ${widget.child.matricule}');
     print('🏷️ Code école: ${widget.child.ecoleCode}');
     print('🆔 UID qui sera utilisé dans les API: $_uid_eleve');
-    
+
     // Initialiser les données de l'élève
     _eleveDetailData = widget.eleveDetail;
 
@@ -284,57 +321,67 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     print('   - widget.uid: ${widget.uid}');
     print('   - widget.eleveDetail disponible: ${widget.eleveDetail != null}');
     print('   - widget.child.ecoleCode: ${widget.child.ecoleCode}');
+    print('   - widget.child.paramEcole: ${widget.child.paramEcole}');
     print('   - _ecoleCode: $_ecoleCode');
-    
+    print('   - _uid_eleve: $_uid_eleve');
+
     // Initialiser les données locales
     _eleveDetailData = widget.eleveDetail;
-    
+
     // Si les données sont déjà disponibles, on passe directement
     if (_uid_eleve.isNotEmpty) {
       print('✅ Données déjà disponibles, démarrage immédiat');
+      print('   - _isInitialLoading avant setState: $_isInitialLoading');
       setState(() {
         _isInitialLoading = false;
         _studentDataReady = true;
       });
+      print('   - _isInitialLoading après setState: $_isInitialLoading');
       _loadEcoleParams();
       return;
     }
-    
+
     // Sinon, essayer de récupérer les données manquantes
     if (widget.eleveDetail == null && widget.child.matricule != null) {
       print('📡 Tentative de récupération des détails de l\'élève...');
       try {
         // Essayer de récupérer le code école depuis plusieurs sources
         String ecoleCode = widget.child.ecoleCode ?? _ecoleCode ?? '';
-        
+
         // Si toujours pas de code école, essayer depuis les détails précédemment chargés
         if (ecoleCode.isEmpty && _eleveDetailData != null) {
-          ecoleCode = _eleveDetailData!['ecole']?.toString() ?? 
-                       _eleveDetailData!['ecole_code']?.toString() ?? '';
+          ecoleCode =
+              _eleveDetailData!['ecole']?.toString() ??
+              _eleveDetailData!['ecole_code']?.toString() ??
+              '';
           print('🔄 Code école récupéré depuis _eleveDetailData: $ecoleCode');
         }
-        
+
         final matricule = widget.child.matricule!;
-        
-        print('🔗 Requête détails élève - Matricule: $matricule, École: $ecoleCode');
-        
+
+        print(
+          '🔗 Requête détails élève - Matricule: $matricule, École: $ecoleCode',
+        );
+
         if (ecoleCode.isEmpty) {
-          throw Exception('Code école non disponible. Impossible de récupérer les détails de l\'élève.');
+          throw Exception(
+            'Code école non disponible. Impossible de récupérer les détails de l\'élève.',
+          );
         }
-        
+
         final eleveDetail = await EcoleEleveService.getEleveDetail(
           matricule,
           ecoleCode,
         );
-        
+
         print('✅ Détails de l\'élève récupérés avec succès');
         print('   - UID trouvé: ${eleveDetail['uid']}');
-        
+
         if (mounted) {
           setState(() {
             _eleveDetailData = eleveDetail;
           });
-          
+
           // Maintenant que les données sont chargées, vérifier l'UID
           if (_uid_eleve.isNotEmpty) {
             setState(() {
@@ -349,19 +396,19 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         print('❌ Erreur lors de la récupération des détails: $e');
       }
     }
-    
+
     // Si les données ne sont toujours pas disponibles, attendre un peu
     print('⏰ Données non disponibles, attente...');
-    
+
     // Essayer plusieurs fois avec des délais croissants
     for (int attempt = 0; attempt < 5; attempt++) {
       await Future.delayed(Duration(milliseconds: 200 * (attempt + 1)));
-      
+
       if (!mounted) return;
-      
+
       final uid = _uid_eleve;
       print('🔄 Tentative ${attempt + 1}/5 - UID: "$uid"');
-      
+
       if (uid.isNotEmpty) {
         print('✅ Données disponibles après ${attempt + 1} tentatives');
         setState(() {
@@ -372,7 +419,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         return;
       }
     }
-    
+
     // Si après toutes les tentatives l'UID est toujours manquant
     if (mounted) {
       print('❌ Échec: UID toujours non disponible après 5 tentatives');
@@ -380,7 +427,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         _isInitialLoading = false;
         _studentDataReady = false;
         _hasCriticalError = true;
-        _criticalErrorMessage = 'Les données de l\'élève ne sont pas disponibles. Veuillez réessayer plus tard.';
+        _criticalErrorMessage =
+            'Les données de l\'élève ne sont pas disponibles. Veuillez réessayer plus tard.';
       });
     }
   }
@@ -449,9 +497,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     print('═══════════════════════════════════════════════════════════');
     print('');
 
-    final preinscrit = widget.eleveDetail?['preinscrit'] ?? _eleveDetailData?['preinscrit'];
-    final inscrit = widget.eleveDetail?['status'] ?? _eleveDetailData?['status'];
-    print('═════════════════════════════[status]══════════════════════════════');
+    final preinscrit =
+        widget.eleveDetail?['preinscrit'] ?? _eleveDetailData?['preinscrit'];
+    final inscrit =
+        widget.eleveDetail?['status'] ?? _eleveDetailData?['status'];
+    print(
+      '═════════════════════════════[status]══════════════════════════════',
+    );
     print(preinscrit);
     if (inscrit == 1) {
       if (mounted) {
@@ -467,11 +519,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     try {
       final uid = _uid_eleve;
       print('🔍 Validation du brancheId: "$uid"');
-      
+
       if (uid.isEmpty) {
-        throw Exception('UID élève manquant. Les données de l\'élève ne sont pas encore chargées.');
+        throw Exception(
+          'UID élève manquant. Les données de l\'élève ne sont pas encore chargées.',
+        );
       }
-      
+
       final statuts = await _checkInscriptionPeriods();
       if (statuts['preinscription'] != true &&
           statuts['inscription'] != true &&
@@ -487,9 +541,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       final systemeEducatif = _ecoleCode.startsWith('*annour*') ? 2 : 1;
       // Utiliser l'UID de l'élève comme brancheId
       String brancheId = _uid_eleve;
-      
+
       print('🔍 BrancheId qui sera utilisé (UID élève): $brancheId');
-      
+
       final echeances = await InscriptionApiService.fetchScolarite(
         brancheId: brancheId,
         ecoleCode: _ecoleCode,
@@ -502,13 +556,15 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     } catch (e) {
       print('❌ Erreur critique lors du chargement de la scolarité: $e');
       if (mounted) {
-        String userMessage = 'Impossible de charger les données de scolarité. Veuillez réessayer plus tard.';
-        
+        String userMessage =
+            'Impossible de charger les données de scolarité. Veuillez réessayer plus tard.';
+
         // Message plus spécifique si l'UID est manquant
         if (e.toString().contains('UID élève manquant')) {
-          userMessage = 'Les données de l\'élève ne sont pas encore disponibles. Veuillez réessayer dans quelques instants.';
+          userMessage =
+              'Les données de l\'élève ne sont pas encore disponibles. Veuillez réessayer dans quelques instants.';
         }
-        
+
         setState(() {
           _hasCriticalError = true;
           _criticalErrorMessage = userMessage;
@@ -517,7 +573,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       }
       _showError('Erreur chargement scolarité : $e');
     } finally {
-      if (mounted && !_hasCriticalError) setState(() => _loadingScolarite = false);
+      if (mounted && !_hasCriticalError)
+        setState(() => _loadingScolarite = false);
     }
   }
 
@@ -2602,7 +2659,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
                   // Message d'erreur
                   Text(
-                    _criticalErrorMessage ?? 'Une erreur est survenue lors du chargement des données.',
+                    _criticalErrorMessage ??
+                        'Une erreur est survenue lors du chargement des données.',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -2715,31 +2773,41 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                               _criticalErrorMessage = null;
                               _isInitialLoading = true;
                             });
-                            
+
                             // Forcer la récupération des données depuis l'API
                             if (widget.child.matricule != null) {
                               try {
-                                final ecoleCode = widget.child.ecoleCode ?? _ecoleCode;
-                                print('🔄 Actualisation forcée des détails de l\'élève...');
-                                print('   - Matricule: ${widget.child.matricule}');
-                                print('   - widget.child.ecoleCode: ${widget.child.ecoleCode}');
+                                final ecoleCode =
+                                    widget.child.ecoleCode ?? _ecoleCode;
+                                print(
+                                  '🔄 Actualisation forcée des détails de l\'élève...',
+                                );
+                                print(
+                                  '   - Matricule: ${widget.child.matricule}',
+                                );
+                                print(
+                                  '   - widget.child.ecoleCode: ${widget.child.ecoleCode}',
+                                );
                                 print('   - _ecoleCode: $_ecoleCode');
                                 print('   - École finale utilisée: $ecoleCode');
-                                
+
                                 if (ecoleCode == null || ecoleCode.isEmpty) {
-                                  throw Exception('Code école non disponible. Veuillez réessayer plus tard.');
+                                  throw Exception(
+                                    'Code école non disponible. Veuillez réessayer plus tard.',
+                                  );
                                 }
-                                
-                                final eleveDetail = await EcoleEleveService.getEleveDetail(
-                                  widget.child.matricule!,
-                                  ecoleCode!,
-                                );
-                                
+
+                                final eleveDetail =
+                                    await EcoleEleveService.getEleveDetail(
+                                      widget.child.matricule!,
+                                      ecoleCode!,
+                                    );
+
                                 if (mounted) {
                                   setState(() {
                                     _eleveDetailData = eleveDetail;
                                   });
-                                  
+
                                   // Relancer l'initialisation avec les nouvelles données
                                   _initializeStudentData();
                                 }
@@ -2748,7 +2816,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                 if (mounted) {
                                   setState(() {
                                     _hasCriticalError = true;
-                                    _criticalErrorMessage = 'Erreur lors de l\'actualisation: $e';
+                                    _criticalErrorMessage =
+                                        'Erreur lors de l\'actualisation: $e';
                                   });
                                 }
                               }
@@ -2838,10 +2907,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 60), // Espace pour l'app bar
-                  
                   // Loader personnalisé
                   CustomLoader(
-                    message: 'Récupération des informations de\n${widget.child.firstName}...',
+                    message:
+                        'Récupération des informations de\n${widget.child.firstName}...',
                     loaderColor: AppColors.shopBlue,
                     backgroundColor: Colors.transparent,
                     //height:60,
@@ -2862,17 +2931,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     if (_isInitialLoading) {
       return _buildInitialLoadingScreen();
     }
-    
+
     // ── Déjà inscrit ────────────────────────────────────────────────
     if (_dejaInscrit) {
       return _buildDejaInscritScreen();
     }
-    
+
     // ── Erreur critique ────────────────────────────────────────────────
     if (_hasCriticalError) {
       return _buildCriticalErrorScreen();
     }
-    
+
     // Si les périodes sont fermées, afficher l'écran d'information
     if (_periodsClosed) {
       return _buildPeriodsClosedScreen();

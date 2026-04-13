@@ -11,22 +11,22 @@ class EcoleEleveService {
   static final Map<String, EcoleData> _ecoleCache = {};
 
   /// Récupère les paramètres de l'école pour un élève et les met en cache
-  static Future<EcoleData> getEcoleParametresForEleve(String ecoleCode) async {
+  static Future<EcoleData> getEcoleParametresForEleve(String paramEcole) async {
     print('');
-    print('═══════════════════════════════════════════════════════════');
-    print('🏫 PARAMÈTRES DE L\'ÉCOLE POUR L\'ÉLÈVE');
-    print('═══════════════════════════════════════════════════════════');
-    print('🏷️ Code école: $ecoleCode');
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+    print('PARAMÈTRES DE L\'ÉCOLE POUR L\'ÉLÈVE');
+    print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<');
+    print('Paramètre école: $paramEcole');
 
     // Vérifier si les données sont déjà en cache
-    if (_ecoleCache.containsKey(ecoleCode)) {
-      print('✅ Données trouvées en cache pour l\'école: $ecoleCode');
-      print('═══════════════════════════════════════════════════════════');
+    if (_ecoleCache.containsKey(paramEcole)) {
+      print('Données trouvées en cache pour l\'école: $paramEcole');
+      print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
       print('');
-      return _ecoleCache[ecoleCode]!;
+      return _ecoleCache[paramEcole]!;
     }
 
-    final url = '$baseUrl/vie-ecoles/parametre/ecole?ecole=$ecoleCode';
+    final url = '$baseUrl/vie-ecoles/parametre/ecole?ecole=$paramEcole';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 
@@ -53,7 +53,7 @@ class EcoleEleveService {
           final ecoleData = EcoleData.fromJson(data['data']);
 
           // Mettre en cache les données
-          _ecoleCache[ecoleCode] = ecoleData;
+          _ecoleCache[paramEcole] = ecoleData;
 
           print(
             '✅ Paramètres de l\'école récupérés et mis en cache avec succès',
@@ -97,8 +97,8 @@ class EcoleEleveService {
   }
 
   /// Récupère les données de l'école depuis le cache
-  static EcoleData? getEcoleDataFromCache(String ecoleCode) {
-    return _ecoleCache[ecoleCode];
+  static EcoleData? getEcoleDataFromCache(String paramEcole) {
+    return _ecoleCache[paramEcole];
   }
 
   /// Vérifie si les inscriptions sont ouvertes
@@ -192,6 +192,10 @@ class EcoleEleveService {
         if (data['data'] != null) {
           final eleveData = data['data'] as Map<String, dynamic>;
 
+          // Ajouter le code école aux données de l'élève
+          eleveData['ecole'] = ecoleCode;
+          eleveData['ecole_code'] = ecoleCode;
+
           print('✅ Détails de l\'élève récupérés avec succès');
           print('📊 Informations principales:');
           print('   - Nom: ${eleveData['nom']} ${eleveData['prenoms']}');
@@ -200,6 +204,7 @@ class EcoleEleveService {
           print('   - Filière: ${eleveData['filiere']}');
           print('   - Sexe: ${eleveData['sexe']}');
           print('   - Date de naissance: ${eleveData['datenaissance']}');
+          print('   - Code école ajouté: $ecoleCode');
           print('═══════════════════════════════════════════════════════════');
           print('');
           return eleveData;

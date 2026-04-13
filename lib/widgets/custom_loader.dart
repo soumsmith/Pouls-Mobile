@@ -83,10 +83,7 @@ class _LoaderOverlayWidgetState extends State<_LoaderOverlayWidget>
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
   }
@@ -102,7 +99,8 @@ class _LoaderOverlayWidgetState extends State<_LoaderOverlayWidget>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Material(
-        color: Colors.black54, // Fond semi-transparent pour bloquer l'interaction
+        color:
+            Colors.black54, // Fond semi-transparent pour bloquer l'interaction
         child: Center(
           child: CustomLoader(
             message: widget.message,
@@ -139,29 +137,22 @@ class CustomLoader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        LoadingAnimationWidget.staggeredDotsWave(
-          color: loaderColor,
-          size: 40,
-        ),
+        LoadingAnimationWidget.staggeredDotsWave(color: loaderColor, size: 40),
         // Garde un espace constant pour éviter le mouvement vertical
-        SizedBox(
-          height: message.isNotEmpty ? 46 : 30, // Hauteur fixe totale
-          child: message.isNotEmpty
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF999999),
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.none, // Pas de soulignement
-                    ),
-                  ),
-                )
-              : null,
-        ),
+        if (message.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF999999),
+              fontWeight: FontWeight.w500,
+              decoration: TextDecoration.none, // Pas de soulignement
+            ),
+          ),
+        ] else
+          const SizedBox(height: 16),
       ],
     );
 

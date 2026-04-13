@@ -217,12 +217,18 @@ class _AddChildScreenState extends State<AddChildScreen>
         grade: eleve.classe.isNotEmpty ? eleve.classe : 'Classe non spécifiée',
         photoUrl: eleve.urlPhoto,
         parentId: parentId,
+        paramEcole: ecole.paramecole?.isNotEmpty == true
+            ? ecole.paramecole
+            : ecole.ecolecode,
       );
       await DatabaseService.instance.saveChild(
         newChild,
         matricule: eleve.matriculeEleve,
         ecoleId: ecole.ecoleid,
         ecoleName: ecole.ecoleclibelle,
+        paramEcole: ecole.paramecole?.isNotEmpty == true
+            ? ecole.paramecole
+            : ecole.ecolecode,
         classeId: eleve.classeid,
         classeName: eleve.classe,
       );

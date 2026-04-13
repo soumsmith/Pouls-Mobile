@@ -7,19 +7,18 @@ import '../screens/help_support_screen.dart';
 import '../screens/new_settings_screen.dart';
 import '../screens/messages_screen.dart';
 import '../screens/orders_screen.dart';
-import '../screens/cart_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
-const _kOrange        = Color(0xFFFF6B2C);
-const _kOrangeLight   = Color(0xFFFFF0E8);
-const _kSurface       = Color(0xFFF8F8F8);
-const _kCard          = Colors.white;
-const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kOrange = Color(0xFFFF6B2C);
+const _kOrangeLight = Color(0xFFFFF0E8);
+const _kSurface = Color(0xFFF8F8F8);
+const _kCard = Colors.white;
+const _kTextPrimary = Color(0xFF1A1A1A);
 const _kTextSecondary = Color(0xFF8A8A8A);
-const _kDivider       = Color(0xFFF0F0F0);
-const _kShadow        = Color(0x0D000000);
+const _kDivider = Color(0xFFF0F0F0);
+const _kShadow = Color(0x0D000000);
 
 const _kOrangeGradient = LinearGradient(
   colors: [Color(0xFFFF7A3C), _kOrange],
@@ -57,12 +56,12 @@ class BottomSheetMenu extends StatefulWidget {
 class _BottomSheetMenuState extends State<BottomSheetMenu>
     with SingleTickerProviderStateMixin {
   final CartService _cartService = MockCartService();
-  int _cartItemCount     = 0;
-  int _unreadMessages    = 5; // demo
-  int _ticketCount       = 2; // demo
+  int _cartItemCount = 0;
+  int _unreadMessages = 5; // demo
+  int _ticketCount = 2; // demo
 
   late AnimationController _sheetController;
-  late Animation<double>    _sheetAnim;
+  late Animation<double> _sheetAnim;
 
   @override
   void initState() {
@@ -160,8 +159,11 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
                 ),
               ],
             ),
-            child: const Icon(Icons.grid_view_rounded,
-                size: 18, color: Colors.white),
+            child: const Icon(
+              Icons.grid_view_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
           ),
 
           const SizedBox(width: 12),
@@ -191,11 +193,18 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
                 color: _kSurface,
                 borderRadius: BorderRadius.circular(11),
                 boxShadow: const [
-                  BoxShadow(color: _kShadow, blurRadius: 8, offset: Offset(0, 2)),
+                  BoxShadow(
+                    color: _kShadow,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
                 ],
               ),
-              child: const Icon(Icons.close_rounded,
-                  size: 18, color: _kTextSecondary),
+              child: const Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: _kTextSecondary,
+              ),
             ),
           ),
         ],
@@ -230,10 +239,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
                 child: child,
               ),
             ),
-            child: _MenuTile(
-              item: items[i],
-              showDivider: i < items.length - 1,
-            ),
+            child: _MenuTile(item: items[i], showDivider: i < items.length - 1),
           );
         }),
       ),
@@ -241,141 +247,84 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
   }
 
   List<_MenuItem> _buildItems() => [
-        _MenuItem(
-          title: 'Mon panier',
-          subtitle: 'Voir les articles dans votre panier',
-          icon: Icons.shopping_cart_rounded,
-          color: _kOrange,
-          badgeCount: _cartItemCount,
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CartScreen()),
-            );
-          },
-        ),
-        _MenuItem(
-          title: 'Mes commandes',
-          subtitle: 'Voir l\'historique de vos commandes',
-          icon: Icons.receipt_long_rounded,
-          color: const Color(0xFF10B981),
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const OrdersScreen()),
-            );
-          },
-        ),
-        _MenuItem(
-          title: 'Messages',
-          subtitle: 'Vos messages et communications',
-          icon: Icons.message_rounded,
-          color: const Color(0xFF2196F3),
-          badgeCount: _unreadMessages,
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const MessagesScreen()),
-            );
-          },
-        ),
-        _MenuItem(
-          title: 'Mes Tickets',
-          subtitle: 'Voir vos tickets achetés',
-          icon: Icons.confirmation_number_rounded,
-          color: const Color(0xFF10B981),
-          badgeCount: _ticketCount,
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const OrdersScreen()),
-            );
-          },
-        ),
-        _MenuItem(
-          title: 'Boutique (Libouli)',
-          subtitle: 'Accéder à la boutique en ligne',
-          icon: Icons.shopping_bag_rounded,
-          color: _kOrange,
-          badgeCount: _cartItemCount,
-          onTap: () {
-            Navigator.of(context).pop();
-            final wrapper = MainScreenWrapper.maybeOf(context);
-            if (wrapper != null) {
-              wrapper.updateCurrentIndex(1);
-            } else {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (_) => const MainScreenWrapper(initialIndex: 1),
-                ),
-                (r) => false,
-              );
-            }
-          },
-        ),
-        _MenuItem(
-          title: 'Tuteur à domicile',
-          subtitle: 'Trouver un tuteur pour vos enfants',
-          icon: Icons.school_rounded,
-          color: const Color(0xFF8B5CF6),
-          badgeCount: 1,
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    const MainScreenWrapper(child: TutorScreen()),
-              ),
-            );
-          },
-        ),
-        _MenuItem(
-          title: 'Parrainer',
-          subtitle: 'Inviter des amis à utiliser l\'application',
-          icon: Icons.card_giftcard_rounded,
-          color: const Color(0xFFF59E0B),
-          onTap: () {
-            Navigator.of(context).pop();
-            showSponsorshipBottomSheet(context);
-          },
-        ),
-        _MenuItem(
-          title: 'Profil',
-          subtitle: 'Gérer votre profil et informations',
-          icon: Icons.person_rounded,
-          color: const Color(0xFF2196F3),
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
-          },
-        ),
-        _MenuItem(
-          title: 'Aide & Support',
-          subtitle: 'FAQ, contact et assistance',
-          icon: Icons.help_rounded,
-          color: const Color(0xFF4CAF50),
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
-            );
-          },
-        ),
-        _MenuItem(
-          title: 'Paramètres',
-          subtitle: 'Préférences et configuration',
-          icon: Icons.settings_rounded,
-          color: const Color(0xFF64748B),
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NewSettingsScreen()),
-            );
-          },
-        ),
-      ];
+    _MenuItem(
+      title: 'Messages',
+      subtitle: 'Vos messages et communications',
+      icon: Icons.message_rounded,
+      color: const Color(0xFF2196F3),
+      badgeCount: _unreadMessages,
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MessagesScreen()));
+      },
+    ),
+    _MenuItem(
+      title: 'Mes Tickets',
+      subtitle: 'Voir vos tickets achetés',
+      icon: Icons.confirmation_number_rounded,
+      color: const Color(0xFF10B981),
+      badgeCount: _ticketCount,
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => OrdersScreen()));
+      },
+    ),
+    _MenuItem(
+      title: 'Tuteur à domicile',
+      subtitle: 'Trouver un tuteur pour vos enfants',
+      icon: Icons.school_rounded,
+      color: const Color(0xFF8B5CF6),
+      badgeCount: 1,
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const MainScreenWrapper(child: TutorScreen()),
+          ),
+        );
+      },
+    ),
+    _MenuItem(
+      title: 'Profil',
+      subtitle: 'Gérer votre profil et informations',
+      icon: Icons.person_rounded,
+      color: const Color(0xFF2196F3),
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+      },
+    ),
+    _MenuItem(
+      title: 'Aide & Support',
+      subtitle: 'FAQ, contact et assistance',
+      icon: Icons.help_rounded,
+      color: const Color(0xFF4CAF50),
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+      },
+    ),
+    _MenuItem(
+      title: 'Paramètres',
+      subtitle: 'Préférences et configuration',
+      icon: Icons.settings_rounded,
+      color: const Color(0xFF64748B),
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const NewSettingsScreen()));
+      },
+    ),
+  ];
 }
 
 // ─── Menu Tile ────────────────────────────────────────────────────────────────
@@ -534,8 +483,9 @@ class _Badge extends StatelessWidget {
         border: Border.all(color: _kCard, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: (isOrange ? _kOrange : const Color(0xFFFF3B2C))
-                .withOpacity(0.35),
+            color: (isOrange ? _kOrange : const Color(0xFFFF3B2C)).withOpacity(
+              0.35,
+            ),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

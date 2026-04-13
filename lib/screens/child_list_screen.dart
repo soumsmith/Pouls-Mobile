@@ -1,8 +1,8 @@
-import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
 import 'package:parents_responsable/widgets/image_menu_card.dart';
+import 'package:parents_responsable/widgets/main_screen_wrapper.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/school_life_item_card.dart';
 import '../widgets/custom_loader.dart';
@@ -22,11 +22,11 @@ import '../config/app_colors.dart';
 import '../config/app_config.dart';
 import '../config/app_dimensions.dart';
 import '../services/theme_service.dart';
-import '../widgets/main_screen_wrapper.dart';
 import '../screens/notes_screen_json.dart';
 import '../services/student_timetable_service.dart';
 import '../models/student_timetable.dart';
 import '../services/school_service.dart';
+import '../widgets/payment_bottom_sheet.dart';
 import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
@@ -40,7 +40,6 @@ import '../services/student_scolarite_service.dart';
 import '../models/student_scolarite.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
-import '../widgets/main_screen_wrapper.dart';
 import '../widgets/snackbar.dart';
 import '../models/parent_suggestion.dart';
 import '../services/parent_suggestion_service.dart';
@@ -53,7 +52,6 @@ import '../models/group_message.dart';
 import '../models/ecole.dart';
 import '../services/group_message_service.dart';
 import '../widgets/custom_loader.dart';
-import '../widgets/searchable_dropdown.dart';
 import '../services/ecole_eleve_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -377,7 +375,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Détails complets de l'élève
   Map<String, dynamic>? _eleveDetail;
 
-  
   @override
   void initState() {
     super.initState();
@@ -636,10 +633,10 @@ class _ChildListScreenState extends State<ChildListScreen>
           _matricule = childInfo['matricule'] as String?;
         });
 
-        print('✅ Informations de l\'enfant récupérées:');
-        print('   🏫 École ID: $_ecoleId');
-        print('   🏫 École Code: $_ecoleCode');
-        print('   📚 Classe ID: $_classeId');
+        print(' Informations de l\'enfant récupérées:');
+        print('   École ID: $_ecoleId');
+        print('   École Code (depuis childInfo): $_ecoleCode');
+        print('   Classe ID: $_classeId');
         print('   🎫 Matricule: $_matricule');
 
         // Charger l'année scolaire ouverte
@@ -704,12 +701,12 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       setState(() {
         _studentClassInfo = studentClassInfo;
-        // Extraire le code école depuis identifiantVieEcole
-        if (_ecoleCode == null &&
-            studentClassInfo.identifiantVieEcole.isNotEmpty) {
+        // Prioriser identifiantVieEcole sur childInfo['ecoleCode']
+        if (studentClassInfo.identifiantVieEcole.isNotEmpty) {
           _ecoleCode = studentClassInfo.identifiantVieEcole;
+          print('Code école extrait depuis identifiantVieEcole: $_ecoleCode');
           print(
-            '🏷️ Code école extrait depuis identifiantVieEcole: $_ecoleCode',
+            'MISE À JOUR: _ecoleCode changé de "${widget.child.ecoleCode}" à "$_ecoleCode"',
           );
         }
       });
@@ -1869,7 +1866,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                               child: Text(
                                 'Voir +',
                                 style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    11,
+                                  ),
                                   color: Colors.white.withOpacity(0.9),
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1884,14 +1883,11 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ],
           ),
-
-          
         ],
       ),
     );
   }
 
-  
   Widget _buildProfileDetailItem({
     required IconData icon,
     required String label,
@@ -2379,7 +2375,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     // await launchUrl(launchUri);
   }
 
-  // ─── Helper : En-tête de section (barre colorée + titre) 
+  // ─── Helper : En-tête de section (barre colorée + titre)
   Widget _buildSectionHeader(
     String title,
     Color accentColor, {
@@ -2423,7 +2419,13 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 1 : Paiements & Inscription
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Paiements & Inscription', const Color(0xFF10B981), padding: const EdgeInsets.fromLTRB(16,0,16,8), showLeftIndicator: false, showBottomDivider: true),
+        _buildSectionHeader(
+          'Paiements & Inscription',
+          const Color(0xFF10B981),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          showLeftIndicator: false,
+          showBottomDivider: true,
+        ),
         const SizedBox(height: 16),
         _buildHorizontalCards([
           ImageMenuCardExternalTitle(
@@ -2432,7 +2434,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             title: 'Payé en ligne',
             width: 100,
             height: 100,
-            imageFlex:2,
+            imageFlex: 2,
             iconData: Icons.payments_rounded,
             isDark: isDark,
             titleFontSize: 14,
@@ -2456,7 +2458,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             title: 'Inscription en ligne',
             width: 100,
             height: 100,
-            imageFlex:2,
+            imageFlex: 2,
             //iconData: Icons.payments_rounded,
             isDark: isDark,
             imagePath: 'assets/images/inscription.png',
@@ -2472,11 +2474,13 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionText: 'Commencer',
             actionTextColor: const Color(0xFF10B981),
             onTap: () {
-              print('🎯 Navigation vers InscriptionWizardScreen');
-              print('👤 Élève: ${widget.child.fullName}');
-              print('🆔 UID de l\'élève: ${_eleveDetail?['uid']}');
-              print('🏷️ Code école actuel: ${widget.child.ecoleCode}');
-              print('🏷️ Code école récupéré: $_ecoleCode');
+              print('=== NAVIGATION INSCRIPTION ===');
+              print('Élève: ${widget.child.fullName}');
+              print('UID de l\'élève: ${_eleveDetail?["uid"]}');
+              print(
+                'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
+              );
+              print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
 
               // Mettre à jour l'objet Child avec le ecoleCode si disponible
               final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
@@ -2484,8 +2488,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   : widget.child;
 
               print(
-                '🏷️ Code école final dans l\'objet: ${updatedChild.ecoleCode}',
+                'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
               );
+              print('=== FIN NAVIGATION INSCRIPTION ===');
 
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -2505,7 +2510,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             title: 'Scolarité',
             width: 100,
             height: 100,
-            imageFlex:2,
+            imageFlex: 2,
             iconData: Icons.payments_rounded,
             isDark: isDark,
             titleFontSize: 14,
@@ -2539,7 +2544,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             title: 'Demandes d\'intégration',
             width: 100,
             height: 100,
-            imageFlex:2,
+            imageFlex: 2,
             iconData: Icons.payments_rounded,
             isDark: isDark,
             titleFontSize: 14,
@@ -2564,7 +2569,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Suivi scolaire', const Color(0xFF1976D2), padding: const EdgeInsets.all(16)),
+        _buildSectionHeader(
+          'Suivi scolaire',
+          const Color(0xFF1976D2),
+          padding: const EdgeInsets.all(16),
+        ),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2795,7 +2804,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 4 : Communications
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Communications', const Color(0xFF0288D1), padding: const EdgeInsets.all(16),),
+        _buildSectionHeader(
+          'Communications',
+          const Color(0xFF0288D1),
+          padding: const EdgeInsets.all(16),
+        ),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2986,233 +2999,21 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showPaiementBottomSheet() {
-    final TextEditingController montantController = TextEditingController();
-    bool isLoading = false;
-
-    showModalBottomSheet(
+    PaymentBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: AppColors.screenCard,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.screenShadow,
-                    blurRadius: 20,
-                    offset: Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: DraggableScrollableSheet(
-                initialChildSize: 0.7,
-                maxChildSize: 0.9,
-                minChildSize: 0.5,
-                expand: false,
-                builder: (context, scrollController) {
-                  return Column(
-                    children: [
-                      // Handle + header
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                        child: Column(
-                          children: [
-                            Center(
-                              child: Container(
-                                width: 36,
-                                height: 4,
-                                margin: const EdgeInsets.only(bottom: 18),
-                                decoration: BoxDecoration(
-                                  color: AppColors.screenDivider,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(0xFFFF7A3C),
-                                        AppColors.screenOrange,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Icon(
-                                    Icons.payment,
-                                    color: Colors.white,
-                                    size: 22,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Paiement en ligne',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.screenTextPrimary,
-                                          letterSpacing: -0.4,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: false,
-                                      ),
-                                      Text(
-                                        'Entrez le montant à payer pour ${widget.child.firstName}',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: AppColors.screenTextSecondary,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: false,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Spacer(),
-                                IconButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: AppColors.screenTextSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            const Divider(
-                              color: AppColors.screenDivider,
-                              height: 1,
-                            ),
-                          ],
-                        ),
-                      ),
+      childName: widget.child.firstName,
+      matricule: _matricule,
+      onPayment: (montant, matricule) async {
+        // Créer des fonctions factices pour setState et setLoading
+        void dummySetState(VoidCallback fn) {}
+        void dummySetLoading() {}
+        void dummySetLoadingFalse() {}
 
-                      // Form content
-                      Expanded(
-                        child: SingleChildScrollView(
-                          controller: scrollController,
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              Text(
-                                'Montant à payer (FCFA)',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.screenTextPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.screenSurface,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: AppColors.screenDivider,
-                                  ),
-                                ),
-                                child: TextField(
-                                  controller: montantController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    hintText: 'Ex: 10000',
-                                    prefixIcon: const Icon(
-                                      Icons.attach_money,
-                                      color: AppColors.screenTextSecondary,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.all(16),
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: AppColors.screenTextPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              _buildModernPaymentButton(
-                                label: isLoading ? '' : 'Procéder au paiement',
-                                onTap: isLoading
-                                    ? null
-                                    : () => _effectuerPaiement(
-                                        montantController.text,
-                                        setState,
-                                        () {
-                                          setState(() {
-                                            isLoading = true;
-                                          });
-                                        },
-                                        () {
-                                          setState(() {
-                                            isLoading = false;
-                                          });
-                                        },
-                                      ),
-                                isLoading: isLoading,
-                              ),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.screenOrangeLight
-                                      .withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: AppColors.screenOrange.withOpacity(
-                                      0.2,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: AppColors.screenOrange,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Le paiement sera traité via notre partenaire WicPay',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.screenOrange,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            );
-          },
+        await _effectuerPaiement(
+          montant,
+          dummySetState,
+          dummySetLoading,
+          dummySetLoadingFalse,
         );
       },
     );
@@ -3354,7 +3155,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           CartSnackBar.showOverlay(
             context,
             productName: 'Inscription réussie',
-            message: 'Inscription de ${widget.child.firstName} enregistrée avec succès!',
+            message:
+                'Inscription de ${widget.child.firstName} enregistrée avec succès!',
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           );
@@ -3394,63 +3196,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     } finally {
       CustomLoaderOverlay.hide();
     }
-  }
-
-  Widget _buildModernInscriptionButton({
-    required String label,
-    required VoidCallback? onTap,
-    required bool isLoading,
-  }) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: onTap != null
-              ? [const Color(0xFF3B82F6), const Color(0xFF60A5FA)]
-              : [Colors.grey.shade400, Colors.grey.shade300],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: onTap != null
-            ? [
-                BoxShadow(
-                  color: const Color(0xFF3B82F6).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _effectuerPaiement(
@@ -3529,7 +3274,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           CartSnackBar.showOverlay(
             context,
             productName: 'Erreur d\'ouverture',
-            message: 'Impossible d\'ouvrir la page de paiement. Veuillez réessayer.',
+            message:
+                'Impossible d\'ouvrir la page de paiement. Veuillez réessayer.',
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
           );
@@ -3552,73 +3298,11 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Widget _buildModernPaymentButton({
-    required String label,
-    VoidCallback? onTap,
-    bool isLoading = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CustomLoader(
-                    message: '',
-                    loaderColor: Colors.white,
-                    size: 22,
-                    showBackground: false,
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.payment_outlined,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildModernSummaryCards() {
     // Vérifier si toutes les données nécessaires sont chargées
-    bool allDataLoaded = !_isLoading && !_isLoadingNotes && _eleveDetail != null;
-    
+    bool allDataLoaded =
+        !_isLoading && !_isLoadingNotes && _eleveDetail != null;
+
     if (!allDataLoaded) {
       // Afficher un CustomLoader pendant le chargement avec hauteur réduite
       return const SizedBox(
@@ -3642,9 +3326,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: _buildAvailableSummaryCards(),
-            ),
+            child: Row(children: _buildAvailableSummaryCards()),
           ),
         ),
       ],
@@ -3656,70 +3338,86 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     // Carte Moyenne
     if (_moyGeneral != null) {
-      cards.add(_buildModernSummaryCard(
-        'Moyenne',
-        '${_moyGeneral!.toStringAsFixed(2)}',
-        Colors.green,
-        Icons.trending_up,
-        isLoading: _isLoadingNotes,
-      ));
+      cards.add(
+        _buildModernSummaryCard(
+          'Moyenne',
+          '${_moyGeneral!.toStringAsFixed(2)}',
+          Colors.green,
+          Icons.trending_up,
+          isLoading: _isLoadingNotes,
+        ),
+      );
     }
 
     // Carte Rang
     if (_globalAverage != null && _globalAverage!.trimesterRank > 0) {
       if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
-      cards.add(_buildModernSummaryCard(
-        'Rang',
-        '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}',
-        Colors.blue,
-        Icons.emoji_events,
-        isLoading: _isLoadingNotes,
-      ));
+      cards.add(
+        _buildModernSummaryCard(
+          'Rang',
+          '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}',
+          Colors.blue,
+          Icons.emoji_events,
+          isLoading: _isLoadingNotes,
+        ),
+      );
     }
 
     // Carte Présence
     if (_eleveDetail != null && _eleveDetail!['pt_in_jour'] != null) {
       if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
-      cards.add(_buildModernSummaryCard(
-        'Présence',
-        _eleveDetail!['pt_in_jour'] == 1 ? 'Présent' : 'Absent',
-        _eleveDetail!['pt_in_jour'] == 1 ? AppColors.success : AppColors.error,
-        Icons.check_circle,
-      ));
+      cards.add(
+        _buildModernSummaryCard(
+          'Présence',
+          _eleveDetail!['pt_in_jour'] == 1 ? 'Présent' : 'Absent',
+          _eleveDetail!['pt_in_jour'] == 1
+              ? AppColors.success
+              : AppColors.error,
+          Icons.check_circle,
+        ),
+      );
     }
 
     // Carte Appréciation
     if (_appreciation != null && _appreciation!.isNotEmpty) {
       if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
-      cards.add(_buildModernSummaryCard(
-        'Appréciation',
-        _appreciation!,
-        AppColors.secondary,
-        Icons.star,
-        isLoading: _isLoadingNotes,
-      ));
+      cards.add(
+        _buildModernSummaryCard(
+          'Appréciation',
+          _appreciation!,
+          AppColors.secondary,
+          Icons.star,
+          isLoading: _isLoadingNotes,
+        ),
+      );
     }
 
     // Carte Scolarité
     if (_eleveDetail != null && _eleveDetail!['msolde'] != null) {
       if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
-      cards.add(_buildModernSummaryCard(
-        'Scolarité',
-        '${(_eleveDetail!['msolde'] as int).toString()}F',
-        (_eleveDetail!['msolde'] as int) > 0 ? Colors.orange : AppColors.success,
-        Icons.account_balance_wallet,
-      ));
+      cards.add(
+        _buildModernSummaryCard(
+          'Scolarité',
+          '${(_eleveDetail!['msolde'] as int).toString()}F',
+          (_eleveDetail!['msolde'] as int) > 0
+              ? Colors.orange
+              : AppColors.success,
+          Icons.account_balance_wallet,
+        ),
+      );
     }
 
     // Carte Redoublant
     if (_eleveDetail != null && _eleveDetail!['redoublant'] != null) {
       if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
-      cards.add(_buildModernSummaryCard(
-        'Redoublant',
-        _eleveDetail!['redoublant']?.toString() ?? 'Non',
-        _eleveDetail!['redoublant'] == 'OUI' ? Colors.red : AppColors.success,
-        Icons.refresh,
-      ));
+      cards.add(
+        _buildModernSummaryCard(
+          'Redoublant',
+          _eleveDetail!['redoublant']?.toString() ?? 'Non',
+          _eleveDetail!['redoublant'] == 'OUI' ? Colors.red : AppColors.success,
+          Icons.refresh,
+        ),
+      );
     }
 
     return cards;
@@ -4206,9 +3904,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return Padding(
       padding: const EdgeInsets.all(0),
-      child: Center(
-        child: _buildDynamicScolarite(),
-      ),
+      child: Center(child: _buildDynamicScolarite()),
     );
   }
 

@@ -967,7 +967,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               // ── Actions Buttons ──
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 110,
+                  height: 95,
                   child: _buildActionButtons(
                     Theme.of(context).brightness == Brightness.dark,
                   ),
@@ -1313,96 +1313,15 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         imageFlex: 2,
         imagePath: imagePath,
         isDark: isDark,
-        titleFontSize: 11,
+        titleFontSize: 12,
         imageBorderRadius: 14,
+        centerTitle:true,
         color: color,
         backgroundColor: backgroundColor,
         textColor: textColor,
-        actionText: actionText,
+        //actionText: actionText,
         actionTextColor: color,
         onTap: onTap,
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, bool isDark) {
-    return SectionHeaderWidget(title: title, isDark: isDark);
-  }
-
-  Widget _buildActionCard(
-    IconData icon,
-    String title,
-    String subtitle,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: AppDimensions.getHorizontalMenuCardWidth(context),
-        height: AppDimensions.getHorizontalMenuCardHeight(context),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color.withOpacity(0.1), Colors.white],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(icon, size: 24, color: color),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

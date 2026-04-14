@@ -2535,11 +2535,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               cardKey: item[0],
               title: item[1],
               imageBorderRadius: 15,
-              subtitle: "En savoir plus", // Sous-titre externe
+              //subtitle: "En savoir plus", // Sous-titre externe
               imagePath: item[2],
               isDark: isDark,
               icon: def.icon,
               color: def.color,
+              titleFontSize: 12,
               width: 80, //AppDimensions.getHorizontalMenuCardWidth(context),
               height:
                   100, //AppDimensions.getHorizontalMenuCardHeight(context) + 20,

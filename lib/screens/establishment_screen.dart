@@ -962,22 +962,21 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   ),
                 ),
 
+              SliverToBoxAdapter(child: const SizedBox(height: 16)),
               SliverToBoxAdapter(child: SectionRow(title: 'ACTIONS RAPIDES')),
+              SliverToBoxAdapter(child: const SizedBox(height: 16)),
 
               // ── Actions Buttons ──
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 95,
-                  child: _buildActionButtons(
-                    Theme.of(context).brightness == Brightness.dark,
-                  ),
+                child: _buildActionButtons(
+                  Theme.of(context).brightness == Brightness.dark,
                 ),
               ),
-
+              SliverToBoxAdapter(child: const SizedBox(height: 16)),
               SliverToBoxAdapter(
                 child: SectionRow(title: 'Nos etablissements'),
               ),
-
+              SliverToBoxAdapter(child: const SizedBox(height: 16)),
               // ── Filtre horizontal ─────────────────────────────
               SliverToBoxAdapter(
                 child: FilterRowWidget(
@@ -989,80 +988,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               ),
 
               // ── Results header ─────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: Row(
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '${items.length} ',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.screenOrange,
-                              ),
-                            ),
-                            const TextSpan(
-                              text: 'établissement',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF666666),
-                              ),
-                            ),
-                            TextSpan(
-                              text: items.length > 1 ? 's' : '',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF666666),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_selectedFilter != 'Tous') ...[
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => setState(() => _selectedFilter = 'Tous'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.screenOrangeLight,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _selectedFilter,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.screenOrange,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.close_rounded,
-                                  size: 12,
-                                  color: AppColors.screenOrange,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+
 
               // ── Empty state ────────────────────────────────
               if (items.isEmpty)
@@ -1140,7 +1066,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   ),
                 )
               else
-                SliverToBoxAdapter(child: const SizedBox(height: 24)),
+                SliverToBoxAdapter(child: const SizedBox(height: 10)),
 
               // ── Grid ──────────────────────────────────────
               SliverPadding(

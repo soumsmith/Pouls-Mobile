@@ -9,7 +9,7 @@ import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
 import 'package:parents_responsable/widgets/image_menu_card.dart';
 import 'package:parents_responsable/widgets/image_menu_card_external_title.dart';
-import 'package:parents_responsable/widgets/school_life_item_card.dart';
+import 'package:parents_responsable/widgets/establishment_action_cards.dart';
 import 'package:parents_responsable/widgets/bottom_nav.dart';
 import 'package:parents_responsable/widgets/bottom_sheet_menu.dart';
 import 'dart:developer' as developer;
@@ -59,6 +59,7 @@ import '../services/scolarite_service.dart';
 import '../services/niveau_service.dart';
 import '../services/recommendation_service.dart';
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
 import '../services/testimonial_service.dart';
 import '../widgets/custom_snackbar.dart';
 import '../services/integration_request_service.dart';
@@ -72,9 +73,13 @@ import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/section_row.dart';
+import '../widgets/bottom_fade_gradient.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
 import 'all_events_screen.dart';
+import '../services/group_message_service.dart';
+import '../services/echeance_service.dart';
+import '../models/echeance_notification.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
 class _DateInputFormatter extends TextInputFormatter {
@@ -322,6 +327,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   String? _expandedBranche;
   late TextEditingController _searchController;
 
+  // Variables pour les notifications
+  List<GroupMessage> _notifications = [];
+  bool _isLoadingNotifications = false;
+  bool _notificationsLoaded = false;
+  
+  // Variables pour les notifications d'échéance
+  EcheanceNotification? _echeanceNotification;
+  bool _isLoadingEcheance = false;
+  bool _echeanceLoaded = false;
+
   final TextEditingController _nationaliteController = TextEditingController();
   final TextEditingController _adresseController = TextEditingController();
   final TextEditingController _contact1Controller = TextEditingController();
@@ -415,6 +430,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _loadEcoleDetail();
     _loadEcoleParametres();
     _loadBlogsAndAvisOnly();
+    _loadNotifications(); // Charger les notifications au démarrage
     _fadeController.forward();
     _scolariteFuture = ScolariteService.getScolaritesByEcole(
       widget.ecole.parametreCode,
@@ -455,6 +471,114 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     } catch (e) {
       debugPrint('Erreur lors du chargement des paramètres: $e');
     }
+  }
+
+  // Charger les notifications (messages et échéances)
+  Future<void> _loadNotifications() async {
+    print('=== DÉBUT DU CHARGEMENT DES NOTIFICATIONS DANS L\'ÉCRAN DE DÉTAIL ===');
+    
+    // Récupérer les matricules des enfants de l'utilisateur
+    final authService = AuthService();
+    final currentUser = authService.getCurrentUser();
+    
+    print('Utilisateur connecté: ${currentUser != null}');
+    if (currentUser != null) {
+      print('ID utilisateur: ${currentUser.id}');
+      print('Nom utilisateur: ${currentUser.fullName}');
+    }
+    
+    if (currentUser == null) {
+      print('ERREUR: Utilisateur non connecté pour charger les notifications');
+      return;
+    }
+
+    // Récupérer les matricules depuis la base de données
+    print('Récupération des matricules depuis la base de données...');
+    final databaseService = DatabaseService.instance;
+    final childrenInfo = await databaseService.getChildrenInfoByParent(currentUser.id);
+    
+    print('Nombre d\'enfants trouvés: ${childrenInfo.length}');
+    for (final child in childrenInfo) {
+      print('  - Enfant: ${child['prenom']} ${child['nom']}, Matricule: ${child['matricule']}');
+    }
+    
+    // Extraire les matricules non null
+    final matricules = childrenInfo
+        .map((info) => info['matricule'] as String?)
+        .where((matricule) => matricule != null && matricule.isNotEmpty)
+        .cast<String>()
+        .toList();
+    
+    print('Matricules valides trouvés: $matricules');
+    
+    if (matricules.isEmpty) {
+      print('ERREUR: Aucun matricule trouvé pour charger les notifications');
+      return;
+    }
+
+    // Utiliser le premier matricule trouvé (on pourrait étendre pour gérer plusieurs enfants)
+    final matricule = matricules.first;
+    print('MATRICULE SÉLECTIONNÉ: $matricule');
+    print('DÉMARRAGE DES APIS DE NOTIFICATION...');
+
+    // Charger les messages de groupe
+    print('=== APPEL API MESSAGES DE GROUPE ===');
+    try {
+      print('Début du chargement des messages de groupe pour: $matricule');
+      setState(() => _isLoadingNotifications = true);
+      final notifications = await GroupMessageService.getGroupMessages(matricule);
+      if (mounted) {
+        setState(() {
+          _notifications = notifications;
+          _isLoadingNotifications = false;
+          _notificationsLoaded = true;
+        });
+      }
+      print('SUCCÈS: Messages de groupe chargés: ${notifications.length}');
+      for (final notif in notifications) {
+        print('  - Message: ${notif.titre}, Lu: ${notif.estLu}');
+      }
+    } catch (e) {
+      print('ERREUR lors du chargement des messages: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingNotifications = false;
+          _notificationsLoaded = true;
+        });
+      }
+    }
+
+    // Charger les notifications d'échéance
+    print('=== APPEL API ÉCHÉANCES ===');
+    try {
+      print('Début du chargement des notifications d\'échéance pour: $matricule');
+      setState(() => _isLoadingEcheance = true);
+      final echeanceNotification = await EcheanceService.getEcheanceNotification(matricule);
+      if (mounted) {
+        setState(() {
+          _echeanceNotification = echeanceNotification;
+          _isLoadingEcheance = false;
+          _echeanceLoaded = true;
+        });
+      }
+      print('SUCCÈS: Notification d\'échéance chargée');
+      print('  - Statut: ${echeanceNotification.status}');
+      print('  - Message: ${echeanceNotification.message}');
+      print('  - Impayée: ${echeanceNotification.hasUnpaidFees}');
+    } catch (e) {
+      print('ERREUR lors du chargement des échéances: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingEcheance = false;
+          _echeanceLoaded = true;
+        });
+      }
+    }
+    
+    print('=== FIN DU CHARGEMENT DES NOTIFICATIONS ===');
+    print('Notifications chargées: ${_notifications.length}');
+    print('Échéance chargée: ${_echeanceNotification != null}');
+    print('Total notifications: ${_notifications.length + (_echeanceNotification?.hasUnpaidFees == true ? 1 : 0)}');
   }
 
   Future<void> _loadEventsOnly() async {
@@ -739,6 +863,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       ),
                     ),
                   ),
+                  // Bottom fade gradient effect
+                  const BottomFadeGradient(),
                   // Bottom navigation
                   Positioned(
                     bottom: -15,
@@ -2342,216 +2468,145 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ── Menu cards (3 sections thématiques) ────────────────────────────────────────────
   Widget _buildMenuCards(bool isDark) {
     // Section École (pédagogique)
-    final ecoleSection = [
-      ['informations', 'Informations de l\'école', 'assets/images/ecole.jpg'],
-      [
-        'niveaux',
-        'Nos niveaux scolaires',
-        'assets/images/niveau-scolaire.jpg',
-      ], //Niveaux scolaire
-      [
-        'consult_requests',
-        'Mes demandes', //
-        'assets/images/mes-demande.jpg',
-      ],
-      [
-        'scolarite',
-        'Scolarité', //
-        'assets/images/scolarite.jpg',
-      ],
+    final ecoleActions = [
+      EstablishmentAction(
+        key: 'informations',
+        title: 'Informations de l\'école',
+        subtitle: 'Détails',
+        imagePath: 'assets/images/ecole.jpg',
+        color: _kActions['informations']!.color,
+        actionText: 'Voir',
+        onTap: () =>
+            _showActionBottomSheet('informations', _kActions['informations']!),
+      ),
+      EstablishmentAction(
+        key: 'niveaux',
+        title: 'Nos niveaux scolaires',
+        subtitle: 'Classes',
+        imagePath: 'assets/images/niveau-scolaire.jpg',
+        color: _kActions['niveaux']!.color,
+        actionText: 'Voir',
+        onTap: () => _showActionBottomSheet('niveaux', _kActions['niveaux']!),
+      ),
+      EstablishmentAction(
+        key: 'consult_requests',
+        title: 'Mes demandes',
+        subtitle: 'Consulter',
+        imagePath: 'assets/images/mes-demande.jpg',
+        color: _kActions['consult_requests']!.color,
+        actionText: 'Consulter',
+        onTap: () => _showActionBottomSheet(
+          'consult_requests',
+          _kActions['consult_requests']!,
+        ),
+      ),
+      EstablishmentAction(
+        key: 'scolarite',
+        title: 'Scolarité',
+        subtitle: 'Frais',
+        imagePath: 'assets/images/scolarite.jpg',
+        color: _kActions['scolarite']!.color,
+        actionText: 'Voir',
+        onTap: () =>
+            _showActionBottomSheet('scolarite', _kActions['scolarite']!),
+      ),
     ];
 
     // Section Vie école (opérationnel)
-    final vieEcoleSection = [
-      [
-        'school_events',
-        'Événements scolaires', //Événements scolaires
-        'assets/images/school-event.jpg', //assets/images/school-event.jpg
-      ],
-      ['communication', 'Notre actualités', 'assets/images/actualite-2.jpg'],
+    final vieEcoleActions = [
+      EstablishmentAction(
+        key: 'school_events',
+        title: 'Événements scolaires',
+        subtitle: 'Calendrier',
+        imagePath: 'assets/images/school-event.jpg',
+        color: _kActions['school_events']!.color,
+        actionText: 'Voir',
+        onTap: () => _showActionBottomSheet(
+          'school_events',
+          _kActions['school_events']!,
+        ),
+      ),
+      EstablishmentAction(
+        key: 'communication',
+        title: 'Notre actualités',
+        subtitle: 'Annonces',
+        imagePath: 'assets/images/actualite-2.jpg',
+        color: _kActions['communication']!.color,
+        actionText: 'Voir',
+        onTap: () => _showActionBottomSheet(
+          'communication',
+          _kActions['communication']!,
+        ),
+      ),
     ];
 
     // Section Communauté
-    final communityItems = [
-      {
-        'title': 'Galeries Écoles',
-        'subtitle': 'Découvrez nos galeries photos',
-        'imagePath': 'assets/images/messages.jpg',
-        'iconData': null,
-        'color': const Color(0xFF00796B),
-        'buttonText': 'Voir galeries',
-        'key': 'galeries',
-      },
-      {
-        'title': 'Coulisses Excellence',
-        'subtitle': 'Les coulisses de notre excellence',
-        'imagePath': null,
-        'iconData': Icons.star_rounded,
-        'color': const Color(0xFFD32F2F),
-        'buttonText': 'Voir coulisses',
-        'key': 'coulisses',
-      },
-      {
-        'title': 'Visites Guidées',
-        'subtitle': 'Explorez nos installations',
-        'imagePath': null,
-        'iconData': Icons.location_on_rounded,
-        'color': const Color(0xFF3F51B5),
-        'buttonText': 'Voir visites',
-        'key': 'visites',
-      },
+    final communityActions = [
+      EstablishmentAction(
+        key: 'galeries',
+        title: 'Galeries Écoles',
+        subtitle: 'Découvrez nos galeries photos',
+        imagePath: 'assets/images/messages.jpg',
+        color: const Color(0xFF00796B),
+        actionText: 'Voir galeries',
+        onTap: () =>
+            _showActionBottomSheet('galeries', _getActionDef('galeries')),
+      ),
+      EstablishmentAction(
+        key: 'coulisses',
+        title: 'Coulisses Excellence',
+        subtitle: 'Les coulisses de notre excellence',
+        iconData: Icons.star_rounded,
+        color: const Color(0xFFD32F2F),
+        actionText: 'Voir coulisses',
+        onTap: () =>
+            _showActionBottomSheet('coulisses', _getActionDef('coulisses')),
+      ),
+      EstablishmentAction(
+        key: 'visites',
+        title: 'Visites Guidées',
+        subtitle: 'Explorez nos installations',
+        iconData: Icons.location_on_rounded,
+        color: const Color(0xFF3F51B5),
+        actionText: 'Voir visites',
+        onTap: () =>
+            _showActionBottomSheet('visites', _getActionDef('visites')),
+      ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section École
         SectionRow(title: 'École'),
         const SizedBox(height: 8),
-        _buildSchoolHorizontalMenuCards(ecoleSection, isDark),
-        const SizedBox(height: 12),
+        EstablishmentActionSection(
+          actions: ecoleActions,
+          isDark: isDark,
+          useExternalTitle: true,
+          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context) -20,
+        ),
+        const SizedBox(height: 8),
+
+        // Section Vie école
         SectionRow(title: 'Vie école'),
-        const SizedBox(height: 12),
-        _buildHorizontalMenuCards(vieEcoleSection, isDark),
+        const SizedBox(height: 8),
+        EstablishmentActionSection(
+          actions: vieEcoleActions,
+          isDark: isDark,
+          useExternalTitle: true,
+          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
+        ),
+        const SizedBox(height: 10),
+
+        // Section Communauté
         SectionRow(title: 'Communauté'),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final screenWidth = constraints.maxWidth;
-              final crossAxisCount = screenWidth > 600 ? 2 : 1;
-
-              Widget buildCard(Map<String, Object?> item) {
-                return SchoolLifeItemCard(
-                  title: item['title'] as String,
-                  subtitle: item['subtitle'] as String,
-                  imagePath: item['imagePath'] as String?,
-                  iconData: item['iconData'] as IconData?,
-                  isDark: isDark,
-                  color: item['color'] as Color,
-                  buttonText: item['buttonText'] as String,
-                  onTap: () => _showActionBottomSheet(
-                    item['key'] as String,
-                    _getActionDef(item['key'] as String),
-                  ),
-                );
-              }
-
-              // Mobile : Column pour éviter l'espace inutile du GridView
-              if (crossAxisCount == 1) {
-                return Column(
-                  children: communityItems
-                      .map((item) => buildCard(item))
-                      .toList(),
-                );
-              }
-
-              // Tablette/Desktop : GridView 2 colonnes
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 50,
-                  mainAxisSpacing: 0,
-                  childAspectRatio: 6,
-                ),
-                itemCount: communityItems.length,
-                itemBuilder: (context, index) =>
-                    buildCard(communityItems[index]),
-              );
-            },
-          ),
+        const SizedBox(height: 8),
+        EstablishmentCommunitySection(
+          actions: communityActions,
+          isDark: isDark,
         ),
       ],
-    );
-  }
-
-  Widget _buildHorizontalMenuCards(List<List<String>> menuItems, bool isDark) {
-    return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: AppDimensions.getAdaptivePadding(context) / 2.5,
-        ),
-        itemCount: menuItems.length,
-        itemBuilder: (context, index) {
-          final item = menuItems[index];
-          final def = _kActions[item[0]]!;
-          return Padding(
-            padding: EdgeInsets.only(
-              right: AppDimensions.getHorizontalMenuCardSpacing(context) + 10,
-            ),
-            child: ImageMenuCardExternalTitle(
-              index: index,
-              cardKey: item[0],
-              title: item[1],
-              subtitle: "En savoir plus",
-              imagePath: item[2],
-              isDark: isDark,
-              width: AppDimensions.getHorizontalMenuCardWidth(context),
-              height: AppDimensions.getHorizontalMenuCardHeight(context) + 20,
-              externalTitleSpacing: AppDimensions.getHorizontalMenuCardSpacing(
-                context,
-              ),
-              icon: def.icon,
-              color: def.color,
-              //externalTitleSpacing: 15.0,
-              onTap: () => _showActionBottomSheet(item[0], def),
-              backgroundColor: def.color.withOpacity(0.1),
-              //textColor: def.color,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // Méthode spécifique pour la section École avec titre externe
-  Widget _buildSchoolHorizontalMenuCards(
-    List<List<String>> menuItems,
-    bool isDark,
-  ) {
-    return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(
-        context,
-      ), // Ajouter de la hauteur pour le titre externe
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: AppDimensions.getAdaptivePadding(context) / 2.5,
-        ),
-        itemCount: menuItems.length,
-        itemBuilder: (context, index) {
-          final item = menuItems[index];
-          final def = _kActions[item[0]]!;
-          return Padding(
-            padding: EdgeInsets.only(
-              right: AppDimensions.getHorizontalMenuCardSpacing(context) + 10,
-            ),
-            child: ImageMenuCardExternalTitle(
-              index: index,
-              cardKey: item[0],
-              title: item[1],
-              imageBorderRadius: 15,
-              //subtitle: "En savoir plus", // Sous-titre externe
-              imagePath: item[2],
-              isDark: isDark,
-              icon: def.icon,
-              color: def.color,
-              titleFontSize: 12,
-              width: 80, //AppDimensions.getHorizontalMenuCardWidth(context),
-              height:
-                  100, //AppDimensions.getHorizontalMenuCardHeight(context) + 20,
-              externalTitleSpacing: 10.0,
-              onTap: () => _showActionBottomSheet(item[0], def),
-              backgroundColor: def.color.withOpacity(0.1),
-              //textColor: def.color,
-            ),
-          );
-        },
-      ),
     );
   }
 
@@ -2611,24 +2666,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       );
       return;
     }
-
-    // Cas spécial : rating et voir_les_avis utilisent RatingBottomSheet ──
-    // if (actionType == 'rating' || actionType == 'voir_les_avis') {
-    //   showModalBottomSheet(
-    //     context: context,
-    //     isScrollControlled: true,
-    //     backgroundColor: Colors.transparent,
-    //     builder: (context) => RatingBottomSheet(
-    //       schoolId: widget.ecole.id ?? '',
-    //       schoolName: widget.ecole.parametreNom ?? 'Établissement',
-    //       schoolColor: _getSchoolColor(),
-    //       onRatingSubmitted: (rating, comment) async {
-    //         await _submitRating(rating, comment);
-    //       },
-    //     ),
-    //   );
-    //   return; // ← stop ici, ne pas tomber dans le showModalBottomSheet générique
-    // }
 
     // ── Bottom sheet générique pour tous les autres cas ──
     showModalBottomSheet(
@@ -4854,15 +4891,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         ),
                       // Padding(
                       //   padding: const EdgeInsets.all(16),
-                      //   child: Text(
-                      //     avi['content'] as String? ?? '',
-                      //     style: const TextStyle(
-                      //       fontSize: 13,
-                      //       color: AppColors.screenTextSecondary,
-                      //       height: 1.5,
-                      //     ),
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),

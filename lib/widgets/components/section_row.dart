@@ -20,7 +20,7 @@ class SectionRow extends StatelessWidget {
     final effectiveFontSize = titleFontSize ?? 11;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -237,7 +237,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       margin: EdgeInsets.only(
         left: 16,
         right: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 80,
+        bottom: MediaQuery.of(context).padding.bottom + 100,
       ),
     ));
   }
@@ -252,7 +252,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       margin: EdgeInsets.only(
         left: 16,
         right: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 80,
+        bottom: MediaQuery.of(context).padding.bottom + 100,
       ),
     ));
   }

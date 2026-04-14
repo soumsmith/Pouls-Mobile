@@ -185,99 +185,87 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
           ),
         ],
       ),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) {
-          return Column(
-            children: [
-              // Header avec le composant BottomSheetHeader
-              BottomSheetHeader(
-                icon: Icons.payment,
-                iconColor: const Color(0xFFFF7A3C),
-                title: 'Paiement en ligne',
-                description: widget.childName != null
-                    ? 'Entrez le montant à payer pour ${widget.childName}'
-                    : 'Entrez le montant à payer',
-                onClose: () => Navigator.of(context).pop(),
-                titleColor: AppColors.screenTextPrimary,
-                descriptionColor: AppColors.screenTextSecondary,
-                titleFontSize: 18,
-                descriptionFontSize: 13,
-                titleFontWeight: FontWeight.w800,
-                //padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              ),
-              // Form content
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BottomSheetHeader(
+            icon: Icons.payment,
+            iconColor: const Color(0xFFFF7A3C),
+            title: 'Paiement en ligne',
+            description: widget.childName != null
+                ? 'Entrez le montant à payer pour ${widget.childName}'
+                : 'Entrez le montant à payer',
+            onClose: () => Navigator.of(context).pop(),
+            titleColor: AppColors.screenTextPrimary,
+            descriptionColor: AppColors.screenTextSecondary,
+            titleFontSize: 18,
+            descriptionFontSize: 13,
+            titleFontWeight: FontWeight.w800,
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                CustomTextInput(
+                  label: 'Matricule de l\'élève',
+                  hint: 'Ex: 2024001',
+                  icon: Icons.person_outline,
+                  controller: matriculeController,
+                  keyboardType: TextInputType.text,
+                  readOnly: widget.matricule != null,
+                ),
+                const SizedBox(height: 20),
+                CustomTextInput(
+                  label: 'Montant à payer (FCFA)',
+                  hint: 'Ex: 10000',
+                  icon: Icons.attach_money,
+                  controller: montantController,
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 24),
+                _buildModernPaymentButton(
+                  label: isLoading ? '' : 'Procéder au paiement',
+                  onTap: isLoading ? null : _effectuerPaiement,
+                  isLoading: isLoading,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.screenOrangeLight.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.screenOrange.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      const SizedBox(height: 8),
-                      CustomTextInput(
-                        label: 'Matricule de l\'élève',
-                        hint: 'Ex: 2024001',
-                        icon: Icons.person_outline,
-                        controller: matriculeController,
-                        keyboardType: TextInputType.text,
-                        readOnly: widget.matricule != null,
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.screenOrange,
+                        size: 20,
                       ),
-                      const SizedBox(height: 20),
-                      CustomTextInput(
-                        label: 'Montant à payer (FCFA)',
-                        hint: 'Ex: 10000',
-                        icon: Icons.attach_money,
-                        controller: montantController,
-                        keyboardType: TextInputType.number,
-                      ),
-                      const SizedBox(height: 24),
-                      _buildModernPaymentButton(
-                        label: isLoading ? '' : 'Procéder au paiement',
-                        onTap: isLoading ? null : _effectuerPaiement,
-                        isLoading: isLoading,
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.screenOrangeLight.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.screenOrange.withOpacity(0.2),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Le paiement sera traité via notre partenaire WicPay',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.screenOrange,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: AppColors.screenOrange,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Le paiement sera traité via notre partenaire WicPay',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.screenOrange,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

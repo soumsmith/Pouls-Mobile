@@ -99,7 +99,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
           margin: EdgeInsets.only(
             left: 16,
             right: 16,
-            bottom: MediaQuery.of(context).padding.bottom + 80, // Espace pour la bottom nav
+            bottom: MediaQuery.of(context).padding.bottom + 100, // Espace pour la bottom nav
             top: 16,
           ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -194,7 +194,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             _getCurrentScreen(),
           // Bottom navigation with SafeArea to handle system padding
           Positioned(
-            bottom: -15,
+            bottom: 0,
             left: 0,
             right: 0,
             child: SafeArea(

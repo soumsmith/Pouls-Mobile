@@ -27,6 +27,8 @@ import '../services/student_timetable_service.dart';
 import '../models/student_timetable.dart';
 import '../services/school_service.dart';
 import '../widgets/payment_bottom_sheet.dart';
+import '../widgets/bottom_sheets/bottom_sheet_header.dart';
+import '../widgets/bottom_sheets/scolarite_bottom_sheet.dart';
 import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
@@ -38,6 +40,7 @@ import '../services/student_message_service.dart';
 import '../models/student_message.dart';
 import '../services/student_scolarite_service.dart';
 import '../models/student_scolarite.dart';
+import '../widgets/bottom_sheets/enhanced_scolarite_bottom_sheet.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/components/section_row.dart';
@@ -45,6 +48,8 @@ import '../widgets/snackbar.dart';
 import '../models/parent_suggestion.dart';
 import '../services/parent_suggestion_service.dart';
 import '../services/access_log_service.dart';
+import '../services/echeance_service.dart';
+import '../models/echeance_notification.dart';
 import '../models/access_log.dart';
 import '../models/place_reservation.dart';
 import '../services/inscription_api_service.dart' as api_service;
@@ -355,9 +360,23 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isLoadingNotifications = false;
   bool _notificationsLoaded = false; // ✅ AJOUT ICI
 
+  // Variables pour les notifications d'échéance
+  EcheanceNotification? _echeanceNotification;
+  bool _isLoadingEcheance = false;
+  bool _echeanceLoaded = false;
+
   // Compter les notifications non lues
   int get unreadNotificationsCount =>
       _notifications.where((notification) => !notification.estLu).length;
+
+  // Compter le total des notifications (messages + échéances)
+  int get totalNotificationsCount {
+    int count = _notifications.where((notification) => !notification.estLu).length;
+    if (_echeanceNotification?.hasUnpaidFees == true) {
+      count += 1;
+    }
+    return count;
+  }
 
   // Variables pour les données de notes globales
   GlobalAverage? _globalAverage;
@@ -397,6 +416,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         );
 
     _loadData();
+    _loadNotifications(); // Charger les notifications automatiquement
     //_loadEcoles();
     _animationController.forward();
   }
@@ -617,6 +637,90 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
+  // Charger les notifications (messages et échéances) automatiquement
+  Future<void> _loadNotifications() async {
+    print('=== DÉBUT DU CHARGEMENT AUTOMATIQUE DES NOTIFICATIONS (CHILD LIST) ===');
+    
+    // Utiliser le matricule déjà disponible dans _matricule
+    final matricule = _matricule ?? widget.child.matricule;
+    
+    print('Matricule disponible pour les notifications: $matricule');
+    
+    if (matricule == null || matricule.isEmpty) {
+      print('ERREUR: Matricule non disponible pour charger les notifications');
+      return;
+    }
+
+    print('MATRICULE UTILISÉ: $matricule');
+    print('DÉMARRAGE AUTOMATIQUE DES APIS DE NOTIFICATION...');
+
+    // Charger les messages de groupe
+    print('=== APPEL API MESSAGES DE GROUPE (AUTOMATIQUE) ===');
+    try {
+      print('Début du chargement automatique des messages de groupe pour: $matricule');
+      setState(() => _isLoadingNotifications = true);
+      final notifications = await GroupMessageService.getGroupMessages(matricule);
+      if (mounted) {
+        setState(() {
+          _notifications = notifications;
+          _isLoadingNotifications = false;
+          _notificationsLoaded = true;
+        });
+      }
+      print('SUCCÈS AUTO: Messages de groupe chargés automatiquement: ${notifications.length}');
+      for (final notif in notifications.take(3)) { // Limiter l'affichage des logs
+        print('  - Message: ${notif.titre}, Lu: ${notif.estLu}');
+      }
+      if (notifications.length > 3) {
+        print('  - ... et ${notifications.length - 3} autres messages');
+      }
+    } catch (e) {
+      print('ERREUR lors du chargement automatique des messages: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingNotifications = false;
+          _notificationsLoaded = true;
+        });
+      }
+    }
+
+    // Charger les notifications d'échéance
+    print('=== APPEL API ÉCHÉANCES (AUTOMATIQUE) ===');
+    try {
+      print('Début du chargement automatique des notifications d\'échéance pour: $matricule');
+      setState(() => _isLoadingEcheance = true);
+      final echeanceNotification = await EcheanceService.getEcheanceNotification(matricule);
+      if (mounted) {
+        setState(() {
+          _echeanceNotification = echeanceNotification;
+          _isLoadingEcheance = false;
+          _echeanceLoaded = true;
+        });
+      }
+      print('SUCCÈS AUTO: Notification d\'échéance chargée automatiquement');
+      print('  - Statut: ${echeanceNotification.status}');
+      final messagePreview = echeanceNotification.message.length > 100 
+          ? '${echeanceNotification.message.substring(0, 100)}...'
+          : echeanceNotification.message;
+      print('  - Message: $messagePreview');
+      print('  - Impayée: ${echeanceNotification.hasUnpaidFees}');
+    } catch (e) {
+      print('ERREUR lors du chargement automatique des échéances: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingEcheance = false;
+          _echeanceLoaded = true;
+        });
+      }
+    }
+    
+    print('=== FIN DU CHARGEMENT AUTOMATIQUE DES NOTIFICATIONS ===');
+    print('Notifications chargées automatiquement: ${_notifications.length}');
+    print('Échéance chargée automatiquement: ${_echeanceNotification != null}');
+    print('Total notifications automatiques: ${_notifications.length + (_echeanceNotification?.hasUnpaidFees == true ? 1 : 0)}');
+    print('Badge du bouton notification sera mis à jour avec: ${totalNotificationsCount}');
+  }
+
   Future<void> _loadChildInfo() async {
     try {
       print(
@@ -826,299 +930,816 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  StudentMenuCardItem _getStudentMenuCardItem(String menuType) {
-    switch (menuType) {
-      case 'notes':
-        return StudentMenuCardItem(
-          icon: Icons.bar_chart_rounded,
-          label: 'Mes Notes',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE3F2FD),
-          iconColor: const Color(0xFF1976D2),
-          titleColor: const Color(0xFF0D47A1),
-        );
-      case 'bulletins':
-        return StudentMenuCardItem(
-          icon: Icons.description_rounded,
-          label: 'Bulletins',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE8F5E8),
-          iconColor: const Color(0xFF2E7D32),
-          titleColor: const Color(0xFF1B5E20),
-        );
-      case 'timetable':
-        return StudentMenuCardItem(
-          icon: Icons.calendar_today_rounded,
-          label: 'Emploi du temps',
-          onTap: () {},
-          backgroundColor: const Color(0xFFFFF3E0),
-          iconColor: const Color(0xFFF57C00),
-          titleColor: const Color(0xFFE65100),
-        );
-      case 'homework':
-        return StudentMenuCardItem(
-          icon: Icons.edit_note_rounded,
-          label: 'Devoirs',
-          onTap: () {},
-          backgroundColor: const Color(0xFFF3E5F5),
-          iconColor: const Color(0xFF7B1FA2),
-          titleColor: const Color(0xFF4A148C),
-        );
-      case 'attendance':
-        return StudentMenuCardItem(
-          icon: Icons.person_off_rounded,
-          label: 'Présence & Conduite',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE0F2F1),
-          iconColor: const Color(0xFF00796B),
-          titleColor: const Color(0xFF004D40),
-        );
-      case 'accessControl':
-        return StudentMenuCardItem(
-          icon: Icons.fingerprint_rounded,
-          label: 'Contrôle d\'accès',
-          onTap: () {},
-          backgroundColor: const Color(0xFFFCE4EC),
-          iconColor: const Color(0xFFC2185B),
-          titleColor: const Color(0xFF880E4F),
-        );
-      case 'sanctions':
-        return StudentMenuCardItem(
-          icon: Icons.warning_rounded,
-          label: 'Sanctions',
-          onTap: () {},
-          backgroundColor: const Color(0xFFFFEBEE),
-          iconColor: const Color(0xFFD32F2F),
-          titleColor: const Color(0xFFB71C1C),
-        );
-      case 'messages':
-        return StudentMenuCardItem(
-          icon: Icons.message_rounded,
-          label: 'Messages',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE1F5FE),
-          iconColor: const Color(0xFF0288D1),
-          titleColor: const Color(0xFF01579B),
-        );
-      case 'fees':
-        return StudentMenuCardItem(
-          icon: Icons.payments_rounded,
-          label: 'Scolarité & Paiements',
-          onTap: () {},
-          backgroundColor: const Color(0xFFF9FBE7),
-          iconColor: const Color(0xFFFBC02D),
-          titleColor: const Color(0xFFF57F17),
-        );
-      case 'difficulties':
-        return StudentMenuCardItem(
-          icon: Icons.psychology_rounded,
-          label: 'Difficultés',
-          onTap: () {},
-          backgroundColor: const Color(0xFFF3E5F5),
-          iconColor: const Color(0xFF9C27B0),
-          titleColor: const Color(0xFF6A1B9A),
-        );
-      case 'events':
-        return StudentMenuCardItem(
-          icon: Icons.event_rounded,
-          label: 'Événements',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE8EAF6),
-          iconColor: const Color(0xFF3F51B5),
-          titleColor: const Color(0xFF283593),
-        );
-      case 'supplies':
-        return StudentMenuCardItem(
-          icon: Icons.inventory_2_rounded,
-          label: 'Fournitures',
-          onTap: () {},
-          backgroundColor: const Color(0xFFEFEBE9),
-          iconColor: const Color(0xFF795548),
-          titleColor: const Color(0xFF4E342E),
-        );
-      case 'orders':
-        return StudentMenuCardItem(
-          icon: Icons.shopping_cart_rounded,
-          label: 'Commandes',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE0F7FA),
-          iconColor: const Color(0xFF00ACC1),
-          titleColor: const Color(0xFF00838F),
-        );
-      // case 'accessLogs':
-      //   return StudentMenuCardItem(
-      //     icon: Icons.security_rounded,
-      //     label: 'Logs d\'Accès',
-      //     onTap: () {},
-      //     backgroundColor: const Color(0xFFEEEEEE),
-      //     iconColor: const Color(0xFF616161),
-      //     titleColor: const Color(0xFF212121),
-      //   );
-      case 'suggestions':
-        return StudentMenuCardItem(
-          icon: Icons.lightbulb_rounded,
-          label: 'Suggestions',
-          onTap: () {},
-          backgroundColor: const Color(0xFFFFF8E1),
-          iconColor: const Color(0xFFFFB300),
-          titleColor: const Color(0xFFFF6F00),
-        );
-      case 'reservations':
-        return StudentMenuCardItem(
-          icon: Icons.event_seat_rounded,
-          label: 'Réservations',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE8F5E9),
-          iconColor: const Color(0xFF2E7D32),
-        );
-      case 'integrationRequests':
-        return StudentMenuCardItem(
-          icon: Icons.school_rounded,
-          label: 'Consultation demande',
-          onTap: () {},
-          backgroundColor: const Color(0xFFE3F2FD),
-          iconColor: const Color(0xFF1565C0),
-        );
-      default:
-        return StudentMenuCardItem(
-          icon: Icons.help_rounded,
-          label: 'Inconnu',
-          onTap: () {},
-        );
-    }
-  }
-
-  void _showStudentMenuBottomSheet(
-    String menuType,
-    StudentMenuCardItem cardItem,
-  ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
+  // ─── MÉTHODES DE BOTTOM SHEETS DIRECTES ────────────────────────────────────
+  
+  void _showNotesBottomSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE3F2FD),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header avec les couleurs de la carte
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color:
-                        cardItem.backgroundColor ??
-                        (isDark ? Colors.grey[800] : Colors.grey[50]),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-                      ),
+                    child: const Icon(Icons.bar_chart_rounded, color: Color(0xFF1976D2)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Mes Notes', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
+                        Text('Consultez les notes et évaluations de votre enfant', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color:
-                              cardItem.backgroundColor?.withOpacity(0.3) ??
-                              Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          cardItem.icon,
-                          color: cardItem.iconColor ?? AppColors.primary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              cardItem.label,
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  20,
-                                ),
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    cardItem.titleColor ??
-                                    (isDark ? Colors.white : Colors.black),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _getStudentMenuDescription(menuType),
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  14,
-                                ),
-                                color: isDark
-                                    ? Colors.grey[400]
-                                    : Colors.grey[600],
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(
-                          Icons.close,
-                          color:
-                              cardItem.titleColor ??
-                              (isDark ? Colors.white : Colors.black),
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF0D47A1)),
                   ),
-                ),
-
-                // Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    //padding: const EdgeInsets.all(20),
-                    child: _buildStudentMenuContent(menuType),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
+            Expanded(child: _buildSimpleNotesTab()),
+          ],
+        ),
       ),
     );
   }
 
+  void _showBulletinsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E8),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.description_rounded, color: Color(0xFF2E7D32)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Bulletins', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20))),
+                        Text('Accédez aux bulletins trimestriels et annuels', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF1B5E20)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildBulletinsTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTimetableBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.calendar_today_rounded, color: Color(0xFFF57C00)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Emploi du temps', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFE65100))),
+                        Text('Consultez l\'emploi du temps et les horaires', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFFE65100)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSimpleTimetableTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHomeworkBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E5F5),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit_note_rounded, color: Color(0xFF7B1FA2)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Devoirs', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4A148C))),
+                        Text('Suivez les devoirs et exercices à faire', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF4A148C)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildHomeworkTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAttendanceBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F2F1),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.person_off_rounded, color: Color(0xFF00796B)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Présence & Conduite', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF004D40))),
+                        Text('Vérifiez la présence et la conduite', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF004D40)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildAbsencesTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAccessControlBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFCE4EC),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.pink.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.fingerprint_rounded, color: Color(0xFFC2185B)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Contrôle d\'accès', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF880E4F))),
+                        Text('Contrôlez les accès et les pointages', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF880E4F)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSimpleAccessControlTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSanctionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.warning_rounded, color: Color(0xFFD32F2F)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Sanctions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFB71C1C))),
+                        Text('Consultez les sanctions et avertissements', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFFB71C1C)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSanctionsTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMessagesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE1F5FE),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.message_rounded, color: Color(0xFF0288D1)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Messages', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF01579B))),
+                        Text('Lisez les messages et communications', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF01579B)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSimpleMessagesTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDifficultiesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E5F5),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.psychology_rounded, color: Color(0xFF9C27B0)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Difficultés', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF6A1B9A))),
+                        Text('Suivez les difficultés et le soutien', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF6A1B9A)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildDifficultiesTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEventsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8EAF6),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.event_rounded, color: Color(0xFF3F51B5)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Événements', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF283593))),
+                        Text('Participez aux événements et activités', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF283593)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildEventsTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuppliesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFEBE9),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.brown.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.inventory_2_rounded, color: Color(0xFF795548)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Fournitures', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF3E2723))),
+                        Text('Gérez les fournitures scolaires', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF3E2723)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSuppliesTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showOrdersBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F7FA),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.cyan.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.shopping_cart_rounded, color: Color(0xFF00ACC1)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Commandes', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF006064))),
+                        Text('Suivez vos commandes et achats', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF006064)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildOrdersTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAccessLogsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E5F5),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.security_rounded, color: Color(0xFF9C27B0)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Logs d\'accès', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF6A1B9A))),
+                        Text('Consultez les logs d\'accès et sécurité', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF6A1B9A)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSimpleAccessLogsTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuggestionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.lightbulb_rounded, color: Color(0xFFFFB300)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Suggestions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFFF6F00))),
+                        Text('Envoyez vos suggestions et feedback', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFFFF6F00)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSimpleSuggestionsTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReservationsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.event_seat_rounded, color: Color(0xFF2E7D32)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Réservations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20))),
+                        Text('Gérez vos réservations et places', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Color(0xFF1B5E20)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildSimpleReservationsTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFeesBottomSheet() {
+    showFeesBottomSheet(
+      context,
+      childName: widget.child.fullName,
+      childMatricule: widget.child.matricule,
+      scolariteEntries: _scolariteEntries,
+      isLoading: _isLoadingScolarite,
+      errorMessage: null, // Pas de variable d'erreur dédiée pour l'instant
+      onRefresh: _loadScolariteData,
+    );
+  }
+
+  
   void _showNotificationsBottomSheet() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -1130,51 +1751,110 @@ class _ChildListScreenState extends State<ChildListScreen>
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            // ✅ Déclencher le chargement UNE SEULE FOIS à l'intérieur du modal
-            if (!_notificationsLoaded && !_isLoadingNotifications) {
-              _isLoadingNotifications = true;
-              // Afficher le loader au-dessus de la bottom sheet
-              CustomLoaderOverlay.show(
-                context,
-                message: 'Chargement des notifications...',
-                loaderColor: AppColors.screenOrange,
-              );
+            // ✅ Déclencher le chargement des deux types de notifications UNE SEULE FOIS
+            if ((!_notificationsLoaded && !_isLoadingNotifications) || 
+                (!_echeanceLoaded && !_isLoadingEcheance)) {
+              
+              // Afficher le loader après le cycle de build pour éviter l'erreur setState()
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  CustomLoaderOverlay.show(
+                    context,
+                    message: 'Chargement des notifications...',
+                    loaderColor: AppColors.screenOrange,
+                  );
+                }
+              });
+
               final matricule = _matricule ?? widget.child.matricule;
               if (matricule != null && matricule.isNotEmpty) {
-                GroupMessageService.getGroupMessages(matricule)
-                    .then((notifications) {
-                      if (mounted) {
-                        CustomLoaderOverlay.hide();
-                        setModalState(() {
-                          _notifications = notifications;
-                          _isLoadingNotifications = false;
-                          _notificationsLoaded = true;
-                        });
-                        setState(() {
-                          _notifications = notifications;
-                          _isLoadingNotifications = false;
-                          _notificationsLoaded = true;
-                        });
-                      }
-                    })
-                    .catchError((e) {
-                      print('❌ Erreur notifications: $e');
-                      if (mounted) {
-                        CustomLoaderOverlay.hide();
-                        setModalState(() {
-                          _isLoadingNotifications = false;
-                          _notificationsLoaded = true;
-                        });
-                        setState(() {
-                          _isLoadingNotifications = false;
-                          _notificationsLoaded = true;
-                        });
-                      }
-                    });
+                // Charger les messages de groupe
+                if (!_notificationsLoaded && !_isLoadingNotifications) {
+                  _isLoadingNotifications = true;
+                  GroupMessageService.getGroupMessages(matricule)
+                      .then((notifications) {
+                        if (mounted) {
+                          setModalState(() {
+                            _notifications = notifications;
+                            _isLoadingNotifications = false;
+                            _notificationsLoaded = true;
+                          });
+                          setState(() {
+                            _notifications = notifications;
+                            _isLoadingNotifications = false;
+                            _notificationsLoaded = true;
+                          });
+                          // Cacher le loader si les deux chargements sont terminés
+                          if (_echeanceLoaded) {
+                            CustomLoaderOverlay.hide();
+                          }
+                        }
+                      })
+                      .catchError((e) {
+                        print('❌ Erreur notifications messages: $e');
+                        if (mounted) {
+                          setModalState(() {
+                            _isLoadingNotifications = false;
+                            _notificationsLoaded = true;
+                          });
+                          setState(() {
+                            _isLoadingNotifications = false;
+                            _notificationsLoaded = true;
+                          });
+                          // Cacher le loader si les deux chargements sont terminés
+                          if (_echeanceLoaded) {
+                            CustomLoaderOverlay.hide();
+                          }
+                        }
+                      });
+                }
+
+                // Charger les notifications d'échéance
+                if (!_echeanceLoaded && !_isLoadingEcheance) {
+                  _isLoadingEcheance = true;
+                  EcheanceService.getEcheanceNotification(matricule)
+                      .then((echeanceNotification) {
+                        if (mounted) {
+                          setModalState(() {
+                            _echeanceNotification = echeanceNotification;
+                            _isLoadingEcheance = false;
+                            _echeanceLoaded = true;
+                          });
+                          setState(() {
+                            _echeanceNotification = echeanceNotification;
+                            _isLoadingEcheance = false;
+                            _echeanceLoaded = true;
+                          });
+                          // Cacher le loader si les deux chargements sont terminés
+                          if (_notificationsLoaded) {
+                            CustomLoaderOverlay.hide();
+                          }
+                        }
+                      })
+                      .catchError((e) {
+                        print('❌ Erreur notifications échéance: $e');
+                        if (mounted) {
+                          setModalState(() {
+                            _isLoadingEcheance = false;
+                            _echeanceLoaded = true;
+                          });
+                          setState(() {
+                            _isLoadingEcheance = false;
+                            _echeanceLoaded = true;
+                          });
+                          // Cacher le loader si les deux chargements sont terminés
+                          if (_notificationsLoaded) {
+                            CustomLoaderOverlay.hide();
+                          }
+                        }
+                      });
+                }
               } else {
                 CustomLoaderOverlay.hide();
                 _isLoadingNotifications = false;
                 _notificationsLoaded = true;
+                _isLoadingEcheance = false;
+                _echeanceLoaded = true;
               }
             }
 
@@ -1247,11 +1927,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _isLoadingNotifications
+                                (_isLoadingNotifications || _isLoadingEcheance)
                                     ? 'Chargement en cours...'
-                                    : _notifications.isEmpty
-                                    ? 'Aucun message disponible'
-                                    : '${_notifications.length} message${_notifications.length > 1 ? 's' : ''}',
+                                    : '${totalNotificationsCount} notification${totalNotificationsCount > 1 ? 's' : ''}',
                                 style: TextStyle(
                                   fontSize: _textSizeService.getScaledFontSize(
                                     14,
@@ -1279,7 +1957,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
                   // Content
                   Expanded(
-                    child: _isLoadingNotifications
+                    child: (_isLoadingNotifications || _isLoadingEcheance)
                         ? const Center(
                             child: Padding(
                               padding: EdgeInsets.all(32),
@@ -1288,58 +1966,21 @@ class _ChildListScreenState extends State<ChildListScreen>
                               ),
                             ),
                           )
-                        : _notifications.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.notifications_off_outlined,
-                                    size: 64,
-                                    color: isDark
-                                        ? Colors.grey[600]
-                                        : Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Aucune notification',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService
-                                          .getScaledFontSize(16),
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? Colors.grey[400]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Vous n\'avez pas encore reçu de messages',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService
-                                          .getScaledFontSize(14),
-                                      color: isDark
-                                          ? Colors.grey[600]
-                                          : Colors.grey[400],
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
+                        : SingleChildScrollView(
                             padding: const EdgeInsets.all(16),
-                            itemCount: _notifications.length,
-                            itemBuilder: (context, index) {
-                              final notification = _notifications[index];
-                              return _buildNotificationCard(
-                                notification,
-                                setModalState,
-                              );
-                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Section Échéances
+                                if (_echeanceNotification != null) ...[
+                                  _buildEcheanceSection(_echeanceNotification!, isDark),
+                                  const SizedBox(height: 20),
+                                ],
+                                
+                                // Section Messages
+                                _buildMessagesSection(isDark, setModalState),
+                              ],
+                            ),
                           ),
                   ),
                 ],
@@ -1521,100 +2162,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  String _getStudentMenuDescription(String menuType) {
-    switch (menuType) {
-      case 'notes':
-        return 'Consultez les notes et évaluations de votre enfant';
-      case 'bulletins':
-        return 'Accédez aux bulletins trimestriels et annuels';
-      case 'timetable':
-        return 'Consultez l\'emploi du temps et les horaires';
-      case 'homework':
-        return 'Suivez les devoirs et exercices à faire';
-      case 'attendance':
-        return 'Vérifiez la présence et la conduite';
-      case 'accessControl':
-        return 'Contrôlez les accès et les pointages';
-      case 'sanctions':
-        return 'Consultez les sanctions et avertissements';
-      case 'messages':
-        return 'Lisez les messages et communications';
-      case 'fees':
-        return 'Gérez les frais de scolarité et paiements';
-      case 'difficulties':
-        return 'Suivez les difficultés et le soutien';
-      case 'events':
-        return 'Participez aux événements et activités';
-      case 'supplies':
-        return 'Gérez les fournitures scolaires';
-      case 'orders':
-        return 'Suivez vos commandes et achats';
-      case 'accessLogs':
-        return 'Consultez les logs d\'accès et sécurité';
-      case 'suggestions':
-        return 'Envoyez vos suggestions et feedback';
-      case 'reservations':
-        return 'Gérez vos réservations et places';
-      // case 'integrationRequests':
-      //   return 'Consultez vos demandes d\'intégration scolaire';
-      default:
-        return 'En savoir plus...';
-    }
-  }
-
-  Widget _buildStudentMenuContent(String menuType) {
-    switch (menuType) {
-      case 'notes':
-        return _buildSimpleNotesTab();
-      case 'bulletins':
-        return _buildBulletinsTab();
-      case 'timetable':
-        return _buildSimpleTimetableTab();
-      case 'homework':
-        return _buildHomeworkTab();
-      case 'attendance':
-        return _buildAbsencesTab();
-      case 'accessControl':
-        return _buildSimpleAccessControlTab();
-      case 'sanctions':
-        return _buildSanctionsTab();
-      case 'messages':
-        return _buildSimpleMessagesTab();
-      case 'fees':
-        return _buildSimpleFeesTab();
-      case 'difficulties':
-        return _buildDifficultiesTab();
-      case 'events':
-        return _buildEventsTab();
-      case 'supplies':
-        return _buildSuppliesTab();
-      case 'orders':
-        return _buildOrdersTab();
-      case 'accessLogs':
-        return _buildSimpleAccessLogsTab();
-      case 'suggestions':
-        return _buildSimpleSuggestionsTab();
-      case 'reservations':
-        return _buildSimpleReservationsTab();
-      // case 'integrationRequests':
-      //   return _buildIntegrationRequestsTab();
-      default:
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Center(
-            child: Text(
-              'Contenu en cours de développement...',
-              style: TextStyle(
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-          ),
-        );
-    }
-  }
-
+  
   Widget _buildModernSliverAppBar() {
     final isDarkMode = _themeService.isDarkMode;
 
@@ -1662,11 +2210,11 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
             onPressed: () => _showNotificationsBottomSheet(),
           ),
-          // Badge pour les notifications non lues
-          if (unreadNotificationsCount > 0)
+          // Badge pour les notifications totales (messages + échéances)
+          if (totalNotificationsCount > 0)
             Positioned(
-              right: 8,
-              top: 8,
+              right: 6,
+              top: 6,
               child: Container(
                 padding: EdgeInsets.all(AppDimensions.getBadgePadding(context)),
                 decoration: BoxDecoration(
@@ -1674,16 +2222,16 @@ class _ChildListScreenState extends State<ChildListScreen>
                   borderRadius: BorderRadius.circular(
                     AppDimensions.getBadgeBorderRadius(context),
                   ),
-                  border: Border.all(color: AppColors.screenCard, width: 2),
+                  border: Border.all(color: AppColors.screenCard, width: 1.5),
                 ),
                 constraints: BoxConstraints(
                   minWidth: AppDimensions.getBadgeMinSize(context),
                   minHeight: AppDimensions.getBadgeMinSize(context),
                 ),
                 child: Text(
-                  unreadNotificationsCount > 99
+                  totalNotificationsCount > 99
                       ? '99+'
-                      : unreadNotificationsCount.toString(),
+                      : totalNotificationsCount.toString(),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: AppDimensions.getBadgeFontSize(context),
@@ -2039,65 +2587,13 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           child: Column(
             children: [
-              // Header du bottomSheet
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.info_outline,
-                        color: Colors.blue,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        'Informations complètes',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(18),
-                          fontWeight: FontWeight.w700,
-                          color: isDarkMode ? Colors.white : Colors.black87,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: false,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDarkMode
-                              ? Colors.grey[700]
-                              : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          color: isDarkMode
-                              ? Colors.grey[300]
-                              : Colors.grey[600],
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              BottomSheetHeader(
+                icon: Icons.info_outline,
+                title: 'Informations complètes',
+                description: 'Détails complets sur l\'élève et sa scolarité',
+                iconColor: Colors.blue,
+                backgroundColor: Colors.blue.withOpacity(0.15),
+                onClose: () => Navigator.of(context).pop(),
               ),
 
               // Contenu complet
@@ -2524,10 +3020,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 await _loadScolariteData();
               }
               if (mounted) {
-                _showStudentMenuBottomSheet(
-                  'fees',
-                  _getStudentMenuCardItem('fees'),
-                );
+_showFeesBottomSheet();
               }
             },
           ),
@@ -2564,7 +3057,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
+        const SizedBox(height: 16),
         SectionRow(title: 'Suivi scolaire'),
+        const SizedBox(height: 16),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2627,10 +3122,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 await _loadTimetableData();
               }
               if (mounted) {
-                _showStudentMenuBottomSheet(
-                  'timetable',
-                  _getStudentMenuCardItem('timetable'),
-                );
+_showTimetableBottomSheet();
               }
             },
           ),
@@ -2679,7 +3171,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 3 : Vie scolaire
         // ════════════════════════════════════════════════════════════════
+        const SizedBox(height: 16),
         SectionRow(title: 'Vie scolaire'),
+        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: LayoutBuilder(
@@ -2743,17 +3237,44 @@ class _ChildListScreenState extends State<ChildListScreen>
                           await _loadAccessControlData();
                         }
                         if (mounted) {
-                          _showStudentMenuBottomSheet(
-                            'accessControl',
-                            _getStudentMenuCardItem('accessControl'),
-                          );
+_showAccessControlBottomSheet();
                         }
                       };
                     } else {
-                      return () => _showStudentMenuBottomSheet(
-                        item['key'] as String,
-                        _getStudentMenuCardItem(item['key'] as String),
-                      );
+switch (item['key'] as String) {
+                        case 'notes':
+                          return () => _showNotesBottomSheet();
+                        case 'bulletins':
+                          return () => _showBulletinsBottomSheet();
+                        case 'timetable':
+                          return () => _showTimetableBottomSheet();
+                        case 'homework':
+                          return () => _showHomeworkBottomSheet();
+                        case 'attendance':
+                          return () => _showAttendanceBottomSheet();
+                        case 'accessControl':
+                          return () => _showAccessControlBottomSheet();
+                        case 'sanctions':
+                          return () => _showSanctionsBottomSheet();
+                        case 'messages':
+                          return () => _showMessagesBottomSheet();
+                        case 'difficulties':
+                          return () => _showDifficultiesBottomSheet();
+                        case 'events':
+                          return () => _showEventsBottomSheet();
+                        case 'supplies':
+                          return () => _showSuppliesBottomSheet();
+                        case 'orders':
+                          return () => _showOrdersBottomSheet();
+                        case 'accessLogs':
+                          return () => _showAccessLogsBottomSheet();
+                        case 'suggestions':
+                          return () => _showSuggestionsBottomSheet();
+                        case 'reservations':
+                          return () => _showReservationsBottomSheet();
+                        default:
+                          return () {};
+                      };
                     }
                   }(),
                 );
@@ -2791,7 +3312,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 4 : Communications
         // ════════════════════════════════════════════════════════════════
+        const SizedBox(height: 16),
         SectionRow(title: 'Communications'),
+        const SizedBox(height: 16),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2854,21 +3377,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                 await _loadSuggestionsData();
               }
               if (mounted) {
-                _showStudentMenuBottomSheet(
-                  'suggestions',
-                  _getStudentMenuCardItem('suggestions'),
-                );
+_showSuggestionsBottomSheet();
               }
             },
           ),
         ]),
-
-        const SizedBox(height: 24),
-
         // ════════════════════════════════════════════════════════════════
         // SECTION 5 : Services
         // ════════════════════════════════════════════════════════════════
+        const SizedBox(height: 16),
         SectionRow(title: 'Services'),
+        const SizedBox(height: 16),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2888,10 +3407,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 : const Color(0xFF4E342E),
             actionText: 'Voir liste',
             actionTextColor: const Color(0xFF795548),
-            onTap: () => _showStudentMenuBottomSheet(
-              'supplies',
-              _getStudentMenuCardItem('supplies'),
-            ),
+onTap: () => _showSuppliesBottomSheet(),
           ),
           ImageMenuCard(
             index: 1,
@@ -2911,10 +3427,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 : const Color(0xFF00838F),
             actionText: 'Voir commandes',
             actionTextColor: const Color(0xFF00ACC1),
-            onTap: () => _showStudentMenuBottomSheet(
-              'orders',
-              _getStudentMenuCardItem('orders'),
-            ),
+onTap: () => _showOrdersBottomSheet(),
           ),
           ImageMenuCard(
             index: 2,
@@ -2938,10 +3451,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 await _loadReservationsData();
               }
               if (mounted) {
-                _showStudentMenuBottomSheet(
-                  'reservations',
-                  _getStudentMenuCardItem('reservations'),
-                );
+_showReservationsBottomSheet();
               }
             },
           ),
@@ -3002,182 +3512,12 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Future<List<Service>> _loadServices() async {
-    try {
-      const String ecoleCode = "gainhs";
-      final String url =
-          "${AppConfig.VIE_ECOLES_API_BASE_URL}/preinscription/services?ecole=$ecoleCode";
-
-      print('🔄 Chargement des services...');
-      print('   URL: $url');
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      );
-
-      print('📡 Réponse de l\'API:');
-      print('   Status Code: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        final services = jsonData
-            .map((json) => Service.fromJson(json))
-            .toList();
-
-        print('✅ Services chargés: ${services.length} items');
-        for (var service in services) {
-          print(
-            '   - ${service.designation} (${service.service}): ${service.prix} FCFA',
-          );
-        }
-
-        return services;
-      } else {
-        print('❌ Erreur HTTP ${response.statusCode}: ${response.body}');
-        return [];
-      }
-    } catch (e) {
-      print('❌ Erreur lors du chargement des services: $e');
-      return [];
-    }
-  }
-
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
       return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
     } catch (e) {
       return dateStr;
-    }
-  }
-
-  Future<void> _effectuerInscription(
-    List<Echeance> echeances,
-    StateSetter setState,
-    VoidCallback setLoading,
-    VoidCallback setLoadingFalse,
-  ) async {
-    // Filtrer les échéances sélectionnées
-    final echeancesSelectionnees = echeances
-        .where((e) => e.selectionnee)
-        .toList();
-
-    if (echeancesSelectionnees.isEmpty) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Sélection requise',
-        message: 'Veuillez sélectionner au moins une échéance',
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
-
-    // Afficher le loader au-dessus de la bottom sheet
-    CustomLoaderOverlay.show(
-      context,
-      message: 'Traitement de l\'inscription...',
-      loaderColor: AppColors.screenOrange,
-    );
-
-    try {
-      // Créer la requête d'inscription
-      final inscriptionRequest = InscriptionRequest(
-        ids: [
-          InscriptionItem(
-            id: "SCO",
-            service: "Scolarité",
-            montant: echeancesSelectionnees.fold(
-              0,
-              (sum, e) => sum + e.montant,
-            ),
-            reservation: false,
-            echeancesSelectionnees: echeancesSelectionnees,
-          ),
-        ],
-        engagement: {},
-        type: "préinscription",
-        separationFlux: 0,
-        systemeEducatif: 1,
-      );
-
-      // URL de l'API
-      final String matricule =
-          _matricule ?? "10307"; // Valeur par défaut si null
-      final String ecoleCode =
-          _ecoleCode ?? "gainhs"; // Valeur par défaut si null
-      final String url =
-          "${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/inscription-eleve/$matricule?ecole=$ecoleCode";
-
-      print('🔄 Envoi de la requête d\'inscription...');
-      print('   URL: $url');
-      print('   Matricule: $matricule');
-      print('   École: $ecoleCode');
-      print('   Données: ${jsonEncode(inscriptionRequest.toJson())}');
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(inscriptionRequest.toJson()),
-      );
-
-      print('📡 Réponse de l\'API:');
-      print('   Status Code: ${response.statusCode}');
-      print('   Body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (mounted) {
-          Navigator.of(context).pop();
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Inscription réussie',
-            message:
-                'Inscription de ${widget.child.firstName} enregistrée avec succès!',
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
-          );
-        }
-      } else {
-        // Gérer les erreurs de l'API
-        String errorMessage = 'Erreur lors de l\'inscription';
-        try {
-          final errorData = jsonDecode(response.body);
-          errorMessage =
-              errorData['message'] ?? errorData['error'] ?? errorMessage;
-        } catch (e) {
-          errorMessage = 'Erreur HTTP ${response.statusCode}: ${response.body}';
-        }
-
-        if (mounted) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur d\'inscription',
-            message: errorMessage,
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          );
-        }
-      }
-    } catch (e) {
-      print('❌ Erreur lors de l\'inscription: $e');
-      if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Erreur réseau',
-          message: 'Erreur lors de l\'inscription: $e',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        );
-      }
-    } finally {
-      CustomLoaderOverlay.hide();
     }
   }
 
@@ -3882,531 +4222,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildSimpleFeesTab() {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Padding(
-      padding: const EdgeInsets.all(0),
-      child: Center(child: _buildDynamicScolarite()),
-    );
-  }
-
-  Widget _buildDynamicScolarite() {
-    if (_isLoadingScolarite) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: CustomLoader(
-            message: 'Chargement de la scolarité...',
-            loaderColor: AppColors.screenOrange,
-            showBackground: false,
-          ),
-        ),
-      );
-    }
-
-    if (_scolariteEntries.isEmpty) {
-      // Vérifier si le matricule est disponible
-      final matricule = widget.child.matricule;
-      if (matricule == null || matricule.isEmpty) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Colors.red[400],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Matricule non disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _themeService.isDarkMode
-                      ? Colors.grey[400]
-                      : Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        );
-      }
-
-      return Container(
-        width: double.infinity,
-        height: MediaQuery.of(context).size.height * 0.6,
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.school, size: 48, color: Colors.amber[400]),
-              const SizedBox(height: 12),
-              Text(
-                'Aucune échéance disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _themeService.isDarkMode
-                      ? Colors.white70
-                      : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              SubtleRetryButtonWithText(
-                onTap: () => _loadScolariteData(),
-                color: Colors.amber,
-                text: 'Actualiser',
-                icon: Icons.refresh_outlined,
-                showIcon: true,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Statistiques
-    final totalMontant = _scolariteEntries.fold<int>(
-      0,
-      (sum, entry) => sum + entry.montant,
-    );
-    final totalPaye = _scolariteEntries.fold<int>(
-      0,
-      (sum, entry) => sum + entry.paye,
-    );
-    final totalRapayer = _scolariteEntries.fold<int>(
-      0,
-      (sum, entry) => sum + entry.rapayer,
-    );
-    final paymentPercentage = totalMontant > 0
-        ? (totalPaye / totalMontant) * 100
-        : 0.0;
-    final overdueCount = _scolariteEntries.where((e) => e.isOverdue).length;
-
-    return Column(
-      children: [
-        // Carte de statistiques
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _themeService.isDarkMode
-                  ? Colors.grey[700]!
-                  : Colors.grey[200]!,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.analytics_outlined, color: Colors.amber, size: 24),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Résumé de la scolarité',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode
-                          ? Colors.white
-                          : Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      'Total',
-                      _formatAmount(totalMontant),
-                      Colors.amber,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatItem(
-                      'Payé',
-                      _formatAmount(totalPaye),
-                      Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatItem(
-                      'Restant',
-                      _formatAmount(totalRapayer),
-                      Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Barre de progression
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Progression: ${paymentPercentage.toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          color: _themeService.isDarkMode
-                              ? Colors.white
-                              : Colors.black,
-                          fontSize: _textSizeService.getScaledFontSize(12),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (overdueCount > 0) ...[
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '$overdueCount retard(s)',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: _textSizeService.getScaledFontSize(10),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color:
-                          (_themeService.isDarkMode
-                                  ? Colors.grey[600]
-                                  : Colors.grey[300])!
-                              .withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: paymentPercentage / 100,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: paymentPercentage == 100
-                              ? Colors.green
-                              : Colors.amber,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Liste de toutes les échéances
-        ..._scolariteEntries
-            .map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildScolariteCard(entry),
-              ),
-            )
-            .toList(),
-      ],
-    );
-  }
-
-  Widget _buildScolariteCard(StudentScolariteEntry entry) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: _themeService.isDarkMode
-            ? const Color(0xFF1E1E1E)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: entry.statusColor == 'green'
-              ? Colors.green.withOpacity(0.3)
-              : entry.statusColor == 'orange'
-              ? Colors.orange.withOpacity(0.3)
-              : Colors.red.withOpacity(0.3),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _showScolariteEntryDetails(entry),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header avec libellé et statut
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        entry.libelle,
-                        style: TextStyle(
-                          color: _themeService.isDarkMode
-                              ? Colors.white
-                              : Colors.black,
-                          fontSize: _textSizeService.getScaledFontSize(16),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: entry.statusColor == 'green'
-                            ? Colors.green.withOpacity(0.1)
-                            : entry.statusColor == 'orange'
-                            ? Colors.orange.withOpacity(0.1)
-                            : Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        entry.formattedStatus,
-                        style: TextStyle(
-                          color: entry.statusColor == 'green'
-                              ? Colors.green
-                              : entry.statusColor == 'orange'
-                              ? Colors.orange
-                              : Colors.red,
-                          fontSize: _textSizeService.getScaledFontSize(12),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Montants
-                Row(
-                  children: [
-                    Icon(
-                      Icons.account_balance_wallet,
-                      size: 16,
-                      color: _themeService.isDarkMode
-                          ? Colors.grey[400]
-                          : Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Montant: ${entry.formattedMontant}',
-                      style: TextStyle(
-                        color: _themeService.isDarkMode
-                            ? Colors.white
-                            : Colors.black,
-                        fontSize: _textSizeService.getScaledFontSize(14),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Montant payé et montant restant
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.check_circle, size: 16, color: Colors.green),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Payé: ${entry.formattedPaye}',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: _textSizeService.getScaledFontSize(14),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // N'afficher le montant restant que s'il est supérieur à 0
-                    if (entry.rapayer > 0) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            entry.rapayer > 0
-                                ? Icons.warning
-                                : Icons.check_circle,
-                            size: 16,
-                            color: entry.rapayer > 0
-                                ? Colors.red
-                                : Colors.green,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Restant: ${entry.formattedRapayer}',
-                            style: TextStyle(
-                              color: entry.rapayer > 0
-                                  ? Colors.red
-                                  : Colors.green,
-                              fontSize: _textSizeService.getScaledFontSize(14),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Date limite
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: _themeService.isDarkMode
-                          ? Colors.grey[400]
-                          : Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Date limite: ${entry.formattedDateLimite}',
-                      style: TextStyle(
-                        color: _themeService.isDarkMode
-                            ? Colors.grey[400]
-                            : Colors.grey[600],
-                        fontSize: _textSizeService.getScaledFontSize(14),
-                      ),
-                    ),
-                    if (entry.isOverdue) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'EN RETARD',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: _textSizeService.getScaledFontSize(10),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showScolariteEntryDetails(StudentScolariteEntry entry) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _themeService.isDarkMode
-            ? const Color(0xFF1E1E1E)
-            : Colors.white,
-        title: Text(
-          entry.libelle,
-          style: TextStyle(
-            color: _themeService.isDarkMode ? Colors.white : Colors.black,
-            fontSize: _textSizeService.getScaledFontSize(18),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDetailRow('Rubrique', entry.formattedRubrique),
-              _buildDetailRow('Montant initial', _formatAmount(entry.montant0)),
-              if (entry.remise > 0)
-                _buildDetailRow('Remise', _formatAmount(entry.remise)),
-              _buildDetailRow('Montant final', _formatAmount(entry.montant)),
-              _buildDetailRow('Montant payé', _formatAmount(entry.paye)),
-              _buildDetailRow('Restant à payer', _formatAmount(entry.rapayer)),
-              _buildDetailRow('Date limite', entry.formattedDateLimite),
-              _buildDetailRow('Statut', entry.formattedStatus),
-              _buildDetailRow(
-                'Date d\'enregistrement',
-                entry.formattedDateenreg,
-              ),
-              if (entry.isOverdue)
-                _buildDetailRow(
-                  'Retard',
-                  'Oui - ${entry.daysUntilDeadline.abs()} jours',
-                  Colors.red,
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Fermer', style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildDetailRow(String label, String value, [Color? color]) {
     final isDarkMode = _themeService.isDarkMode;
 
@@ -4440,10 +4255,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  String _formatAmount(int amount) {
-    return '${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')} FCFA';
-  }
-
+  
   Widget _buildSimpleSuggestionsTab() {
     final isDarkMode = _themeService.isDarkMode;
 
@@ -9040,6 +8852,208 @@ class _ChildListScreenState extends State<ChildListScreen>
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  // Section pour les notifications d'échéance
+  Widget _buildEcheanceSection(EcheanceNotification echeance, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header de la section
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: echeance.hasUnpaidFees 
+                    ? Colors.red.withOpacity(0.2) 
+                    : Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                echeance.hasUnpaidFees ? Icons.warning_amber : Icons.check_circle,
+                color: echeance.hasUnpaidFees ? Colors.red : Colors.green,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Échéances',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(16),
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            if (echeance.hasUnpaidFees) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Non réglé',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // Carte d'échéance
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: echeance.hasUnpaidFees
+                ? (isDark ? Colors.red.withOpacity(0.2) : Colors.red.withOpacity(0.1))
+                : (isDark ? Colors.green.withOpacity(0.2) : Colors.green.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: echeance.hasUnpaidFees
+                  ? (isDark ? Colors.red.withOpacity(0.5) : Colors.red.withOpacity(0.3))
+                  : (isDark ? Colors.green.withOpacity(0.5) : Colors.green.withOpacity(0.3)),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    echeance.hasUnpaidFees ? Icons.money_off : Icons.attach_money,
+                    color: echeance.hasUnpaidFees ? Colors.red : Colors.green,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    echeance.hasUnpaidFees ? 'Échéances en retard' : 'Situation régulière',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      fontWeight: FontWeight.w600,
+                      color: echeance.hasUnpaidFees ? Colors.red : Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                echeance.formattedMessage,
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(13),
+                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Section pour les messages de groupe
+  Widget _buildMessagesSection(bool isDark, StateSetter setModalState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header de la section
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.message,
+                color: Colors.blue,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Messages',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(16),
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            if (_notifications.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_notifications.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // Liste des messages
+        if (_notifications.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[800] : Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.message_outlined,
+                  size: 48,
+                  color: isDark ? Colors.grey[600] : Colors.grey[400],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Aucun message',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Vous n\'avez pas encore reçu de messages',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(12),
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._notifications.map((notification) => _buildNotificationCard(notification, setModalState)),
       ],
     );
   }

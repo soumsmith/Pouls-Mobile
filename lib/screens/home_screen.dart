@@ -27,6 +27,10 @@ import 'add_child_screen.dart';
 import 'inscription_screen.dart' as inscription;
 import '../widgets/payment_bottom_sheet.dart';
 import '../services/paiement_service.dart';
+import '../services/group_message_service.dart';
+import '../services/echeance_service.dart';
+import '../models/group_message.dart';
+import '../models/echeance_notification.dart';
 import '../widgets/bottom_sheets/inscription_bottom_sheet.dart';
 import '../widgets/bottom_fade_gradient.dart';
 
@@ -69,6 +73,12 @@ class _HomeScreenState extends State<HomeScreen> {
   String _activeFilter = 'Tout';
   int _selectedChildIndex = 0;
 
+  // Variables pour les notifications par enfant
+  Map<String, List<GroupMessage>> _childrenNotifications = {};
+  Map<String, EcheanceNotification?> _childrenEcheances = {};
+  Map<String, bool> _childrenNotificationsLoading = {};
+  Map<String, bool> _childrenEcheancesLoading = {};
+
   final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
   @override
@@ -79,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _loadChildren();
     _loadUnreadNotificationsCount();
+    _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
   }
 
   @override
@@ -134,6 +145,134 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  // Charger les notifications pour tous les enfants
+  Future<void> _loadChildrenNotifications() async {
+    print('=== DÉBUT DU CHARGEMENT DES NOTIFICATIONS POUR TOUS LES ENFANTS (HOME) ===');
+    
+    // Attendre que les enfants soient chargés
+    if (_children.isEmpty) {
+      print('Enfants pas encore chargés, on attend...');
+      await Future.delayed(const Duration(seconds: 2));
+      if (_children.isEmpty) {
+        print('Toujours pas d\'enfants, on réessayera plus tard');
+        return;
+      }
+    }
+
+    print('Chargement des notifications pour ${_children.length} enfant(s)');
+    
+    // Initialiser les états de chargement
+    for (final child in _children) {
+      _childrenNotificationsLoading[child.id] = true;
+      _childrenEcheancesLoading[child.id] = true;
+    }
+    
+    if (mounted) {
+      setState(() {});
+    }
+
+    // Charger les notifications pour chaque enfant en parallèle
+    final futures = <Future<void>>[];
+    
+    for (final child in _children) {
+      futures.add(_loadNotificationsForChild(child));
+    }
+    
+    try {
+      await Future.wait(futures);
+      print('=== FIN DU CHARGEMENT DES NOTIFICATIONS POUR TOUS LES ENFANTS ===');
+      
+      // Afficher le résumé
+      for (final child in _children) {
+        final notifCount = _childrenNotifications[child.id]?.where((n) => !n.estLu).length ?? 0;
+        final hasUnpaidFees = _childrenEcheances[child.id]?.hasUnpaidFees == true;
+        final totalCount = notifCount + (hasUnpaidFees ? 1 : 0);
+        print('Enfant ${child.fullName}: $totalCount notification(s) (messages: $notifCount, échéance: $hasUnpaidFees)');
+      }
+    } catch (e) {
+      print('Erreur lors du chargement des notifications: $e');
+    }
+  }
+
+  // Charger les notifications pour un enfant spécifique
+  Future<void> _loadNotificationsForChild(Child child) async {
+    print('Chargement des notifications pour: ${child.fullName}');
+    
+    // Récupérer le matricule depuis la base de données
+    try {
+      final childInfo = await DatabaseService.instance.getChildInfoById(child.id);
+      final matricule = childInfo?['matricule'] as String?;
+      
+      if (matricule == null || matricule.isEmpty) {
+        print('Matricule non disponible pour ${child.fullName}');
+        if (mounted) {
+          setState(() {
+            _childrenNotificationsLoading[child.id] = false;
+            _childrenEcheancesLoading[child.id] = false;
+          });
+        }
+        return;
+      }
+
+      print('Matricule trouvé pour ${child.fullName}: $matricule');
+
+      // Charger les messages de groupe
+      try {
+        final notifications = await GroupMessageService.getGroupMessages(matricule);
+        if (mounted) {
+          setState(() {
+            _childrenNotifications[child.id] = notifications;
+            _childrenNotificationsLoading[child.id] = false;
+          });
+        }
+        print('Messages chargés pour ${child.fullName}: ${notifications.length}');
+      } catch (e) {
+        print('Erreur messages pour ${child.fullName}: $e');
+        if (mounted) {
+          setState(() {
+            _childrenNotificationsLoading[child.id] = false;
+          });
+        }
+      }
+
+      // Charger les notifications d'échéance
+      try {
+        final echeanceNotification = await EcheanceService.getEcheanceNotification(matricule);
+        if (mounted) {
+          setState(() {
+            _childrenEcheances[child.id] = echeanceNotification;
+            _childrenEcheancesLoading[child.id] = false;
+          });
+        }
+        print('Échéance chargée pour ${child.fullName}: ${echeanceNotification.hasUnpaidFees ? 'Impayée' : 'Régulière'}');
+      } catch (e) {
+        print('Erreur échéance pour ${child.fullName}: $e');
+        if (mounted) {
+          setState(() {
+            _childrenEcheancesLoading[child.id] = false;
+          });
+        }
+      }
+      
+    } catch (e) {
+      print('Erreur générale pour ${child.fullName}: $e');
+      if (mounted) {
+        setState(() {
+          _childrenNotificationsLoading[child.id] = false;
+          _childrenEcheancesLoading[child.id] = false;
+        });
+      }
+    }
+  }
+
+  // Obtenir le nombre total de notifications pour un enfant
+  int getNotificationCountForChild(Child child) {
+    final messages = _childrenNotifications[child.id] ?? [];
+    final unreadMessages = messages.where((n) => !n.estLu).length;
+    final hasUnpaidFees = _childrenEcheances[child.id]?.hasUnpaidFees == true;
+    return unreadMessages + (hasUnpaidFees ? 1 : 0);
   }
 
   Future<void> _updatePhotosInBackground(List<Child> children) async {
@@ -764,20 +903,37 @@ class _HomeScreenState extends State<HomeScreen> {
                         : _defaultChildIcon(),
                   ),
                 ),
-                // Notification dot
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    width: 13,
-                    height: 13,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: _kDarkBg, width: 2),
+                // Badge de notification dynamique
+                if (getNotificationCountForChild(child) > 0)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _kDarkBg, width: 2),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Center(
+                        child: Text(
+                          getNotificationCountForChild(child) > 9 
+                              ? '9+' 
+                              : getNotificationCountForChild(child).toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 5),
@@ -873,7 +1029,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               SectionRow(title: 'INSCRIPTIONS & DÉMARCHES'),
               SizedBox(
-                height: 140,
+                height: 110,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.only(left: 16, right: 24),
@@ -883,11 +1039,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       cardKey: 'inscription',
                       title: 'Inscription',
                       imagePath: 'assets/images/icons/inscription.png',
-                      color: const Color(0xFF8B5CF6),
-                      backgroundColor: const Color(0xFFF3E8FF),
-                      textColor: const Color(0xFF5B21B6),
+                      color: Colors.grey.shade50,
+                      backgroundColor: Colors.grey.shade50,
+                      textColor: Colors.black,
                       actionText: 'S\'inscrire',
-                      enableBorder: true,
+                      enableBorder: false,
                       borderColor: Colors.blue,
                       onTap: () => InscriptionBottomSheet.show(context),
                     ),
@@ -895,10 +1051,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 1,
                       cardKey: 'integration',
                       title: 'Intégration',
-                      imagePath: 'assets/images/inscription.jpg',
-                      color: const Color(0xFF1565C0),
-                      backgroundColor: const Color(0xFFE3F2FD),
-                      textColor: const Color(0xFF0D47A1),
+                      imagePath: 'assets/images/icons/integration.png',
+                      color: Colors.grey.shade50,
+                      backgroundColor: Colors.grey.shade50,
+                      textColor: Colors.black,
                       actionText: 'Commencer',
                       onTap: () => showModalBottomSheet(
                         context: context,
@@ -911,10 +1067,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 2,
                       cardKey: 'consulter_demande',
                       title: 'Consulter\ndemande',
-                      imagePath: 'assets/images/mes-demande.jpg',
-                      color: const Color(0xFF1B8A56),
-                      backgroundColor: const Color(0xFFEAF7F0),
-                      textColor: const Color(0xFF065F46),
+                      imagePath: 'assets/images/icons/consulter.png',
+                      color: Colors.grey.shade50,
+                      backgroundColor: Colors.grey.shade50,
+                      textColor: Colors.black,
                       actionText: 'Consulter',
                       onTap: () => IntegrationRequestBottomSheet.show(context),
                     ),
@@ -922,10 +1078,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 3,
                       cardKey: 'parrainage',
                       title: 'Parrainage',
-                      imagePath: 'assets/images/scolarite.jpg',
-                      color: _kOrange,
-                      backgroundColor: const Color(0xFFFFF4EE),
-                      textColor: const Color(0xFF9A3412),
+                      imagePath: 'assets/images/icons/parrainer.png',
+                      color: Colors.grey.shade50,
+                      backgroundColor: Colors.grey.shade50,
+                      textColor: Colors.black,
                       actionText: 'Inviter',
                       onTap: () => showSponsorshipBottomSheet(context),
                     ),
@@ -1010,10 +1166,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 0,
                       cardKey: 'paiements',
                       title: 'Paiements',
-                      imagePath: 'assets/images/mes-commandes.jpg',
-                      color: const Color(0xFFF5A623),
-                      backgroundColor: const Color(0xFFFFF8E8),
-                      textColor: const Color(0xFF92400E),
+                      imagePath: 'assets/images/icons/paiement.png',
+                      color: Colors.grey.shade50,
+                      backgroundColor: Colors.grey.shade50,
+                      textColor: Colors.black,
                       actionText: 'Payer',
                       onTap: () {
                         PaymentBottomSheet.show(
@@ -1084,10 +1240,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 1,
                       cardKey: 'scolarite',
                       title: 'Scolarité',
-                      imagePath: 'assets/images/scolarite.jpg',
-                      color: const Color(0xFF10B981),
-                      backgroundColor: const Color(0xFFECFDF5),
-                      textColor: const Color(0xFF065F46),
+                      imagePath: 'assets/images/icons/scolarite.png',
+                      color: Colors.grey.shade50,
+                      backgroundColor: Colors.grey.shade50,
+                      textColor: Colors.black,
                       actionText: 'Voir',
                       onTap: () {},
                     ),
@@ -1243,10 +1399,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 5,
                       cardKey: 'livres',
                       title: 'Livres',
-                      imagePath: 'assets/images/notes.jpg',
-                      color: const Color(0xFF10B981),
-                      backgroundColor: const Color(0xFFECFDF5),
-                      textColor: const Color(0xFF047857),
+                      imagePath: 'assets/images/icons/note-avis.png',
+                      color: Colors.grey.shade50,
+                      backgroundColor: Colors.grey.shade50,
+                      textColor: Colors.black,
                       actionText: 'Acheter',
                       onTap: () {},
                     ),
@@ -1275,11 +1431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-
-              // Filter chips
-              _buildFilterRow(),
-              // Activity list
-              _buildActivityList(),
+              const SizedBox(height: 85),
             ],
           ),
           const BottomFadeGradient(),
@@ -1323,7 +1475,7 @@ class _HomeScreenState extends State<HomeScreen> {
               : backgroundColor,
           textColor: isDark ? color.withOpacity(0.75) : textColor,
           actionText: actionText,
-          actionTextColor: color,
+          //actionTextColor: color,
           enableBorder: enableBorder,
           borderColor: borderColor,
           onTap: onTap,
@@ -1362,269 +1514,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         }).toList(),
-      ),
-    );
-  }
-
-  // ─── ACTIVITY LIST ─────────────────────────────────────────────────────────
-  Widget _buildActivityList() {
-    if (_isLoading) {
-      return CustomLoader(
-        message: 'Chargement...',
-        loaderColor: _kOrange,
-        backgroundColor: _kSheetBg,
-        showBackground: false,
-      );
-    }
-    if (_error != null) {
-      return _buildErrorState();
-    }
-
-    // Dummy activity cards — replace with real data from your API
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-      child: Column(
-        children: [
-          _buildActivityCard(
-            type: 'Absence signalée',
-            typeColor: _kOrange,
-            typeIcon: Icons.warning_amber_rounded,
-            accentColor: _kOrange,
-            title: 'Fatoumat-Zara Kante',
-            subtitle: 'Non justifiée · 6ème G · Collège Hînneh Biabou',
-            time: '08h30',
-            actions: [
-              _ActivityAction('Justifier', false, null, () {}),
-              _ActivityAction('Contacter', false, null, () {}),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildActivityCard(
-            type: 'Paiement dû',
-            typeColor: const Color(0xFFF5A623),
-            typeIcon: Icons.info_outline_rounded,
-            accentColor: const Color(0xFFF5A623),
-            title: 'Scolarité Trimestre 3 — 25 000 FCFA',
-            subtitle: 'Abdoul Kader · Collège Privé BKB',
-            time: 'Hier',
-            actions: [
-              _ActivityAction(
-                'Payer maintenant',
-                true,
-                const Color(0xFFF5A623),
-                () {},
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildActivityCard(
-            type: 'Message professeur',
-            typeColor: const Color(0xFF378ADD),
-            typeIcon: Icons.chat_bubble_outline_rounded,
-            accentColor: const Color(0xFF378ADD),
-            title: 'M. Koné — SVT',
-            subtitle: 'Abdoul Kader · Résultats devoir sur table disponibles',
-            time: 'Lun.',
-            actions: [
-              _ActivityAction('Lire', false, null, () {}),
-              _ActivityAction('Répondre', false, null, () {}),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildActivityCard(
-            type: 'Bulletin disponible',
-            typeColor: const Color(0xFF4CAF50),
-            typeIcon: Icons.description_outlined,
-            accentColor: const Color(0xFF4CAF50),
-            title: 'Trimestre 2 — Fatoumat-Zara',
-            subtitle: '6ème G · Collège Hînneh Biabou',
-            time: 'Dim.',
-            actions: [
-              _ActivityAction('Consulter le bulletin', false, null, () {}),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityCard({
-    required String type,
-    required Color typeColor,
-    required IconData typeIcon,
-    required Color accentColor,
-    required String title,
-    required String subtitle,
-    required String time,
-    required List<_ActivityAction> actions,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _kSheetCard,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            // Left accent bar
-            Container(width: 3.5, color: accentColor),
-            // Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(typeIcon, color: typeColor, size: 13),
-                        const SizedBox(width: 5),
-                        Text(
-                          type,
-                          style: TextStyle(
-                            color: typeColor,
-                            fontSize: _textSizeService.getScaledFontSize(10),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          time,
-                          style: TextStyle(
-                            color: _kTextSecondary,
-                            fontSize: _textSizeService.getScaledFontSize(10),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: _kTextPrimary,
-                        fontSize: _textSizeService.getScaledFontSize(13),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: _kTextSecondary,
-                        fontSize: _textSizeService.getScaledFontSize(11),
-                      ),
-                    ),
-                    const SizedBox(height: 9),
-                    Row(
-                      children: actions.map((a) {
-                        return Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              right: actions.last == a ? 0 : 7,
-                            ),
-                            child: GestureDetector(
-                              onTap: a.onTap,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: a.isPrimary
-                                      ? (a.primaryColor ?? _kOrange)
-                                      : _kSheetBg,
-                                  borderRadius: BorderRadius.circular(9),
-                                ),
-                                child: Text(
-                                  a.label,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: a.isPrimary
-                                        ? Colors.white
-                                        : _kTextPrimary,
-                                    fontSize: _textSizeService
-                                        .getScaledFontSize(11),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ─── ERROR STATE ───────────────────────────────────────────────────────────
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFF0F0),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.error_outline,
-                size: 30,
-                color: Colors.red[400],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Une erreur est survenue',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(16),
-                fontWeight: FontWeight.w700,
-                color: _kTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(13),
-                color: _kTextSecondary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: _loadChildren,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: _kOrange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Réessayer',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1673,17 +1562,3 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-
-class _ActivityAction {
-  final String label;
-  final bool isPrimary;
-  final Color? primaryColor;
-  final VoidCallback onTap;
-  const _ActivityAction(
-    this.label,
-    this.isPrimary,
-    this.primaryColor,
-    this.onTap,
-  );
-}

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/group_message.dart';
 import '../config/app_config.dart';
@@ -251,10 +252,19 @@ class GroupMessageService {
 
         return [];
       }
+    } on SocketException catch (e) {
+      print(' Erreur de connexion réseau: $e');
+      print(' Type d\'erreur: ${e.runtimeType}');
+      print(' Retour d\'une liste vide en attendant la reconnexion...');
+      return [];
+    } on TimeoutException catch (e) {
+      print(' Erreur de timeout: $e');
+      print(' Retour d\'une liste vide en attendant la reconnexion...');
+      return [];
     } catch (e) {
-      print('❌ Erreur lors de la récupération des messages: $e');
-      print('📍 Type d\'erreur: ${e.runtimeType}');
-      print('📄 Stack trace:');
+      print(' Erreur générale lors de la récupération des messages: $e');
+      print(' Type d\'erreur: ${e.runtimeType}');
+      print(' Stack trace:');
       print(StackTrace.current);
       return [];
     } finally {

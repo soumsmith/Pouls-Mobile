@@ -18,6 +18,7 @@ import '../widgets/custom_loader.dart';
 import '../widgets/search_bar_widget.dart';
 import '../config/app_colors.dart';
 import '../widgets/image_menu_card_external_title.dart';
+import '../widgets/components/section_row.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
 import 'shop_screen.dart';
@@ -870,379 +871,409 @@ class _HomeScreenState extends State<HomeScreen> {
           ListView(
             padding: const EdgeInsets.only(top: 16),
             children: [
-              _buildSectionRow(
-                title: 'INSCRIPTIONS & DÉMARCHES',
-                children: [
-                  _buildCard(
-                    index: 0,
-                    cardKey: 'inscription',
-                    title: 'Inscription',
-                    imagePath: 'assets/images/icons/inscription.png',
-                    color: const Color(0xFF8B5CF6),
-                    backgroundColor: const Color(0xFFF3E8FF),
-                    textColor: const Color(0xFF5B21B6),
-                    actionText: 'S\'inscrire',
-                    enableBorder: true,
-                    borderColor: Colors.blue,
-                    onTap: () => InscriptionBottomSheet.show(context),
-                  ),
-                  _buildCard(
-                    index: 1,
-                    cardKey: 'integration',
-                    title: 'Intégration',
-                    imagePath: 'assets/images/inscription.jpg',
-                    color: const Color(0xFF1565C0),
-                    backgroundColor: const Color(0xFFE3F2FD),
-                    textColor: const Color(0xFF0D47A1),
-                    actionText: 'Commencer',
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const IntegrationBottomSheet(),
+              SectionRow(title: 'INSCRIPTIONS & DÉMARCHES'),
+              SizedBox(
+                height: 140,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  children: [
+                    _buildCard(
+                      index: 0,
+                      cardKey: 'inscription',
+                      title: 'Inscription',
+                      imagePath: 'assets/images/icons/inscription.png',
+                      color: const Color(0xFF8B5CF6),
+                      backgroundColor: const Color(0xFFF3E8FF),
+                      textColor: const Color(0xFF5B21B6),
+                      actionText: 'S\'inscrire',
+                      enableBorder: true,
+                      borderColor: Colors.blue,
+                      onTap: () => InscriptionBottomSheet.show(context),
                     ),
-                  ),
-                  _buildCard(
-                    index: 2,
-                    cardKey: 'consulter_demande',
-                    title: 'Consulter\ndemande',
-                    imagePath: 'assets/images/mes-demande.jpg',
-                    color: const Color(0xFF1B8A56),
-                    backgroundColor: const Color(0xFFEAF7F0),
-                    textColor: const Color(0xFF065F46),
-                    actionText: 'Consulter',
-                    onTap: () => IntegrationRequestBottomSheet.show(context),
-                  ),
-                  _buildCard(
-                    index: 3,
-                    cardKey: 'parrainage',
-                    title: 'Parrainage',
-                    imagePath: 'assets/images/scolarite.jpg',
-                    color: _kOrange,
-                    backgroundColor: const Color(0xFFFFF4EE),
-                    textColor: const Color(0xFF9A3412),
-                    actionText: 'Inviter',
-                    onTap: () => showSponsorshipBottomSheet(context),
-                  ),
-                ],
-              ),
-
-              _buildSectionRow(
-                title: 'SCOLARITÉ',
-                children: [
-                  _buildCard(
-                    index: 0,
-                    cardKey: 'bulletins',
-                    title: 'Bulletins',
-                    imagePath: 'assets/images/notes.jpg',
-                    color: const Color(0xFFEF4444),
-                    backgroundColor: const Color(0xFFFFF0F0),
-                    textColor: const Color(0xFF991B1B),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 1,
-                    cardKey: 'agenda',
-                    title: 'Agenda',
-                    imagePath: 'assets/images/emploi-du-temps.jpg',
-                    color: const Color(0xFF22C55E),
-                    backgroundColor: const Color(0xFFE8F8F0),
-                    textColor: const Color(0xFF166534),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 2,
-                    cardKey: 'absences',
-                    title: 'Absences',
-                    imagePath: 'assets/images/school-event.jpg',
-                    color: _kOrange,
-                    backgroundColor: const Color(0xFFFFF4EE),
-                    textColor: const Color(0xFF9A3412),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 3,
-                    cardKey: 'notes',
-                    title: 'Notes',
-                    imagePath: 'assets/images/notes.jpg',
-                    color: const Color(0xFF6366F1),
-                    backgroundColor: const Color(0xFFEEF2FF),
-                    textColor: const Color(0xFF4338CA),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 4,
-                    cardKey: 'emploi_temps',
-                    title: 'Emploi\ndu temps',
-                    imagePath: 'assets/images/emploi-du-temps.jpg',
-                    color: const Color(0xFF10B981),
-                    backgroundColor: const Color(0xFFECFDF5),
-                    textColor: const Color(0xFF065F46),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-
-              _buildSectionRow(
-                title: 'PAIEMENTS & FINANCE',
-                children: [
-                  _buildCard(
-                    index: 0,
-                    cardKey: 'paiements',
-                    title: 'Paiements',
-                    imagePath: 'assets/images/mes-commandes.jpg',
-                    color: const Color(0xFFF5A623),
-                    backgroundColor: const Color(0xFFFFF8E8),
-                    textColor: const Color(0xFF92400E),
-                    actionText: 'Payer',
-                    onTap: () {
-                      PaymentBottomSheet.show(
+                    _buildCard(
+                      index: 1,
+                      cardKey: 'integration',
+                      title: 'Intégration',
+                      imagePath: 'assets/images/inscription.jpg',
+                      color: const Color(0xFF1565C0),
+                      backgroundColor: const Color(0xFFE3F2FD),
+                      textColor: const Color(0xFF0D47A1),
+                      actionText: 'Commencer',
+                      onTap: () => showModalBottomSheet(
                         context: context,
-                        childName: null,
-                        matricule: null,
-                        onPayment: (montant, matricule) async {
-                          try {
-                            final montantInt = int.tryParse(montant);
-                            if (montantInt == null || montantInt <= 0) {
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const IntegrationBottomSheet(),
+                      ),
+                    ),
+                    _buildCard(
+                      index: 2,
+                      cardKey: 'consulter_demande',
+                      title: 'Consulter\ndemande',
+                      imagePath: 'assets/images/mes-demande.jpg',
+                      color: const Color(0xFF1B8A56),
+                      backgroundColor: const Color(0xFFEAF7F0),
+                      textColor: const Color(0xFF065F46),
+                      actionText: 'Consulter',
+                      onTap: () => IntegrationRequestBottomSheet.show(context),
+                    ),
+                    _buildCard(
+                      index: 3,
+                      cardKey: 'parrainage',
+                      title: 'Parrainage',
+                      imagePath: 'assets/images/scolarite.jpg',
+                      color: _kOrange,
+                      backgroundColor: const Color(0xFFFFF4EE),
+                      textColor: const Color(0xFF9A3412),
+                      actionText: 'Inviter',
+                      onTap: () => showSponsorshipBottomSheet(context),
+                    ),
+                  ],
+                ),
+              ),
+
+              SectionRow(title: 'SCOLARITÉ'),
+              SizedBox(
+                height: 140,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  children: [
+                    _buildCard(
+                      index: 0,
+                      cardKey: 'bulletins',
+                      title: 'Bulletins',
+                      imagePath: 'assets/images/notes.jpg',
+                      color: const Color(0xFFEF4444),
+                      backgroundColor: const Color(0xFFFFF0F0),
+                      textColor: const Color(0xFF991B1B),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 1,
+                      cardKey: 'agenda',
+                      title: 'Agenda',
+                      imagePath: 'assets/images/emploi-du-temps.jpg',
+                      color: const Color(0xFF22C55E),
+                      backgroundColor: const Color(0xFFE8F8F0),
+                      textColor: const Color(0xFF166534),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 2,
+                      cardKey: 'absences',
+                      title: 'Absences',
+                      imagePath: 'assets/images/school-event.jpg',
+                      color: _kOrange,
+                      backgroundColor: const Color(0xFFFFF4EE),
+                      textColor: const Color(0xFF9A3412),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 3,
+                      cardKey: 'notes',
+                      title: 'Notes',
+                      imagePath: 'assets/images/notes.jpg',
+                      color: const Color(0xFF6366F1),
+                      backgroundColor: const Color(0xFFEEF2FF),
+                      textColor: const Color(0xFF4338CA),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 4,
+                      cardKey: 'emploi_temps',
+                      title: 'Emploi\ndu temps',
+                      imagePath: 'assets/images/emploi-du-temps.jpg',
+                      color: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFFECFDF5),
+                      textColor: const Color(0xFF065F46),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
+
+              SectionRow(title: 'PAIEMENTS & FINANCE'),
+              SizedBox(
+                height: 140,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  children: [
+                    _buildCard(
+                      index: 0,
+                      cardKey: 'paiements',
+                      title: 'Paiements',
+                      imagePath: 'assets/images/mes-commandes.jpg',
+                      color: const Color(0xFFF5A623),
+                      backgroundColor: const Color(0xFFFFF8E8),
+                      textColor: const Color(0xFF92400E),
+                      actionText: 'Payer',
+                      onTap: () {
+                        PaymentBottomSheet.show(
+                          context: context,
+                          childName: null,
+                          matricule: null,
+                          onPayment: (montant, matricule) async {
+                            try {
+                              final montantInt = int.tryParse(montant);
+                              if (montantInt == null || montantInt <= 0) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Montant invalide'),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                              final paiementService = PaiementService();
+                              final paiementResponse = await paiementService
+                                  .initierPaiementEnLigne(
+                                    matricule,
+                                    montantInt,
+                                  );
+                              if (paiementResponse.success &&
+                                  paiementResponse.url.isNotEmpty) {
+                                final launched = await paiementService
+                                    .lancerUrlPaiement(paiementResponse.url);
+                                if (!launched && mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Impossible d\'ouvrir la page de paiement',
+                                      ),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              } else {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(paiementResponse.message),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Montant invalide'),
-                                    backgroundColor: AppColors.error,
-                                  ),
-                                );
-                              }
-                              return;
-                            }
-                            final paiementService = PaiementService();
-                            final paiementResponse = await paiementService
-                                .initierPaiementEnLigne(matricule, montantInt);
-                            if (paiementResponse.success &&
-                                paiementResponse.url.isNotEmpty) {
-                              final launched = await paiementService
-                                  .lancerUrlPaiement(paiementResponse.url);
-                              if (!launched && mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      'Impossible d\'ouvrir la page de paiement',
+                                      'Erreur lors du paiement: $e',
                                     ),
                                     backgroundColor: AppColors.error,
                                   ),
                                 );
                               }
-                            } else {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(paiementResponse.message),
-                                    backgroundColor: AppColors.error,
-                                  ),
-                                );
-                              }
                             }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Erreur lors du paiement: $e'),
-                                  backgroundColor: AppColors.error,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      );
-                    },
-                  ),
-                  _buildCard(
-                    index: 1,
-                    cardKey: 'scolarite',
-                    title: 'Scolarité',
-                    imagePath: 'assets/images/scolarite.jpg',
-                    color: const Color(0xFF10B981),
-                    backgroundColor: const Color(0xFFECFDF5),
-                    textColor: const Color(0xFF065F46),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 2,
-                    cardKey: 'historique',
-                    title: 'Historique',
-                    imagePath: 'assets/images/mes-commandes.jpg',
-                    color: const Color(0xFF6366F1),
-                    backgroundColor: const Color(0xFFEEF2FF),
-                    textColor: const Color(0xFF4338CA),
-                    actionText: 'Consulter',
-                    onTap: () {},
-                  ),
-                ],
+                          },
+                        );
+                      },
+                    ),
+                    _buildCard(
+                      index: 1,
+                      cardKey: 'scolarite',
+                      title: 'Scolarité',
+                      imagePath: 'assets/images/scolarite.jpg',
+                      color: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFFECFDF5),
+                      textColor: const Color(0xFF065F46),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 2,
+                      cardKey: 'historique',
+                      title: 'Historique',
+                      imagePath: 'assets/images/mes-commandes.jpg',
+                      color: const Color(0xFF6366F1),
+                      backgroundColor: const Color(0xFFEEF2FF),
+                      textColor: const Color(0xFF4338CA),
+                      actionText: 'Consulter',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
               ),
 
-              _buildSectionRow(
-                title: 'COMMUNICATION',
-                children: [
-                  _buildCard(
-                    index: 0,
-                    cardKey: 'messages',
-                    title: 'Messages',
-                    imagePath: 'assets/images/messages.jpg',
-                    color: const Color(0xFF6366F1),
-                    backgroundColor: const Color(0xFFEEF2FF),
-                    textColor: const Color(0xFF4338CA),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 1,
-                    cardKey: 'professeurs',
-                    title: 'Professeurs',
-                    imagePath: 'assets/images/ecole.jpg',
-                    color: const Color(0xFF8B5CF6),
-                    backgroundColor: const Color(0xFFF3E8FF),
-                    textColor: const Color(0xFF6B21A8),
-                    actionText: 'Contacter',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 2,
-                    cardKey: 'notifications',
-                    title: 'Alertes',
-                    imagePath: 'assets/images/school-event.jpg',
-                    color: _kOrange,
-                    backgroundColor: const Color(0xFFFFF4EE),
-                    textColor: const Color(0xFF9A3412),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                ],
+              SectionRow(title: 'COMMUNICATION'),
+              SizedBox(
+                height: 140,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  children: [
+                    _buildCard(
+                      index: 0,
+                      cardKey: 'messages',
+                      title: 'Messages',
+                      imagePath: 'assets/images/messages.jpg',
+                      color: const Color(0xFF6366F1),
+                      backgroundColor: const Color(0xFFEEF2FF),
+                      textColor: const Color(0xFF4338CA),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 1,
+                      cardKey: 'professeurs',
+                      title: 'Professeurs',
+                      imagePath: 'assets/images/ecole.jpg',
+                      color: const Color(0xFF8B5CF6),
+                      backgroundColor: const Color(0xFFF3E8FF),
+                      textColor: const Color(0xFF6B21A8),
+                      actionText: 'Contacter',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 2,
+                      cardKey: 'notifications',
+                      title: 'Alertes',
+                      imagePath: 'assets/images/school-event.jpg',
+                      color: _kOrange,
+                      backgroundColor: const Color(0xFFFFF4EE),
+                      textColor: const Color(0xFF9A3412),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
               ),
 
-              _buildSectionRow(
-                title: 'BOUTIQUE & ACHATS',
-                children: [
-                  _buildCard(
-                    index: 0,
-                    cardKey: 'panier',
-                    title: 'Mon panier',
-                    imagePath: 'assets/images/mes-commandes.jpg',
-                    color: _kOrange,
-                    backgroundColor: const Color(0xFFFFF4EE),
-                    textColor: const Color(0xFF9A3412),
-                    actionText: 'Voir',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const MainScreenWrapper(child: CartScreen()),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildCard(
-                    index: 1,
-                    cardKey: 'commandes',
-                    title: 'Mes commandes',
-                    imagePath: 'assets/images/mes-demande.jpg',
-                    color: const Color(0xFF10B981),
-                    backgroundColor: const Color(0xFFECFDF5),
-                    textColor: const Color(0xFF065F46),
-                    actionText: 'Voir',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const MainScreenWrapper(child: OrdersScreen()),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildCard(
-                    index: 2,
-                    cardKey: 'boutique_libouli',
-                    title: 'Boutique\n(Libouli)',
-                    imagePath: 'assets/images/ecole.jpg',
-                    color: const Color(0xFF8B5CF6),
-                    backgroundColor: const Color(0xFFF3E8FF),
-                    textColor: const Color(0xFF6B21A8),
-                    actionText: 'Accéder',
-                    onTap: () {
-                      final wrapper = MainScreenWrapper.maybeOf(context);
-                      if (wrapper != null) {
-                        wrapper.updateCurrentIndex(1);
-                      } else {
-                        Navigator.of(context).pushAndRemoveUntil(
+              SectionRow(title: 'BOUTIQUE & ACHATS'),
+              SizedBox(
+                height: 140,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  children: [
+                    _buildCard(
+                      index: 0,
+                      cardKey: 'panier',
+                      title: 'Mon panier',
+                      imagePath: 'assets/images/mes-commandes.jpg',
+                      color: _kOrange,
+                      backgroundColor: const Color(0xFFFFF4EE),
+                      textColor: const Color(0xFF9A3412),
+                      actionText: 'Voir',
+                      onTap: () {
+                        Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) =>
-                                const MainScreenWrapper(initialIndex: 1),
+                                const MainScreenWrapper(child: CartScreen()),
                           ),
-                          (r) => false,
                         );
-                      }
-                    },
-                  ),
-                  _buildCard(
-                    index: 3,
-                    cardKey: 'fournitures',
-                    title: 'Fournitures',
-                    imagePath: 'assets/images/foutnitures-scolaire.jpg',
-                    color: const Color(0xFF8B5CF6),
-                    backgroundColor: const Color(0xFFF3E8FF),
-                    textColor: const Color(0xFF6B21A8),
-                    actionText: 'Acheter',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 4,
-                    cardKey: 'uniformes',
-                    title: 'Uniformes',
-                    imagePath: 'assets/images/ecole.jpg',
-                    color: const Color(0xFF06B6D4),
-                    backgroundColor: const Color(0xFFECFEFF),
-                    textColor: const Color(0xFF0E7490),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 5,
-                    cardKey: 'livres',
-                    title: 'Livres',
-                    imagePath: 'assets/images/notes.jpg',
-                    color: const Color(0xFF10B981),
-                    backgroundColor: const Color(0xFFECFDF5),
-                    textColor: const Color(0xFF047857),
-                    actionText: 'Acheter',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 6,
-                    cardKey: 'sports',
-                    title: 'Sports',
-                    imagePath: 'assets/images/school-event.jpg',
-                    color: const Color(0xFFF59E0B),
-                    backgroundColor: const Color(0xFFFFF8E8),
-                    textColor: const Color(0xFF92400E),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                  _buildCard(
-                    index: 7,
-                    cardKey: 'accessoires',
-                    title: 'Accessoires',
-                    imagePath: 'assets/images/mes-commandes.jpg',
-                    color: const Color(0xFFEC4899),
-                    backgroundColor: const Color(0xFFFDF2F8),
-                    textColor: const Color(0xFFBE185D),
-                    actionText: 'Voir',
-                    onTap: () {},
-                  ),
-                ],
+                      },
+                    ),
+                    _buildCard(
+                      index: 1,
+                      cardKey: 'commandes',
+                      title: 'Mes commandes',
+                      imagePath: 'assets/images/mes-demande.jpg',
+                      color: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFFECFDF5),
+                      textColor: const Color(0xFF065F46),
+                      actionText: 'Voir',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const MainScreenWrapper(child: OrdersScreen()),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildCard(
+                      index: 2,
+                      cardKey: 'boutique_libouli',
+                      title: 'Boutique\n(Libouli)',
+                      imagePath: 'assets/images/ecole.jpg',
+                      color: const Color(0xFF8B5CF6),
+                      backgroundColor: const Color(0xFFF3E8FF),
+                      textColor: const Color(0xFF6B21A8),
+                      actionText: 'Accéder',
+                      onTap: () {
+                        final wrapper = MainScreenWrapper.maybeOf(context);
+                        if (wrapper != null) {
+                          wrapper.updateCurrentIndex(1);
+                        } else {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const MainScreenWrapper(initialIndex: 1),
+                            ),
+                            (r) => false,
+                          );
+                        }
+                      },
+                    ),
+                    _buildCard(
+                      index: 3,
+                      cardKey: 'fournitures',
+                      title: 'Fournitures',
+                      imagePath: 'assets/images/foutnitures-scolaire.jpg',
+                      color: const Color(0xFF8B5CF6),
+                      backgroundColor: const Color(0xFFF3E8FF),
+                      textColor: const Color(0xFF6B21A8),
+                      actionText: 'Acheter',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 4,
+                      cardKey: 'uniformes',
+                      title: 'Uniformes',
+                      imagePath: 'assets/images/ecole.jpg',
+                      color: const Color(0xFF06B6D4),
+                      backgroundColor: const Color(0xFFECFEFF),
+                      textColor: const Color(0xFF0E7490),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 5,
+                      cardKey: 'livres',
+                      title: 'Livres',
+                      imagePath: 'assets/images/notes.jpg',
+                      color: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFFECFDF5),
+                      textColor: const Color(0xFF047857),
+                      actionText: 'Acheter',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 6,
+                      cardKey: 'sports',
+                      title: 'Sports',
+                      imagePath: 'assets/images/school-event.jpg',
+                      color: const Color(0xFFF59E0B),
+                      backgroundColor: const Color(0xFFFFF8E8),
+                      textColor: const Color(0xFF92400E),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                    _buildCard(
+                      index: 7,
+                      cardKey: 'accessoires',
+                      title: 'Accessoires',
+                      imagePath: 'assets/images/mes-commandes.jpg',
+                      color: const Color(0xFFEC4899),
+                      backgroundColor: const Color(0xFFFDF2F8),
+                      textColor: const Color(0xFFBE185D),
+                      actionText: 'Voir',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
               ),
 
               // Filter chips
@@ -1254,38 +1285,6 @@ class _HomeScreenState extends State<HomeScreen> {
           const BottomFadeGradient(),
         ],
       ),
-    );
-  }
-
-  // ─── SECTION ROW BUILDER ───────────────────────────────────────────────────
-  Widget _buildSectionRow({
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: _kTextSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 120,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(left: 16, right: 4),
-            children: children,
-          ),
-        ),
-      ],
     );
   }
 

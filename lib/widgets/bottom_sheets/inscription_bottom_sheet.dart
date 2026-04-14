@@ -8,8 +8,10 @@ import '../../config/app_config.dart';
 import '../../services/pouls_scolaire_api_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
-import '../../widgets/searchable_dropdown.dart';
 import '../../widgets/bottom_sheets/bottom_sheet_header.dart';
+import '../../widgets/components/custom_select_input.dart';
+import '../../widgets/components/custom_text_input.dart';
+import '../../widgets/snackbar.dart';
 import '../../screens/inscription_screen.dart' as inscription;
 
 class InscriptionBottomSheet extends StatefulWidget {
@@ -62,11 +64,11 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
       if (mounted) setState(() => _ecoles = ecoles);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur de chargement des écoles : ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur',
+          message: 'de chargement des écoles : ${e.toString()}',
+          backgroundColor: Colors.red,
         );
       }
     } finally {
@@ -125,13 +127,11 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
   Future<void> _startInscription() async {
     if (_selectedParamEcole == null ||
         _matriculeController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Veuillez sélectionner une école et entrer un matricule',
-          ),
-          backgroundColor: Colors.orange,
-        ),
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Attention',
+        message: 'Veuillez sélectionner une école et entrer un matricule',
+        backgroundColor: Colors.orange,
       );
       return;
     }
@@ -149,13 +149,11 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
 
       if (eleveDetail == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Aucun élève trouvé pour ce matricule dans cette école',
-              ),
-              backgroundColor: Colors.red,
-            ),
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Élève non trouvé',
+            message: 'Aucun élève trouvé pour ce matricule dans cette école',
+            backgroundColor: Colors.red,
           );
         }
         return;
@@ -191,11 +189,11 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'inscription : $e'),
-            backgroundColor: Colors.red,
-          ),
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur',
+          message: 'lors de l\'inscription : $e',
+          backgroundColor: Colors.red,
         );
       }
     } finally {
@@ -243,188 +241,173 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                      // Sélection de l'école
-                      Text(
-                        'École',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(16),
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : _kTextPrimary,
-                        ),
+                  // Sélection de l'école
+                  if (_isLoadingEcoles)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
                       ),
-                      const SizedBox(height: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? _kDarkCard : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _isLoadingEcoles
-                                ? Colors.grey.withOpacity(0.3)
-                                : Colors.grey.withOpacity(0.2),
-                          ),
-                        ),
-                        child: _isLoadingEcoles
-                            ? Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              isDark
-                                                  ? Colors.white
-                                                  : _kTextPrimary,
-                                            ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Chargement des écoles...',
-                                      style: TextStyle(
-                                        fontSize: _textSizeService
-                                            .getScaledFontSize(14),
-                                        color: isDark
-                                            ? Colors.white70
-                                            : _kTextSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : SearchableDropdown(
-                                label: 'École',
-                                items: _ecoles
-                                    .map((e) => e.ecoleclibelle)
-                                    .toList(),
-                                value: _selectedEcoleName ?? '',
-                                onChanged: (value) {
-                                  final ecole = _ecoles.firstWhere(
-                                    (e) => e.ecoleclibelle == value,
-                                    orElse: () => _ecoles.first,
-                                  );
-                                  setState(() {
-                                    _selectedEcoleCode = ecole.ecolecode;
-                                    _selectedEcoleName = ecole.ecoleclibelle;
-                                    _selectedParamEcole =
-                                        ecole.paramecole?.isNotEmpty == true
-                                        ? ecole.paramecole
-                                        : ecole.ecolecode;
-                                  });
-                                },
-                                isDarkMode: isDark,
+                      decoration: BoxDecoration(
+                        color: isDark ? _kDarkCard : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isDark ? Colors.white : _kTextPrimary,
                               ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Chargement des écoles...',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: isDark ? Colors.white70 : _kTextSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 24),
+                    )
+                  else if (_ecoles.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF0F0),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red[400],
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Aucune école disponible',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _kTextPrimary,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _loadEcoles,
+                            child: const Text(
+                              'Réessayer',
+                              style: TextStyle(color: Color(0xFFFF7A3C)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    CustomSelectInput(
+                      label: 'École',
+                      value: _selectedEcoleName ?? '',
+                      items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+                      onChanged: (value) {
+                        final ecole = _ecoles.firstWhere(
+                          (e) => e.ecoleclibelle == value,
+                          orElse: () => _ecoles.first,
+                        );
+                        setState(() {
+                          _selectedEcoleCode = ecole.ecolecode;
+                          _selectedEcoleName = ecole.ecoleclibelle;
+                          _selectedParamEcole =
+                              ecole.paramecole?.isNotEmpty == true
+                              ? ecole.paramecole
+                              : ecole.ecolecode;
+                        });
+                      },
+                      isDarkMode: isDark,
+                      required: true,
+                    ),
+                  const SizedBox(height: 24),
 
-                      // Champ matricule
-                      Text(
-                        'Matricule de l\'élève',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(16),
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : _kTextPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? _kDarkCard : Colors.white,
+                  // Champ matricule
+                  CustomTextInput(
+                    label: 'Matricule de l\'élève',
+                    hint: 'Ex: 2024001',
+                    icon: Icons.person_outline,
+                    controller: _matriculeController,
+                    keyboardType: TextInputType.text,
+                    required: true,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Bouton d'inscription
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isLoadingInscription
+                          ? null
+                          : _startInscription,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.grey.withOpacity(0.2),
-                          ),
-                        ),
-                        child: TextField(
-                          controller: _matriculeController,
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(16),
-                            color: isDark ? Colors.white : _kTextPrimary,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Ex: 2024001',
-                            hintStyle: TextStyle(
-                              color: isDark ? Colors.white70 : _kTextSecondary,
-                            ),
-                            prefixIcon: Icon(
-                              Icons.person_outline,
-                              color: isDark ? Colors.white70 : _kTextSecondary,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.all(16),
-                          ),
                         ),
                       ),
-                      const SizedBox(height: 32),
-
-                      // Bouton d'inscription
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _isLoadingInscription
-                              ? null
-                              : _startInscription,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4CAF50),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _isLoadingInscription
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Inscription en cours...',
-                                      style: TextStyle(
-                                        fontSize: _textSizeService
-                                            .getScaledFontSize(16),
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.app_registration,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Commencer l\'inscription',
-                                      style: TextStyle(
-                                        fontSize: _textSizeService
-                                            .getScaledFontSize(16),
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
+                      child: _isLoadingInscription
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                  ),
                                 ),
-                        ),
-                      ),
-                    ],
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Inscription en cours...',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(16),
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.app_registration, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Commencer l\'inscription',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(16),
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

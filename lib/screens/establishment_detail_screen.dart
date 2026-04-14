@@ -71,6 +71,7 @@ import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/components/section_row.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
 import 'all_events_screen.dart';
@@ -2404,14 +2405,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('École', isDark),
+        SectionRow(title: 'École'),
         const SizedBox(height: 8),
         _buildSchoolHorizontalMenuCards(ecoleSection, isDark),
         const SizedBox(height: 12),
-        _buildSectionHeader('Vie école', isDark),
+        SectionRow(title: 'Vie école'),
         const SizedBox(height: 12),
         _buildHorizontalMenuCards(vieEcoleSection, isDark),
-        _buildSectionHeader('Communauté', isDark),
+        SectionRow(title: 'Communauté'),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2513,8 +2514,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     bool isDark,
   ) {
     return SizedBox(
-      height:
-          AppDimensions.getHorizontalMenuCardHeight(context) + 10, // Ajouter de la hauteur pour le titre externe
+      height: AppDimensions.getHorizontalMenuCardHeight(
+        context,
+      ), // Ajouter de la hauteur pour le titre externe
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -2532,14 +2534,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               index: index,
               cardKey: item[0],
               title: item[1],
-              imageBorderRadius:15,
+              imageBorderRadius: 15,
               subtitle: "En savoir plus", // Sous-titre externe
               imagePath: item[2],
               isDark: isDark,
               icon: def.icon,
               color: def.color,
-              width:  80, //AppDimensions.getHorizontalMenuCardWidth(context),
-              height: 100, //AppDimensions.getHorizontalMenuCardHeight(context) + 20,
+              width: 80, //AppDimensions.getHorizontalMenuCardWidth(context),
+              height:
+                  100, //AppDimensions.getHorizontalMenuCardHeight(context) + 20,
               externalTitleSpacing: 10.0,
               onTap: () => _showActionBottomSheet(item[0], def),
               backgroundColor: def.color.withOpacity(0.1),
@@ -2598,143 +2601,33 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     if (actionType == 'coulisses') {
       final ecoleId = widget.ecole.id ?? 'gainhs';
       final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
-      
+
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => CoulisseExcellenceScreen(
-            ecoleId: ecoleId,
-            ecoleNom: ecoleNom,
-          ),
+          builder: (context) =>
+              CoulisseExcellenceScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
         ),
       );
       return;
     }
 
     // Cas spécial : rating et voir_les_avis utilisent RatingBottomSheet ──
-    if (actionType == 'rating' || actionType == 'voir_les_avis') {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 24,
-                offset: const Offset(0, -6),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Header identique au style général ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Column(
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppColors.screenDivider,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(
-                            color: def.color.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(def.icon, color: def.color, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                def.label,
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(
-                                    18,
-                                  ),
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.screenTextPrimary,
-                                  letterSpacing: -0.4,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                              ),
-                              Text(
-                                def.subtitle,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.screenTextSecondary,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF2A2A2A)
-                                  : AppColors.screenSurface,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              size: 16,
-                              color: isDark
-                                  ? Colors.white54
-                                  : AppColors.screenTextSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Divider(color: AppColors.screenDivider, height: 1),
-                  ],
-                ),
-              ),
-              // ── RatingBottomSheet gère son propre scroll + barre d'envoi ──
-              RatingBottomSheet(
-                schoolId: widget.ecole.id ?? '',
-                schoolName: widget.ecole.parametreNom ?? 'Établissement',
-                schoolColor: _getSchoolColor(),
-                onRatingSubmitted: (rating, comment) async {
-                  await _submitRating(rating, comment);
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-      return; // ← stop ici, ne pas tomber dans le showModalBottomSheet générique
-    }
+    // if (actionType == 'rating' || actionType == 'voir_les_avis') {
+    //   showModalBottomSheet(
+    //     context: context,
+    //     isScrollControlled: true,
+    //     backgroundColor: Colors.transparent,
+    //     builder: (context) => RatingBottomSheet(
+    //       schoolId: widget.ecole.id ?? '',
+    //       schoolName: widget.ecole.parametreNom ?? 'Établissement',
+    //       schoolColor: _getSchoolColor(),
+    //       onRatingSubmitted: (rating, comment) async {
+    //         await _submitRating(rating, comment);
+    //       },
+    //     ),
+    //   );
+    //   return; // ← stop ici, ne pas tomber dans le showModalBottomSheet générique
+    // }
 
     // ── Bottom sheet générique pour tous les autres cas ──
     showModalBottomSheet(
@@ -2886,18 +2779,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => CoulisseExcellenceScreen(
-            ecoleId: ecoleId,
-            ecoleNom: ecoleNom,
-          ),
+          builder: (context) =>
+              CoulisseExcellenceScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
         ),
       );
     });
 
     // Afficher un indicateur de chargement pendant la navigation
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
+    return const Center(child: CircularProgressIndicator());
   }
 
   // ══════════════════════════════════════════════════════════════════════════

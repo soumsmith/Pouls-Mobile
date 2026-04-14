@@ -9,9 +9,15 @@ import 'rating_bottom_sheet.dart';
 class SchoolRatingBottomSheet extends StatefulWidget {
   /// Liste des écoles disponibles
   final List<Ecole> ecoles;
-  
+
   /// Callback appelé lorsqu'un avis est soumis
-  final Function(String schoolId, String schoolName, String rating, String comment)? onRatingSubmitted;
+  final Function(
+    String schoolId,
+    String schoolName,
+    String rating,
+    String comment,
+  )?
+  onRatingSubmitted;
 
   const SchoolRatingBottomSheet({
     super.key,
@@ -20,13 +26,15 @@ class SchoolRatingBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<SchoolRatingBottomSheet> createState() => _SchoolRatingBottomSheetState();
+  State<SchoolRatingBottomSheet> createState() =>
+      _SchoolRatingBottomSheetState();
 
   /// Méthode statique pour afficher le bottom sheet
   static void show(
     BuildContext context, {
     required List<Ecole> ecoles,
-    Function(String schoolId, String schoolName, String rating, String comment)? onRatingSubmitted,
+    Function(String schoolId, String schoolName, String rating, String comment)?
+    onRatingSubmitted,
   }) {
     showModalBottomSheet(
       context: context,
@@ -47,18 +55,18 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    if (_showRatingForm && _selectedEcole != null) {
-      // Afficher le bottom sheet de notation normal avec l'école sélectionnée
-      return RatingBottomSheet(
-        schoolId: _selectedEcole!.id,
-        schoolName: _selectedEcole!.ecoleclibelle,
-        schoolColor: _getSchoolColor(_selectedEcole!),
-        onRatingSubmitted: (rating, comment) {
-          Navigator.pop(context);
-          widget.onRatingSubmitted?.call(_selectedEcole!.id, _selectedEcole!.ecoleclibelle, rating, comment);
-        },
-      );
-    }
+    // if (_showRatingForm && _selectedEcole != null) {
+    //   // Afficher le bottom sheet de notation normal avec l'école sélectionnée
+    //   return RatingBottomSheet(
+    //     schoolId: _selectedEcole!.id,
+    //     schoolName: _selectedEcole!.ecoleclibelle,
+    //     schoolColor: _getSchoolColor(_selectedEcole!),
+    //     onRatingSubmitted: (rating, comment) {
+    //       Navigator.pop(context);
+    //       widget.onRatingSubmitted?.call(_selectedEcole!.id, _selectedEcole!.ecoleclibelle, rating, comment);
+    //     },
+    //   );
+    // }
 
     return Padding(
       padding: EdgeInsets.only(
@@ -115,7 +123,10 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
                         ),
                         Text(
                           'Sélectionnez une école',
-                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
                         ),
                       ],
                     ),
@@ -174,7 +185,9 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _selectedEcole != null ? _proceedToRating : null,
+                      onPressed: _selectedEcole != null
+                          ? _proceedToRating
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.screenBlue,
                         foregroundColor: Colors.white,
@@ -213,11 +226,7 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.info_outline,
-              color: AppColors.grey600,
-              size: 20,
-            ),
+            Icon(Icons.info_outline, color: AppColors.grey600, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

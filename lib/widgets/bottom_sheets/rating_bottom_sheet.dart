@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../services/text_size_service.dart';
+import 'bottom_sheet_header.dart';
 
 class RatingBottomSheet extends StatefulWidget {
   final String schoolId;
   final String schoolName;
   final Color schoolColor;
   final Function(String rating, String comment)? onRatingSubmitted;
-  final bool allowRating; // Permet de contrôler si l'utilisateur peut donner une note
+  final bool
+  allowRating; // Permet de contrôler si l'utilisateur peut donner une note
 
   const RatingBottomSheet({
     Key? key,
@@ -26,7 +28,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
   final TextSizeService _textSizeService = TextSizeService();
   final TextEditingController _ratingController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
-  
+
   bool _isLoadingAvis = false;
   List<Map<String, dynamic>> _avis = [];
   String? _avisError;
@@ -42,7 +44,6 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
     _commentController.dispose();
     super.dispose();
   }
-
 
   Future<void> _sendAvis() async {
     final rating = _ratingController.text;
@@ -105,7 +106,15 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-    
+          // Header
+          BottomSheetHeader(
+            icon: Icons.rate_review_outlined,
+            iconColor: widget.schoolColor,
+            title: widget.schoolName,
+            description: 'Avis et notes',
+            onClose: () => Navigator.of(context).pop(),
+          ),
+
           // Liste des avis (style messages WhatsApp)
           Flexible(
             child: ConstrainedBox(
@@ -113,24 +122,24 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                 maxHeight: MediaQuery.of(context).size.height * 0.4,
               ),
               child: _isLoadingAvis
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF0288D1),
-                      strokeWidth: 2.5,
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF0288D1),
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : _avisError != null
+                  ? _buildErrorView()
+                  : _avis.isEmpty
+                  ? _buildEmptyAvisView()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      itemCount: _avis.length,
+                      itemBuilder: (context, index) {
+                        final avis = _avis[index];
+                        return _buildAvisBubble(avis);
+                      },
                     ),
-                  )
-                : _avisError != null
-                ? _buildErrorView()
-                : _avis.isEmpty
-                ? _buildEmptyAvisView()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    itemCount: _avis.length,
-                    itemBuilder: (context, index) {
-                      final avis = _avis[index];
-                      return _buildAvisBubble(avis);
-                    },
-                  ),
             ),
           ),
 

@@ -9,7 +9,9 @@ import '../../models/ecole.dart';
 import '../../services/pouls_scolaire_api_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
-import '../../widgets/searchable_dropdown.dart';
+import '../../widgets/components/custom_select_input.dart';
+import '../../widgets/components/custom_text_input.dart';
+import '../../widgets/snackbar.dart';
 import 'integration_result_dialog.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,11 +93,11 @@ class _IntegrationRequestBottomSheetState
       if (mounted) setState(() => _ecoles = ecoles);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur de chargement des écoles : ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur',
+          message: 'de chargement des écoles : ${e.toString()}',
+          backgroundColor: Colors.red,
         );
       }
     } finally {
@@ -136,11 +138,11 @@ class _IntegrationRequestBottomSheetState
     } catch (e) {
       debugPrint('💥 Erreur consultation : $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la consultation : $e'),
-            backgroundColor: Colors.red,
-          ),
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur',
+          message: 'lors de la consultation : $e',
+          backgroundColor: Colors.red,
         );
       }
     } finally {
@@ -211,8 +213,7 @@ class _IntegrationRequestBottomSheetState
                 });
               },
               onRetryEcoles: _loadEcoles,
-              onConsultWithMatricule: (matricule) =>
-                  _consultRequest(matricule),
+              onConsultWithMatricule: (matricule) => _consultRequest(matricule),
             ),
           ),
         ],
@@ -286,14 +287,14 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-
         // ── Indicateur de progression ─────────────────────────────────────
         _buildProgressIndicator(),
-        
+
         // ── Corps du formulaire ───────────────────────────────────────────
         Flexible(
           child: SingleChildScrollView(
-            reverse: true, // Permet de voir les champs en bas quand le clavier apparaît
+            reverse:
+                true, // Permet de voir les champs en bas quand le clavier apparaît
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: EdgeInsets.only(
               left: 20,
@@ -304,7 +305,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             child: _buildCurrentStep(),
           ),
         ),
-        
+
         // ── Barre de navigation inférieure ────────────────────────────────
         _buildBottomNavigation(),
       ],
@@ -321,7 +322,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             children: List.generate(3, (index) {
               final isActive = index == _currentStep;
               final isCompleted = index < _currentStep;
-              
+
               return GestureDetector(
                 onTap: () => setState(() => _currentStep = index),
                 child: Column(
@@ -333,15 +334,15 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         color: isCompleted
                             ? Colors.green
                             : isActive
-                                ? AppColors.shopBlue
-                                : AppColors.screenSurface,
+                            ? AppColors.shopBlue
+                            : AppColors.screenSurface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isActive
                               ? AppColors.shopBlue
                               : isCompleted
-                                  ? Colors.green
-                                  : AppColors.screenDivider,
+                              ? Colors.green
+                              : AppColors.screenDivider,
                           width: 2,
                         ),
                         boxShadow: isActive
@@ -353,14 +354,14 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                                 ),
                               ]
                             : isCompleted
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.green.withOpacity(0.25),
-                                      blurRadius: 4,
-                                      spreadRadius: 1,
-                                    ),
-                                  ]
-                                : null,
+                            ? [
+                                BoxShadow(
+                                  color: Colors.green.withOpacity(0.25),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
                       ),
                       child: isCompleted
                           ? const Icon(
@@ -369,7 +370,11 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                               color: Colors.white,
                             )
                           : Icon(
-                              [Icons.school_outlined, Icons.badge_outlined, Icons.check_circle_outline][index],
+                              [
+                                Icons.school_outlined,
+                                Icons.badge_outlined,
+                                Icons.check_circle_outline,
+                              ][index],
                               size: 14,
                               color: isActive
                                   ? Colors.white
@@ -381,12 +386,14 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                       ['École', 'Matricule', 'Confirmation'][index],
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isActive
                             ? AppColors.shopBlue
                             : isCompleted
-                                ? Colors.green
-                                : AppColors.screenTextSecondary,
+                            ? Colors.green
+                            : AppColors.screenTextSecondary,
                       ),
                     ),
                   ],
@@ -406,9 +413,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                     left: index > 0 ? 4 : 0,
                   ),
                   decoration: BoxDecoration(
-                    color: isCompleted
-                        ? Colors.green
-                        : AppColors.screenDivider,
+                    color: isCompleted ? Colors.green : AppColors.screenDivider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -437,9 +442,80 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _FieldLabel(label: 'École', required: true),
-        const SizedBox(height: 6),
-        _buildEcoleField(context),
+        if (widget.isLoadingEcoles)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.screenSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.screenDivider),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.screenOrange,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'Chargement des écoles...',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.screenTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (widget.ecoles.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF0F0),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red[400], size: 18),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Aucune école disponible',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.screenTextPrimary,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: widget.onRetryEcoles,
+                  child: const Text(
+                    'Réessayer',
+                    style: TextStyle(color: AppColors.screenOrange),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          CustomSelectInput(
+            label: 'École',
+            value: widget.selectedEcoleName ?? '',
+            items: widget.ecoles.map((e) => e.ecoleclibelle).toList(),
+            onChanged: (selected) {
+              final ecole = widget.ecoles.firstWhere(
+                (e) => e.ecoleclibelle == selected,
+              );
+              widget.onEcoleChanged(ecole.ecoleid, selected);
+            },
+            isDarkMode: widget.isDarkMode,
+            required: true,
+          ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),
@@ -473,11 +549,6 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _FieldLabel(
-          label: 'Matricule de l\'élève',
-          required: widget.matricule == null,
-        ),
-        const SizedBox(height: 6),
         if (widget.matricule != null)
           Container(
             decoration: BoxDecoration(
@@ -506,37 +577,13 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             ),
           )
         else
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.screenSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.screenDivider),
-            ),
-            child: TextField(
-              controller: _matriculeController,
-              decoration: const InputDecoration(
-                hintText: 'Entrez le matricule de l\'élève',
-                prefixIcon: Icon(
-                  Icons.badge_outlined,
-                  color: AppColors.screenOrange,
-                  size: 18,
-                ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
-                hintStyle: TextStyle(
-                  color: AppColors.screenTextSecondary,
-                  fontSize: 14,
-                ),
-              ),
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.screenTextPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+          CustomTextInput(
+            label: 'Matricule de l\'élève',
+            hint: 'Entrez le matricule de l\'élève',
+            icon: Icons.badge_outlined,
+            controller: _matriculeController,
+            keyboardType: TextInputType.text,
+            required: true,
           ),
         const SizedBox(height: 12),
         Container(
@@ -590,8 +637,14 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                 ),
               ),
               const SizedBox(height: 12),
-              _buildRecapItem('École', widget.selectedEcoleName ?? 'Non sélectionnée'),
-              _buildRecapItem('Matricule', _currentMatricule.isEmpty ? 'Non renseigné' : _currentMatricule),
+              _buildRecapItem(
+                'École',
+                widget.selectedEcoleName ?? 'Non sélectionnée',
+              ),
+              _buildRecapItem(
+                'Matricule',
+                _currentMatricule.isEmpty ? 'Non renseigné' : _currentMatricule,
+              ),
             ],
           ),
         ),
@@ -605,7 +658,11 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           ),
           child: const Row(
             children: [
-              Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50), size: 16),
+              Icon(
+                Icons.check_circle_outline,
+                color: Color(0xFF4CAF50),
+                size: 16,
+              ),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -661,14 +718,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       decoration: const BoxDecoration(
         color: AppColors.screenCard,
-        border: Border(
-          top: BorderSide(color: AppColors.screenDivider),
-        ),
+        border: Border(top: BorderSide(color: AppColors.screenDivider)),
       ),
-      child: SafeArea(
-        top: false,
-        child: _buildNavigationButtons(),
-      ),
+      child: SafeArea(top: false, child: _buildNavigationButtons()),
     );
   }
 
@@ -725,18 +777,12 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                 decoration: BoxDecoration(
                   gradient: canNext
                       ? const LinearGradient(
-                          colors: [
-                            AppColors.shopBlueLight,
-                            AppColors.shopBlue,
-                          ],
+                          colors: [AppColors.shopBlueLight, AppColors.shopBlue],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
                       : LinearGradient(
-                          colors: [
-                            Colors.grey.shade300,
-                            Colors.grey.shade300,
-                          ],
+                          colors: [Colors.grey.shade300, Colors.grey.shade300],
                         ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: canNext
@@ -773,7 +819,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             ),
           if (isLast)
             GestureDetector(
-              onTap: canNext ? () => widget.onConsultWithMatricule(_currentMatricule) : null,
+              onTap: canNext
+                  ? () => widget.onConsultWithMatricule(_currentMatricule)
+                  : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 height: 40,
@@ -786,10 +834,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                           end: Alignment.bottomRight,
                         )
                       : LinearGradient(
-                          colors: [
-                            Colors.grey.shade300,
-                            Colors.grey.shade300,
-                          ],
+                          colors: [Colors.grey.shade300, Colors.grey.shade300],
                         ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: canNext && !widget.isLoadingRequest
@@ -811,7 +856,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.grey,
+                          ),
                         ),
                       )
                     else ...[
@@ -851,122 +898,6 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
       default:
         return false;
     }
-  }
-
-  Widget _buildEcoleField(BuildContext context) {
-    if (widget.isLoadingEcoles) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.screenSurface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.screenDivider),
-        ),
-        child: const Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.screenOrange,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Chargement des écoles...',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (widget.ecoles.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF0F0),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red[400], size: 18),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Aucune école disponible',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.screenTextPrimary,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: widget.onRetryEcoles,
-              child: const Text(
-                'Réessayer',
-                style: TextStyle(color: AppColors.screenOrange),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SearchableDropdown(
-      label: 'École',
-      value: widget.selectedEcoleName ?? 'Sélectionner une école...',
-      items: widget.ecoles.map((e) => e.ecoleclibelle).toList(),
-      onChanged: (selected) {
-        final ecole = widget.ecoles.firstWhere(
-          (e) => e.ecoleclibelle == selected,
-        );
-        widget.onEcoleChanged(ecole.ecoleid, selected);
-      },
-      isDarkMode: widget.isDarkMode,
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Widgets utilitaires privés
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _FieldLabel extends StatelessWidget {
-  final String label;
-  final bool required;
-
-  const _FieldLabel({required this.label, this.required = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.screenTextSecondary,
-            letterSpacing: 0.2,
-          ),
-        ),
-        if (required)
-          const Text(
-            ' *',
-            style: TextStyle(
-              color: AppColors.screenOrange,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-      ],
-    );
   }
 }
 

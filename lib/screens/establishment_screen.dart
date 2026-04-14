@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:parents_responsable/widgets/section_header_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/components/section_row.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
@@ -279,7 +280,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   // ── Data ───────────────────────────────────────────────────
-  
+
   // Initialiser les écoles statiques de base (vides pour ne garder que les vidéos de l'API)
   void _initializeFeaturedSchools() {
     _featuredSchools = [];
@@ -292,7 +293,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       _isLoadingVideos = true;
       _videoError = null;
     });
-    
+
     try {
       final videos = await VideoApiService.getVideosForSchool('gainhs');
       if (mounted) {
@@ -325,7 +326,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         'videoType': video.typeVideo,
       };
     }).toList();
-    
+
     setState(() {
       _featuredSchools = videoItems;
     });
@@ -354,6 +355,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         return 'Découvrez notre établissement en vidéo';
     }
   }
+
   Future<void> _loadEcoles() async {
     if (!mounted) return;
     setState(() {
@@ -568,7 +570,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  // ── Advanced Search BottomSheet ─────────────────────────────────//  Advanced Search BottomSheet 
+  // ── Advanced Search BottomSheet ─────────────────────────────────//  Advanced Search BottomSheet
   void _showAdvancedSearchBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -577,8 +579,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       builder: (context) => _buildAdvancedSearchBottomSheet(),
     );
   }
-
-
 
   Widget _buildAdvancedSearchBottomSheet() {
     return IntrinsicHeight(
@@ -949,7 +949,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         //     ),
                         //   ],
                         // ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         _FeaturedSchoolsSlider(
                           featuredSchools: _featuredSchools,
                           pageController: _sliderController,
@@ -962,18 +962,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   ),
                 ),
 
-              SliverToBoxAdapter(child: const SizedBox(height: 24)),
-              SliverToBoxAdapter(
-                child: _buildSectionHeader(
-                  'Actions rapides',
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
-              ),
+              SliverToBoxAdapter(child: SectionRow(title: 'ACTIONS RAPIDES')),
 
               // ── Actions Buttons ──
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: SizedBox(
+                  height: 110,
                   child: _buildActionButtons(
                     Theme.of(context).brightness == Brightness.dark,
                   ),
@@ -981,10 +975,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               ),
 
               SliverToBoxAdapter(
-                child: _buildSectionHeader(
-                  'Nos etablissements',
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                child: SectionRow(title: 'Nos etablissements'),
               ),
 
               // ── Filtre horizontal ─────────────────────────────
@@ -1157,8 +1148,14 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 sliver: SliverGrid(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
-                    childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: AppDimensions.getGridImageFlex(context)),
+                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
+                      context,
+                    ),
+                    childAspectRatio:
+                        AppDimensions.getProductsGridChildAspectRatio(
+                          context,
+                          imageFlex: AppDimensions.getGridImageFlex(context),
+                        ),
                   ),
                   delegate: SliverChildBuilderDelegate((_, i) {
                     if (i == items.length && _hasMoreEcoles) {
@@ -1175,26 +1172,26 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                     }
                     if (i < items.length) {
                       return ImageMenuCardExternalTitle(
-                          index: i,
-                          cardKey: items[i].ecoleid.toString(),
-                          title: items[i].parametreNom ?? 'École sans nom',
-                          subtitle: items[i].ville,
-                          imagePath: items[i].displayImage,
-                          iconData: Icons.business,
-                          isDark: false,
-                          color: _typeColor(items[i].typePrincipal),
-                          location: items[i].adresse,
-                          tag: items[i].typePrincipal,
-                          titleMaxLines: 2,
-                          externalTitleSpacing: 8,
+                        index: i,
+                        cardKey: items[i].ecoleid.toString(),
+                        title: items[i].parametreNom ?? 'École sans nom',
+                        subtitle: items[i].ville,
+                        imagePath: items[i].displayImage,
+                        iconData: Icons.business,
+                        isDark: false,
+                        color: _typeColor(items[i].typePrincipal),
+                        location: items[i].adresse,
+                        tag: items[i].typePrincipal,
+                        titleMaxLines: 2,
+                        externalTitleSpacing: 8,
                         height: 120,
-                          //imageFlex: AppDimensions.getProductCardImageFlex(context),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  EstablishmentDetailScreen(ecole: items[i]),
-                            ),
+                        //imageFlex: AppDimensions.getProductCardImageFlex(context),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EstablishmentDetailScreen(ecole: items[i]),
                           ),
+                        ),
                       );
                     }
                     return const SizedBox.shrink();
@@ -1212,47 +1209,118 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
   // ── Action buttons (quick actions) ─────────────────────────────────────────
   Widget _buildActionButtons(bool isDark) {
-    final actions = [
-      'integration',
-      'rating',
-      'recommend',
-      'events',
-    ];
     return SizedBox(
-      height: AppDimensions.getHorizontalMenuCardHeight(context),
-      child: ListView.builder(
+      height: 110,
+      child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 0),
-        itemCount: actions.length,
-        itemBuilder: (context, i) {
-          final def = _kActions[actions[i]]!;
-          return Padding(
-            padding: EdgeInsets.only(right: i < actions.length - 1 ? 6 : 0),
-            child: ImageMenuCard(
-              index: i,
-              cardKey: actions[i],
-              title: def.label,
-              iconData: def.icon,
-              isDark: isDark,
-              width: AppDimensions.getHorizontalMenuCardWidth(context),
-              height: AppDimensions.getHorizontalMenuCardHeight(context),
-              color: def.color,
-              onTap: () {
-                if (actions[i] == 'events') {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => AllEventsScreen()),
-                  );
-                } else {
-                  _showActionBottomSheet(actions[i], def);
-                }
-              },
-              actionText: def.subtitle,
-              actionTextColor: def.color,
-              backgroundColor: def.color.withOpacity(0.1),
-              textColor: isDark ? Colors.white : AppColors.screenTextPrimary,
+        padding: const EdgeInsets.only(left: 16, right: 24),
+        children: [
+          _buildActionButton(
+            index: 0,
+            cardKey: 'integration',
+            title: 'Intégrer',
+            actionText: 'Inscrire',
+            imagePath: 'assets/images/inscription.jpg',
+            color: const Color(0xFFF59E0B),
+            backgroundColor: isDark
+                ? const Color(0xFFFFF8E8).withOpacity(0.15)
+                : const Color(0xFFFFF8E8),
+            textColor: isDark
+                ? const Color(0xFFF59E0B).withOpacity(0.75)
+                : const Color(0xFF92400E),
+            isDark: isDark,
+            onTap: () => _showActionBottomSheet(
+              'integration',
+              _kActions['integration']!,
             ),
-          );
-        },
+          ),
+          _buildActionButton(
+            index: 1,
+            cardKey: 'rating',
+            title: 'Noter',
+            actionText: 'Évaluer',
+            imagePath: 'assets/images/notes.jpg',
+            color: const Color(0xFF10B981),
+            backgroundColor: isDark
+                ? const Color(0xFFECFDF5).withOpacity(0.15)
+                : const Color(0xFFECFDF5),
+            textColor: isDark
+                ? const Color(0xFF10B981).withOpacity(0.75)
+                : const Color(0xFF065F46),
+            isDark: isDark,
+            onTap: () => _showActionBottomSheet('rating', _kActions['rating']!),
+          ),
+          _buildActionButton(
+            index: 2,
+            cardKey: 'recommend',
+            title: 'Recommander',
+            actionText: 'Partager',
+            imagePath: 'assets/images/scolarite.jpg',
+            color: const Color(0xFFF59E0B),
+            backgroundColor: isDark
+                ? const Color(0xFFFFF4EE).withOpacity(0.15)
+                : const Color(0xFFFFF4EE),
+            textColor: isDark
+                ? const Color(0xFFF59E0B).withOpacity(0.75)
+                : const Color(0xFF9A3412),
+            isDark: isDark,
+            onTap: () =>
+                _showActionBottomSheet('recommend', _kActions['recommend']!),
+          ),
+          _buildActionButton(
+            index: 3,
+            cardKey: 'events',
+            title: 'Événements',
+            actionText: 'Voir',
+            imagePath: 'assets/images/school-event.jpg',
+            color: const Color(0xFF0288D1),
+            backgroundColor: isDark
+                ? const Color(0xFFE3F2FD).withOpacity(0.15)
+                : const Color(0xFFE3F2FD),
+            textColor: isDark
+                ? const Color(0xFF0288D1).withOpacity(0.75)
+                : const Color(0xFF0D47A1),
+            isDark: isDark,
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => AllEventsScreen())),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required int index,
+    required String cardKey,
+    required String title,
+    required String actionText,
+    required String imagePath,
+    required Color color,
+    required Color backgroundColor,
+    required Color textColor,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: cardKey,
+        title: title,
+        width: 80,
+        height: 100,
+        imageFlex: 2,
+        imagePath: imagePath,
+        isDark: isDark,
+        titleFontSize: 11,
+        imageBorderRadius: 14,
+        color: color,
+        backgroundColor: backgroundColor,
+        textColor: textColor,
+        actionText: actionText,
+        actionTextColor: color,
+        onTap: onTap,
       ),
     );
   }
@@ -1419,7 +1487,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       onRatingSubmitted: (rating, comment) async {
         // Fermer le bottom sheet parent
         Navigator.of(context).pop();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Avis soumis pour les établissements'),
@@ -1884,8 +1952,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             villeParent: _villeParentController.text.isEmpty
                                 ? _villeRecommendController.text
                                 : _villeParentController.text,
-                            adresseParent:
-                                _adresseParentController.text.isEmpty
+                            adresseParent: _adresseParentController.text.isEmpty
                                 ? 'Non spécifiée'
                                 : _adresseParentController.text,
                           );
@@ -2433,7 +2500,7 @@ class _FeaturedSchoolCard extends StatelessWidget {
   // Dialog de fallback vers YouTube externe
   void _showYouTubeFallbackDialog(BuildContext context, String videoId) {
     final youtubeUrl = 'https://www.youtube.com/watch?v=$videoId';
-    
+
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -2630,8 +2697,7 @@ class _FeaturedSchoolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typeColor = _typeColor(school['type'] ?? 'Primaire');
-    final bool isVideo =
-        school['video'] != null && school['video']!.isNotEmpty;
+    final bool isVideo = school['video'] != null && school['video']!.isNotEmpty;
 
     return GestureDetector(
       onTap: () {
@@ -2645,16 +2711,19 @@ class _FeaturedSchoolCard extends StatelessWidget {
           // ── Background : image ou vidéo ──────────────────────────
           if (isVideo) ...[
             // Miniature YouTube
-            Builder(builder: (context) {
-              final thumb = _getYouTubeThumbnailUrl(school['video']!);
-              return thumb != null
-                  ? Image.network(
-                      thumb,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _colorBackground(typeColor),
-                    )
-                  : _colorBackground(typeColor);
-            }),
+            Builder(
+              builder: (context) {
+                final thumb = _getYouTubeThumbnailUrl(school['video']!);
+                return thumb != null
+                    ? Image.network(
+                        thumb,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            _colorBackground(typeColor),
+                      )
+                    : _colorBackground(typeColor);
+              },
+            ),
             // Overlay sombre
             Container(
               decoration: BoxDecoration(
@@ -2690,7 +2759,10 @@ class _FeaturedSchoolCard extends StatelessWidget {
               top: 16,
               left: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(16),
@@ -2754,8 +2826,7 @@ class _FeaturedSchoolCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(16),
-                      border:
-                          Border.all(color: Colors.white.withOpacity(0.3)),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Text(
                       school['type'] ?? 'Primaire',

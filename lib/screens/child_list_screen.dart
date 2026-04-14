@@ -40,6 +40,7 @@ import '../services/student_scolarite_service.dart';
 import '../models/student_scolarite.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
+import '../widgets/components/section_row.dart';
 import '../widgets/snackbar.dart';
 import '../models/parent_suggestion.dart';
 import '../services/parent_suggestion_service.dart';
@@ -2419,13 +2420,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 1 : Paiements & Inscription
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader(
-          'Paiements & Inscription',
-          const Color(0xFF10B981),
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          showLeftIndicator: false,
-          showBottomDivider: true,
-        ),
+        SectionRow(title: 'Paiements & Inscription'),
         const SizedBox(height: 16),
         _buildHorizontalCards([
           ImageMenuCardExternalTitle(
@@ -2569,11 +2564,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader(
-          'Suivi scolaire',
-          const Color(0xFF1976D2),
-          padding: const EdgeInsets.all(16),
-        ),
+        SectionRow(title: 'Suivi scolaire'),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2688,11 +2679,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 3 : Vie scolaire
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader(
-          'Vie scolaire',
-          const Color(0xFF00796B),
-          padding: const EdgeInsets.all(16),
-        ),
+        SectionRow(title: 'Vie scolaire'),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: LayoutBuilder(
@@ -2804,11 +2791,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 4 : Communications
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader(
-          'Communications',
-          const Color(0xFF0288D1),
-          padding: const EdgeInsets.all(16),
-        ),
+        SectionRow(title: 'Communications'),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2885,7 +2868,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 5 : Services
         // ════════════════════════════════════════════════════════════════
-        _buildSectionHeader('Services', const Color(0xFF795548)),
+        SectionRow(title: 'Services'),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,

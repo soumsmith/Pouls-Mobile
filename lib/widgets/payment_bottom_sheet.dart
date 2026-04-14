@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import 'custom_loader.dart';
+import 'bottom_sheets/bottom_sheet_header.dart';
+import 'components/custom_text_input.dart';
 
 class PaymentBottomSheet extends StatefulWidget {
   final String? childName;
@@ -174,9 +176,7 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: const [
           BoxShadow(
             color: AppColors.screenShadow,
@@ -193,93 +193,22 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
         builder: (context, scrollController) {
           return Column(
             children: [
-              // Handle + header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Column(
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 18),
-                        decoration: BoxDecoration(
-                          color: AppColors.screenDivider,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFFF7A3C),
-                                AppColors.screenOrange,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(
-                            Icons.payment,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Paiement en ligne',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.screenTextPrimary,
-                                  letterSpacing: -0.4,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                              ),
-                              Text(
-                                widget.childName != null 
-                                    ? 'Entrez le montant à payer pour ${widget.childName}'
-                                    : 'Entrez le montant à payer',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.screenTextSecondary,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
-                            Icons.close,
-                            color: AppColors.screenTextSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(
-                      color: AppColors.screenDivider,
-                      height: 1,
-                    ),
-                  ],
-                ),
+              // Header avec le composant BottomSheetHeader
+              BottomSheetHeader(
+                icon: Icons.payment,
+                iconColor: const Color(0xFFFF7A3C),
+                title: 'Paiement en ligne',
+                description: widget.childName != null
+                    ? 'Entrez le montant à payer pour ${widget.childName}'
+                    : 'Entrez le montant à payer',
+                onClose: () => Navigator.of(context).pop(),
+                titleColor: AppColors.screenTextPrimary,
+                descriptionColor: AppColors.screenTextSecondary,
+                titleFontSize: 18,
+                descriptionFontSize: 13,
+                titleFontWeight: FontWeight.w800,
+                //padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               ),
-
               // Form content
               Expanded(
                 child: SingleChildScrollView(
@@ -289,85 +218,21 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      Text(
-                        'Matricule de l\'élève',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.screenSurface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: widget.matricule != null 
-                                ? Colors.grey.withOpacity(0.3)
-                                : AppColors.screenDivider,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: matriculeController,
-                          enabled: widget.matricule == null,
-                          keyboardType: TextInputType.text,
-                          decoration: InputDecoration(
-                            hintText: 'Ex: 2024001',
-                            prefixIcon: const Icon(
-                              Icons.person_outline,
-                              color: AppColors.screenTextSecondary,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.all(16),
-                            filled: widget.matricule != null,
-                            fillColor: widget.matricule != null 
-                                ? Colors.grey.withOpacity(0.1)
-                                : null,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: AppColors.screenTextPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      CustomTextInput(
+                        label: 'Matricule de l\'élève',
+                        hint: 'Ex: 2024001',
+                        icon: Icons.person_outline,
+                        controller: matriculeController,
+                        keyboardType: TextInputType.text,
+                        readOnly: widget.matricule != null,
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        'Montant à payer (FCFA)',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.screenSurface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.screenDivider,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: montantController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            hintText: 'Ex: 10000',
-                            prefixIcon: Icon(
-                              Icons.attach_money,
-                              color: AppColors.screenTextSecondary,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.all(16),
-                          ),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: AppColors.screenTextPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      CustomTextInput(
+                        label: 'Montant à payer (FCFA)',
+                        hint: 'Ex: 10000',
+                        icon: Icons.attach_money,
+                        controller: montantController,
+                        keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 24),
                       _buildModernPaymentButton(

@@ -32,6 +32,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final VoidCallback onTap;
   final bool enableGradient;
   final bool centerTitle;
+  final bool allowLineBreak;
   final bool enableInnerBorder;
   final bool enableOuterBorder;
   final Color? innerBorderColor;
@@ -60,7 +61,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.width,
     this.height,
     this.externalTitleSpacing = 8.0,
-    this.titleMaxLines = 2,
+    this.titleMaxLines = 3,
     this.imageFlex = 7.0,
     this.imageBorderRadius = 20.0,
     this.titleFontSize = 12.0,
@@ -70,6 +71,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.onButtonTap,
     this.enableGradient = false,
     this.centerTitle = false,
+    this.allowLineBreak = false,
     required this.onTap,
     this.enableInnerBorder = false,
     this.enableOuterBorder = false,
@@ -98,6 +100,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
               crossAxisAlignment: centerTitle
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
+              mainAxisAlignment: allowLineBreak ? MainAxisAlignment.start : MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
@@ -135,8 +138,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                         : AppColors.screenTextPrimary),
                               ),
                               textAlign: centerTitle ? TextAlign.center : null,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: allowLineBreak ? titleMaxLines : 1,
+                              overflow: allowLineBreak ? null : TextOverflow.ellipsis,
                             ),
                           ),
                           if (subtitle?.isNotEmpty == true) ...[

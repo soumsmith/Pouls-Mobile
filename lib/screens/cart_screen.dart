@@ -12,6 +12,7 @@ import '../widgets/searchable_dropdown.dart';
 import '../widgets/order_wizard_bottom_sheet.dart';
 import '../services/auth_service.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -154,182 +155,158 @@ class _CartScreenState extends State<CartScreen>
 
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: Column(
-        children: [
-          _buildAppBar(),
-          Expanded(child: _buildCartItems()),
-          _buildModernCheckoutSummary(),
+      child: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(),
+          SliverFillRemaining(
+            child: Column(
+              children: [
+                Expanded(child: _buildCartItems()),
+                _buildModernCheckoutSummary(),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   // ─── APP BAR ───────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
-    return Container(
-      color: AppColors.screenSurface,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCard,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.screenShadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+  Widget _buildSliverAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return CustomSliverAppBar(
+      title: 'Mon Panier',
+      isDark: isDark,
+      automaticallyImplyLeading: true,
+      actions: [
+        if (_cart?.isNotEmpty == true)
+          GestureDetector(
+            onTap: _clearCart,
+            child: Container(
+              width: 40,
+              height: 40,
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.screenCard,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.screenShadow,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
                   ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 16,
-                    color: AppColors.screenTextPrimary,
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              // Title
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Mon Panier',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    if (_cart != null)
-                      Text(
-                        '${_cart!.totalItems} article${_cart!.totalItems > 1 ? 's' : ''}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.screenTextSecondary,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                  ],
-                ),
+              child: Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red[400],
+                size: 20,
               ),
-              // Clear cart button
-              if (_cart?.isNotEmpty == true)
-                GestureDetector(
-                  onTap: _clearCart,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF0F0),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.delete_outline,
-                      size: 18,
-                      color: Colors.red[400],
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
-      ),
+      ],
+      onBackTap: () => Navigator.pop(context),
     );
   }
 
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────
   Widget _buildEmptyCart() {
-    return SafeArea(
-      child: Column(
-        children: [
-          _buildAppBar(),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: AppColors.shopBlueSurface,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 48,
-                      color: AppColors.shopBlue,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Panier vide',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Ajoutez des produits pour\ncommencer vos achats',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.screenTextSecondary,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.screenCard,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.screenDivider,
-                            width: 1,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.screenShadow,
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          'Continuer les achats',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.screenTextSecondary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+    return Scaffold(
+      backgroundColor: AppColors.screenSurface,
+      appBar: AppBar(
+        backgroundColor: AppColors.screenSurface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.screenTextPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Mon Panier',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.screenTextPrimary,
+          ),
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey),
+              onPressed: null, // Disabled when cart is empty
             ),
           ),
         ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppColors.shopBlueSurface,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.shopping_bag_outlined,
+                size: 48,
+                color: AppColors.shopBlue,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Panier vide',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.screenTextPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ajoutez des produits pour\ncommencer vos achats',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.screenTextSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.screenCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.screenDivider,
+                    width: 1,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.screenShadow,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Continuer les achats',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.screenTextSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

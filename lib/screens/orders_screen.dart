@@ -7,6 +7,7 @@ import '../models/order.dart';
 import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -20,7 +21,10 @@ class _OrdersScreenState extends State<OrdersScreen>
   final OrderService _orderService = OrderService();
   final AuthService _authService = AuthService();
   List<Order> _orders = [];
+  List<Order> _filteredOrders = [];
   bool _isLoading = true;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -40,6 +44,7 @@ class _OrdersScreenState extends State<OrdersScreen>
   @override
   void dispose() {
     _fadeController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -51,12 +56,14 @@ class _OrdersScreenState extends State<OrdersScreen>
         setState(() {
           _isLoading = false;
           _orders = [];
+          _filteredOrders = [];
         });
         return;
       }
       final orders = await _orderService.getUserOrders(currentUser.phone);
       setState(() {
         _orders = orders;
+        _filteredOrders = orders;
         _isLoading = false;
       });
       _fadeController.forward(from: 0);
@@ -64,6 +71,36 @@ class _OrdersScreenState extends State<OrdersScreen>
       setState(() => _isLoading = false);
       _showError('Erreur lors du chargement des commandes: $e');
     }
+  }
+
+  // Méthode de filtrage des commandes
+  void _filterOrders(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredOrders = _orders;
+      } else {
+        _filteredOrders = _orders.where((order) {
+          final orderId = order.id.toLowerCase();
+          final orderDate = _formatDate(order.createdAt).toLowerCase();
+          final orderStatus = order.status.displayName.toLowerCase();
+          final searchQuery = query.toLowerCase();
+          
+          return orderId.contains(searchQuery) ||
+                 orderDate.contains(searchQuery) ||
+                 orderStatus.contains(searchQuery);
+        }).toList();
+      }
+    });
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        _filterOrders('');
+      }
+    });
   }
 
   void _showError(String msg) {
@@ -92,121 +129,227 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   // ─── BODY ──────────────────────────────────────────────────────────────────
   Widget _buildBody() {
-    return Column(
-      children: [
-        _buildAppBar(),
-        Expanded(
-          child: _isLoading
-              ? const Center(
-                  child: CustomLoader(
-                    message: 'Chargement de vos commandes...',
-                    loaderColor: AppColors.shopGreen,
-                    showBackground: false,
+    if (_isLoading) {
+      return const Center(
+        child: CustomLoader(
+          message: 'Chargement de vos commandes...',
+          loaderColor: AppColors.shopGreen,
+          showBackground: false,
+        ),
+      );
+    }
+    if (_orders.isEmpty) return _buildEmptyState();
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                _buildSliverAppBar(),
+                SliverFillRemaining(
+                  child: Column(
+                    children: [
+                      Expanded(child: _buildOrdersList()),
+                      _buildSummaryBar(),
+                    ],
                   ),
-                )
-              : _orders.isEmpty
-                  ? _buildEmptyState()
-                  : FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Column(
-                        children: [
-                          Expanded(child: _buildOrdersList()),
-                          // ── Summary bar (miroir du CartScreen) ──
-                          _buildSummaryBar(),
-                        ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── SEARCH BAR ────────────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      height: _isSearching ? 56 : 0,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      decoration: BoxDecoration(
+        color: AppColors.screenCard,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.screenShadow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: _isSearching
+          ? Row(
+              children: [
+                const SizedBox(width: 12),
+                const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.screenTextSecondary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    style: const TextStyle(
+                      color: AppColors.screenTextPrimary,
+                      fontSize: 14,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Rechercher une commande...',
+                      hintStyle: TextStyle(
+                        color: AppColors.screenTextSecondary,
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: _filterOrders,
+                  ),
+                ),
+                if (_searchController.text.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      _searchController.clear();
+                      _filterOrders('');
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: AppColors.screenTextSecondary,
+                        size: 16,
                       ),
                     ),
-        ),
-      ],
+                  ),
+              ],
+            )
+          : null,
     );
   }
 
   // ─── APP BAR ───────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
-    return Container(
-      color: AppColors.screenSurface,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCard,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 2)),
-                    ],
-                  ),
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      size: 16, color: AppColors.screenTextPrimary),
+  Widget _buildSliverAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return CustomSliverAppBar(
+      title: 'Mes Commandes',
+      isDark: isDark,
+      automaticallyImplyLeading: true,
+      actions: [
+        // Bouton de recherche/rafraîchissement
+        GestureDetector(
+          onTap: _isSearching ? _toggleSearch : _loadOrders,
+          child: Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.screenCard,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.screenShadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Mes Commandes',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    if (!_isLoading && _orders.isNotEmpty)
-                      Text(
-                        '${_orders.length} commande${_orders.length > 1 ? 's' : ''}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.screenTextSecondary,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              // Refresh button
-              GestureDetector(
-                onTap: _loadOrders,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.shopBlueSurface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.refresh_rounded,
-                      size: 20, color: AppColors.shopBlue),
-                ),
-              ),
-            ],
+              ],
+            ),
+            child: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+              size: 20,
+              color: AppColors.shopBlue,
+            ),
           ),
         ),
-      ),
+      ],
+      onBackTap: () => Navigator.pop(context),
     );
   }
 
   // ─── ORDERS LIST ───────────────────────────────────────────────────────────
   Widget _buildOrdersList() {
+    final displayOrders = _isSearching ? _filteredOrders : _orders;
+    
     return RefreshIndicator(
       color: AppColors.shopGreen,
       onRefresh: _loadOrders,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        itemCount: _orders.length,
-        itemBuilder: (context, index) =>
-            _buildOrderCard(_orders[index], index),
+      child: Column(
+        children: [
+          // Indicateur de recherche active
+          if (_isSearching)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                '${displayOrders.length} commande${displayOrders.length > 1 ? 's' : ''} trouvée${displayOrders.length > 1 ? 's' : ''}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.screenTextSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          Expanded(
+            child: displayOrders.isEmpty
+                ? _buildSearchEmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    itemCount: displayOrders.length,
+                    itemBuilder: (context, index) => _buildOrderCard(
+                      displayOrders[index],
+                      index,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // État vide pour la recherche
+  Widget _buildSearchEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.screenSurface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(
+              Icons.search_off_rounded,
+              size: 40,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Aucune commande trouvée',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Essayez avec d\'autres mots-clés',
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -308,67 +451,76 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────
   Widget _buildEmptyState() {
-    return Center(
+    return SafeArea(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: const BoxDecoration(
-              color: AppColors.shopBlueSurface,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.receipt_long_outlined,
-                size: 48, color: AppColors.shopBlue),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Aucune commande',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Vous n\'avez pas encore passé\nde commande',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.screenTextSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shopBlue.withOpacity(0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+          _buildSliverAppBar(),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      color: AppColors.shopBlueSurface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.receipt_long_outlined,
+                        size: 48, color: AppColors.shopBlue),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Aucune commande',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.screenTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Vous n\'avez pas encore passé\nde commande',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.screenTextSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.shopBlueLight, AppColors.shopBlue],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shopBlue.withOpacity(0.35),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Commencer vos achats',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
-              ),
-              child: const Text(
-                'Commencer vos achats',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
               ),
             ),
           ),
@@ -383,141 +535,153 @@ class _OrdersScreenState extends State<OrdersScreen>
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 300 + index * 80),
+      duration: Duration(milliseconds: 200 + index * 50),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) => Opacity(
         opacity: value,
         child: Transform.translate(
-          offset: Offset(0, 20 * (1 - value)),
+          offset: Offset(0, 10 * (1 - value)),
           child: child,
         ),
       ),
       child: GestureDetector(
         onTap: () => _showOrderDetails(order),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: AppColors.screenCard,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: const [
               BoxShadow(
-                  color: AppColors.screenShadow,
-                  blurRadius: 12,
-                  offset: Offset(0, 4)),
+                color: AppColors.screenShadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Icône commande (miroir de l'image produit dans CartScreen) ──
+                // Icône commande plus compacte
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: statusInfo.color.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(statusInfo.icon,
-                      color: statusInfo.color, size: 26),
+                  child: Icon(
+                    statusInfo.icon,
+                    color: statusInfo.color,
+                    size: 20,
+                  ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
 
-                // ── Info ──
+                // Info principale
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Ligne supérieure: ID + Statut
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Text(
-                              'Commande #${order.id.substring(order.id.length - 8)}',
+                              'CMD #${order.id.substring(order.id.length - 6)}',
                               style: const TextStyle(
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.screenTextPrimary,
-                                letterSpacing: -0.3,
+                                letterSpacing: -0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Status badge (aligné avec le bouton supprimer du CartScreen)
+                          // Status badge compact
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: statusInfo.color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               order.status.displayName,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 10,
                                 color: statusInfo.color,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _formatDate(order.createdAt),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.screenTextSecondary,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 2),
 
-                      // ── Prix + chips (miroir du prix + stepper CartScreen) ──
+                      // Ligne du milieu: Date + Articles
+                      Row(
+                        children: [
+                          Text(
+                            _formatDate(order.createdAt),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.screenTextSecondary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Articles chip ultra compact
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.screenSurface,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.shopping_bag_outlined,
+                                  size: 10,
+                                  color: AppColors.screenTextSecondary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${order.totalItems}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.screenTextSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Ligne inférieure: Prix + flèche
                       Row(
                         children: [
                           Text(
                             '${order.totalAmount.toStringAsFixed(0)} FCFA',
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 13,
                               color: AppColors.shopGreen,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const Spacer(),
-                          // Articles chip
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.screenSurface,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.shopping_bag_outlined,
-                                    size: 12,
-                                    color: AppColors.screenTextSecondary),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${order.totalItems} article${order.totalItems > 1 ? 's' : ''}',
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.screenTextSecondary),
-                                ),
-                              ],
-                            ),
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 14,
+                            color: AppColors.screenTextSecondary,
                           ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.chevron_right,
-                              size: 16,
-                              color: AppColors.screenTextSecondary),
                         ],
                       ),
                     ],

@@ -33,6 +33,9 @@ import '../models/group_message.dart';
 import '../models/echeance_notification.dart';
 import '../widgets/bottom_sheets/inscription_bottom_sheet.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../services/coulisse_excellence_service.dart';
+import '../models/coulisse_excellence.dart';
+import 'coulisse_video_feed_screen.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -79,6 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, bool> _childrenNotificationsLoading = {};
   Map<String, bool> _childrenEcheancesLoading = {};
 
+  // Variables pour les vidéos Coulisses de l'Excellence
+  List<CoulisseExcellence> _coulisseVideos = [];
+  bool _coulisseVideosLoading = true;
+  String? _coulisseVideosError;
+
   final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
   @override
@@ -90,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadChildren();
     _loadUnreadNotificationsCount();
     _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
+    _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
   }
 
   @override
@@ -290,6 +299,218 @@ class _HomeScreenState extends State<HomeScreen> {
     final unreadMessages = messages.where((n) => !n.estLu).length;
     final hasUnpaidFees = _childrenEcheances[child.id]?.hasUnpaidFees == true;
     return unreadMessages + (hasUnpaidFees ? 1 : 0);
+  }
+
+  // Charger les vidéos Coulisses de l'Excellence
+  Future<void> _loadCoulisseVideos() async {
+    try {
+      final videos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos();
+      if (mounted) {
+        setState(() {
+          _coulisseVideos = videos;
+          _coulisseVideosLoading = false;
+          _coulisseVideosError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _coulisseVideosLoading = false;
+          _coulisseVideosError = e.toString();
+        });
+      }
+    }
+  }
+
+  // Construire la section Coulisses de l'Excellence
+  Widget _buildCoulisseExcellenceSection() {
+    if (_coulisseVideosLoading) {
+      return Container(
+        height: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_coulisseVideosError != null) {
+      return Container(
+        height: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.grey[400],
+                size: 32,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Erreur de chargement',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_coulisseVideos.isEmpty) {
+      return Container(
+        height: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Text(
+            'Aucune vidéo disponible',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 120,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _coulisseVideos.length,
+        itemBuilder: (context, index) {
+          final video = _coulisseVideos[index];
+          return _buildCoulisseVideoCard(video, index);
+        },
+      ),
+    );
+  }
+
+  // Construire une carte de vidéo pour le carrousel
+  Widget _buildCoulisseVideoCard(CoulisseExcellence video, int index) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => CoulisseVideoFeedScreen(
+              videos: _coulisseVideos,
+              initialIndex: index,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 300,
+        margin: const EdgeInsets.only(right: 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Image miniature de la vidéo YouTube
+              FadeInImage.assetNetwork(
+                width: 300,
+                height: 120,
+                fit: BoxFit.cover,
+                placeholder: 'assets/images/video-placeholder.jpg',
+                image: 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg',
+                imageErrorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 300,
+                    height: 120,
+                    color: Colors.grey[300],
+                    child: const Icon(
+                      Icons.movie,
+                      color: Colors.grey,
+                      size: 48,
+                    ),
+                  );
+                },
+              ),
+              
+              // Overlay sombre pour améliorer la lisibilité
+              Container(
+                width: 300,
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Icône de lecture centrale
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.8),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+              
+              // Informations en bas
+              Positioned(
+                bottom: 8,
+                left: 8,
+                right: 8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      video.titre,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${video.fullName} · ${video.classe}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _updatePhotosInBackground(List<Child> children) async {
@@ -1045,34 +1266,48 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.only(top: 16),
             children: [
               SectionRow(title: 'INSCRIPTIONS & DÉMARCHES'),
+              const SizedBox(height: 16),
               SizedBox(
-                height: 110,
+                height: 130,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   children: [
                     _buildCard(
                       index: 0,
                       cardKey: 'inscription',
-                      title: 'Inscription',
+                      title: 'Inscription \n en ligne',
                       imagePath: 'assets/images/icons/inscription.png',
-                      color: Colors.grey.shade50,
-                      backgroundColor: Colors.grey.shade50,
-                      textColor: Colors.black,
-                      actionText: 'S\'inscrire',
-                      enableBorder: false,
-                      borderColor: Colors.blue,
+                      color: const Color(0xFF3B82F6),
+                      backgroundColor: const Color(0xFFF8FCFF),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      allowLineBreak: true,
+                      enableInnerBorder: true,
+                      enableOuterBorder: true,
+                      innerBorderColor: const Color(0xFF93C5FD),
+                      imageBorderRadius: 50,
+                      width: 70,
+                      centerTitle: true,
                       onTap: () => InscriptionBottomSheet.show(context),
                     ),
+                    const SizedBox(width: 12),
                     _buildCard(
                       index: 1,
                       cardKey: 'integration',
-                      title: 'Intégration',
+                      title: 'Demande\nintégration',
                       imagePath: 'assets/images/icons/integration.png',
-                      color: Colors.grey.shade50,
-                      backgroundColor: Colors.grey.shade50,
-                      textColor: Colors.black,
-                      actionText: 'Commencer',
+                      color: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFFF7FEFC),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: true,
+                      enableOuterBorder: true,
+                      allowLineBreak: true,
+                      innerBorderColor: const Color(0xFF6EE7B7),
+                      imageBorderRadius: 50,
+                      width: 70,
+                      centerTitle: true,
                       onTap: () => showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
@@ -1080,248 +1315,270 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (_) => const IntegrationBottomSheet(),
                       ),
                     ),
+                    const SizedBox(width: 12),
                     _buildCard(
                       index: 2,
                       cardKey: 'consulter_demande',
                       title: 'Consulter\ndemande',
                       imagePath: 'assets/images/icons/consulter.png',
-                      color: Colors.grey.shade50,
-                      backgroundColor: Colors.grey.shade50,
-                      textColor: Colors.black,
-                      actionText: 'Consulter',
+                      color: const Color(0xFFF59E0B),
+                      backgroundColor: const Color(0xFFFFFEF7),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: true,
+                      enableOuterBorder: true,
+                      allowLineBreak: true,
+                      innerBorderColor: const Color(0xFFFCD34D),
+                      imageBorderRadius: 50,
+                      width: 70,
+                      centerTitle: true,
                       onTap: () => IntegrationRequestBottomSheet.show(context),
                     ),
+                    const SizedBox(width: 12),
                     _buildCard(
                       index: 3,
                       cardKey: 'parrainage',
-                      title: 'Parrainage',
+                      title: 'Parrainer\nutilisateur',
                       imagePath: 'assets/images/icons/parrainer.png',
-                      color: Colors.grey.shade50,
-                      backgroundColor: Colors.grey.shade50,
-                      textColor: Colors.black,
-                      actionText: 'Inviter',
+                      color: const Color(0xFF8B5CF6),
+                      backgroundColor: const Color(0xFFFCFAFF),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: true,
+                      allowLineBreak: true,
+                      enableOuterBorder: true,
+                      innerBorderColor: const Color(0xFFC4B5FD),
+                      imageBorderRadius: 50,
+                      width: 70,
+                      centerTitle: true,
                       onTap: () => showSponsorshipBottomSheet(context),
                     ),
                   ],
                 ),
               ),
 
-              SectionRow(title: 'SCOLARITÉ'),
-              SizedBox(
-                height: 140,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 16, right: 24),
-                  children: [
-                    _buildCard(
-                      index: 0,
-                      cardKey: 'bulletins',
-                      title: 'Bulletins',
-                      imagePath: 'assets/images/notes.jpg',
-                      color: const Color(0xFFEF4444),
-                      backgroundColor: const Color(0xFFFFF0F0),
-                      textColor: const Color(0xFF991B1B),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 1,
-                      cardKey: 'agenda',
-                      title: 'Agenda',
-                      imagePath: 'assets/images/emploi-du-temps.jpg',
-                      color: const Color(0xFF22C55E),
-                      backgroundColor: const Color(0xFFE8F8F0),
-                      textColor: const Color(0xFF166534),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 2,
-                      cardKey: 'absences',
-                      title: 'Absences',
-                      imagePath: 'assets/images/school-event.jpg',
-                      color: _kOrange,
-                      backgroundColor: const Color(0xFFFFF4EE),
-                      textColor: const Color(0xFF9A3412),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 3,
-                      cardKey: 'notes',
-                      title: 'Notes',
-                      imagePath: 'assets/images/notes.jpg',
-                      color: const Color(0xFF6366F1),
-                      backgroundColor: const Color(0xFFEEF2FF),
-                      textColor: const Color(0xFF4338CA),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 4,
-                      cardKey: 'emploi_temps',
-                      title: 'Emploi\ndu temps',
-                      imagePath: 'assets/images/emploi-du-temps.jpg',
-                      color: const Color(0xFF10B981),
-                      backgroundColor: const Color(0xFFECFDF5),
-                      textColor: const Color(0xFF065F46),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ),
+              // SectionRow(title: 'SCOLARITÉ'),
+              // SizedBox(
+              //   height: 140,
+              //   child: ListView(
+              //     scrollDirection: Axis.horizontal,
+              //     padding: const EdgeInsets.only(left: 16, right: 24),
+              //     children: [
+              //       _buildCard(
+              //         index: 0,
+              //         cardKey: 'bulletins',
+              //         title: 'Bulletins',
+              //         imagePath: 'assets/images/notes.jpg',
+              //         color: const Color(0xFFEF4444),
+              //         backgroundColor: const Color(0xFFFFF0F0),
+              //         textColor: const Color(0xFF991B1B),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //       _buildCard(
+              //         index: 1,
+              //         cardKey: 'agenda',
+              //         title: 'Agenda',
+              //         imagePath: 'assets/images/emploi-du-temps.jpg',
+              //         color: const Color(0xFF22C55E),
+              //         backgroundColor: const Color(0xFFE8F8F0),
+              //         textColor: const Color(0xFF166534),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //       _buildCard(
+              //         index: 2,
+              //         cardKey: 'absences',
+              //         title: 'Absences',
+              //         imagePath: 'assets/images/school-event.jpg',
+              //         color: _kOrange,
+              //         backgroundColor: const Color(0xFFFFF4EE),
+              //         textColor: const Color(0xFF9A3412),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //       _buildCard(
+              //         index: 3,
+              //         cardKey: 'notes',
+              //         title: 'Notes',
+              //         imagePath: 'assets/images/notes.jpg',
+              //         color: const Color(0xFF6366F1),
+              //         backgroundColor: const Color(0xFFEEF2FF),
+              //         textColor: const Color(0xFF4338CA),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //       _buildCard(
+              //         index: 4,
+              //         cardKey: 'emploi_temps',
+              //         title: 'Emploi\ndu temps',
+              //         imagePath: 'assets/images/emploi-du-temps.jpg',
+              //         color: const Color(0xFF10B981),
+              //         backgroundColor: const Color(0xFFECFDF5),
+              //         textColor: const Color(0xFF065F46),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //     ],
+              //   ),
+              // ),
 
-              SectionRow(title: 'PAIEMENTS & FINANCE'),
-              SizedBox(
-                height: 140,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 16, right: 24),
-                  children: [
-                    _buildCard(
-                      index: 0,
-                      cardKey: 'paiements',
-                      title: 'Paiements',
-                      imagePath: 'assets/images/icons/paiement.png',
-                      color: Colors.grey.shade50,
-                      backgroundColor: Colors.grey.shade50,
-                      textColor: Colors.black,
-                      actionText: 'Payer',
-                      onTap: () {
-                        PaymentBottomSheet.show(
-                          context: context,
-                          childName: null,
-                          matricule: null,
-                          onPayment: (montant, matricule) async {
-                            try {
-                              final montantInt = int.tryParse(montant);
-                              if (montantInt == null || montantInt <= 0) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Montant invalide'),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
-                                }
-                                return;
-                              }
-                              final paiementService = PaiementService();
-                              final paiementResponse = await paiementService
-                                  .initierPaiementEnLigne(
-                                    matricule,
-                                    montantInt,
-                                  );
-                              if (paiementResponse.success &&
-                                  paiementResponse.url.isNotEmpty) {
-                                final launched = await paiementService
-                                    .lancerUrlPaiement(paiementResponse.url);
-                                if (!launched && mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Impossible d\'ouvrir la page de paiement',
-                                      ),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
-                                }
-                              } else {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(paiementResponse.message),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
-                                }
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Erreur lors du paiement: $e',
-                                    ),
-                                    backgroundColor: AppColors.error,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                        );
-                      },
-                    ),
-                    _buildCard(
-                      index: 1,
-                      cardKey: 'scolarite',
-                      title: 'Scolarité',
-                      imagePath: 'assets/images/icons/scolarite.png',
-                      color: Colors.grey.shade50,
-                      backgroundColor: Colors.grey.shade50,
-                      textColor: Colors.black,
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 2,
-                      cardKey: 'historique',
-                      title: 'Historique',
-                      imagePath: 'assets/images/mes-commandes.jpg',
-                      color: const Color(0xFF6366F1),
-                      backgroundColor: const Color(0xFFEEF2FF),
-                      textColor: const Color(0xFF4338CA),
-                      actionText: 'Consulter',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ),
+              // SectionRow(title: 'PAIEMENTS & FINANCE'),
+              // SizedBox(
+              //   height: 140,
+              //   child: ListView(
+              //     scrollDirection: Axis.horizontal,
+              //     padding: const EdgeInsets.only(left: 16, right: 24),
+              //     children: [
+              //       _buildCard(
+              //         index: 0,
+              //         cardKey: 'paiements',
+              //         title: 'Paiements',
+              //         imagePath: 'assets/images/icons/paiement.png',
+              //         color: Colors.grey.shade50,
+              //         backgroundColor: Colors.grey.shade50,
+              //         textColor: const Color(0xFF333333),
+              //         actionText: 'Payer',
+              //         onTap: () {
+              //           PaymentBottomSheet.show(
+              //             context: context,
+              //             childName: null,
+              //             matricule: null,
+              //             onPayment: (montant, matricule) async {
+              //               try {
+              //                 final montantInt = int.tryParse(montant);
+              //                 if (montantInt == null || montantInt <= 0) {
+              //                   if (mounted) {
+              //                     ScaffoldMessenger.of(context).showSnackBar(
+              //                       const SnackBar(
+              //                         content: Text('Montant invalide'),
+              //                         backgroundColor: AppColors.error,
+              //                       ),
+              //                     );
+              //                   }
+              //                   return;
+              //                 }
+              //                 final paiementService = PaiementService();
+              //                 final paiementResponse = await paiementService
+              //                     .initierPaiementEnLigne(
+              //                       matricule,
+              //                       montantInt,
+              //                     );
+              //                 if (paiementResponse.success &&
+              //                     paiementResponse.url.isNotEmpty) {
+              //                   final launched = await paiementService
+              //                       .lancerUrlPaiement(paiementResponse.url);
+              //                   if (!launched && mounted) {
+              //                     ScaffoldMessenger.of(context).showSnackBar(
+              //                       const SnackBar(
+              //                         content: Text(
+              //                           'Impossible d\'ouvrir la page de paiement',
+              //                         ),
+              //                         backgroundColor: AppColors.error,
+              //                       ),
+              //                     );
+              //                   }
+              //                 } else {
+              //                   if (mounted) {
+              //                     ScaffoldMessenger.of(context).showSnackBar(
+              //                       SnackBar(
+              //                         content: Text(paiementResponse.message),
+              //                         backgroundColor: AppColors.error,
+              //                       ),
+              //                     );
+              //                   }
+              //                 }
+              //               } catch (e) {
+              //                 if (mounted) {
+              //                   ScaffoldMessenger.of(context).showSnackBar(
+              //                     SnackBar(
+              //                       content: Text(
+              //                         'Erreur lors du paiement: $e',
+              //                       ),
+              //                       backgroundColor: AppColors.error,
+              //                     ),
+              //                   );
+              //                 }
+              //               }
+              //             },
+              //           );
+              //         },
+              //       ),
+              //       _buildCard(
+              //         index: 1,
+              //         cardKey: 'scolarite',
+              //         title: 'Scolarité',
+              //         imagePath: 'assets/images/icons/scolarite.png',
+              //         color: Colors.grey.shade50,
+              //         backgroundColor: Colors.grey.shade50,
+              //         textColor: const Color(0xFF333333),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //       _buildCard(
+              //         index: 2,
+              //         cardKey: 'historique',
+              //         title: 'Historique',
+              //         imagePath: 'assets/images/mes-commandes.jpg',
+              //         color: const Color(0xFF6366F1),
+              //         backgroundColor: const Color(0xFFEEF2FF),
+              //         textColor: const Color(0xFF4338CA),
+              //         actionText: 'Consulter',
+              //         onTap: () {},
+              //       ),
+              //     ],
+              //   ),
+              // ),
 
-              SectionRow(title: 'COMMUNICATION'),
-              SizedBox(
-                height: 140,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 16, right: 24),
-                  children: [
-                    _buildCard(
-                      index: 0,
-                      cardKey: 'messages',
-                      title: 'Messages',
-                      imagePath: 'assets/images/messages.jpg',
-                      color: const Color(0xFF6366F1),
-                      backgroundColor: const Color(0xFFEEF2FF),
-                      textColor: const Color(0xFF4338CA),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 1,
-                      cardKey: 'professeurs',
-                      title: 'Professeurs',
-                      imagePath: 'assets/images/ecole.jpg',
-                      color: const Color(0xFF8B5CF6),
-                      backgroundColor: const Color(0xFFF3E8FF),
-                      textColor: const Color(0xFF6B21A8),
-                      actionText: 'Contacter',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 2,
-                      cardKey: 'notifications',
-                      title: 'Alertes',
-                      imagePath: 'assets/images/school-event.jpg',
-                      color: _kOrange,
-                      backgroundColor: const Color(0xFFFFF4EE),
-                      textColor: const Color(0xFF9A3412),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ),
+              // SectionRow(title: 'COMMUNICATION'),
+              // SizedBox(
+              //   height: 140,
+              //   child: ListView(
+              //     scrollDirection: Axis.horizontal,
+              //     padding: const EdgeInsets.only(left: 16, right: 24),
+              //     children: [
+              //       _buildCard(
+              //         index: 0,
+              //         cardKey: 'messages',
+              //         title: 'Messages',
+              //         imagePath: 'assets/images/messages.jpg',
+              //         color: const Color(0xFF6366F1),
+              //         backgroundColor: const Color(0xFFEEF2FF),
+              //         textColor: const Color(0xFF4338CA),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //       _buildCard(
+              //         index: 1,
+              //         cardKey: 'professeurs',
+              //         title: 'Professeurs',
+              //         imagePath: 'assets/images/ecole.jpg',
+              //         color: const Color(0xFF8B5CF6),
+              //         backgroundColor: const Color(0xFFF3E8FF),
+              //         textColor: const Color(0xFF6B21A8),
+              //         actionText: 'Contacter',
+              //         onTap: () {},
+              //       ),
+              //       _buildCard(
+              //         index: 2,
+              //         cardKey: 'notifications',
+              //         title: 'Alertes',
+              //         imagePath: 'assets/images/school-event.jpg',
+              //         color: _kOrange,
+              //         backgroundColor: const Color(0xFFFFF4EE),
+              //         textColor: const Color(0xFF9A3412),
+              //         actionText: 'Voir',
+              //         onTap: () {},
+              //       ),
+              //     ],
+              //   ),
+              // ),
+
+               // Section Coulisses de l'Excellence
+              SectionRow(title: 'COULISSES DE L\'EXCELLENCE'),
+              const SizedBox(height: 16),
+              _buildCoulisseExcellenceSection(),
+               const SizedBox(height: 16),
 
               SectionRow(title: 'BOUTIQUE & ACHATS'),
               SizedBox(
@@ -1336,14 +1593,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Mon panier',
                       imagePath: 'assets/images/mes-commandes.jpg',
                       color: _kOrange,
+                      width:110,
                       backgroundColor: const Color(0xFFFFF4EE),
                       textColor: const Color(0xFF9A3412),
                       actionText: 'Voir',
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                const MainScreenWrapper(child: CartScreen()),
+                            builder: (_) => const CartScreen(),
                           ),
                         );
                       },
@@ -1352,16 +1609,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 1,
                       cardKey: 'commandes',
                       title: 'Mes commandes',
-                      imagePath: 'assets/images/mes-demande.jpg',
+                      imagePath: 'assets/images/mes-commandes.jpg',
                       color: const Color(0xFF10B981),
+                      width:110,
                       backgroundColor: const Color(0xFFECFDF5),
                       textColor: const Color(0xFF065F46),
                       actionText: 'Voir',
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                const MainScreenWrapper(child: OrdersScreen()),
+                            builder: (_) => const OrdersScreen(),
                           ),
                         );
                       },
@@ -1370,8 +1627,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: 2,
                       cardKey: 'boutique_libouli',
                       title: 'Boutique\n(Libouli)',
-                      imagePath: 'assets/images/ecole.jpg',
+                      imagePath: 'assets/images/mes-commandes.jpg',
                       color: const Color(0xFF8B5CF6),
+                      width:110,
                       backgroundColor: const Color(0xFFF3E8FF),
                       textColor: const Color(0xFF6B21A8),
                       actionText: 'Accéder',
@@ -1390,65 +1648,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                       },
                     ),
-                    _buildCard(
-                      index: 3,
-                      cardKey: 'fournitures',
-                      title: 'Fournitures',
-                      imagePath: 'assets/images/foutnitures-scolaire.jpg',
-                      color: const Color(0xFF8B5CF6),
-                      backgroundColor: const Color(0xFFF3E8FF),
-                      textColor: const Color(0xFF6B21A8),
-                      actionText: 'Acheter',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 4,
-                      cardKey: 'uniformes',
-                      title: 'Uniformes',
-                      imagePath: 'assets/images/ecole.jpg',
-                      color: const Color(0xFF06B6D4),
-                      backgroundColor: const Color(0xFFECFEFF),
-                      textColor: const Color(0xFF0E7490),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 5,
-                      cardKey: 'livres',
-                      title: 'Livres',
-                      imagePath: 'assets/images/icons/note-avis.png',
-                      color: Colors.grey.shade50,
-                      backgroundColor: Colors.grey.shade50,
-                      textColor: Colors.black,
-                      actionText: 'Acheter',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 6,
-                      cardKey: 'sports',
-                      title: 'Sports',
-                      imagePath: 'assets/images/school-event.jpg',
-                      color: const Color(0xFFF59E0B),
-                      backgroundColor: const Color(0xFFFFF8E8),
-                      textColor: const Color(0xFF92400E),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
-                    _buildCard(
-                      index: 7,
-                      cardKey: 'accessoires',
-                      title: 'Accessoires',
-                      imagePath: 'assets/images/mes-commandes.jpg',
-                      color: const Color(0xFFEC4899),
-                      backgroundColor: const Color(0xFFFDF2F8),
-                      textColor: const Color(0xFFBE185D),
-                      actionText: 'Voir',
-                      onTap: () {},
-                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 85),
+              const SizedBox(height: 125),
             ],
           ),
           const BottomFadeGradient(),
@@ -1468,15 +1671,15 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color textColor,
     required String actionText,
     required VoidCallback onTap,
-    bool enableBorder = false,
-    Color? borderColor,
-    bool enableInnerBorder = true,
-    bool enableOuterBorder = true,
+    bool enableInnerBorder = false,
+    bool enableOuterBorder = false,
     Color? innerBorderColor,
-    double imageBorderRadius = 50,
-    double width = 70,
+    double imageBorderRadius = 14,
+    double width = 100,
     double height = 100,
     double doubleBorderGap = 1.0,
+    bool centerTitle = false,
+    bool allowLineBreak = false,
   }) {
     final isDark = _themeService.isDarkMode;
     return Row(
@@ -1505,6 +1708,8 @@ class _HomeScreenState extends State<HomeScreen> {
           enableInnerBorder: enableInnerBorder,
           enableOuterBorder: enableOuterBorder,
           innerBorderColor: innerBorderColor,
+          centerTitle: centerTitle,
+          allowLineBreak: allowLineBreak,
         ),
         const SizedBox(width: 10),
       ],

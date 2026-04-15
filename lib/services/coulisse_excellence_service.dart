@@ -42,4 +42,37 @@ class CoulisseExcellenceService {
       throw Exception('Erreur lors de la récupération des vidéos: $e');
     }
   }
+
+  static Future<List<CoulisseExcellence>> getAllCoulisseExcellenceVideos() async {
+    try {
+      final url = '$baseUrl/coulisseexcellencelist';
+      print('=== API COULISSE EXCELLENCE (ALL) ===');
+      print('URL: $url');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Status Code: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = json.decode(response.body);
+        print('JSON Data Length: ${jsonData.length}');
+        
+        final videos = jsonData.map((json) => CoulisseExcellence.fromJson(json)).toList();
+        print('Videos processed: ${videos.length}');
+        return videos;
+      } else {
+        print('Erreur HTTP: ${response.statusCode}');
+        throw Exception('Erreur HTTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Exception dans getAllCoulisseExcellenceVideos: $e');
+      throw Exception('Erreur lors de la récupération des vidéos: $e');
+    }
+  }
 }

@@ -27,6 +27,7 @@ import '../services/student_timetable_service.dart';
 import '../models/student_timetable.dart';
 import '../services/school_service.dart';
 import '../widgets/payment_bottom_sheet.dart';
+import '../widgets/paiement_historique_bottom_sheet.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/bottom_sheets/scolarite_bottom_sheet.dart';
 import 'messages_screen.dart';
@@ -61,8 +62,8 @@ import '../widgets/custom_loader.dart';
 import '../services/ecole_eleve_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import '../widgets/subtle_retry_button.dart';
+import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 
 // ─── MODÈLE POUR CARTE DE MENU D'ÉLÈVE ────────────────────────────────────────
 class StudentMenuCardItem {
@@ -2552,13 +2553,68 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  // ─── CARD BUILDER (wrapper ImageMenuCardExternalTitle) ─────────────────────
+  Widget _buildCard({
+    required int index,
+    required String cardKey,
+    required String title,
+    required String imagePath,
+    required Color color,
+    required Color backgroundColor,
+    required Color textColor,
+    required String actionText,
+    required VoidCallback onTap,
+    bool enableInnerBorder = false,
+    bool enableOuterBorder = false,
+    Color? innerBorderColor,
+    double imageBorderRadius = 14,
+    double width = 100,
+    double height = 100,
+    double doubleBorderGap = 1.0,
+    bool centerTitle = false,
+    bool allowLineBreak = false,
+  }) {
+    final isDark = _themeService.isDarkMode;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ImageMenuCardExternalTitle(
+          index: index,
+          cardKey: cardKey,
+          title: title,
+          width: width,
+          height: height,
+          imageFlex: 2,
+          imagePath: imagePath,
+          isDark: isDark,
+          titleFontSize: 11,
+          imageBorderRadius: imageBorderRadius,
+          doubleBorderGap: doubleBorderGap,
+          color: color,
+          backgroundColor: isDark
+              ? backgroundColor.withOpacity(0.15)
+              : backgroundColor,
+          textColor: isDark ? color.withOpacity(0.75) : textColor,
+          actionText: actionText,
+          onTap: onTap,
+          enableInnerBorder: enableInnerBorder,
+          enableOuterBorder: enableOuterBorder,
+          innerBorderColor: innerBorderColor,
+          centerTitle: centerTitle,
+          allowLineBreak: allowLineBreak,
+        ),
+        const SizedBox(width: 10),
+      ],
+    );
+  }
+
   // ─── Helper : Rangée horizontale scrollable de ImageMenuCard ──────────────
   Widget _buildHorizontalCards(List<Widget> cards) {
     return SizedBox(
       height: 120,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 16, right: 4),
+        padding: const EdgeInsets.only(left: 16, right: 24),
         children: cards,
       ),
     );
@@ -2576,141 +2632,161 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         SectionRow(title: 'Paiements & Inscription'),
         const SizedBox(height: 16),
-        _buildHorizontalCards([
-          ImageMenuCardExternalTitle(
-            index: 0,
-            cardKey: 'paiement',
-            title: 'Payé en ligne',
-            width: 100,
-            height: 100,
-            imageFlex: 2,
-            iconData: Icons.payments_rounded,
-            isDark: isDark,
-            titleFontSize: 14,
-            imageBorderRadius: 14,
-            color: const Color(0xFF10B981),
-            backgroundColor: isDark
-                ? const Color(0xFF0D2E20)
-                : const Color(0xFFECFDF5),
-            textColor: isDark
-                ? const Color(0xFF6EE7B7)
-                : const Color(0xFF065F46),
-            actionText: 'Payer maintenant',
-            actionTextColor: const Color(0xFF10B981),
-            onTap: _showPaiementBottomSheet,
-          ),
-          const SizedBox(width: 10),
+        SizedBox(
+          height: 130,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            children: [
+              _buildCard(
+                index: 0,
+                cardKey: 'paiement',
+                title: 'Paiement\nen ligne',
+                imagePath: 'assets/images/icons/paiement.png',
+                color: const Color(0xFF3B82F6),
+                backgroundColor: const Color(0xFFF8FCFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: true,
+                enableOuterBorder: true,
+                innerBorderColor: const Color(0xFF93C5FD),
+                imageBorderRadius: 50,
+                width: 70,
+                centerTitle: true,
+                allowLineBreak: true,
+                onTap: _showPaiementBottomSheet,
+              ),
+              const SizedBox(width: 12),
+              _buildCard(
+                index: 1,
+                cardKey: 'historique_paiements',
+                title: 'Historique \n paiement',
+                imagePath: 'assets/images/icons/historique.png',
+                color: const Color(0xFF8B5CF6),
+                backgroundColor: const Color(0xFFFCFAFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: true,
+                enableOuterBorder: true,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFFC4B5FD),
+                imageBorderRadius: 50,
+                width: 70,
+                centerTitle: true,
+                onTap: _showHistoriquePaiementsBottomSheet,
+              ),
+              const SizedBox(width: 12),
+              _buildCard(
+                index: 2,
+                cardKey: 'inscription',
+                title: 'Inscription \n en ligne',
+                imagePath: 'assets/images/icons/inscription.png',
+                color: const Color(0xFF10B981),
+                backgroundColor: const Color(0xFFF7FEFC),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: true,
+                enableOuterBorder: true,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFF6EE7B7),
+                imageBorderRadius: 50,
+                width: 70,
+                centerTitle: true,
+                onTap: () {
+                  print('=== NAVIGATION INSCRIPTION ===');
+                  print('Élève: ${widget.child.fullName}');
+                  print('UID de l\'élève: ${_eleveDetail?["uid"]}');
+                  print(
+                    'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
+                  );
+                  print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
 
-          ImageMenuCardExternalTitle(
-            index: 0,
-            cardKey: 'inscription',
-            title: 'Inscription en ligne',
-            width: 100,
-            height: 100,
-            imageFlex: 2,
-            //iconData: Icons.payments_rounded,
-            isDark: isDark,
-            imagePath: 'assets/images/inscription.png',
-            titleFontSize: 14,
-            imageBorderRadius: 14,
-            color: const Color(0xFF10B981),
-            backgroundColor: isDark
-                ? const Color(0xFF0D2E20)
-                : const Color(0xFFECFDF5),
-            textColor: isDark
-                ? const Color(0xFF6EE7B7)
-                : const Color(0xFF065F46),
-            actionText: 'Commencer',
-            actionTextColor: const Color(0xFF10B981),
-            onTap: () {
-              print('=== NAVIGATION INSCRIPTION ===');
-              print('Élève: ${widget.child.fullName}');
-              print('UID de l\'élève: ${_eleveDetail?["uid"]}');
-              print(
-                'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
-              );
-              print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
+                  // Mettre à jour l'objet Child avec le ecoleCode si disponible
+                  final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
+                      ? widget.child.copyWith(ecoleCode: _ecoleCode)
+                      : widget.child;
 
-              // Mettre à jour l'objet Child avec le ecoleCode si disponible
-              final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
-                  ? widget.child.copyWith(ecoleCode: _ecoleCode)
-                  : widget.child;
+                  print(
+                    'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
+                  );
+                  print('=== FIN NAVIGATION INSCRIPTION ===');
 
-              print(
-                'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
-              );
-              print('=== FIN NAVIGATION INSCRIPTION ===');
-
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => inscription.InscriptionWizardScreen(
-                    child: updatedChild,
-                    uid: _eleveDetail?['uid'],
-                    eleveDetail: _eleveDetail,
-                  ),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => inscription.InscriptionWizardScreen(
+                        child: updatedChild,
+                        uid: _eleveDetail?['uid'],
+                        eleveDetail: _eleveDetail,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 12),
+              _buildCard(
+                index: 2,
+                cardKey: 'scolarite',
+                title: 'Scolarité \n élève',
+                imagePath: 'assets/images/icons/scolarite.png',
+                color: const Color(0xFFF59E0B),
+                backgroundColor: const Color(0xFFFFFEF7),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                allowLineBreak: true,
+                enableInnerBorder: true,
+                enableOuterBorder: true,
+                innerBorderColor: const Color(0xFFFCD34D),
+                imageBorderRadius: 50,
+                width: 70,
+                centerTitle: true,
+                onTap: () async {
+                  if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
+                    await _loadScolariteData();
+                  }
+                  if (mounted) {
+                    showEnhancedScolariteBottomSheet(
+                      context,
+                      childName: widget.child.fullName,
+                      childMatricule: widget.child.matricule,
+                      scolariteEntries: _scolariteEntries,
+                      isLoading: _isLoadingScolarite,
+                      onRefresh: _loadScolariteData,
+                      title: 'Scolarité',
+                      description: 'Consultez les informations de scolarité',
+                      primaryColor: const Color(0xFFF59E0B),
+                      backgroundColor: const Color(0xFFFFFEF7),
+                      iconColor: const Color(0xFFD97706),
+                      iconData: Icons.school_rounded,
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 12),
+              _buildCard(
+                index: 4,
+                cardKey: 'integration_requests',
+                title: 'Demandes\n intégration',
+                imagePath: 'assets/images/icons/consulter.png',
+                color: const Color(0xFF8B5CF6),
+                backgroundColor: const Color(0xFFFCFAFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: true,
+                enableOuterBorder: true,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFFC4B5FD),
+                imageBorderRadius: 50,
+                width: 70,
+                centerTitle: true,
+                onTap: () => IntegrationRequestBottomSheet.show(
+                  context,
+                  matricule: widget.child.matricule,
+                  childFullName: widget.child.fullName,
                 ),
-              );
-            },
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          ImageMenuCardExternalTitle(
-            index: 0,
-            cardKey: 'scolarite',
-            title: 'Scolarité',
-            width: 100,
-            height: 100,
-            imageFlex: 2,
-            iconData: Icons.payments_rounded,
-            isDark: isDark,
-            titleFontSize: 14,
-            imageBorderRadius: 14,
-            color: const Color(0xFF10B981),
-            backgroundColor: isDark
-                ? const Color(0xFF0D2E20)
-                : const Color(0xFFECFDF5),
-            textColor: isDark
-                ? const Color(0xFF6EE7B7)
-                : const Color(0xFF065F46),
-            actionText: 'Consulter',
-            actionTextColor: const Color(0xFF10B981),
-            onTap: () async {
-              if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
-                await _loadScolariteData();
-              }
-              if (mounted) {
-                _showFeesBottomSheet();
-              }
-            },
-          ),
-          const SizedBox(width: 10),
-
-          ImageMenuCardExternalTitle(
-            index: 0,
-            cardKey: 'integration_requests',
-            title: 'Demandes d\'intégration',
-            width: 100,
-            height: 100,
-            imageFlex: 2,
-            iconData: Icons.payments_rounded,
-            isDark: isDark,
-            titleFontSize: 14,
-            imageBorderRadius: 14,
-            color: const Color(0xFF10B981),
-            backgroundColor: isDark
-                ? const Color(0xFF0D2E20)
-                : const Color(0xFFECFDF5),
-            textColor: isDark
-                ? const Color(0xFF6EE7B7)
-                : const Color(0xFF065F46),
-            actionText: 'Consulter',
-            actionTextColor: const Color(0xFF10B981),
-            onTap: () => IntegrationRequestBottomSheet.show(
-              context,
-              matricule: widget.child.matricule,
-              childFullName: widget.child.fullName,
-            ),
-          ),
-        ]),
+        ),
 
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
@@ -3065,7 +3141,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             title: 'Fournitures',
             imagePath: 'assets/images/foutnitures-scolaire.jpg',
             height: 110,
-            width: 110,
+            width: 120,
             iconData: Icons.inventory_2_rounded,
             isDark: isDark,
             color: const Color(0xFF795548),
@@ -3085,7 +3161,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             //title: 'Commandes',
             imagePath: 'assets/images/mes-commandes.jpg',
             height: 110,
-            width: 210,
+            width: 120,
             iconData: Icons.shopping_cart_rounded,
             isDark: isDark,
             color: const Color(0xFF00ACC1),
@@ -3104,7 +3180,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             cardKey: 'informations',
             title: 'Réservations',
             height: 110,
-            width: 110,
+            width: 120,
             iconData: Icons.event_seat_rounded,
             isDark: isDark,
             color: const Color(0xFF4CAF50),
@@ -3179,6 +3255,38 @@ class _ChildListScreenState extends State<ChildListScreen>
           dummySetLoadingFalse,
         );
       },
+    );
+  }
+
+  void _showHistoriquePaiementsBottomSheet() {
+    final matricule = widget.child.matricule ?? _matricule;
+    final ecoleCode = widget.child.ecoleCode ?? widget.child.paramEcole ?? _ecoleCode;
+
+    if (matricule == null || matricule.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Matricule de l\'élève non disponible'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (ecoleCode == null || ecoleCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Code école non disponible'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    PaiementHistoriqueBottomSheet.show(
+      context: context,
+      childName: widget.child.fullName,
+      matricule: matricule,
+      ecoleCode: ecoleCode,
     );
   }
 

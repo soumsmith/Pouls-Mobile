@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
+import 'package:parents_responsable/screens/visite_guidee_video_feed_screen.dart';
 import 'package:parents_responsable/widgets/custom_form_button.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
@@ -18,7 +19,7 @@ import '../models/ecole_detail.dart';
 import '../models/blog.dart';
 import '../models/event.dart';
 import '../models/avis.dart';
-import 'coulisse_excellence_screen.dart';
+import 'gallery_screen.dart';
 import '../models/fee.dart';
 import '../models/scolarite.dart';
 import '../models/niveau.dart';
@@ -48,6 +49,11 @@ import '../models/note_api.dart';
 import '../models/note_classe_dto.dart';
 import '../models/annee_scolaire.dart';
 import '../models/access_control.dart';
+import '../models/visite_guidee_video.dart';
+import '../services/visite_guidee_service.dart';
+import '../models/coulisse_excellence.dart';
+import '../services/coulisse_excellence_service.dart';
+import 'coulisse_video_feed_screen.dart';
 import '../models/access_log.dart';
 import '../services/text_size_service.dart';
 import '../services/ecole_api_service.dart';
@@ -320,6 +326,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   final EventsService _eventsService = EventsService();
   final AvisService _avisService = AvisService();
 
+  // Variables pour les vidéos de visites guidées
+  List<VisiteGuideeVideo> _visiteGuideeVideos = [];
+  bool _isLoadingVisiteGuidee = true;
+  String? _visiteGuideeError;
+
+  // Variables pour les Coulisses de l'Excellence
+  List<CoulisseExcellence> _coulisseExcellenceVideos = [];
+  bool _isLoadingCoulisseExcellence = true;
+  String? _coulisseExcellenceError;
+
   // form state
   String _selectedSexe = 'M';
   String _selectedStatutAff = 'Affecté';
@@ -431,6 +447,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _loadEcoleParametres();
     _loadBlogsAndAvisOnly();
     _loadNotifications(); // Charger les notifications au démarrage
+    _loadVisiteGuideeVideos(); // Charger les vidéos de visites guidées
+    _loadCoulisseExcellenceVideos(); // Charger les vidéos des Coulisses de l'Excellence
     _fadeController.forward();
     _scolariteFuture = ScolariteService.getScolaritesByEcole(
       widget.ecole.parametreCode,
@@ -732,6 +750,62 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     } catch (_) {}
   }
 
+  Future<void> _loadVisiteGuideeVideos() async {
+    final code = widget.ecole.parametreCode ?? '';
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isLoadingVisiteGuidee = true;
+      _visiteGuideeError = null;
+    });
+
+    try {
+      final videos = await VisiteGuideeService.getVideosByEcole(code);
+      if (mounted) {
+        setState(() {
+          _visiteGuideeVideos = videos;
+          _isLoadingVisiteGuidee = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _visiteGuideeError = e.toString();
+          _isLoadingVisiteGuidee = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadCoulisseExcellenceVideos() async {
+    final code = widget.ecole.parametreCode ?? '';
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isLoadingCoulisseExcellence = true;
+      _coulisseExcellenceError = null;
+    });
+
+    try {
+      final videos = await CoulisseExcellenceService.getCoulisseExcellenceList(
+        code,
+      );
+      if (mounted) {
+        setState(() {
+          _coulisseExcellenceVideos = videos;
+          _isLoadingCoulisseExcellence = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _coulisseExcellenceError = e.toString();
+          _isLoadingCoulisseExcellence = false;
+        });
+      }
+    }
+  }
+
   Future<void> _loadBlogsEventsAndAvis() async {
     final nom = widget.ecole.parametreNom ?? '';
     final code = widget.ecole.parametreCode ?? '';
@@ -950,7 +1024,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         // ),
         // const SizedBox(height: 24),
         _buildMenuCards(isDark),
-        const SizedBox(height: 102),
+        //const SizedBox(height: 100),
       ],
     );
   }
@@ -2554,29 +2628,35 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/messages.jpg',
         color: const Color(0xFF00796B),
         actionText: 'Voir galeries',
-        onTap: () =>
-            _showActionBottomSheet('galeries', _getActionDef('galeries')),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => GalleryScreen(
+              ecoleId: widget.ecole.id,
+              ecoleNom: widget.ecole.parametreNom,
+            ),
+          ),
+        ),
       ),
-      EstablishmentAction(
-        key: 'coulisses',
-        title: 'Coulisses Excellence',
-        subtitle: 'Les coulisses de notre excellence',
-        iconData: Icons.star_rounded,
-        color: const Color(0xFFD32F2F),
-        actionText: 'Voir coulisses',
-        onTap: () =>
-            _showActionBottomSheet('coulisses', _getActionDef('coulisses')),
-      ),
-      EstablishmentAction(
-        key: 'visites',
-        title: 'Visites Guidées',
-        subtitle: 'Explorez nos installations',
-        iconData: Icons.location_on_rounded,
-        color: const Color(0xFF3F51B5),
-        actionText: 'Voir visites',
-        onTap: () =>
-            _showActionBottomSheet('visites', _getActionDef('visites')),
-      ),
+      // EstablishmentAction(
+      //   key: 'coulisses',
+      //   title: 'Coulisses Excellence',
+      //   subtitle: 'Les coulisses de notre excellence',
+      //   iconData: Icons.star_rounded,
+      //   color: const Color(0xFFD32F2F),
+      //   actionText: 'Voir coulisses',
+      //   onTap: () =>
+      //       _showActionBottomSheet('coulisses', _getActionDef('coulisses')),
+      // ),
+      // EstablishmentAction(
+      //   key: 'visites',
+      //   title: 'Visites Guidées',
+      //   subtitle: 'Explorez nos installations',
+      //   iconData: Icons.location_on_rounded,
+      //   color: const Color(0xFF3F51B5),
+      //   actionText: 'Voir visites',
+      //   onTap: () =>
+      //       _showActionBottomSheet('visites', _getActionDef('visites')),
+      // ),
     ];
 
     return Column(
@@ -2591,7 +2671,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           useExternalTitle: true,
           cardWidth: AppDimensions.getHorizontalMenuCardWidth(context) - 20,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
 
         // Section Vie école
         SectionRow(title: 'Vie école'),
@@ -2602,8 +2682,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           useExternalTitle: true,
           cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
         ),
-        const SizedBox(height: 10),
-
+        const SizedBox(height: 20),
         // Section Communauté
         SectionRow(title: 'Communauté'),
         const SizedBox(height: 8),
@@ -2611,7 +2690,389 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           actions: communityActions,
           isDark: isDark,
         ),
+        const SizedBox(height: 20),
+
+        // Section Visites Guidées
+        SectionRow(title: 'VISITES GUIDÉES'),
+        const SizedBox(height: 16),
+        _buildVisiteGuideeSection(),
+        const SizedBox(height: 20),
+
+        // Section Coulisses de l'Excellence
+        SectionRow(title: 'COULISSES DE L\'EXCELLENCE'),
+        const SizedBox(height: 10),
+        _buildCoulisseExcellenceSection(),
       ],
+    );
+  }
+
+  // Construire la section des visites guidées
+  Widget _buildVisiteGuideeSection() {
+    if (_isLoadingVisiteGuidee) {
+      return Container(
+        height: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_visiteGuideeError != null) {
+      return Container(
+        height: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.grey[400], size: 32),
+              const SizedBox(height: 8),
+              Text(
+                'Erreur de chargement',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_visiteGuideeVideos.isEmpty) {
+      return Container(
+        height: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Text(
+            'Aucune vidéo disponible',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 120,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _visiteGuideeVideos.length,
+        itemBuilder: (context, index) {
+          final video = _visiteGuideeVideos[index];
+          return _buildVisiteGuideeVideoCard(video, index);
+        },
+      ),
+    );
+  }
+
+  // Construire une carte de vidéo pour le carrousel
+  Widget _buildVisiteGuideeVideoCard(VisiteGuideeVideo video, int index) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => VisiteGuideeVideoFeedScreen(
+              videos: _visiteGuideeVideos,
+              initialIndex: index,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Image miniature de la vidéo YouTube
+              FadeInImage.assetNetwork(
+                width: 280,
+                height: 140,
+                fit: BoxFit.cover,
+                placeholder: 'assets/images/video-placeholder.jpg',
+                image:
+                    'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg',
+                imageErrorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 280,
+                    height: 140,
+                    color: Colors.grey[300],
+                    child: const Icon(
+                      Icons.movie,
+                      color: Colors.grey,
+                      size: 48,
+                    ),
+                  );
+                },
+              ),
+
+              // Overlay sombre pour améliorer la lisibilité
+              Container(
+                width: 280,
+                height: 140,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                  ),
+                ),
+              ),
+
+              // Icône de lecture centrale
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.8),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Informations en bas
+              Positioned(
+                bottom: 8,
+                left: 8,
+                right: 8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        video.displayTitle,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      video.displayDescription,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Construire la section des Coulisses de l'Excellence
+  Widget _buildCoulisseExcellenceSection() {
+    if (_isLoadingCoulisseExcellence) {
+      return Container(
+        height: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_coulisseExcellenceError != null) {
+      return Container(
+        height: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.grey[400], size: 32),
+              const SizedBox(height: 8),
+              Text(
+                'Erreur de chargement',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_coulisseExcellenceVideos.isEmpty) {
+      return Container(
+        height: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Text(
+            'Aucune vidéo disponible',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 120,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _coulisseExcellenceVideos.length,
+        itemBuilder: (context, index) {
+          final video = _coulisseExcellenceVideos[index];
+          return _buildCoulisseExcellenceCard(video, index);
+        },
+      ),
+    );
+  }
+
+  // Construire une carte de vidéo pour Coulisses de l'Excellence
+  Widget _buildCoulisseExcellenceCard(CoulisseExcellence video, int index) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => CoulisseVideoFeedScreen(
+              videos: _coulisseExcellenceVideos,
+              initialIndex: index,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Image miniature de la vidéo YouTube
+              FadeInImage.assetNetwork(
+                width: 280,
+                height: 140,
+                fit: BoxFit.cover,
+                placeholder: 'assets/images/video-placeholder.jpg',
+                image:
+                    'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg',
+                imageErrorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 280,
+                    height: 140,
+                    color: Colors.grey[300],
+                    child: const Icon(
+                      Icons.movie,
+                      color: Colors.grey,
+                      size: 48,
+                    ),
+                  );
+                },
+              ),
+
+              // Overlay sombre pour améliorer la lisibilité
+              Container(
+                width: 280,
+                height: 140,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                  ),
+                ),
+              ),
+
+              // Icône de lecture centrale
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.8),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Informations en bas
+              Positioned(
+                bottom: 8,
+                left: 8,
+                right: 8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        video.titre,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${video.fullName} - ${video.classe}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -2666,7 +3127,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) =>
-              CoulisseExcellenceScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
+              GalleryScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
         ),
       );
       return;
@@ -2736,7 +3197,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) =>
-              CoulisseExcellenceScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
+              GalleryScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
         ),
       );
     });

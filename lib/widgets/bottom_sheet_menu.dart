@@ -9,6 +9,7 @@ import '../screens/messages_screen.dart';
 import '../screens/orders_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
+import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
@@ -114,109 +115,18 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHandle(),
-            _buildHeader(),
-            _buildDivider(),
+            BottomSheetHeader(
+              icon: Icons.grid_view_rounded,
+              iconColor: _kOrange,
+              title: 'Menu',
+              description: 'Navigation principale',
+              onClose: () => Navigator.of(context).pop(),
+            ),
             _buildMenuList(),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
           ],
         ),
       ),
-    );
-  }
-
-  // ── Handle ────────────────────────────────────────────────
-  Widget _buildHandle() {
-    return Container(
-      margin: const EdgeInsets.only(top: 14, bottom: 6),
-      width: 40,
-      height: 4,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE0E0E0),
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-
-  // ── Header ────────────────────────────────────────────────
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 12, 10),
-      child: Row(
-        children: [
-          // Orange icon box — même style que les boutons action du cart
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              gradient: _kOrangeGradient,
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [
-                BoxShadow(
-                  color: _kOrange.withOpacity(0.30),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.grid_view_rounded,
-              size: 18,
-              color: Colors.white,
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Title
-          const Expanded(
-            child: Text(
-              'Menu',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: _kTextPrimary,
-                letterSpacing: -0.5,
-              ),
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-            ),
-          ),
-
-          // Close button — white card avec ombre (même pattern que AppBar)
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _kSurface,
-                borderRadius: BorderRadius.circular(11),
-                boxShadow: const [
-                  BoxShadow(
-                    color: _kShadow,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: _kTextSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      height: 1,
-      color: _kDivider,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
     );
   }
 
@@ -369,20 +279,7 @@ class _MenuTileState extends State<_MenuTile> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: item.color.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(14),
-                        // Subtle border de la couleur
-                        border: Border.all(
-                          color: item.color.withOpacity(0.15),
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(item.icon, color: item.color, size: 22),
-                    ),
+                    Icon(item.icon, color: item.color, size: 24),
 
                     // Badge
                     if (item.badgeCount > 0)

@@ -112,11 +112,14 @@ class _MessagesScreenState extends State<MessagesScreen>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _fadeAnimation =
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
     _loadConversations();
     _messageController.addListener(() {
-      final has = _messageController.text.trim().isNotEmpty ||
+      final has =
+          _messageController.text.trim().isNotEmpty ||
           _attachedFile != null ||
           _recordedPath != null;
       if (has != _hasContent) setState(() => _hasContent = has);
@@ -140,25 +143,25 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   /// Convertit les conversations API en liste plate de _LocalMessage
   List<_LocalMessage> _conversationsToLocalMessages(
-      List<Conversation> conversations) {
+    List<Conversation> conversations,
+  ) {
     final currentUser = AuthService.instance.getCurrentUser();
     final messages = <_LocalMessage>[];
 
     for (final conv in conversations) {
       for (final msg in conv.messages) {
-        final isMe = currentUser != null &&
-            (msg.senderPseudo
-                    .toLowerCase()
-                    .contains(currentUser.fullName.toLowerCase()) ||
+        final isMe =
+            currentUser != null &&
+            (msg.senderPseudo.toLowerCase().contains(
+                  currentUser.fullName.toLowerCase(),
+                ) ||
                 (currentUser.phone.isNotEmpty &&
-                    msg.senderPseudo
-                        .toLowerCase()
-                        .contains(currentUser.phone.toLowerCase())));
-        messages.add(_LocalMessage(
-          body: msg.body,
-          isMe: isMe,
-          time: conv.lastMessageAt,
-        ));
+                    msg.senderPseudo.toLowerCase().contains(
+                      currentUser.phone.toLowerCase(),
+                    )));
+        messages.add(
+          _LocalMessage(body: msg.body, isMe: isMe, time: conv.lastMessageAt),
+        );
       }
     }
     return messages;
@@ -193,9 +196,10 @@ class _MessagesScreenState extends State<MessagesScreen>
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
-      
+
       // Vérifier si l'erreur est un 404 (élève non trouvé)
-      if (e.toString().contains('404') || e.toString().contains('Élève non trouvé')) {
+      if (e.toString().contains('404') ||
+          e.toString().contains('Élève non trouvé')) {
         // Afficher une notification snackbar pour l'erreur 404
         CartSnackBar.show(
           context,
@@ -204,8 +208,10 @@ class _MessagesScreenState extends State<MessagesScreen>
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
         );
+        setState(() => _isLoading = false);
+        return; // Ne pas afficher la grosse notification d'erreur
       }
-      
+
       setState(() => _isLoading = false);
       _showError('Erreur chargement: $e');
     }
@@ -229,32 +235,30 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(color: Colors.white)),
-      backgroundColor: Colors.red[400],
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 100,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.red[400],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 100,
+        ),
       ),
-    ));
+    );
   }
 
   void _showSuccess(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(color: Colors.white)),
+    CartSnackBar.show(
+      context,
+      productName: msg,
+      message: '',
       backgroundColor: Colors.green[500],
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 100,
-      ),
-    ));
+      duration: const Duration(seconds: 2),
+    );
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -264,8 +268,9 @@ class _MessagesScreenState extends State<MessagesScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light
-          .copyWith(statusBarColor: const Color(0xFF0288D1)),
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: const Color(0xFF0288D1),
+      ),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: CustomScrollView(
@@ -331,7 +336,9 @@ class _MessagesScreenState extends State<MessagesScreen>
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
-            color: Color(0xFF0288D1), strokeWidth: 2.5),
+          color: Color(0xFF0288D1),
+          strokeWidth: 2.5,
+        ),
       );
     }
 
@@ -371,8 +378,11 @@ class _MessagesScreenState extends State<MessagesScreen>
               color: const Color(0xFF0288D1).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.chat_bubble_outline,
-                size: 36, color: Color(0xFF0288D1)),
+            child: const Icon(
+              Icons.chat_bubble_outline,
+              size: 36,
+              color: Color(0xFF0288D1),
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -389,7 +399,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                 ? 'Envoyez un message à ${_args!.ecoleName}'
                 : 'Démarrez une conversation',
             style: const TextStyle(
-                fontSize: 13, color: AppColors.screenTextSecondary),
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -408,8 +420,9 @@ class _MessagesScreenState extends State<MessagesScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -421,8 +434,11 @@ class _MessagesScreenState extends State<MessagesScreen>
                 color: Color(0xFFB3E5FC),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.school_outlined,
-                  size: 14, color: Color(0xFF0288D1)),
+              child: const Icon(
+                Icons.school_outlined,
+                size: 14,
+                color: Color(0xFF0288D1),
+              ),
             ),
           ],
           Flexible(
@@ -431,9 +447,12 @@ class _MessagesScreenState extends State<MessagesScreen>
               opacity: isPending ? 0.65 : 1.0,
               child: Container(
                 constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.72),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  maxWidth: MediaQuery.of(context).size.width * 0.72,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: isMe ? const Color(0xFF0288D1) : Colors.white,
                   borderRadius: BorderRadius.only(
@@ -451,8 +470,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                      isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  crossAxisAlignment: isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
                     // Icône si pièce jointe
                     if (attachmentType != AttachmentType.none) ...[
@@ -571,8 +591,8 @@ class _MessagesScreenState extends State<MessagesScreen>
                   child: Icon(
                     _attachedFile != null
                         ? (_attachmentType == AttachmentType.image
-                            ? Icons.image
-                            : Icons.attach_file)
+                              ? Icons.image
+                              : Icons.attach_file)
                         : Icons.attach_file_outlined,
                     size: 20,
                     color: _attachedFile != null
@@ -585,27 +605,37 @@ class _MessagesScreenState extends State<MessagesScreen>
               // Champ de texte
               Expanded(
                 child: Container(
-                  constraints:
-                      const BoxConstraints(minHeight: 44, maxHeight: 120),
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    maxHeight: 120,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                        color: const Color(0xFFE8E8E8), width: 0.5),
+                      color: const Color(0xFFE8E8E8),
+                      width: 0.5,
+                    ),
                   ),
                   child: TextField(
                     controller: _messageController,
                     maxLines: null,
                     textInputAction: TextInputAction.newline,
                     style: const TextStyle(
-                        fontSize: 14, color: AppColors.screenTextPrimary),
+                      fontSize: 14,
+                      color: AppColors.screenTextPrimary,
+                    ),
                     decoration: const InputDecoration(
                       hintText: 'Message...',
-                      hintStyle:
-                          TextStyle(fontSize: 14, color: Color(0xFFBBBBBB)),
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFFBBBBBB),
+                      ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -623,8 +653,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  const Color(0xFF0288D1).withOpacity(0.3),
+                              color: const Color(0xFF0288D1).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -636,11 +665,15 @@ class _MessagesScreenState extends State<MessagesScreen>
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
+                                    Colors.white,
+                                  ),
                                 ),
                               )
-                            : const Icon(Icons.send_rounded,
-                                color: Colors.white, size: 20),
+                            : const Icon(
+                                Icons.send_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                       ),
                     )
                   : GestureDetector(
@@ -658,10 +691,11 @@ class _MessagesScreenState extends State<MessagesScreen>
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: (_isRecording
-                                      ? const Color(0xFFEF4444)
-                                      : const Color(0xFF0288D1))
-                                  .withOpacity(0.35),
+                              color:
+                                  (_isRecording
+                                          ? const Color(0xFFEF4444)
+                                          : const Color(0xFF0288D1))
+                                      .withOpacity(0.35),
                               blurRadius: _isRecording ? 12 : 8,
                               spreadRadius: _isRecording ? 2 : 0,
                               offset: const Offset(0, 3),
@@ -697,7 +731,9 @@ class _MessagesScreenState extends State<MessagesScreen>
         color: const Color(0xFFE3F2FD),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: const Color(0xFF0288D1).withOpacity(0.2), width: 0.5),
+          color: const Color(0xFF0288D1).withOpacity(0.2),
+          width: 0.5,
+        ),
       ),
       child: Row(
         children: [
@@ -725,8 +761,8 @@ class _MessagesScreenState extends State<MessagesScreen>
                 isRecordedAudio
                     ? Icons.mic
                     : isImg
-                        ? Icons.image_outlined
-                        : Icons.attach_file,
+                    ? Icons.image_outlined
+                    : Icons.attach_file,
                 size: 18,
                 color: const Color(0xFF0288D1),
               ),
@@ -740,9 +776,10 @@ class _MessagesScreenState extends State<MessagesScreen>
                 Text(
                   fileName,
                   style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF0288D1),
-                      fontWeight: FontWeight.w600),
+                    fontSize: 13,
+                    color: Color(0xFF0288D1),
+                    fontWeight: FontWeight.w600,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (isImg && _attachedFile != null) ...[
@@ -750,8 +787,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                   Text(
                     'Image sélectionnée',
                     style: TextStyle(
-                        fontSize: 11,
-                        color: const Color(0xFF0288D1).withOpacity(0.7)),
+                      fontSize: 11,
+                      color: const Color(0xFF0288D1).withOpacity(0.7),
+                    ),
                   ),
                 ],
               ],
@@ -769,9 +807,14 @@ class _MessagesScreenState extends State<MessagesScreen>
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                  color: Colors.white, borderRadius: BorderRadius.circular(8)),
-              child:
-                  const Icon(Icons.close, size: 14, color: Color(0xFF0288D1)),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.close,
+                size: 14,
+                color: Color(0xFF0288D1),
+              ),
             ),
           ),
         ],
@@ -788,7 +831,9 @@ class _MessagesScreenState extends State<MessagesScreen>
         color: const Color(0xFFFFEBEE),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: const Color(0xFFEF4444).withOpacity(0.3), width: 0.5),
+          color: const Color(0xFFEF4444).withOpacity(0.3),
+          width: 0.5,
+        ),
       ),
       child: Row(
         children: [
@@ -800,7 +845,9 @@ class _MessagesScreenState extends State<MessagesScreen>
               width: 10,
               height: 10,
               decoration: const BoxDecoration(
-                  color: Color(0xFFEF4444), shape: BoxShape.circle),
+                color: Color(0xFFEF4444),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -808,9 +855,10 @@ class _MessagesScreenState extends State<MessagesScreen>
             child: Text(
               'Enregistrement en cours...',
               style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFFEF4444),
-                  fontWeight: FontWeight.w600),
+                fontSize: 13,
+                color: Color(0xFFEF4444),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Text(
@@ -828,9 +876,10 @@ class _MessagesScreenState extends State<MessagesScreen>
             child: const Text(
               'Annuler',
               style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFFEF4444),
-                  fontWeight: FontWeight.w600),
+                fontSize: 12,
+                color: Color(0xFFEF4444),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -893,8 +942,10 @@ class _MessagesScreenState extends State<MessagesScreen>
       final dir = await getTemporaryDirectory();
       final path =
           '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      await _audioRecorder!
-          .start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+      await _audioRecorder!.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path,
+      );
       _recordDuration = Duration.zero;
       _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted)
@@ -978,8 +1029,8 @@ class _MessagesScreenState extends State<MessagesScreen>
       attachmentType: hasAudio
           ? AttachmentType.audio
           : hasImage
-              ? AttachmentType.image
-              : AttachmentType.none,
+          ? AttachmentType.image
+          : AttachmentType.none,
       isPending: true,
     );
 

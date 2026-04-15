@@ -55,18 +55,23 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // if (_showRatingForm && _selectedEcole != null) {
-    //   // Afficher le bottom sheet de notation normal avec l'école sélectionnée
-    //   return RatingBottomSheet(
-    //     schoolId: _selectedEcole!.id,
-    //     schoolName: _selectedEcole!.ecoleclibelle,
-    //     schoolColor: _getSchoolColor(_selectedEcole!),
-    //     onRatingSubmitted: (rating, comment) {
-    //       Navigator.pop(context);
-    //       widget.onRatingSubmitted?.call(_selectedEcole!.id, _selectedEcole!.ecoleclibelle, rating, comment);
-    //     },
-    //   );
-    // }
+    if (_showRatingForm && _selectedEcole != null) {
+      // Afficher le bottom sheet de notation normal avec l'école sélectionnée
+      return RatingBottomSheet(
+        schoolId: _selectedEcole!.id,
+        schoolName: _selectedEcole!.ecoleclibelle,
+        schoolColor: _getSchoolColor(_selectedEcole!),
+        onRatingSubmitted: (rating, comment) {
+          Navigator.pop(context);
+          widget.onRatingSubmitted?.call(
+            _selectedEcole!.id,
+            _selectedEcole!.ecoleclibelle,
+            rating,
+            comment,
+          );
+        },
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.only(

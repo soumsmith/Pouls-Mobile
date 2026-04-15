@@ -331,7 +331,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   List<GroupMessage> _notifications = [];
   bool _isLoadingNotifications = false;
   bool _notificationsLoaded = false;
-  
+
   // Variables pour les notifications d'échéance
   EcheanceNotification? _echeanceNotification;
   bool _isLoadingEcheance = false;
@@ -475,18 +475,20 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // Charger les notifications (messages et échéances)
   Future<void> _loadNotifications() async {
-    print('=== DÉBUT DU CHARGEMENT DES NOTIFICATIONS DANS L\'ÉCRAN DE DÉTAIL ===');
-    
+    print(
+      '=== DÉBUT DU CHARGEMENT DES NOTIFICATIONS DANS L\'ÉCRAN DE DÉTAIL ===',
+    );
+
     // Récupérer les matricules des enfants de l'utilisateur
     final authService = AuthService();
     final currentUser = authService.getCurrentUser();
-    
+
     print('Utilisateur connecté: ${currentUser != null}');
     if (currentUser != null) {
       print('ID utilisateur: ${currentUser.id}');
       print('Nom utilisateur: ${currentUser.fullName}');
     }
-    
+
     if (currentUser == null) {
       print('ERREUR: Utilisateur non connecté pour charger les notifications');
       return;
@@ -495,22 +497,26 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     // Récupérer les matricules depuis la base de données
     print('Récupération des matricules depuis la base de données...');
     final databaseService = DatabaseService.instance;
-    final childrenInfo = await databaseService.getChildrenInfoByParent(currentUser.id);
-    
+    final childrenInfo = await databaseService.getChildrenInfoByParent(
+      currentUser.id,
+    );
+
     print('Nombre d\'enfants trouvés: ${childrenInfo.length}');
     for (final child in childrenInfo) {
-      print('  - Enfant: ${child['prenom']} ${child['nom']}, Matricule: ${child['matricule']}');
+      print(
+        '  - Enfant: ${child['prenom']} ${child['nom']}, Matricule: ${child['matricule']}',
+      );
     }
-    
+
     // Extraire les matricules non null
     final matricules = childrenInfo
         .map((info) => info['matricule'] as String?)
         .where((matricule) => matricule != null && matricule.isNotEmpty)
         .cast<String>()
         .toList();
-    
+
     print('Matricules valides trouvés: $matricules');
-    
+
     if (matricules.isEmpty) {
       print('ERREUR: Aucun matricule trouvé pour charger les notifications');
       return;
@@ -526,7 +532,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     try {
       print('Début du chargement des messages de groupe pour: $matricule');
       setState(() => _isLoadingNotifications = true);
-      final notifications = await GroupMessageService.getGroupMessages(matricule);
+      final notifications = await GroupMessageService.getGroupMessages(
+        matricule,
+      );
       if (mounted) {
         setState(() {
           _notifications = notifications;
@@ -551,9 +559,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     // Charger les notifications d'échéance
     print('=== APPEL API ÉCHÉANCES ===');
     try {
-      print('Début du chargement des notifications d\'échéance pour: $matricule');
+      print(
+        'Début du chargement des notifications d\'échéance pour: $matricule',
+      );
       setState(() => _isLoadingEcheance = true);
-      final echeanceNotification = await EcheanceService.getEcheanceNotification(matricule);
+      final echeanceNotification =
+          await EcheanceService.getEcheanceNotification(matricule);
       if (mounted) {
         setState(() {
           _echeanceNotification = echeanceNotification;
@@ -574,11 +585,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         });
       }
     }
-    
+
     print('=== FIN DU CHARGEMENT DES NOTIFICATIONS ===');
     print('Notifications chargées: ${_notifications.length}');
     print('Échéance chargée: ${_echeanceNotification != null}');
-    print('Total notifications: ${_notifications.length + (_echeanceNotification?.hasUnpaidFees == true ? 1 : 0)}');
+    print(
+      'Total notifications: ${_notifications.length + (_echeanceNotification?.hasUnpaidFees == true ? 1 : 0)}',
+    );
   }
 
   Future<void> _loadEventsOnly() async {
@@ -1580,9 +1593,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getBadgeBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.2),
           width: 1,
@@ -2206,9 +2217,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 28,
                 decoration: BoxDecoration(
                   color: AppColors.screenOrangeLight,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getSmallCardBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, size: 14, color: AppColors.screenOrange),
               ),
@@ -2364,9 +2373,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2A2A2A) : AppColors.screenSurface,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getBadgeBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? const Color(0xFF3A3A3A) : AppColors.screenDivider,
         ),
@@ -2378,9 +2385,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 28,
             decoration: BoxDecoration(
               color: AppColors.screenOrangeLight,
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, size: 14, color: AppColors.screenOrange),
           ),
@@ -2584,7 +2589,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           actions: ecoleActions,
           isDark: isDark,
           useExternalTitle: true,
-          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context) -20,
+          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context) - 20,
         ),
         const SizedBox(height: 8),
 
@@ -2697,99 +2702,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    child: Column(
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: AppColors.screenDivider,
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.getIconContainerBorderRadius(
-                                  context,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Container(
-                              width: 46,
-                              height: 46,
-                              decoration: BoxDecoration(
-                                color: def.color.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(
-                                  AppDimensions.getMediumCardBorderRadius(
-                                    context,
-                                  ),
-                                ),
-                              ),
-                              child: Icon(def.icon, color: def.color, size: 22),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    def.label,
-                                    style: TextStyle(
-                                      fontSize: _textSizeService
-                                          .getScaledFontSize(18),
-                                      fontWeight: FontWeight.w800,
-                                      color: isDark
-                                          ? Colors.white
-                                          : AppColors.screenTextPrimary,
-                                      letterSpacing: -0.4,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
-                                  ),
-                                  Text(
-                                    def.subtitle,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.screenTextSecondary,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF2A2A2A)
-                                      : AppColors.screenSurface,
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.getBadgeBorderRadius(context),
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: isDark
-                                      ? Colors.white54
-                                      : AppColors.screenTextSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Divider(color: AppColors.screenDivider, height: 1),
-                      ],
-                    ),
+                  BottomSheetHeader(
+                    icon: def.icon,
+                    iconColor: def.color,
+                    title: def.label,
+                    description: def.subtitle,
+                    onClose: () => Navigator.of(context).pop(),
                   ),
                   Flexible(
                     child: SingleChildScrollView(
@@ -3223,9 +3141,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Column(
@@ -3503,9 +3419,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Column(
@@ -3516,7 +3430,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             decoration: BoxDecoration(
               color: color.withOpacity(0.08),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
+                top: Radius.circular(12),
               ),
             ),
             child: Row(
@@ -3526,9 +3440,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 44,
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getSmallCardBorderRadius(context),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     _getFiliereIcon(filiere),
@@ -3566,9 +3478,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getLargeCardBorderRadius(context),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     filiere,
@@ -3617,9 +3527,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   height: 14,
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getIconContainerBorderRadius(context),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -3639,9 +3547,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getIconContainerBorderRadius(context),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${classes.length} séries',
@@ -3671,9 +3577,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getSmallCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
@@ -3683,9 +3587,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 36,
             decoration: BoxDecoration(
               color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getBadgeBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: Text(
@@ -3730,9 +3632,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(
-                  AppDimensions.getIconContainerBorderRadius(context),
-                ),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 niveau.code!,
@@ -3753,9 +3653,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getBadgeBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.25)),
       ),
       child: Column(
@@ -3975,9 +3873,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Padding(
@@ -4339,9 +4235,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             Container(
               decoration: BoxDecoration(
                 color: AppColors.screenSurface,
-                borderRadius: BorderRadius.circular(
-                  AppDimensions.getSmallCardBorderRadius(context),
-                ),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.screenDivider),
               ),
               child: TextField(
@@ -4429,9 +4323,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(
-            AppDimensions.getLargeCardBorderRadius(context),
-          ),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: AppDimensions.getMainShadow(context),
         ),
         child: Column(
@@ -4448,9 +4340,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         height: 40,
                         decoration: BoxDecoration(
                           color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.getSmallCardBorderRadius(context),
-                          ),
+                          borderRadius: BorderRadius.circular(12),
                           // border: Border.all(
                           //   color: Colors.grey.withOpacity(0.3),
                           //   width: 1,
@@ -4503,9 +4393,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.grey.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.getBadgeBorderRadius(context),
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.withOpacity(0.2)),
                     ),
                     child: Row(
@@ -4620,9 +4508,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getBadgeBorderRadius(context),
-            ),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: color.withOpacity(0.3)),
           ),
           child: Row(
@@ -4640,9 +4526,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getIconContainerBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   ScolariteService.formaterMontant(totalMontant),
@@ -4687,9 +4571,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 6, left: 8, right: 8),
       decoration: BoxDecoration(
         color: AppColors.screenSurface,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getBadgeBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: ListTile(
@@ -4700,9 +4582,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           height: 32,
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getSmallCardBorderRadius(context),
-            ),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             scolarite.rubrique == 'INS'
@@ -4770,9 +4650,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Column(
@@ -5117,9 +4995,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.screenOrange,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getSmallCardBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: const Text(
@@ -5259,21 +5135,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               vertical: 14,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.screenDivider),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.screenDivider),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
                 color: AppColors.screenOrange,
                 width: 1.5,
@@ -5294,9 +5164,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
       child: Column(
@@ -5833,9 +5701,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.screenOrange.withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -5849,9 +5715,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: AppColors.screenOrange,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getSmallCardBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.school_rounded,
@@ -5911,9 +5775,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.screenCard,
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -5966,9 +5828,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 32,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 16),
           ),
@@ -6016,9 +5876,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -6032,9 +5890,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: const Color(0xFF3B82F6),
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getSmallCardBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.contact_phone_rounded,
@@ -6128,9 +5984,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getBadgeBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
@@ -6140,9 +5994,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 34,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 16),
           ),
@@ -6189,9 +6041,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.green.withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -6205,9 +6055,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: Colors.green,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getSmallCardBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.info_rounded,
@@ -6284,9 +6132,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getBadgeBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
@@ -6296,9 +6142,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 34,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 16),
           ),
@@ -6503,9 +6347,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
       child: Column(
@@ -6735,9 +6577,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             height: 24,
             decoration: BoxDecoration(
               color: const Color(0xFF06B6D4),
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: Text(
@@ -6919,9 +6759,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -6935,9 +6773,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: const Color(0xFF3B82F6),
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getSmallCardBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.contact_phone_rounded,
@@ -7034,9 +6870,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getLargeCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.green.withOpacity(0.15)),
         boxShadow: AppDimensions.getLightShadow(context),
       ),
@@ -7050,9 +6884,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 42,
                 decoration: BoxDecoration(
                   color: Colors.green,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getSmallCardBorderRadius(context),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.school_rounded,

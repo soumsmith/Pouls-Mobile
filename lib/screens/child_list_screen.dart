@@ -371,7 +371,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Compter le total des notifications (messages + échéances)
   int get totalNotificationsCount {
-    int count = _notifications.where((notification) => !notification.estLu).length;
+    int count = _notifications
+        .where((notification) => !notification.estLu)
+        .length;
     if (_echeanceNotification?.hasUnpaidFees == true) {
       count += 1;
     }
@@ -639,13 +641,15 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Charger les notifications (messages et échéances) automatiquement
   Future<void> _loadNotifications() async {
-    print('=== DÉBUT DU CHARGEMENT AUTOMATIQUE DES NOTIFICATIONS (CHILD LIST) ===');
-    
+    print(
+      '=== DÉBUT DU CHARGEMENT AUTOMATIQUE DES NOTIFICATIONS (CHILD LIST) ===',
+    );
+
     // Utiliser le matricule déjà disponible dans _matricule
     final matricule = _matricule ?? widget.child.matricule;
-    
+
     print('Matricule disponible pour les notifications: $matricule');
-    
+
     if (matricule == null || matricule.isEmpty) {
       print('ERREUR: Matricule non disponible pour charger les notifications');
       return;
@@ -657,9 +661,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     // Charger les messages de groupe
     print('=== APPEL API MESSAGES DE GROUPE (AUTOMATIQUE) ===');
     try {
-      print('Début du chargement automatique des messages de groupe pour: $matricule');
+      print(
+        'Début du chargement automatique des messages de groupe pour: $matricule',
+      );
       setState(() => _isLoadingNotifications = true);
-      final notifications = await GroupMessageService.getGroupMessages(matricule);
+      final notifications = await GroupMessageService.getGroupMessages(
+        matricule,
+      );
       if (mounted) {
         setState(() {
           _notifications = notifications;
@@ -667,8 +675,11 @@ class _ChildListScreenState extends State<ChildListScreen>
           _notificationsLoaded = true;
         });
       }
-      print('SUCCÈS AUTO: Messages de groupe chargés automatiquement: ${notifications.length}');
-      for (final notif in notifications.take(3)) { // Limiter l'affichage des logs
+      print(
+        'SUCCÈS AUTO: Messages de groupe chargés automatiquement: ${notifications.length}',
+      );
+      for (final notif in notifications.take(3)) {
+        // Limiter l'affichage des logs
         print('  - Message: ${notif.titre}, Lu: ${notif.estLu}');
       }
       if (notifications.length > 3) {
@@ -687,9 +698,12 @@ class _ChildListScreenState extends State<ChildListScreen>
     // Charger les notifications d'échéance
     print('=== APPEL API ÉCHÉANCES (AUTOMATIQUE) ===');
     try {
-      print('Début du chargement automatique des notifications d\'échéance pour: $matricule');
+      print(
+        'Début du chargement automatique des notifications d\'échéance pour: $matricule',
+      );
       setState(() => _isLoadingEcheance = true);
-      final echeanceNotification = await EcheanceService.getEcheanceNotification(matricule);
+      final echeanceNotification =
+          await EcheanceService.getEcheanceNotification(matricule);
       if (mounted) {
         setState(() {
           _echeanceNotification = echeanceNotification;
@@ -699,7 +713,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
       print('SUCCÈS AUTO: Notification d\'échéance chargée automatiquement');
       print('  - Statut: ${echeanceNotification.status}');
-      final messagePreview = echeanceNotification.message.length > 100 
+      final messagePreview = echeanceNotification.message.length > 100
           ? '${echeanceNotification.message.substring(0, 100)}...'
           : echeanceNotification.message;
       print('  - Message: $messagePreview');
@@ -713,12 +727,16 @@ class _ChildListScreenState extends State<ChildListScreen>
         });
       }
     }
-    
+
     print('=== FIN DU CHARGEMENT AUTOMATIQUE DES NOTIFICATIONS ===');
     print('Notifications chargées automatiquement: ${_notifications.length}');
     print('Échéance chargée automatiquement: ${_echeanceNotification != null}');
-    print('Total notifications automatiques: ${_notifications.length + (_echeanceNotification?.hasUnpaidFees == true ? 1 : 0)}');
-    print('Badge du bouton notification sera mis à jour avec: ${totalNotificationsCount}');
+    print(
+      'Total notifications automatiques: ${_notifications.length + (_echeanceNotification?.hasUnpaidFees == true ? 1 : 0)}',
+    );
+    print(
+      'Badge du bouton notification sera mis à jour avec: ${totalNotificationsCount}',
+    );
   }
 
   Future<void> _loadChildInfo() async {
@@ -931,7 +949,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   // ─── MÉTHODES DE BOTTOM SHEETS DIRECTES ────────────────────────────────────
-  
+
   void _showNotesBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -945,38 +963,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.bar_chart_rounded, color: Color(0xFF1976D2)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Mes Notes', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
-                        Text('Consultez les notes et évaluations de votre enfant', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF0D47A1)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.bar_chart_rounded,
+              iconColor: const Color(0xFF1976D2),
+              title: 'Mes Notes',
+              description: 'Consultez les notes et évaluations de votre enfant',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSimpleNotesTab()),
           ],
@@ -998,38 +990,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E8),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.description_rounded, color: Color(0xFF2E7D32)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Bulletins', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20))),
-                        Text('Accédez aux bulletins trimestriels et annuels', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF1B5E20)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.description_rounded,
+              iconColor: const Color(0xFF2E7D32),
+              title: 'Bulletins',
+              description: 'Accédez aux bulletins trimestriels et annuels',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildBulletinsTab()),
           ],
@@ -1051,38 +1017,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.calendar_today_rounded, color: Color(0xFFF57C00)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Emploi du temps', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFE65100))),
-                        Text('Consultez l\'emploi du temps et les horaires', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFFE65100)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.calendar_today_rounded,
+              iconColor: const Color(0xFFF57C00),
+              title: 'Emploi du temps',
+              description: 'Consultez l\'emploi du temps et les horaires',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSimpleTimetableTab()),
           ],
@@ -1104,38 +1044,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3E5F5),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.edit_note_rounded, color: Color(0xFF7B1FA2)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Devoirs', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4A148C))),
-                        Text('Suivez les devoirs et exercices à faire', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF4A148C)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.edit_note_rounded,
+              iconColor: const Color(0xFF7B1FA2),
+              title: 'Devoirs',
+              description: 'Suivez les devoirs et exercices à faire',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildHomeworkTab()),
           ],
@@ -1157,38 +1071,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE0F2F1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.person_off_rounded, color: Color(0xFF00796B)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Présence & Conduite', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF004D40))),
-                        Text('Vérifiez la présence et la conduite', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF004D40)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.person_off_rounded,
+              iconColor: const Color(0xFF00796B),
+              title: 'Présence & Conduite',
+              description: 'Vérifiez la présence et la conduite',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildAbsencesTab()),
           ],
@@ -1210,38 +1098,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFCE4EC),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.pink.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.fingerprint_rounded, color: Color(0xFFC2185B)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Contrôle d\'accès', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF880E4F))),
-                        Text('Contrôlez les accès et les pointages', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF880E4F)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.fingerprint_rounded,
+              iconColor: const Color(0xFFC2185B),
+              title: 'Contrôle d\'accès',
+              description: 'Contrôlez les accès et les pointages',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSimpleAccessControlTab()),
           ],
@@ -1263,38 +1125,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.warning_rounded, color: Color(0xFFD32F2F)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Sanctions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFB71C1C))),
-                        Text('Consultez les sanctions et avertissements', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFFB71C1C)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.warning_rounded,
+              iconColor: const Color(0xFFD32F2F),
+              title: 'Sanctions',
+              description: 'Consultez les sanctions et avertissements',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSanctionsTab()),
           ],
@@ -1316,38 +1152,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE1F5FE),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.message_rounded, color: Color(0xFF0288D1)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Messages', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF01579B))),
-                        Text('Lisez les messages et communications', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF01579B)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.message_rounded,
+              iconColor: const Color(0xFF0288D1),
+              title: 'Messages',
+              description: 'Lisez les messages et communications',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSimpleMessagesTab()),
           ],
@@ -1369,38 +1179,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3E5F5),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.psychology_rounded, color: Color(0xFF9C27B0)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Difficultés', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF6A1B9A))),
-                        Text('Suivez les difficultés et le soutien', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF6A1B9A)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.psychology_rounded,
+              iconColor: const Color(0xFF9C27B0),
+              title: 'Difficultés',
+              description: 'Suivez les difficultés et le soutien',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildDifficultiesTab()),
           ],
@@ -1422,38 +1206,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8EAF6),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.indigo.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.event_rounded, color: Color(0xFF3F51B5)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Événements', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF283593))),
-                        Text('Participez aux événements et activités', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF283593)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.event_rounded,
+              iconColor: const Color(0xFF3F51B5),
+              title: 'Événements',
+              description: 'Participez aux événements et activités',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildEventsTab()),
           ],
@@ -1475,38 +1233,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFEBE9),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.brown.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.inventory_2_rounded, color: Color(0xFF795548)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Fournitures', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF3E2723))),
-                        Text('Gérez les fournitures scolaires', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF3E2723)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.inventory_2_rounded,
+              iconColor: const Color(0xFF795548),
+              title: 'Fournitures',
+              description: 'Gérez les fournitures scolaires',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSuppliesTab()),
           ],
@@ -1528,38 +1260,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE0F7FA),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.cyan.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.shopping_cart_rounded, color: Color(0xFF00ACC1)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Commandes', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF006064))),
-                        Text('Suivez vos commandes et achats', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF006064)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.shopping_cart_rounded,
+              iconColor: const Color(0xFF00ACC1),
+              title: 'Commandes',
+              description: 'Suivez vos commandes et achats',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildOrdersTab()),
           ],
@@ -1581,38 +1287,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3E5F5),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.security_rounded, color: Color(0xFF9C27B0)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Logs d\'accès', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF6A1B9A))),
-                        Text('Consultez les logs d\'accès et sécurité', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF6A1B9A)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.security_rounded,
+              iconColor: const Color(0xFF9C27B0),
+              title: 'Logs d\'accès',
+              description: 'Consultez les logs d\'accès et sécurité',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSimpleAccessLogsTab()),
           ],
@@ -1634,38 +1314,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.lightbulb_rounded, color: Color(0xFFFFB300)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Suggestions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFFF6F00))),
-                        Text('Envoyez vos suggestions et feedback', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFFFF6F00)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.lightbulb_rounded,
+              iconColor: const Color(0xFFFFB300),
+              title: 'Suggestions',
+              description: 'Envoyez vos suggestions et feedback',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSimpleSuggestionsTab()),
           ],
@@ -1687,38 +1341,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.event_seat_rounded, color: Color(0xFF2E7D32)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Réservations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20))),
-                        Text('Gérez vos réservations et places', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Color(0xFF1B5E20)),
-                  ),
-                ],
-              ),
+            BottomSheetHeader(
+              icon: Icons.event_seat_rounded,
+              iconColor: const Color(0xFF2E7D32),
+              title: 'Réservations',
+              description: 'Gérez vos réservations et places',
+              onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildSimpleReservationsTab()),
           ],
@@ -1739,7 +1367,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  
   void _showNotificationsBottomSheet() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -1752,9 +1379,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         return StatefulBuilder(
           builder: (context, setModalState) {
             // ✅ Déclencher le chargement des deux types de notifications UNE SEULE FOIS
-            if ((!_notificationsLoaded && !_isLoadingNotifications) || 
+            if ((!_notificationsLoaded && !_isLoadingNotifications) ||
                 (!_echeanceLoaded && !_isLoadingEcheance)) {
-              
               // Afficher le loader après le cycle de build pour éviter l'erreur setState()
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
@@ -1880,103 +1506,85 @@ class _ChildListScreenState extends State<ChildListScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Header
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
-                      ),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.notifications_rounded,
-                            color: Color(0xFF1976D2),
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Notifications',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(
-                                    20,
-                                  ),
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0D47A1),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                (_isLoadingNotifications || _isLoadingEcheance)
-                                    ? 'Chargement en cours...'
-                                    : '${totalNotificationsCount} notification${totalNotificationsCount > 1 ? 's' : ''}',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(
-                                    14,
-                                  ),
-                                  color: isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[600],
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
-                            Icons.close,
-                            color: Color(0xFF0D47A1),
-                          ),
-                        ),
-                      ],
-                    ),
+                  BottomSheetHeader(
+                    icon: Icons.notifications_rounded,
+                    iconColor: const Color(0xFF1976D2),
+                    title: 'Notifications',
+                    description: (_isLoadingNotifications || _isLoadingEcheance)
+                        ? 'Chargement en cours...'
+                        : '${totalNotificationsCount} notification${totalNotificationsCount > 1 ? 's' : ''}',
+                    onClose: () => Navigator.of(context).pop(),
+                    //backgroundColor: const Color(0xFFE3F2FD),
+                    titleColor: const Color(0xFF0D47A1),
+                    descriptionColor: isDark
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
+                    iconSize: 24,
+                    titleFontSize: _textSizeService.getScaledFontSize(14),
+                    descriptionFontSize: _textSizeService.getScaledFontSize(10),
+                    titleFontWeight: FontWeight.w600,
                   ),
 
                   // Content
                   Expanded(
                     child: (_isLoadingNotifications || _isLoadingEcheance)
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF1976D2),
-                              ),
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(
+                                          0xFF1976D2,
+                                        ).withOpacity(0.2),
+                                        const Color(
+                                          0xFF42A5F5,
+                                        ).withOpacity(0.2),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const CircularProgressIndicator(
+                                    color: Color(0xFF1976D2),
+                                    strokeWidth: 3,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Chargement...',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(14),
+                                    color: isDark
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           )
                         : SingleChildScrollView(
-                            padding: const EdgeInsets.all(16),
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 // Section Échéances
                                 if (_echeanceNotification != null) ...[
-                                  _buildEcheanceSection(_echeanceNotification!, isDark),
-                                  const SizedBox(height: 20),
+                                  _buildEcheanceSection(
+                                    _echeanceNotification!,
+                                    isDark,
+                                  ),
+                                  const SizedBox(height: 24),
                                 ],
-                                
+
                                 // Section Messages
                                 _buildMessagesSection(isDark, setModalState),
                               ],
@@ -1996,116 +1604,164 @@ class _ChildListScreenState extends State<ChildListScreen>
     GroupMessage notification,
     StateSetter setModalState,
   ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = _themeService.isDarkMode;
+    final unreadBlue = const Color(0xFF378ADD);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: notification.estLu
-            ? (isDark ? Colors.grey[800] : Colors.grey[50])
-            : (isDark ? const Color(0xFF1E3A5F) : const Color(0xFFE3F2FD)),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: notification.estLu
-              ? (isDark ? Colors.grey[700]! : Colors.grey[200]!)
-              : (isDark ? const Color(0xFF1976D2) : const Color(0xFF1976D2)),
-          width: notification.estLu ? 1 : 2,
+    return GestureDetector(
+      onTap: () {
+        if (!notification.estLu) {
+          _markNotificationAsRead(notification.id, setModalState);
+        }
+      },
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+          topLeft: Radius.circular(2),
+          bottomLeft: Radius.circular(2),
         ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            if (!notification.estLu) {
-              _markNotificationAsRead(notification.id, setModalState);
-            }
-          },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+            border: Border(
+              left: BorderSide(
+                color: notification.estLu ? Colors.transparent : unreadBlue,
+                width: 3,
+              ),
+              top: BorderSide(
+                color: isDark
+                    ? const Color(0x22FFFFFF)
+                    : const Color(0x18000000),
+                width: 0.5,
+              ),
+              right: BorderSide(
+                color: isDark
+                    ? const Color(0x22FFFFFF)
+                    : const Color(0x18000000),
+                width: 0.5,
+              ),
+              bottom: BorderSide(
+                color: isDark
+                    ? const Color(0x22FFFFFF)
+                    : const Color(0x18000000),
+                width: 0.5,
+              ),
+            ),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
+                // Dot indicateur
+                Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: notification.estLu
+                          ? Colors.transparent
+                          : unreadBlue,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Contenu
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Titre + heure
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            notification.titre,
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(16),
-                              fontWeight: notification.estLu
-                                  ? FontWeight.w500
-                                  : FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
+                          Expanded(
+                            child: Text(
+                              notification.titre,
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  14,
+                                ),
+                                fontWeight: notification.estLu
+                                    ? FontWeight.w400
+                                    : FontWeight.w500,
+                                color: notification.estLu
+                                    ? (isDark
+                                          ? Colors.white54
+                                          : const Color(0xFF6B6B6B))
+                                    : (isDark
+                                          ? Colors.white
+                                          : const Color(0xFF111111)),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(width: 8),
                           Text(
-                            notification.expediteurDisplay,
+                            notification.formattedDate,
                             style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(12),
+                              fontSize: _textSizeService.getScaledFontSize(11),
                               color: isDark
-                                  ? Colors.grey[400]
-                                  : Colors.grey[600],
+                                  ? Colors.white30
+                                  : const Color(0xFFAAAAAA),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    if (!notification.estLu)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
+                      const SizedBox(height: 3),
+
+                      // Expéditeur
+                      Text(
+                        notification.expediteurDisplay,
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          color: isDark
+                              ? Colors.white38
+                              : const Color(0xFF999999),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  notification.contenu,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    color: isDark ? Colors.grey[300] : Colors.grey[700],
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      notification.formattedDate,
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(11),
-                        color: isDark ? Colors.grey[500] : Colors.grey[500],
-                      ),
-                    ),
-                    if (!notification.estLu)
-                      TextButton(
-                        onPressed: () => _markNotificationAsRead(
-                          notification.id,
-                          setModalState,
+                      const SizedBox(height: 6),
+
+                      // Corps du message
+                      Text(
+                        notification.contenu,
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(13),
+                          color: isDark
+                              ? Colors.white60
+                              : const Color(0xFF555555),
+                          height: 1.5,
                         ),
-                        child: Text(
-                          'Marquer comme lu',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(12),
-                            color: const Color(0xFF1976D2),
-                            fontWeight: FontWeight.w500,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      // Action "Marquer comme lu"
+                      if (!notification.estLu) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () => _markNotificationAsRead(
+                            notification.id,
+                            setModalState,
+                          ),
+                          child: Text(
+                            'Marquer comme lu',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(11),
+                              color: isDark
+                                  ? Colors.white30
+                                  : const Color(0xFFAAAAAA),
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -2162,7 +1818,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  
   Widget _buildModernSliverAppBar() {
     final isDarkMode = _themeService.isDarkMode;
 
@@ -2186,58 +1841,59 @@ class _ChildListScreenState extends State<ChildListScreen>
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
 
-    return Container(
-      margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getButtonBorderRadius(context),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+    return GestureDetector(
+      onTap: () => _showNotificationsBottomSheet(),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          IconButton(
-            icon: Icon(
+          Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xFF2A2A2A)
+                  : AppColors.screenCard,
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.screenShadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
               Icons.notifications_outlined,
+              size: 18,
               color: theme.iconTheme.color,
             ),
-            onPressed: () => _showNotificationsBottomSheet(),
           ),
           // Badge pour les notifications totales (messages + échéances)
           if (totalNotificationsCount > 0)
             Positioned(
-              right: 6,
-              top: 6,
+              top: 0,
+              right: 0,
               child: Container(
-                padding: EdgeInsets.all(AppDimensions.getBadgePadding(context)),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(
-                    AppDimensions.getBadgeBorderRadius(context),
+                    AppDimensions.getSmallCardBorderRadius(context),
                   ),
                   border: Border.all(color: AppColors.screenCard, width: 1.5),
-                ),
-                constraints: BoxConstraints(
-                  minWidth: AppDimensions.getBadgeMinSize(context),
-                  minHeight: AppDimensions.getBadgeMinSize(context),
                 ),
                 child: Text(
                   totalNotificationsCount > 99
                       ? '99+'
                       : totalNotificationsCount.toString(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
-                    fontSize: AppDimensions.getBadgeFontSize(context),
-                    fontWeight: FontWeight.bold,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -2249,24 +1905,26 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildMoreButton() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
-    return Container(
-      margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getButtonBorderRadius(context),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 8,
-            offset: Offset(0, 2),
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getSmallCardBorderRadius(context),
           ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
-        onPressed: () {},
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.screenShadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(Icons.more_vert, size: 18, color: theme.iconTheme.color),
       ),
     );
   }
@@ -3020,7 +2678,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 await _loadScolariteData();
               }
               if (mounted) {
-_showFeesBottomSheet();
+                _showFeesBottomSheet();
               }
             },
           ),
@@ -3122,7 +2780,7 @@ _showFeesBottomSheet();
                 await _loadTimetableData();
               }
               if (mounted) {
-_showTimetableBottomSheet();
+                _showTimetableBottomSheet();
               }
             },
           ),
@@ -3175,135 +2833,147 @@ _showTimetableBottomSheet();
         SectionRow(title: 'Vie scolaire'),
         const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final screenWidth = constraints.maxWidth;
-              final crossAxisCount = screenWidth > 600 ? 2 : 1;
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Card(
+            elevation: 0,
+            color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F7FA),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final screenWidth = constraints.maxWidth;
+                  final crossAxisCount = screenWidth > 600 ? 2 : 1;
 
-              final schoolLifeItems = [
-                {
-                  'title': 'Présence & Conduite',
-                  'subtitle': 'Suivi des absences et retards',
-                  'imagePath': 'assets/images/messages.jpg',
-                  'iconData': null,
-                  'color': const Color(0xFF00796B),
-                  'buttonText': 'Voir présence',
-                  'key': 'attendance',
-                },
-                {
-                  'title': 'Contrôle accès',
-                  'subtitle': 'Historique des pointages',
-                  'imagePath': null,
-                  'iconData': Icons.fingerprint_rounded,
-                  'color': const Color(0xFFC2185B),
-                  'buttonText': 'Voir accès',
-                  'key': 'accessControl',
-                },
-                {
-                  'title': 'Sanctions',
-                  'subtitle': 'Rapports de comportement',
-                  'imagePath': null,
-                  'iconData': Icons.warning_rounded,
-                  'color': const Color(0xFFD32F2F),
-                  'buttonText': 'Voir sanctions',
-                  'key': 'sanctions',
-                },
-                {
-                  'title': 'Événements',
-                  'subtitle': 'Activités et sorties scolaires',
-                  'imagePath': null,
-                  'iconData': Icons.event_rounded,
-                  'color': const Color(0xFF3F51B5),
-                  'buttonText': 'Voir events',
-                  'key': 'events',
-                },
-              ];
+                  final schoolLifeItems = [
+                    {
+                      'title': 'Présence & Conduite',
+                      'subtitle': 'Suivi des absences et retards',
+                      'imagePath': 'assets/images/messages.jpg',
+                      'iconData': null,
+                      'color': const Color(0xFF00796B),
+                      'buttonText': 'Voir présence',
+                      'key': 'attendance',
+                    },
+                    {
+                      'title': 'Contrôle accès',
+                      'subtitle': 'Historique des pointages',
+                      'imagePath': null,
+                      'iconData': Icons.fingerprint_rounded,
+                      'color': const Color(0xFFC2185B),
+                      'buttonText': 'Voir accès',
+                      'key': 'accessControl',
+                    },
+                    {
+                      'title': 'Sanctions',
+                      'subtitle': 'Rapports de comportement',
+                      'imagePath': null,
+                      'iconData': Icons.warning_rounded,
+                      'color': const Color(0xFFD32F2F),
+                      'buttonText': 'Voir sanctions',
+                      'key': 'sanctions',
+                    },
+                    {
+                      'title': 'Événements',
+                      'subtitle': 'Activités et sorties scolaires',
+                      'imagePath': null,
+                      'iconData': Icons.event_rounded,
+                      'color': const Color(0xFF3F51B5),
+                      'buttonText': 'Voir events',
+                      'key': 'events',
+                    },
+                  ];
 
-              Widget buildCard(Map<String, Object?> item) {
-                return SchoolLifeItemCard(
-                  title: item['title'] as String,
-                  subtitle: item['subtitle'] as String,
-                  imagePath: item['imagePath'] as String?,
-                  iconData: item['iconData'] as IconData?,
-                  isDark: isDark,
-                  color: item['color'] as Color,
-                  buttonText: item['buttonText'] as String,
-                  onTap: () {
-                    if (item['key'] == 'accessControl') {
-                      return () async {
-                        if (_accessEntries.isEmpty &&
-                            !_isLoadingAccessControl) {
-                          await _loadAccessControlData();
+                  Widget buildCard(Map<String, Object?> item) {
+                    return SchoolLifeItemCard(
+                      title: item['title'] as String,
+                      subtitle: item['subtitle'] as String,
+                      imagePath: item['imagePath'] as String?,
+                      iconData: item['iconData'] as IconData?,
+                      isDark: isDark,
+                      color: item['color'] as Color,
+                      buttonText: item['buttonText'] as String,
+                      onTap: () {
+                        if (item['key'] == 'accessControl') {
+                          return () async {
+                            if (_accessEntries.isEmpty &&
+                                !_isLoadingAccessControl) {
+                              await _loadAccessControlData();
+                            }
+                            if (mounted) {
+                              _showAccessControlBottomSheet();
+                            }
+                          };
+                        } else {
+                          switch (item['key'] as String) {
+                            case 'notes':
+                              return () => _showNotesBottomSheet();
+                            case 'bulletins':
+                              return () => _showBulletinsBottomSheet();
+                            case 'timetable':
+                              return () => _showTimetableBottomSheet();
+                            case 'homework':
+                              return () => _showHomeworkBottomSheet();
+                            case 'attendance':
+                              return () => _showAttendanceBottomSheet();
+                            case 'accessControl':
+                              return () => _showAccessControlBottomSheet();
+                            case 'sanctions':
+                              return () => _showSanctionsBottomSheet();
+                            case 'messages':
+                              return () => _showMessagesBottomSheet();
+                            case 'difficulties':
+                              return () => _showDifficultiesBottomSheet();
+                            case 'events':
+                              return () => _showEventsBottomSheet();
+                            case 'supplies':
+                              return () => _showSuppliesBottomSheet();
+                            case 'orders':
+                              return () => _showOrdersBottomSheet();
+                            case 'accessLogs':
+                              return () => _showAccessLogsBottomSheet();
+                            case 'suggestions':
+                              return () => _showSuggestionsBottomSheet();
+                            case 'reservations':
+                              return () => _showReservationsBottomSheet();
+                            default:
+                              return () {};
+                          }
+                          ;
                         }
-                        if (mounted) {
-_showAccessControlBottomSheet();
-                        }
-                      };
-                    } else {
-switch (item['key'] as String) {
-                        case 'notes':
-                          return () => _showNotesBottomSheet();
-                        case 'bulletins':
-                          return () => _showBulletinsBottomSheet();
-                        case 'timetable':
-                          return () => _showTimetableBottomSheet();
-                        case 'homework':
-                          return () => _showHomeworkBottomSheet();
-                        case 'attendance':
-                          return () => _showAttendanceBottomSheet();
-                        case 'accessControl':
-                          return () => _showAccessControlBottomSheet();
-                        case 'sanctions':
-                          return () => _showSanctionsBottomSheet();
-                        case 'messages':
-                          return () => _showMessagesBottomSheet();
-                        case 'difficulties':
-                          return () => _showDifficultiesBottomSheet();
-                        case 'events':
-                          return () => _showEventsBottomSheet();
-                        case 'supplies':
-                          return () => _showSuppliesBottomSheet();
-                        case 'orders':
-                          return () => _showOrdersBottomSheet();
-                        case 'accessLogs':
-                          return () => _showAccessLogsBottomSheet();
-                        case 'suggestions':
-                          return () => _showSuggestionsBottomSheet();
-                        case 'reservations':
-                          return () => _showReservationsBottomSheet();
-                        default:
-                          return () {};
-                      };
-                    }
-                  }(),
-                );
-              }
+                      }(),
+                    );
+                  }
 
-              // Mobile : Column pour éviter l'espace inutile du GridView
-              if (crossAxisCount == 1) {
-                return Column(
-                  children: schoolLifeItems
-                      .map((item) => buildCard(item))
-                      .toList(),
-                );
-              }
+                  // Mobile : Column pour éviter l'espace inutile du GridView
+                  if (crossAxisCount == 1) {
+                    return Column(
+                      children: schoolLifeItems
+                          .map((item) => buildCard(item))
+                          .toList(),
+                    );
+                  }
 
-              // Tablette/Desktop : GridView 2 colonnes
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 50,
-                  mainAxisSpacing: 0,
-                  childAspectRatio: 6,
-                ),
-                itemCount: schoolLifeItems.length,
-                itemBuilder: (context, index) =>
-                    buildCard(schoolLifeItems[index]),
-              );
-            },
+                  // Tablette/Desktop : GridView 2 colonnes
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 50,
+                          mainAxisSpacing: 0,
+                          childAspectRatio: 6,
+                        ),
+                    itemCount: schoolLifeItems.length,
+                    itemBuilder: (context, index) =>
+                        buildCard(schoolLifeItems[index]),
+                  );
+                },
+              ),
+            ),
           ),
         ),
 
@@ -3377,7 +3047,7 @@ switch (item['key'] as String) {
                 await _loadSuggestionsData();
               }
               if (mounted) {
-_showSuggestionsBottomSheet();
+                _showSuggestionsBottomSheet();
               }
             },
           ),
@@ -3407,7 +3077,7 @@ _showSuggestionsBottomSheet();
                 : const Color(0xFF4E342E),
             actionText: 'Voir liste',
             actionTextColor: const Color(0xFF795548),
-onTap: () => _showSuppliesBottomSheet(),
+            onTap: () => _showSuppliesBottomSheet(),
           ),
           ImageMenuCard(
             index: 1,
@@ -3427,7 +3097,7 @@ onTap: () => _showSuppliesBottomSheet(),
                 : const Color(0xFF00838F),
             actionText: 'Voir commandes',
             actionTextColor: const Color(0xFF00ACC1),
-onTap: () => _showOrdersBottomSheet(),
+            onTap: () => _showOrdersBottomSheet(),
           ),
           ImageMenuCard(
             index: 2,
@@ -3451,7 +3121,7 @@ onTap: () => _showOrdersBottomSheet(),
                 await _loadReservationsData();
               }
               if (mounted) {
-_showReservationsBottomSheet();
+                _showReservationsBottomSheet();
               }
             },
           ),
@@ -4255,7 +3925,6 @@ _showReservationsBottomSheet();
     );
   }
 
-  
   Widget _buildSimpleSuggestionsTab() {
     final isDarkMode = _themeService.isDarkMode;
 
@@ -8862,97 +8531,187 @@ _showReservationsBottomSheet();
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header de la section
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: echeance.hasUnpaidFees 
-                    ? Colors.red.withOpacity(0.2) 
-                    : Colors.green.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                echeance.hasUnpaidFees ? Icons.warning_amber : Icons.check_circle,
-                color: echeance.hasUnpaidFees ? Colors.red : Colors.green,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Échéances',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(16),
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            if (echeance.hasUnpaidFees) ...[
-              const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: echeance.hasUnpaidFees
+                        ? [
+                            Colors.red.withOpacity(0.2),
+                            Colors.red.withOpacity(0.1),
+                          ]
+                        : [
+                            Colors.green.withOpacity(0.2),
+                            Colors.green.withOpacity(0.1),
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  'Non réglé',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                child: Icon(
+                  echeance.hasUnpaidFees
+                      ? Icons.warning_amber_rounded
+                      : Icons.check_circle_rounded,
+                  color: echeance.hasUnpaidFees ? Colors.red : Colors.green,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Échéances',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(16),
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                  letterSpacing: -0.3,
+                ),
+              ),
+              if (echeance.hasUnpaidFees) ...[
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.withOpacity(0.9),
+                        Colors.red.withOpacity(0.7),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'Non réglé',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
         const SizedBox(height: 12),
-        
+
         // Carte d'échéance
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: echeance.hasUnpaidFees
-                ? (isDark ? Colors.red.withOpacity(0.2) : Colors.red.withOpacity(0.1))
-                : (isDark ? Colors.green.withOpacity(0.2) : Colors.green.withOpacity(0.1)),
-            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: echeance.hasUnpaidFees
+                  ? [
+                      isDark
+                          ? Colors.red.withOpacity(0.15)
+                          : Colors.red.withOpacity(0.08),
+                      isDark
+                          ? Colors.red.withOpacity(0.05)
+                          : Colors.red.withOpacity(0.02),
+                    ]
+                  : [
+                      isDark
+                          ? Colors.green.withOpacity(0.15)
+                          : Colors.green.withOpacity(0.08),
+                      isDark
+                          ? Colors.green.withOpacity(0.05)
+                          : Colors.green.withOpacity(0.02),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: echeance.hasUnpaidFees
-                  ? (isDark ? Colors.red.withOpacity(0.5) : Colors.red.withOpacity(0.3))
-                  : (isDark ? Colors.green.withOpacity(0.5) : Colors.green.withOpacity(0.3)),
-              width: 1,
+                  ? (isDark
+                        ? Colors.red.withOpacity(0.4)
+                        : Colors.red.withOpacity(0.2))
+                  : (isDark
+                        ? Colors.green.withOpacity(0.4)
+                        : Colors.green.withOpacity(0.2)),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: (echeance.hasUnpaidFees ? Colors.red : Colors.green)
+                    .withOpacity(0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    echeance.hasUnpaidFees ? Icons.money_off : Icons.attach_money,
-                    color: echeance.hasUnpaidFees ? Colors.red : Colors.green,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    echeance.hasUnpaidFees ? 'Échéances en retard' : 'Situation régulière',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(14),
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color:
+                          (echeance.hasUnpaidFees ? Colors.red : Colors.green)
+                              .withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      echeance.hasUnpaidFees
+                          ? Icons.money_off_rounded
+                          : Icons.attach_money_rounded,
                       color: echeance.hasUnpaidFees ? Colors.red : Colors.green,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      echeance.hasUnpaidFees
+                          ? 'Échéances en retard'
+                          : 'Situation régulière',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(15),
+                        fontWeight: FontWeight.w600,
+                        color: echeance.hasUnpaidFees
+                            ? Colors.red
+                            : Colors.green,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                echeance.formattedMessage,
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(13),
-                  color: isDark ? Colors.grey[300] : Colors.grey[700],
-                  height: 1.4,
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey[800] : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  echeance.formattedMessage,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(13),
+                    color: isDark ? Colors.grey[300] : const Color(0xFF4A4A4A),
+                    height: 1.5,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
             ],
@@ -8968,92 +8727,160 @@ _showReservationsBottomSheet();
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header de la section
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.message,
-                color: Colors.blue,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Messages',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(16),
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            if (_notifications.isNotEmpty) ...[
-              const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF1976D2).withOpacity(0.2),
+                      const Color(0xFF42A5F5).withOpacity(0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  '${_notifications.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                child: const Icon(
+                  Icons.message_rounded,
+                  color: Color(0xFF1976D2),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Messages',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(16),
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                  letterSpacing: -0.3,
+                ),
+              ),
+              if (_notifications.isNotEmpty) ...[
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF1976D2).withOpacity(0.9),
+                        const Color(0xFF42A5F5).withOpacity(0.7),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1976D2).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '${_notifications.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
         const SizedBox(height: 12),
-        
+
         // Liste des messages
         if (_notifications.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? Colors.grey[800] : Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [
+                        Colors.grey[800]!.withOpacity(0.5),
+                        Colors.grey[900]!.withOpacity(0.3),
+                      ]
+                    : [
+                        Colors.grey[50] ?? const Color(0xFFFAFAFA),
+                        Colors.grey[100] ?? const Color(0xFFF5F5F5),
+                      ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+                color: isDark ? Colors.grey[700]! : const Color(0xFFE5E5E5),
+                width: 1,
               ),
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.message_outlined,
-                  size: 48,
-                  color: isDark ? Colors.grey[600] : Colors.grey[400],
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              Colors.grey[700]!.withOpacity(0.3),
+                              Colors.grey[600]!.withOpacity(0.2),
+                            ]
+                          : [
+                              Colors.grey[300] ?? const Color(0xFFE0E0E0),
+                              Colors.grey[200] ?? const Color(0xFFEEEEEE),
+                            ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.message_outlined,
+                    size: 32,
+                    color: isDark ? Colors.grey[500] : Colors.grey[400],
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Text(
                   'Aucun message',
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
+                    fontSize: _textSizeService.getScaledFontSize(15),
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    color: isDark ? Colors.grey[400] : const Color(0xFF4A4A4A),
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   'Vous n\'avez pas encore reçu de messages',
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(12),
-                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                    fontSize: _textSizeService.getScaledFontSize(13),
+                    color: isDark ? Colors.grey[500] : Colors.grey[500],
+                    height: 1.4,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           )
         else
-          ..._notifications.map((notification) => _buildNotificationCard(notification, setModalState)),
+          ..._notifications.map(
+            (notification) =>
+                _buildNotificationCard(notification, setModalState),
+          ),
       ],
     );
   }

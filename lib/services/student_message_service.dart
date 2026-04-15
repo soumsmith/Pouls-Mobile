@@ -11,7 +11,12 @@ class StudentMessageService {
   StudentMessageService._internal();
 
   /// Récupère les messages pour un élève spécifique
-  Future<List<StudentMessage>> getMessagesForStudent(String phoneNumber, String matricule, {int perPage = 20, int page = 1}) async {
+  Future<List<StudentMessage>> getMessagesForStudent(
+    String phoneNumber,
+    String matricule, {
+    int perPage = 20,
+    int page = 1,
+  }) async {
     print('🔄 Début du chargement des messages pour l\'élève: $matricule');
 
     // Utilise le bon endpoint spécifié par l'utilisateur
@@ -28,16 +33,43 @@ class StudentMessageService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         print('📄 Response body: ${response.body}');
-        
-        // Vérifier différents formats de réponse possibles
-        if (data['status'] == 'success' && data['data'] != null) {
-          final List<dynamic> messagesData = data['data'] as List;
-          final messages = messagesData
-              .map((json) => StudentMessage.fromJson(json))
-              .toList();
 
-          print('📚 ${messages.length} messages parsés avec succès');
-          return messages;
+        // Vérifier différents formats de réponse possibles
+        // L'API peut retourner status: true (boolean) ou status: 'success' (string)
+        if ((data['status'] == true || data['status'] == 'success') &&
+            data['data'] != null) {
+          // Gérer la structure imbriquée: {status: true, data: {status: 'success', data: {messages: {data: [...]}}}}
+          var innerData = data['data'];
+          if (innerData is Map && innerData['data'] != null) {
+            innerData = innerData['data'];
+            if (innerData is Map &&
+                innerData['messages'] != null &&
+                innerData['messages']['data'] != null) {
+              final List<dynamic> messagesData = innerData['messages']['data'];
+              // Note: Cette méthode retourne StudentMessage, mais l'API retourne des messages de conversation
+              // Pour l'instant, on retourne une liste vide car le format ne correspond pas
+              print(
+                '⚠️ Format de réponse imbriqué détecté, mais StudentMessageService ne gère pas ce format',
+              );
+              print(
+                '✅ ${messagesData.length} messages disponibles (format conversation)',
+              );
+              return [];
+            }
+          }
+
+          // Format simple: {status: 'success', data: [...]}
+          if (innerData is List) {
+            final List<dynamic> messagesData = innerData;
+            final messages = messagesData
+                .map((json) => StudentMessage.fromJson(json))
+                .toList();
+            print('📚 ${messages.length} messages parsés avec succès');
+            return messages;
+          }
+
+          print('❌ Format de data non reconnu');
+          return [];
         } else if (data['status'] == false && data['error'] != null) {
           print('❌ Erreur API: ${data['error']}');
           return [];
@@ -64,7 +96,8 @@ class StudentMessageService {
 
   /// Récupère les messages avec pagination
   Future<List<StudentMessage>> getMessagesPage(
-    String phoneNumber, String matricule, {
+    String phoneNumber,
+    String matricule, {
     int page = 1,
     int perPage = 20,
   }) async {
@@ -81,12 +114,41 @@ class StudentMessageService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         print('📄 Response body: ${response.body}');
-        
-        if (data['status'] == 'success' && data['data'] != null) {
-          final List<dynamic> messagesData = data['data'] as List;
-          return messagesData
-              .map((json) => StudentMessage.fromJson(json))
-              .toList();
+
+        // Vérifier différents formats de réponse possibles
+        // L'API peut retourner status: true (boolean) ou status: 'success' (string)
+        if ((data['status'] == true || data['status'] == 'success') &&
+            data['data'] != null) {
+          // Gérer la structure imbriquée: {status: true, data: {status: 'success', data: {messages: {data: [...]}}}}
+          var innerData = data['data'];
+          if (innerData is Map && innerData['data'] != null) {
+            innerData = innerData['data'];
+            if (innerData is Map &&
+                innerData['messages'] != null &&
+                innerData['messages']['data'] != null) {
+              final List<dynamic> messagesData = innerData['messages']['data'];
+              // Note: Cette méthode retourne StudentMessage, mais l'API retourne des messages de conversation
+              // Pour l'instant, on retourne une liste vide car le format ne correspond pas
+              print(
+                '⚠️ Format de réponse imbriqué détecté, mais StudentMessageService ne gère pas ce format',
+              );
+              print(
+                '✅ ${messagesData.length} messages disponibles (format conversation)',
+              );
+              return [];
+            }
+          }
+
+          // Format simple: {status: 'success', data: [...]}
+          if (innerData is List) {
+            final List<dynamic> messagesData = innerData;
+            return messagesData
+                .map((json) => StudentMessage.fromJson(json))
+                .toList();
+          }
+
+          print('❌ Format de data non reconnu');
+          return [];
         } else if (data['status'] == false && data['error'] != null) {
           print('❌ Erreur API: ${data['error']}');
           return [];

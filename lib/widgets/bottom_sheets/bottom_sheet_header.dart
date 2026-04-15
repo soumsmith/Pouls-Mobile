@@ -58,70 +58,70 @@ class BottomSheetHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
-              // Icon container with gradient (like paiement)
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [iconColor, iconColor.withOpacity(0.8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: Colors.white, size: iconSize ?? 18),
-              ),
-
-              const SizedBox(width: 8),
-
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: titleFontSize ?? 14,
-                        fontWeight: titleFontWeight ?? FontWeight.w600,
-                        color: titleColor ?? const Color(0xFF1A1A1A),
-                        letterSpacing: -0.4,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: descriptionFontSize ?? 10,
-                        color: descriptionColor ?? const Color(0xFF666666),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-
-              // ✅ Bouton fermer dans un cercle gris
-              GestureDetector(
-                onTap: onClose,
-                child: Container(
-                  width: 28,
-                  height: 28,
+                // Icon container with gradient (like paiement)
+                Container(
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F0F0),
-                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [iconColor, iconColor.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Color(0xFF666666),
-                    size: 14,
+                  child: Icon(icon, color: Colors.white, size: iconSize ?? 18),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Text content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: titleFontSize ?? 14,
+                          fontWeight: titleFontWeight ?? FontWeight.w600,
+                          color: titleColor ?? const Color(0xFF1A1A1A),
+                          letterSpacing: -0.4,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: descriptionFontSize ?? 10,
+                          color: descriptionColor ?? const Color(0xFF666666),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-              ),
+
+                // ✅ Bouton fermer dans un cercle gris
+                GestureDetector(
+                  onTap: onClose,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F0F0),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Color(0xFF666666),
+                      size: 14,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

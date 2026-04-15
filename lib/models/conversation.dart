@@ -54,9 +54,7 @@ class Conversation {
   /// Retourne le dernier message de la conversation
   Message? get lastMessage {
     if (messages.isEmpty) return null;
-    return messages.reduce((a, b) => 
-      a.createdAt.isAfter(b.createdAt) ? a : b
-    );
+    return messages.reduce((a, b) => a.createdAt.isAfter(b.createdAt) ? a : b);
   }
 
   /// Vérifie si la conversation contient des messages non lus
@@ -94,8 +92,8 @@ class Participant {
       participantId: json['participant_id'] as int,
       schoolId: json['school_id'] as int,
       staffPseudo: json['staff_pseudo'] as String?,
-      lastReadAt: json['last_read_at'] != null 
-          ? DateTime.parse(json['last_read_at'] as String) 
+      lastReadAt: json['last_read_at'] != null
+          ? DateTime.parse(json['last_read_at'] as String)
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -108,11 +106,7 @@ class SchoolInfo {
   final String nom;
   final String code;
 
-  SchoolInfo({
-    required this.clientId,
-    required this.nom,
-    required this.code,
-  });
+  SchoolInfo({required this.clientId, required this.nom, required this.code});
 
   factory SchoolInfo.fromJson(Map<String, dynamic> json) {
     return SchoolInfo(
@@ -156,7 +150,7 @@ class Message {
   final int id;
   final int conversationId;
   final String senderType;
-  final int senderId;
+  final int? senderId;
   final int schoolId;
   final String senderPseudo;
   final String body;
@@ -169,7 +163,7 @@ class Message {
     required this.id,
     required this.conversationId,
     required this.senderType,
-    required this.senderId,
+    this.senderId,
     required this.schoolId,
     required this.senderPseudo,
     required this.body,
@@ -184,15 +178,15 @@ class Message {
       id: json['id'] as int,
       conversationId: json['conversation_id'] as int,
       senderType: json['sender_type'] as String,
-      senderId: json['sender_id'] as int,
+      senderId: json['sender_id'] as int?,
       schoolId: json['school_id'] as int,
       senderPseudo: json['sender_pseudo'] as String,
       body: json['body'] as String,
       messageType: json['message_type'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      deletedAt: json['deleted_at'] != null 
-          ? DateTime.parse(json['deleted_at'] as String) 
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
           : null,
     );
   }

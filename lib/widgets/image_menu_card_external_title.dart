@@ -31,9 +31,14 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final VoidCallback? onButtonTap;
   final VoidCallback onTap;
   final bool enableGradient;
-  final bool enableBorder;
-  final Color? borderColor;
   final bool centerTitle;
+  final bool enableInnerBorder;
+  final bool enableOuterBorder;
+  final Color? innerBorderColor;
+  final Color? outerBorderColor;
+  final double innerBorderWidth;
+  final double outerBorderWidth;
+  final double doubleBorderGap;
 
   const ImageMenuCardExternalTitle({
     super.key,
@@ -64,10 +69,15 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.buttonTextColor,
     this.onButtonTap,
     this.enableGradient = false,
-    this.enableBorder = false,
-    this.borderColor,
     this.centerTitle = false,
     required this.onTap,
+    this.enableInnerBorder = false,
+    this.enableOuterBorder = false,
+    this.innerBorderColor,
+    this.outerBorderColor,
+    this.innerBorderWidth = 2.5,
+    this.outerBorderWidth = 1.5,
+    this.doubleBorderGap = 3.0,
   });
 
   @override
@@ -90,94 +100,10 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                   : CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Image card ──────────────────────────────────────────
                 SizedBox(
                   height: height != null ? height! * 0.7 : 70,
-                  child: Container(
-                    width: width ?? double.infinity,
-                    decoration: BoxDecoration(
-                      color:
-                          backgroundColor ??
-                          (isDark
-                              ? const Color(0xFF1E1E1E)
-                              : AppColors.screenCard),
-                      borderRadius: BorderRadius.circular(
-                        imageBorderRadius ?? 20,
-                      ),
-                      border: enableBorder
-                          ? Border.all(
-                              color:
-                                  borderColor ??
-                                  (color ?? AppColors.screenOrange).withOpacity(
-                                    0.3,
-                                  ),
-                              width: 0.5,
-                            )
-                          : null,
-                    ),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            imageBorderRadius ?? 20,
-                          ),
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: ColoredBox(
-                                  color:
-                                      color?.withOpacity(0.1) ??
-                                      AppColors.screenCard.withOpacity(0.1),
-                                  child: _buildImageOrIcon(context),
-                                ),
-                              ),
-                              if (enableGradient)
-                                Positioned.fill(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withOpacity(0.1),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        if (tag != null)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                tag!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+                  child: _buildCardWithDoubleBorder(context),
                 ),
-
-                // ── Titre externe ───────────────────────────────────────
                 if (title?.isNotEmpty == true) ...[
                   SizedBox(height: externalTitleSpacing ?? 4),
                   ConstrainedBox(
@@ -203,8 +129,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                   titleFontSize ?? 11,
                                 ),
                                 fontWeight: FontWeight.w700,
-                                color:
-                                    textColor ??
+                                color: textColor ??
                                     (isDark
                                         ? Colors.white
                                         : AppColors.screenTextPrimary),
@@ -221,19 +146,16 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               child: Text(
                                 subtitle!,
                                 style: TextStyle(
-                                  fontSize: textSizeService.getScaledFontSize(
-                                    9,
-                                  ),
+                                  fontSize:
+                                      textSizeService.getScaledFontSize(9),
                                   fontWeight: FontWeight.w500,
-                                  color:
-                                      textColor?.withOpacity(0.7) ??
+                                  color: textColor?.withOpacity(0.7) ??
                                       (isDark
                                           ? Colors.white70
                                           : AppColors.screenTextSecondary),
                                 ),
-                                textAlign: centerTitle
-                                    ? TextAlign.center
-                                    : null,
+                                textAlign:
+                                    centerTitle ? TextAlign.center : null,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -252,8 +174,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                       fontSize: textSizeService
                                           .getScaledFontSize(10),
                                       fontWeight: FontWeight.w700,
-                                      color:
-                                          actionTextColor ??
+                                      color: actionTextColor ??
                                           color ??
                                           AppColors.screenOrange,
                                     ),
@@ -279,12 +200,10 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                       Icon(
                                         Icons.location_on_outlined,
                                         size: 10,
-                                        color:
-                                            textColor?.withOpacity(0.5) ??
+                                        color: textColor?.withOpacity(0.5) ??
                                             (isDark
                                                 ? Colors.white54
-                                                : AppColors
-                                                      .screenTextSecondary),
+                                                : AppColors.screenTextSecondary),
                                       ),
                                       const SizedBox(width: 2),
                                       Flexible(
@@ -293,12 +212,11 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                           style: TextStyle(
                                             fontSize: textSizeService
                                                 .getScaledFontSize(9),
-                                            color:
-                                                textColor?.withOpacity(0.5) ??
+                                            color: textColor?.withOpacity(0.5) ??
                                                 (isDark
                                                     ? Colors.white54
                                                     : AppColors
-                                                          .screenTextSecondary),
+                                                        .screenTextSecondary),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
@@ -321,8 +239,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                               child: ElevatedButton(
                                 onPressed: onButtonTap ?? () {},
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      buttonColor ??
+                                  backgroundColor: buttonColor ??
                                       color ??
                                       AppColors.screenOrange,
                                   foregroundColor:
@@ -339,9 +256,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                 child: Text(
                                   buttonText!,
                                   style: TextStyle(
-                                    fontSize: textSizeService.getScaledFontSize(
-                                      10,
-                                    ),
+                                    fontSize: textSizeService
+                                        .getScaledFontSize(10),
                                     fontWeight: FontWeight.w600,
                                   ),
                                   maxLines: 1,
@@ -363,6 +279,126 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     );
   }
 
+  Widget _buildCardWithDoubleBorder(BuildContext context) {
+    final radius = imageBorderRadius ?? 20.0;
+    final effectiveColor = color ?? AppColors.screenOrange;
+
+    Widget card = _buildBaseCard(context, radius);
+
+    if (enableInnerBorder) {
+      card = Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radius + innerBorderWidth),
+          border: Border.all(
+            color: innerBorderColor ?? effectiveColor,
+            width: innerBorderWidth,
+          ),
+        ),
+        child: card,
+      );
+    }
+
+    if (enableInnerBorder && enableOuterBorder) {
+      card = Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(
+            radius + innerBorderWidth + doubleBorderGap,
+          ),
+          color: isDark ? const Color(0xFF121212) : Colors.white,
+        ),
+        padding: EdgeInsets.all(doubleBorderGap),
+        child: card,
+      );
+    }
+
+    if (enableOuterBorder) {
+      card = Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(
+            radius + innerBorderWidth + doubleBorderGap + outerBorderWidth,
+          ),
+          border: Border.all(
+            color: (outerBorderColor ?? effectiveColor).withOpacity(0.45),
+            width: outerBorderWidth,
+          ),
+        ),
+        child: card,
+      );
+    }
+
+    return SizedBox(
+      width: width ?? double.infinity,
+      child: card,
+    );
+  }
+
+  Widget _buildBaseCard(BuildContext context, double radius) {
+    return Container(
+      width: width ?? double.infinity,
+      decoration: BoxDecoration(
+        color: backgroundColor ??
+            (isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(radius),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: color?.withOpacity(0.1) ??
+                        AppColors.screenCard.withOpacity(0.1),
+                    child: _buildImageOrIcon(context),
+                  ),
+                ),
+                if (enableGradient)
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.1),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (tag != null)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  tag!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSmallButton(TextSizeService textSizeService) {
     return SizedBox(
       height: 22,
@@ -373,7 +409,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           foregroundColor: buttonTextColor ?? Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),

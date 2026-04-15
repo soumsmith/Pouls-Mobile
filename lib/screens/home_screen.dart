@@ -149,8 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Charger les notifications pour tous les enfants
   Future<void> _loadChildrenNotifications() async {
-    print('=== DÉBUT DU CHARGEMENT DES NOTIFICATIONS POUR TOUS LES ENFANTS (HOME) ===');
-    
+    print(
+      '=== DÉBUT DU CHARGEMENT DES NOTIFICATIONS POUR TOUS LES ENFANTS (HOME) ===',
+    );
+
     // Attendre que les enfants soient chargés
     if (_children.isEmpty) {
       print('Enfants pas encore chargés, on attend...');
@@ -162,34 +164,41 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     print('Chargement des notifications pour ${_children.length} enfant(s)');
-    
+
     // Initialiser les états de chargement
     for (final child in _children) {
       _childrenNotificationsLoading[child.id] = true;
       _childrenEcheancesLoading[child.id] = true;
     }
-    
+
     if (mounted) {
       setState(() {});
     }
 
     // Charger les notifications pour chaque enfant en parallèle
     final futures = <Future<void>>[];
-    
+
     for (final child in _children) {
       futures.add(_loadNotificationsForChild(child));
     }
-    
+
     try {
       await Future.wait(futures);
-      print('=== FIN DU CHARGEMENT DES NOTIFICATIONS POUR TOUS LES ENFANTS ===');
-      
+      print(
+        '=== FIN DU CHARGEMENT DES NOTIFICATIONS POUR TOUS LES ENFANTS ===',
+      );
+
       // Afficher le résumé
       for (final child in _children) {
-        final notifCount = _childrenNotifications[child.id]?.where((n) => !n.estLu).length ?? 0;
-        final hasUnpaidFees = _childrenEcheances[child.id]?.hasUnpaidFees == true;
+        final notifCount =
+            _childrenNotifications[child.id]?.where((n) => !n.estLu).length ??
+            0;
+        final hasUnpaidFees =
+            _childrenEcheances[child.id]?.hasUnpaidFees == true;
         final totalCount = notifCount + (hasUnpaidFees ? 1 : 0);
-        print('Enfant ${child.fullName}: $totalCount notification(s) (messages: $notifCount, échéance: $hasUnpaidFees)');
+        print(
+          'Enfant ${child.fullName}: $totalCount notification(s) (messages: $notifCount, échéance: $hasUnpaidFees)',
+        );
       }
     } catch (e) {
       print('Erreur lors du chargement des notifications: $e');
@@ -199,12 +208,14 @@ class _HomeScreenState extends State<HomeScreen> {
   // Charger les notifications pour un enfant spécifique
   Future<void> _loadNotificationsForChild(Child child) async {
     print('Chargement des notifications pour: ${child.fullName}');
-    
+
     // Récupérer le matricule depuis la base de données
     try {
-      final childInfo = await DatabaseService.instance.getChildInfoById(child.id);
+      final childInfo = await DatabaseService.instance.getChildInfoById(
+        child.id,
+      );
       final matricule = childInfo?['matricule'] as String?;
-      
+
       if (matricule == null || matricule.isEmpty) {
         print('Matricule non disponible pour ${child.fullName}');
         if (mounted) {
@@ -220,14 +231,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Charger les messages de groupe
       try {
-        final notifications = await GroupMessageService.getGroupMessages(matricule);
+        final notifications = await GroupMessageService.getGroupMessages(
+          matricule,
+        );
         if (mounted) {
           setState(() {
             _childrenNotifications[child.id] = notifications;
             _childrenNotificationsLoading[child.id] = false;
           });
         }
-        print('Messages chargés pour ${child.fullName}: ${notifications.length}');
+        print(
+          'Messages chargés pour ${child.fullName}: ${notifications.length}',
+        );
       } catch (e) {
         print('Erreur messages pour ${child.fullName}: $e');
         if (mounted) {
@@ -239,14 +254,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Charger les notifications d'échéance
       try {
-        final echeanceNotification = await EcheanceService.getEcheanceNotification(matricule);
+        final echeanceNotification =
+            await EcheanceService.getEcheanceNotification(matricule);
         if (mounted) {
           setState(() {
             _childrenEcheances[child.id] = echeanceNotification;
             _childrenEcheancesLoading[child.id] = false;
           });
         }
-        print('Échéance chargée pour ${child.fullName}: ${echeanceNotification.hasUnpaidFees ? 'Impayée' : 'Régulière'}');
+        print(
+          'Échéance chargée pour ${child.fullName}: ${echeanceNotification.hasUnpaidFees ? 'Impayée' : 'Régulière'}',
+        );
       } catch (e) {
         print('Erreur échéance pour ${child.fullName}: $e');
         if (mounted) {
@@ -255,7 +273,6 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       }
-      
     } catch (e) {
       print('Erreur générale pour ${child.fullName}: $e');
       if (mounted) {
@@ -921,8 +938,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          getNotificationCountForChild(child) > 9 
-                              ? '9+' 
+                          getNotificationCountForChild(child) > 9
+                              ? '9+'
                               : getNotificationCountForChild(child).toString(),
                           style: const TextStyle(
                             color: Colors.white,
@@ -1453,6 +1470,13 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onTap,
     bool enableBorder = false,
     Color? borderColor,
+    bool enableInnerBorder = true,
+    bool enableOuterBorder = true,
+    Color? innerBorderColor,
+    double imageBorderRadius = 50,
+    double width = 70,
+    double height = 100,
+    double doubleBorderGap = 1.0,
   }) {
     final isDark = _themeService.isDarkMode;
     return Row(
@@ -1462,13 +1486,14 @@ class _HomeScreenState extends State<HomeScreen> {
           index: index,
           cardKey: cardKey,
           title: title,
-          width: 80,
-          height: 100,
+          width: width,
+          height: height,
           imageFlex: 2,
           imagePath: imagePath,
           isDark: isDark,
           titleFontSize: 11,
-          imageBorderRadius: 14,
+          imageBorderRadius: imageBorderRadius,
+          doubleBorderGap: doubleBorderGap,
           color: color,
           backgroundColor: isDark
               ? backgroundColor.withOpacity(0.15)
@@ -1476,9 +1501,10 @@ class _HomeScreenState extends State<HomeScreen> {
           textColor: isDark ? color.withOpacity(0.75) : textColor,
           actionText: actionText,
           //actionTextColor: color,
-          enableBorder: enableBorder,
-          borderColor: borderColor,
           onTap: onTap,
+          enableInnerBorder: enableInnerBorder,
+          enableOuterBorder: enableOuterBorder,
+          innerBorderColor: innerBorderColor,
         ),
         const SizedBox(width: 10),
       ],
@@ -1561,4 +1587,3 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 }
-

@@ -1071,7 +1071,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         SizedBox(
-          height: 88,
+          height: AppDimensions.getChildImageSize(context) + 48,
           child: Row(
             children: [
               // ── Liste scrollable des enfants ──
@@ -1114,15 +1114,15 @@ class _HomeScreenState extends State<HomeScreen> {
         MainScreenWrapper.of(context).navigateToChildDetail(child);
       },
       child: Container(
-        width: 68,
+        width: AppDimensions.getChildImageSize(context) + 16,
         margin: const EdgeInsets.only(right: 14),
         child: Column(
           children: [
             Stack(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: AppDimensions.getChildImageSize(context),
+                  height: AppDimensions.getChildImageSize(context),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _kDarkCard,
@@ -1147,28 +1147,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     top: -2,
                     right: -2,
                     child: Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: EdgeInsets.all(AppDimensions.getNotificationBadgeSize(context) * 0.125),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
                         border: Border.all(color: _kDarkBg, width: 2),
                       ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
+                      constraints: BoxConstraints(
+                        minWidth: AppDimensions.getNotificationBadgeSize(context),
+                        minHeight: AppDimensions.getNotificationBadgeSize(context),
                       ),
-                      child: Center(
-                        child: Text(
-                          getNotificationCountForChild(child) > 9
-                              ? '9+'
-                              : getNotificationCountForChild(child).toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+                      child: Text(
+                        getNotificationCountForChild(child) > 9
+                            ? '9+'
+                            : getNotificationCountForChild(child).toString(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: AppDimensions.getNotificationBadgeTextSize(context),
+                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
@@ -1179,7 +1177,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child.firstName,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: _textSizeService.getScaledFontSize(10),
+                fontSize: AppDimensions.getChildNameTextSize(context),
                 fontWeight: FontWeight.w500,
               ),
               maxLines: 1,
@@ -1187,10 +1185,10 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
             ),
             Text(
-              child.grade.isNotEmpty ? child.grade : '—',
+              child.grade.isNotEmpty ? child.grade : '---',
               style: TextStyle(
                 color: _kOrange,
-                fontSize: _textSizeService.getScaledFontSize(9),
+                fontSize: AppDimensions.getChildGradeTextSize(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -1216,12 +1214,12 @@ class _HomeScreenState extends State<HomeScreen> {
         if (result == true) _loadChildren();
       },
       child: SizedBox(
-        width: 68,
+        width: AppDimensions.getChildImageSize(context) + 16,
         child: Column(
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: AppDimensions.getChildImageSize(context),
+              height: AppDimensions.getChildImageSize(context),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -1231,14 +1229,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       .solid, // dashed not directly supported; use a package for dashed
                 ),
               ),
-              child: const Icon(Icons.add, color: _kDarkBorder, size: 20),
+              child: Icon(
+                Icons.add, 
+                color: _kDarkBorder, 
+                size: AppDimensions.getChildImageSize(context) * 0.33,
+              ),
             ),
-            const SizedBox(height: 5),
-            const Text(
+            SizedBox(height: 5),
+            Text(
               'Nouveau',
               style: TextStyle(
                 color: _kTextSecondary,
-                fontSize: 10,
+                fontSize: AppDimensions.getChildNameTextSize(context),
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
@@ -1268,45 +1270,47 @@ class _HomeScreenState extends State<HomeScreen> {
               SectionRow(title: 'INSCRIPTIONS & DÉMARCHES'),
               const SizedBox(height: 16),
               SizedBox(
-                height: 130,
+                height: AppDimensions.getPaymentBannerCardHeight(context) +10,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  padding: EdgeInsets.symmetric(horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.8),
                   children: [
                     _buildCard(
                       index: 0,
                       cardKey: 'inscription',
                       title: 'Inscription \n en ligne',
                       imagePath: 'assets/images/icons/inscription.png',
-                      color: const Color(0xFF3B82F6),
+                      color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFF8FCFF),
                       textColor: const Color(0xFF333333),
                       actionText: '',
                       allowLineBreak: true,
-                      enableInnerBorder: true,
-                      enableOuterBorder: true,
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
                       innerBorderColor: const Color(0xFF93C5FD),
-                      imageBorderRadius: 50,
-                      width: 70,
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       onTap: () => InscriptionBottomSheet.show(context),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
                     _buildCard(
                       index: 1,
                       cardKey: 'integration',
                       title: 'Demande\nintégration',
                       imagePath: 'assets/images/icons/integration.png',
-                      color: const Color(0xFF10B981),
+                      color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFF7FEFC),
                       textColor: const Color(0xFF333333),
                       actionText: '',
-                      enableInnerBorder: true,
-                      enableOuterBorder: true,
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
                       allowLineBreak: true,
                       innerBorderColor: const Color(0xFF6EE7B7),
-                      imageBorderRadius: 50,
-                      width: 70,
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       onTap: () => showModalBottomSheet(
                         context: context,
@@ -1315,41 +1319,43 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (_) => const IntegrationBottomSheet(),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
                     _buildCard(
                       index: 2,
                       cardKey: 'consulter_demande',
                       title: 'Consulter\ndemande',
                       imagePath: 'assets/images/icons/consulter.png',
-                      color: const Color(0xFFF59E0B),
+                      color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFFFFEF7),
                       textColor: const Color(0xFF333333),
                       actionText: '',
-                      enableInnerBorder: true,
-                      enableOuterBorder: true,
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
                       allowLineBreak: true,
                       innerBorderColor: const Color(0xFFFCD34D),
-                      imageBorderRadius: 50,
-                      width: 70,
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       onTap: () => IntegrationRequestBottomSheet.show(context),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
                     _buildCard(
                       index: 3,
                       cardKey: 'parrainage',
                       title: 'Parrainer\nutilisateur',
                       imagePath: 'assets/images/icons/parrainer.png',
-                      color: const Color(0xFF8B5CF6),
+                      color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFFCFAFF),
                       textColor: const Color(0xFF333333),
                       actionText: '',
-                      enableInnerBorder: true,
+                      enableInnerBorder: false,
                       allowLineBreak: true,
-                      enableOuterBorder: true,
+                      enableOuterBorder: false,
                       innerBorderColor: const Color(0xFFC4B5FD),
-                      imageBorderRadius: 50,
-                      width: 70,
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       onTap: () => showSponsorshipBottomSheet(context),
                     ),
@@ -1582,10 +1588,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
               SectionRow(title: 'BOUTIQUE & ACHATS'),
               SizedBox(
-                height: 140,
+                height: AppDimensions.getPaymentBannerCardHeight(context),
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  padding: EdgeInsets.only(
+                    left: AppDimensions.getSectionHorizontalPadding(context), 
+                    right: AppDimensions.getSectionHorizontalPadding(context) + 8,
+                  ),
                   children: [
                     _buildCard(
                       index: 0,
@@ -1593,7 +1602,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Mon panier',
                       imagePath: 'assets/images/mes-commandes.jpg',
                       color: _kOrange,
-                      width:110,
+                      width: AppDimensions.getHorizontalCardWidth(context),
+                      height: AppDimensions.getHorizontalCardHeight(context), // Ajout d'une hauteur dynamique
                       backgroundColor: const Color(0xFFFFF4EE),
                       textColor: const Color(0xFF9A3412),
                       actionText: 'Voir',
@@ -1611,7 +1621,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Mes commandes',
                       imagePath: 'assets/images/mes-commandes.jpg',
                       color: const Color(0xFF10B981),
-                      width:110,
+                      width: AppDimensions.getHorizontalCardWidth(context),
+                      height: AppDimensions.getHorizontalCardHeight(context), // Ajout d'une hauteur dynamique
                       backgroundColor: const Color(0xFFECFDF5),
                       textColor: const Color(0xFF065F46),
                       actionText: 'Voir',
@@ -1629,7 +1640,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Boutique\n(Libouli)',
                       imagePath: 'assets/images/mes-commandes.jpg',
                       color: const Color(0xFF8B5CF6),
-                      width:110,
+                      width: AppDimensions.getHorizontalCardWidth(context),
+                      height: AppDimensions.getHorizontalCardHeight(context), // Ajout d'une hauteur dynamique
                       backgroundColor: const Color(0xFFF3E8FF),
                       textColor: const Color(0xFF6B21A8),
                       actionText: 'Accéder',
@@ -1694,7 +1706,7 @@ class _HomeScreenState extends State<HomeScreen> {
           imageFlex: 2,
           imagePath: imagePath,
           isDark: isDark,
-          titleFontSize: 11,
+          titleFontSize: AppDimensions.getBottomSheetCardTextSize(context),
           imageBorderRadius: imageBorderRadius,
           doubleBorderGap: doubleBorderGap,
           color: color,

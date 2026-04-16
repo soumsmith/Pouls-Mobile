@@ -499,7 +499,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     // Récupérer les matricules des enfants de l'utilisateur
     final authService = AuthService();
-    final currentUser = authService.getCurrentUser();
+    final currentUser = authService.
+    getCurrentUser();
 
     print('Utilisateur connecté: ${currentUser != null}');
     if (currentUser != null) {
@@ -2631,7 +2632,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => GalleryScreen(
-              ecoleId: widget.ecole.id,
+              ecoleCode: widget.ecole.parametreCode ?? 'gainhs',
               ecoleNom: widget.ecole.parametreNom,
             ),
           ),
@@ -3121,13 +3122,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     // Cas spécial : coulisses navigue directement vers l'écran TikTok
     if (actionType == 'coulisses') {
-      final ecoleId = widget.ecole.id ?? 'gainhs';
+      final ecoleCode = widget.ecole.parametreCode ?? 'gainhs';
       final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
 
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) =>
-              GalleryScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
+              GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
         ),
       );
       return;
@@ -3188,8 +3189,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
   //  Coulisses Excellence Content
   Widget _buildCoulissesContent() {
-    // Récupérer l'ID de l'école
-    final ecoleId = widget.ecole.id ?? 'gainhs'; // Valeur par défaut si null
+    // Récupérer le code de l'école
+    final ecoleCode = widget.ecole.parametreCode ?? 'gainhs'; // Valeur par défaut si null
     final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
 
     // Naviguer immédiatement vers l'écran TikTok-style
@@ -3197,7 +3198,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) =>
-              GalleryScreen(ecoleId: ecoleId, ecoleNom: ecoleNom),
+              GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
         ),
       );
     });

@@ -407,6 +407,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             children: [
               // Student info banner
               _buildStudentBanner(),
+              // Average cards
+              _buildAverageCards(),
               // Content
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -512,6 +514,139 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── AVERAGE CARDS SECTION ───────────────────────────────────────────────────
+  Widget _buildAverageCards() {
+    if (_bulletinData == null) return const SizedBox.shrink();
+
+    final moyFr = _bulletinData!['moyFr'] ?? 0.0;
+    final moyGeneral = _bulletinData!['moyGeneral'] ?? 0.0;
+
+    return Container(
+      height: 140, // Increased height to prevent overflow
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 12), // Better margins
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        children: [
+          _buildAverageCard(
+            'Moyenne Française',
+            moyFr.toStringAsFixed(1),
+            Icons.menu_book_outlined,
+            _getAverageColor(moyFr),
+            isFirst: true,
+          ),
+          const SizedBox(width: 12), // Fixed spacing between cards
+          _buildAverageCard(
+            'Moyenne Générale',
+            moyGeneral.toStringAsFixed(1),
+            Icons.analytics_outlined,
+            _getAverageColor(moyGeneral),
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAverageCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color, {
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return Container(
+      width: 160, // Increased width for better content fit
+      margin: EdgeInsets.only(
+        left: isFirst ? 0 : 0,
+        right: isLast ? 0 : 0,
+      ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.1),
+            color.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16), // Simplified border radius
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 16,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '/20',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: color.withOpacity(0.8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12), // Increased spacing
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22, // Slightly smaller font
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 4), // Increased spacing
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color.withOpacity(0.8),
+              letterSpacing: 0.1,
             ),
           ),
         ],

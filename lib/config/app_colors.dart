@@ -111,6 +111,7 @@ class AppColors {
   static const Color surfaceDark = Color(0xFF121212);
 
   static const Color card = Color(0xFFFFFFFF);
+  static const Color cardLightGrey = Color(0xFF5F6368);
 
   // ================= TEXTE =================
 

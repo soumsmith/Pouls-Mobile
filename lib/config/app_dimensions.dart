@@ -1537,4 +1537,300 @@ class AppDimensions {
           2; // Tablettes : moitié de largeur
     }
   }
+
+  // ── DIMENSIONS POUR LES CARTES DE STATISTIQUES ────────────────────────────────
+
+  /// Hauteur des cartes de statistiques selon l'appareil
+  static double getSummaryCardHeight(BuildContext context) {
+    if (isMobile(context)) {
+      return 85.0; // Mobile : plus compact
+    } else if (isSmallTablet(context)) {
+      return 95.0; // iPad Mini : hauteur standard
+    } else if (isTablet(context)) {
+      return 105.0; // iPad : plus grand
+    } else {
+      return 115.0; // Desktop : maximum
+    }
+  }
+
+  /// Largeur des cartes de statistiques selon l'appareil
+  static double getSummaryCardWidth(BuildContext context) {
+    if (isMobile(context)) {
+      return 100.0; // Mobile : plus étroit
+    } else if (isSmallTablet(context)) {
+      return 160.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 180.0; // iPad : plus large
+    } else {
+      return 200.0; // Desktop : maximum
+    }
+  }
+
+  // ── DIMENSIONS POUR LE PAYMENT BANNER CARD ────────────────────────────────
+
+  /// Hauteur du conteneur du PaymentBannerCard selon l'appareil
+  static double getPaymentBannerCardHeight(BuildContext context) {
+    if (isMobile(context)) {
+      return 130.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 150.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 170.0; // iPad : plus grand
+    } else {
+      return 190.0; // Desktop : maximum
+    }
+  }
+
+  /// Largeur des cartes individuelles dans le PaymentBannerCard selon l'appareil
+  static double getPaymentBannerCardItemWidth(BuildContext context) {
+    if (isMobile(context)) {
+      return 70.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 85.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 100.0; // iPad : plus large
+    } else {
+      return 120.0; // Desktop : maximum
+    }
+  }
+
+
+
+  // ── DIMENSIONS POUR LES CARTES HORIZONTALES (SUIVI SCOLAIRE) ─────────────────────
+
+  /// Hauteur des cartes horizontales de suivi scolaire selon l'appareil
+  static double getHorizontalCardHeight(BuildContext context) {
+    if (isMobile(context)) {
+      return 100.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 140.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 140.0; // iPad : plus grand
+    } else {
+      return 130.0; // Desktop : maximum
+    }
+  }
+
+  /// Largeur des cartes horizontales de suivi scolaire selon l'appareil
+  static double getHorizontalCardWidth(BuildContext context) {
+    if (isMobile(context)) {
+      return 120.0; // Mobile : compact
+    } else if (isSmallTablet(context)) {
+      return 140.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 160.0; // iPad : plus large
+    } else {
+      return 180.0; // Desktop : maximum
+    }
+  }
+
+  /// Facteur de proportion pour les cartes carrées selon la taille de l'écran
+  static double getSquareCardScaleFactor(BuildContext context) {
+    if (isMobile(context)) {
+      return 0.7; // Mobile : 70% de la taille de base
+    } else if (isSmallTablet(context)) {
+      return 0.85; // iPad Mini : 85% de la taille de base
+    } else if (isTablet(context)) {
+      return 0.95; // iPad : 95% de la taille de base
+    } else {
+      return 1.0; // Desktop : 100% de la taille de base
+    }
+  }
+
+  /// Dimensions carrées selon l'appareil (pour les cartes carrées)
+  static double getSquareCardSize(BuildContext context, {double baseSize = 140.0}) {
+    return baseSize * getSquareCardScaleFactor(context);
+  }
+
+  /// Largeur des cartes carrées selon l'appareil
+  static double getSquareCardWidthSize(BuildContext context) {
+    return getSquareCardSize(context, baseSize: 110.0);
+  }
+
+  /// Hauteur des cartes carrées selon l'appareil
+  static double getSquareCardHeightSize(BuildContext context) {
+    return getSquareCardSize(context, baseSize: 156.0);
+  }
+
+  /// Taille des images des enfants selon la taille de l'écran
+  static double getChildImageSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 60.0; // Mobile : taille actuelle (bonne pour téléphone)
+    } else if (isSmallTablet(context)) {
+      return 75.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 90.0; // iPad : plus grand
+    } else {
+      return 100.0; // Desktop : maximum
+    }
+  }
+
+  /// Border radius pour les images selon la taille de l'écran
+  static double getImageBorderRadius(BuildContext context) {
+    if (isMobile(context)) {
+      return 40.0; // Mobile : plus petit
+    } else if (isSmallTablet(context)) {
+      return 45.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 20.0; // iPad : plus grand
+    } else {
+      return 55.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du texte pour les cartes selon la taille de l'écran
+  static double getCardTextSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 10.0; // Mobile : plus petit
+    } else if (isSmallTablet(context)) {
+      return 11.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 12.0; // iPad : plus grand
+    } else {
+      return 13.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du texte pour les titres des cartes selon la taille de l'écran
+  static double getCardTitleTextSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 11.0; // Mobile : plus petit
+    } else if (isSmallTablet(context)) {
+      return 12.0; // iPad Mini : standard
+    } else if (isTablet(context)) {
+      return 13.0; // iPad : plus grand
+    } else {
+      return 14.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du texte pour les cartes du bottom sheet selon la taille de l'écran
+  static double getBottomSheetCardTextSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 11.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 15.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 14.0; // iPad : plus grand
+    } else {
+      return 18.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du texte pour les noms des enfants selon la taille de l'écran
+  static double getChildNameTextSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 10.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 11.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 12.0; // iPad : plus grand
+    } else {
+      return 13.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du texte pour les classes des enfants selon la taille de l'écran
+  static double getChildGradeTextSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 9.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 10.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 11.0; // iPad : plus grand
+    } else {
+      return 12.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du texte pour les badges de notification selon la taille de l'écran
+  static double getNotificationBadgeTextSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 8.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 9.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 10.0; // iPad : plus grand
+    } else {
+      return 11.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du conteneur des badges de notification selon la taille de l'écran
+  static double getNotificationBadgeSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 16.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 18.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 20.0; // iPad : plus grand
+    } else {
+      return 22.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille du texte pour les titres de sections selon la taille de l'écran
+  static double getSectionTitleTextSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 11.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 12.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 13.0; // iPad : plus grand
+    } else {
+      return 14.0; // Desktop : maximum
+    }
+  }
+
+  /// Taille de l'icône chevron des sections selon la taille de l'écran
+  static double getSectionIconSize(BuildContext context) {
+    if (isMobile(context)) {
+      return 18.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 20.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 22.0; // iPad : plus grand
+    } else {
+      return 24.0; // Desktop : maximum
+    }
+  }
+
+  /// Espacement horizontal pour les sections selon la taille de l'écran
+  static double getSectionHorizontalPadding(BuildContext context) {
+    if (isMobile(context)) {
+      return 16.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 20.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 24.0; // iPad : plus grand
+    } else {
+      return 28.0; // Desktop : maximum
+    }
+  }
+
+  /// Marge verticale pour les sections selon la taille de l'écran
+  static double getSectionVerticalMargin(BuildContext context) {
+    if (isMobile(context)) {
+      return 8.0; // Mobile : taille par défaut
+    } else if (isSmallTablet(context)) {
+      return 10.0; // iPad Mini : légèrement plus grand
+    } else if (isTablet(context)) {
+      return 12.0; // iPad : plus grand
+    } else {
+      return 14.0; // Desktop : maximum
+    }
+  }
+
+  /// Espacement horizontal entre les cartes du PaymentBannerCard selon l'appareil
+  static double getPaymentBannerCardSpacing(BuildContext context) {
+    if (isMobile(context)) {
+      return 12.0; // Mobile : standard
+    } else if (isSmallTablet(context)) {
+      return 16.0; // iPad Mini : plus grand
+    } else if (isTablet(context)) {
+      return 45.0; // iPad : encore plus grand
+    } else {
+      return 24.0; // Desktop : maximum
+    }
+  }
 }

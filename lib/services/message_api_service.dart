@@ -39,67 +39,65 @@ class MessageApiService {
 
   /// Récupère les messages d'un élève spécifique
   /// 
-  /// Endpoint: GET /vie-ecoles/messages/{phoneNumber}/eleve/{matricule}?per_page=20&page=1
+  /// Endpoint: GET /messages/{numero_parent}/eleve/{matricule}?per_page=20&page=1
   /// Response: {
-  ///   "status": "success",
-  ///   "data": [Conversation...]
+  ///   "status": true,
+  ///   "data": {
+  ///     "status": "success",
+  ///     "data": {
+  ///       "conversation": {...},
+  ///       "messages": {
+  ///         "data": [...]
+  ///       }
+  ///     }
+  ///   }
   /// }
-  Future<List<Conversation>> getMessagesForStudent(String phoneNumber, String matricule, {int perPage = 20, int page = 1}) async {
+  Future<Map<String, dynamic>> getMessagesForStudent(String phoneNumber, String matricule, {int perPage = 20, int page = 1}) async {
     try {
       print('📨 Récupération des messages pour l\'élève $matricule du parent $phoneNumber');
       
       final response = await HttpService.get('$_baseUrl/$phoneNumber/eleve/$matricule?per_page=$perPage&page=$page');
       
-      // La structure de l'API est: {status: true, data: {status: "success", data: {conversation: {...}, messages: {data: [...]}}}}
+      // Selon la documentation: si success = true et contient un objet conversation
       if (response['status'] == true && response['data'] != null) {
         final innerData = response['data'];
         if (innerData['status'] == 'success' && innerData['data'] != null) {
           final conversationData = innerData['data'];
-          if (conversationData['messages'] != null && conversationData['messages']['data'] != null) {
-            final List<dynamic> messagesData = conversationData['messages']['data'];
-            
-            // Créer une conversation à partir des messages
-            final conversations = <Conversation>[];
-            if (messagesData.isNotEmpty) {
-              // Construire les données pour Conversation.fromJson
-              final conversationJson = {
-                'id': conversationData['conversation']?['id'] ?? 1,
-                'parent_id': conversationData['conversation']?['parent_id'] ?? 0,
-                'school_id': conversationData['conversation']?['school_id'] ?? 0,
-                'student_id': conversationData['conversation']?['student_id'] ?? '',
-                'subject': conversationData['conversation']?['subject'] ?? 'Message',
-                'last_message_at': conversationData['conversation']?['last_message_at'] ?? DateTime.now().toIso8601String(),
-                'created_at': conversationData['conversation']?['created_at'] ?? DateTime.now().toIso8601String(),
-                'updated_at': conversationData['conversation']?['updated_at'] ?? DateTime.now().toIso8601String(),
-                'unread_count': 0, // Valeur par défaut
-                'participants': conversationData['conversation']?['participants'] ?? [],
-                'school': {
-                  'client_id': conversationData['conversation']?['school_id'] ?? 0,
-                  'nom': 'École',
-                  'code': '',
-                },
-                'student': {
-                  'uid': matricule,
-                  'nom': 'Élève',
-                  'prenoms': '',
-                  'classe': '',
-                },
-                'messages': messagesData,
-              };
-              
-              final conversation = Conversation.fromJson(conversationJson);
-              conversations.add(conversation);
-            }
-            
-            print('✅ ${conversations.length} conversations récupérées pour l\'élève $matricule');
-            return conversations;
+          
+          // Vérifier s'il y a une conversation existante
+          final hasConversation = conversationData['conversation'] != null;
+          final conversationId = hasConversation ? conversationData['conversation']['id'] : null;
+          
+          print('📝 Conversation existante: $hasConversation');
+          if (conversationId != null) {
+            print('🆔 ID de conversation: $conversationId');
           }
+          
+          // Extraire les messages s'ils existent
+          List<dynamic> messagesData = [];
+          if (conversationData['messages'] != null && conversationData['messages']['data'] != null) {
+            messagesData = conversationData['messages']['data'];
+          }
+          
+          return {
+            'success': true,
+            'hasConversation': hasConversation,
+            'conversationId': conversationId,
+            'conversationData': conversationData['conversation'],
+            'messages': messagesData,
+          };
         }
       }
       
-      print('📭 Aucune conversation trouvée - structure de réponse différente');
-      print('📄 Response structure: ${response.keys.toList()}');
-      return [];
+      // Si la réponse est false ou ne contient pas d'objet conversation
+      print('📭 Aucune conversation existante');
+      return {
+        'success': true,
+        'hasConversation': false,
+        'conversationId': null,
+        'conversationData': null,
+        'messages': [],
+      };
     } catch (e) {
       print('❌ Erreur lors de la récupération des messages: $e');
       throw Exception('Erreur lors du chargement des messages: $e');
@@ -121,26 +119,34 @@ class MessageApiService {
     );
   }
 
-  /// Marque une conversation comme lue
+  /// Marque des messages comme lus dans une conversation
   /// 
-  /// Endpoint: POST /vie-ecoles/messages/{conversationId}/read
-  /// Body: { "parent_id": parentId }
-  Future<bool> markConversationAsRead(int conversationId, int parentId) async {
+  /// Endpoint: /vie-ecoles/messages/marquer-comme-lu
+  /// Body: {
+  ///   "numero_parent": "0707074647",
+  ///   "conversation_id": 1
+  /// }
+  Future<bool> markMessagesAsRead({
+    required String numeroParent,
+    required int conversationId,
+  }) async {
     try {
-      print('📖 Marquage de la conversation $conversationId comme lue');
+      print('📖 Marquage des messages comme lus pour la conversation $conversationId');
       
       final response = await HttpService.post(
-        '$_baseUrl/$conversationId/read',
+        '$_baseUrl/marquer-comme-lu',
         body: {
-          'parent_id': parentId,
+          'numero_parent': numeroParent,
+          'conversation_id': conversationId,
         },
       );
       
-      if (response['status'] == 'success') {
-        print('✅ Conversation marquée comme lue');
+      if (response['status'] == true || response['success'] == true) {
+        print('✅ Messages marqués comme lus avec succès');
         return true;
       } else {
-        throw Exception('Échec du marquage comme lu');
+        print('❌ Échec du marquage comme lu: ${response['message'] ?? 'Erreur inconnue'}');
+        return false;
       }
     } catch (e) {
       print('❌ Erreur lors du marquage comme lu: $e');

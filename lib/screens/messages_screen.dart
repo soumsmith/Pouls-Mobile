@@ -72,6 +72,7 @@ class _MessagesScreenState extends State<MessagesScreen>
   bool _isLoading = true;
   final TextSizeService _textSizeService = TextSizeService();
   final MessageApiService _messageApiService = MessageApiService();
+  final MessageService _messageService = MessageService(); // Ajout du service de messagerie
   final ScrollController _scrollController = ScrollController();
 
   // ─── Formulaire d'envoi ─────────────────────────────────────────────────
@@ -116,6 +117,10 @@ class _MessagesScreenState extends State<MessagesScreen>
       parent: _fadeController,
       curve: Curves.easeOut,
     );
+    
+    // Réinitialiser le conversation_id lors du chargement d'un nouvel élève
+    _messageService.resetConversationId();
+    
     _loadConversations();
     _messageController.addListener(() {
       final has =
@@ -141,31 +146,6 @@ class _MessagesScreenState extends State<MessagesScreen>
   //  DATA
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Convertit les conversations API en liste plate de _LocalMessage
-  List<_LocalMessage> _conversationsToLocalMessages(
-    List<Conversation> conversations,
-  ) {
-    final currentUser = AuthService.instance.getCurrentUser();
-    final messages = <_LocalMessage>[];
-
-    for (final conv in conversations) {
-      for (final msg in conv.messages) {
-        final isMe =
-            currentUser != null &&
-            (msg.senderPseudo.toLowerCase().contains(
-                  currentUser.fullName.toLowerCase(),
-                ) ||
-                (currentUser.phone.isNotEmpty &&
-                    msg.senderPseudo.toLowerCase().contains(
-                      currentUser.phone.toLowerCase(),
-                    )));
-        messages.add(
-          _LocalMessage(body: msg.body, isMe: isMe, time: conv.lastMessageAt),
-        );
-      }
-    }
-    return messages;
-  }
 
   Future<void> _loadConversations({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
@@ -175,18 +155,39 @@ class _MessagesScreenState extends State<MessagesScreen>
         throw Exception('Aucun utilisateur connecté');
       }
 
-      final conversations = await _messageApiService.getMessagesForStudent(
+      final result = await _messageApiService.getMessagesForStudent(
         currentUser.phone,
         _args?.studentMatricule ?? '',
       );
 
       if (!mounted) return;
 
+      // Extraire les données de la nouvelle structure
+      final messagesData = result['messages'] as List<dynamic>;
+      final conversationId = result['conversationId'] as int?;
+      
+      // Marquer les messages comme lus si une conversation existe
+      if (conversationId != null) {
+        await _messageApiService.markMessagesAsRead(
+          numeroParent: currentUser.phone,
+          conversationId: conversationId,
+        );
+      }
+
+      // Convertir les messages en _LocalMessage
+      final localMessages = messagesData.map((msg) {
+        final isMe = currentUser.phone.isNotEmpty &&
+            (msg['sender_pseudo']?.toString().toLowerCase().contains(currentUser.phone.toLowerCase()) ?? false);
+        
+        return _LocalMessage(
+          body: msg['body']?.toString() ?? '',
+          isMe: isMe,
+          time: DateTime.tryParse(msg['created_at']?.toString() ?? '') ?? DateTime.now(),
+        );
+      }).toList();
+
       setState(() {
-        _conversations = conversations;
-        // Remplacer les messages locaux par ceux de l'API
-        // (supprime les messages "pending" confirmés)
-        _localMessages = _conversationsToLocalMessages(conversations);
+        _localMessages = localMessages;
         _isLoading = false;
       });
 

@@ -2631,66 +2631,75 @@ class _ChildListScreenState extends State<ChildListScreen>
         // SECTION 1 : Paiements & Inscription
         // ════════════════════════════════════════════════════════════════
         SectionRow(title: 'Paiements & Inscription'),
-        const SizedBox(height: 16),
         SizedBox(
-          height: 130,
+          height: AppDimensions.getPaymentBannerCardHeight(context) +10,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal:
+                  AppDimensions.getPaymentBannerCardSpacing(context) * 0.8,
+            ),
             children: [
               _buildCard(
                 index: 0,
                 cardKey: 'paiement',
                 title: 'Paiement\nen ligne',
                 imagePath: 'assets/images/icons/paiement.png',
-                color: const Color(0xFF3B82F6),
+                color: AppColors.cardLightGrey,
                 backgroundColor: const Color(0xFFF8FCFF),
                 textColor: const Color(0xFF333333),
                 actionText: '',
-                enableInnerBorder: true,
-                enableOuterBorder: true,
+                enableInnerBorder: false,
+                enableOuterBorder: false,
                 innerBorderColor: const Color(0xFF93C5FD),
-                imageBorderRadius: 50,
-                width: 70,
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 allowLineBreak: true,
                 onTap: _showPaiementBottomSheet,
               ),
-              const SizedBox(width: 12),
+              SizedBox(
+                width: AppDimensions.getPaymentBannerCardSpacing(context),
+              ),
               _buildCard(
                 index: 1,
                 cardKey: 'historique_paiements',
                 title: 'Historique \n paiement',
                 imagePath: 'assets/images/icons/historique.png',
-                color: const Color(0xFF8B5CF6),
-                backgroundColor: const Color(0xFFFCFAFF),
+                backgroundColor: const Color.fromARGB(255, 253, 253, 253),
                 textColor: const Color(0xFF333333),
                 actionText: '',
-                enableInnerBorder: true,
-                enableOuterBorder: true,
                 allowLineBreak: true,
-                innerBorderColor: const Color(0xFFC4B5FD),
-                imageBorderRadius: 50,
-                width: 70,
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                color: AppColors.cardLightGrey,
+                innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 onTap: _showHistoriquePaiementsBottomSheet,
               ),
-              const SizedBox(width: 12),
+              SizedBox(
+                width: AppDimensions.getPaymentBannerCardSpacing(context),
+              ),
               _buildCard(
                 index: 2,
                 cardKey: 'inscription',
                 title: 'Inscription \n en ligne',
                 imagePath: 'assets/images/icons/inscription.png',
-                color: const Color(0xFF10B981),
+                color: AppColors.cardLightGrey,
                 backgroundColor: const Color(0xFFF7FEFC),
                 textColor: const Color(0xFF333333),
                 actionText: '',
-                enableInnerBorder: true,
-                enableOuterBorder: true,
+                enableInnerBorder: false,
+                enableOuterBorder: false,
                 allowLineBreak: true,
                 innerBorderColor: const Color(0xFF6EE7B7),
-                imageBorderRadius: 50,
-                width: 70,
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 onTap: () {
                   print('=== NAVIGATION INSCRIPTION ===');
@@ -2702,7 +2711,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
 
                   // Mettre à jour l'objet Child avec le ecoleCode si disponible
-                  final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
+                  final updatedChild =
+                      _ecoleCode != null && _ecoleCode!.isNotEmpty
                       ? widget.child.copyWith(ecoleCode: _ecoleCode)
                       : widget.child;
 
@@ -2722,22 +2732,25 @@ class _ChildListScreenState extends State<ChildListScreen>
                   );
                 },
               ),
-              const SizedBox(width: 12),
+              SizedBox(
+                width: AppDimensions.getPaymentBannerCardSpacing(context),
+              ),
               _buildCard(
                 index: 2,
                 cardKey: 'scolarite',
                 title: 'Scolarité \n élève',
                 imagePath: 'assets/images/icons/scolarite.png',
-                color: const Color(0xFFF59E0B),
+                color: AppColors.cardLightGrey,
                 backgroundColor: const Color(0xFFFFFEF7),
                 textColor: const Color(0xFF333333),
                 actionText: '',
                 allowLineBreak: true,
-                enableInnerBorder: true,
-                enableOuterBorder: true,
-                innerBorderColor: const Color(0xFFFCD34D),
-                imageBorderRadius: 50,
-                width: 70,
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 onTap: () async {
                   if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
@@ -2761,22 +2774,25 @@ class _ChildListScreenState extends State<ChildListScreen>
                   }
                 },
               ),
-              const SizedBox(width: 12),
+              SizedBox(
+                width: AppDimensions.getPaymentBannerCardSpacing(context),
+              ),
               _buildCard(
                 index: 4,
                 cardKey: 'integration_requests',
                 title: 'Demandes\n intégration',
                 imagePath: 'assets/images/icons/consulter.png',
-                color: const Color(0xFF8B5CF6),
+                color: AppColors.cardLightGrey,
                 backgroundColor: const Color(0xFFFCFAFF),
                 textColor: const Color(0xFF333333),
                 actionText: '',
-                enableInnerBorder: true,
-                enableOuterBorder: true,
+                enableInnerBorder: false,
+                enableOuterBorder: false,
                 allowLineBreak: true,
                 innerBorderColor: const Color(0xFFC4B5FD),
-                imageBorderRadius: 50,
-                width: 70,
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 onTap: () => IntegrationRequestBottomSheet.show(
                   context,
@@ -2791,9 +2807,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
-        const SizedBox(height: 16),
+      
         SectionRow(title: 'Suivi scolaire'),
-        const SizedBox(height: 16),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
@@ -2802,7 +2817,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             imagePath: 'assets/images/notes.jpg',
             iconData: Icons.bar_chart_rounded,
             isDark: isDark,
-            height: 100,
+            height: AppDimensions.getHorizontalCardHeight(context),
             color: const Color(0xFF1976D2),
             backgroundColor: isDark
                 ? const Color(0xFF0D1A2E)
@@ -2839,7 +2854,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             cardKey: 'timetable',
             title: 'Emploi du temps',
             imagePath: 'assets/images/emploi-du-temps.jpg',
-            width: 200,
+            width: AppDimensions.getHorizontalCardWidth(context),
             iconData: Icons.calendar_today_rounded,
             isDark: isDark,
             color: const Color(0xFFF57C00),
@@ -2950,6 +2965,33 @@ class _ChildListScreenState extends State<ChildListScreen>
                       'color': const Color(0xFFD32F2F),
                       'buttonText': 'Voir sanctions',
                       'key': 'sanctions',
+                    },
+                    {
+                      'title': 'Bulletin',
+                      'subtitle': 'Notes et évaluations',
+                      'imagePath': null,
+                      'iconData': Icons.assessment_rounded,
+                      'color': const Color(0xFF4CAF50),
+                      'buttonText': 'Voir bulletin',
+                      'key': 'bulletins',
+                    },
+                    {
+                      'title': 'Devoirs',
+                      'subtitle': 'Travaux à faire',
+                      'imagePath': null,
+                      'iconData': Icons.assignment_rounded,
+                      'color': const Color(0xFFFF9800),
+                      'buttonText': 'Voir devoirs',
+                      'key': 'homework',
+                    },
+                    {
+                      'title': 'Difficultés',
+                      'subtitle': 'Suivi des difficultés',
+                      'imagePath': null,
+                      'iconData': Icons.psychology_rounded,
+                      'color': const Color(0xFF9C27B0),
+                      'buttonText': 'Voir difficultés',
+                      'key': 'difficulties',
                     },
                     {
                       'title': 'Événements',
@@ -3260,7 +3302,8 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showHistoriquePaiementsBottomSheet() {
     final matricule = widget.child.matricule ?? _matricule;
-    final ecoleCode = widget.child.ecoleCode ?? widget.child.paramEcole ?? _ecoleCode;
+    final ecoleCode =
+        widget.child.ecoleCode ?? widget.child.paramEcole ?? _ecoleCode;
 
     if (matricule == null || matricule.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3405,118 +3448,175 @@ class _ChildListScreenState extends State<ChildListScreen>
         !_isLoading && !_isLoadingNotes && _eleveDetail != null;
 
     if (!allDataLoaded) {
-      // Afficher un CustomLoader pendant le chargement avec hauteur réduite
-      return const SizedBox(
-        height: 50,
-        child: Center(
-          child: CustomLoader(
-            message: '',
-            loaderColor: AppColors.screenOrange,
-            size: 18,
-            showBackground: false,
-          ),
-        ),
-      );
+      return _buildLoadingSummaryCards();
     }
 
+    return _buildSummaryCardsGrid();
+  }
+
+  Widget _buildLoadingSummaryCards() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 120,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(children: _buildAvailableSummaryCards()),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: List.generate(
+              5,
+              (index) => Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: index < 4 ? 12.0 : 0.0),
+                  child: _buildModernSummaryCard(
+                    '',
+                    '',
+                    Colors.grey,
+                    Icons.circle,
+                    isLoading: true,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
+  Widget _buildSummaryCardsGrid() {
+    final cards = _buildAvailableSummaryCards();
+    if (cards.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.getAdaptivePadding(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Aperçu rapide', AppColors.primary),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              itemCount: cards.length,
+              itemBuilder: (context, index) {
+                return TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: Duration(milliseconds: 400 + (index * 100)),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) => Transform.scale(
+                    scale: 0.8 + (0.2 * value),
+                    child: Opacity(
+                      opacity: value,
+                      child: child,
+                    ),
+                  ),
+                  child: Container(
+                    width: 140,
+                    margin: EdgeInsets.only(right: index < cards.length - 1 ? 12.0 : 0.0),
+                    child: cards[index],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  
   List<Widget> _buildAvailableSummaryCards() {
     List<Widget> cards = [];
 
     // Carte Moyenne
     if (_moyGeneral != null) {
       cards.add(
-        _buildModernSummaryCard(
+        _buildEnhancedSummaryCard(
           'Moyenne',
           '${_moyGeneral!.toStringAsFixed(2)}',
           Colors.green,
           Icons.trending_up,
+          subtitle: 'Générale',
           isLoading: _isLoadingNotes,
+          gradient: _getGradientForColor(Colors.green),
         ),
       );
     }
 
     // Carte Rang
     if (_globalAverage != null && _globalAverage!.trimesterRank > 0) {
-      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
       cards.add(
-        _buildModernSummaryCard(
+        _buildEnhancedSummaryCard(
           'Rang',
           '${_globalAverage!.trimesterRank}${_getOrdinalSuffix(_globalAverage!.trimesterRank)}',
           Colors.blue,
           Icons.emoji_events,
+          subtitle: 'Classement',
           isLoading: _isLoadingNotes,
+          gradient: _getGradientForColor(Colors.blue),
         ),
       );
     }
 
     // Carte Présence
     if (_eleveDetail != null && _eleveDetail!['pt_in_jour'] != null) {
-      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      final isPresent = _eleveDetail!['pt_in_jour'] == 1;
       cards.add(
-        _buildModernSummaryCard(
+        _buildEnhancedSummaryCard(
           'Présence',
-          _eleveDetail!['pt_in_jour'] == 1 ? 'Présent' : 'Absent',
-          _eleveDetail!['pt_in_jour'] == 1
-              ? AppColors.success
-              : AppColors.error,
-          Icons.check_circle,
+          isPresent ? 'Présent' : 'Absent',
+          isPresent ? AppColors.success : AppColors.error,
+          isPresent ? Icons.check_circle : Icons.cancel,
+          subtitle: "Aujourd'hui",
+          gradient: _getGradientForColor(isPresent ? AppColors.success : AppColors.error),
         ),
       );
     }
 
     // Carte Appréciation
     if (_appreciation != null && _appreciation!.isNotEmpty) {
-      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
       cards.add(
-        _buildModernSummaryCard(
+        _buildEnhancedSummaryCard(
           'Appréciation',
           _appreciation!,
           AppColors.secondary,
           Icons.star,
+          subtitle: 'Générale',
           isLoading: _isLoadingNotes,
+          gradient: _getGradientForColor(AppColors.secondary),
+          maxLines: 2,
         ),
       );
     }
 
     // Carte Scolarité
     if (_eleveDetail != null && _eleveDetail!['msolde'] != null) {
-      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      final solde = _eleveDetail!['msolde'] as int;
       cards.add(
-        _buildModernSummaryCard(
+        _buildEnhancedSummaryCard(
           'Scolarité',
-          '${(_eleveDetail!['msolde'] as int).toString()}F',
-          (_eleveDetail!['msolde'] as int) > 0
-              ? Colors.orange
-              : AppColors.success,
+          '${solde.toString()}F',
+          solde > 0 ? Colors.orange : AppColors.success,
           Icons.account_balance_wallet,
+          subtitle: solde > 0 ? 'À payer' : 'Réglée',
+          gradient: _getGradientForColor(solde > 0 ? Colors.orange : AppColors.success),
         ),
       );
     }
 
     // Carte Redoublant
     if (_eleveDetail != null && _eleveDetail!['redoublant'] != null) {
-      if (cards.isNotEmpty) cards.add(const SizedBox(width: 12));
+      final isRedoublant = _eleveDetail!['redoublant'] == 'OUI';
       cards.add(
-        _buildModernSummaryCard(
+        _buildEnhancedSummaryCard(
           'Redoublant',
-          _eleveDetail!['redoublant']?.toString() ?? 'Non',
-          _eleveDetail!['redoublant'] == 'OUI' ? Colors.red : AppColors.success,
+          isRedoublant ? 'OUI' : 'NON',
+          isRedoublant ? Colors.red : AppColors.success,
           Icons.refresh,
+          subtitle: 'Statut',
+          gradient: _getGradientForColor(isRedoublant ? Colors.red : AppColors.success),
         ),
       );
     }
@@ -3545,8 +3645,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
       ),
       child: SizedBox(
-        width: 100,
-        height: 95,
+        width: AppDimensions.getSummaryCardWidth(context) + 500,
+        height: AppDimensions.getSummaryCardHeight(context),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -8990,6 +9090,160 @@ class _ChildListScreenState extends State<ChildListScreen>
                 _buildNotificationCard(notification, setModalState),
           ),
       ],
+    );
+  }
+
+  LinearGradient _getGradientForColor(Color baseColor) {
+    return LinearGradient(
+      colors: [
+        baseColor.withOpacity(0.8),
+        baseColor,
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+
+  Widget _buildEnhancedSummaryCard(
+    String title,
+    String value,
+    Color color,
+    IconData icon, {
+    String? subtitle,
+    bool isLoading = false,
+    LinearGradient? gradient,
+    int maxLines = 1,
+  }) {
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Ajouter un feedback haptique ou une action si nécessaire
+        },
+        borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+        child: Container(
+          padding: EdgeInsets.all(AppDimensions.getEventCardPadding(context)),
+          decoration: BoxDecoration(
+            gradient: gradient ?? _getGradientForColor(color),
+            borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Icône et titre
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      icon,
+                      color: color,
+                      size: 18,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Indicateur visuel
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Valeur principale
+              if (isLoading)
+                Container(
+                  height: 20,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                )
+              else
+                Flexible(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(18),
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                      height: 1.2,
+                    ),
+                    maxLines: maxLines,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              
+              const SizedBox(height: 4),
+              
+              // Titre et sous-titre
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(11),
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(9),
+                        color: Colors.white.withOpacity(0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

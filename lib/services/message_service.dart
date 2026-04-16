@@ -7,13 +7,27 @@ class MessageService {
   static final MessageService _instance = MessageService._internal();
   factory MessageService() => _instance;
   MessageService._internal();
+  
+  /// Stocke le conversation_id actuel pour éviter les appels répétés
+  int? _currentConversationId;
+  
+  /// Réinitialise le conversation_id stocké (utile pour changer d'élève)
+  void resetConversationId() {
+    _currentConversationId = null;
+  }
 
-  /// Vérifie s'il existe une conversation existante pour déterminer le conversation_id
-  /// Retourne 1 si des messages existent, null sinon
+  /// Vérifie s'il existe une conversation existante et retourne le conversation_id
+  /// Selon la documentation: retourne l'ID de l'objet conversation si présent, null sinon
   Future<int?> _determineConversationId({
     required String userPhoneNumber,
     required String matricule,
   }) async {
+    // Si on a déjà un conversation_id en cache, on le retourne
+    if (_currentConversationId != null) {
+      print('📝 Utilisation du conversation_id en cache: $_currentConversationId');
+      return _currentConversationId;
+    }
+    
     try {
       print('🔍 Vérification des conversations existantes pour $userPhoneNumber / $matricule');
 
@@ -27,26 +41,22 @@ class MessageService {
         final responseData = json.decode(response.body);
         print('📄 Réponse vérification conversation: ${response.body}');
 
+        // Selon la documentation: si success = true et contient un objet conversation
         if (responseData['status'] == true &&
             responseData['data'] != null &&
             responseData['data']['data'] != null &&
-            responseData['data']['data']['messages'] != null &&
-            responseData['data']['data']['messages']['data'] != null) {
-          final List<dynamic> messages =
-              responseData['data']['data']['messages']['data'];
-          if (messages.isNotEmpty) {
-            print(
-                '✅ Conversations existantes trouvées (${messages.length} messages), conversation_id = 1');
-            return 1;
-          } else {
-            print(
-                '📭 Aucune conversation existante (liste de messages vide), conversation_id = null');
-            return null;
+            responseData['data']['data']['conversation'] != null) {
+          
+          final conversationId = responseData['data']['data']['conversation']['id'] as int?;
+          if (conversationId != null) {
+            _currentConversationId = conversationId; // Mettre en cache
+            print('✅ Conversation existante trouvée, conversation_id = $conversationId');
+            return conversationId;
           }
-        } else {
-          print('📭 Aucune conversation existante, conversation_id = null');
-          return null;
         }
+        
+        print('📭 Aucune conversation existante, conversation_id = null');
+        return null;
       } else {
         print('⚠️ Erreur lors de la vérification: ${response.statusCode}');
         return null;
@@ -68,6 +78,7 @@ class MessageService {
   }) async {
     print('📤 MessageService.sendTextMessage appelé');
 
+    // Si conversationId n'est pas fourni, le déterminer selon la documentation
     if (conversationId == null) {
       conversationId = await _determineConversationId(
         userPhoneNumber: userPhoneNumber,
@@ -79,11 +90,12 @@ class MessageService {
       '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/envoyer/$userPhoneNumber',
     );
 
+    // Selon la documentation: conversation_id doit être null s'il n'y a pas encore de conversation
     final body = {
       'content': content,
       'body': content,
       'subject': subject,
-      'conversation_id': conversationId,
+      'conversation_id': conversationId, // null si nouvelle conversation
       'code_ecole': codeEcole,
       'matricule': matricule,
       'sender_type': 'parent',
@@ -106,6 +118,15 @@ class MessageService {
       print('📄 Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // Si c'est une nouvelle conversation, extraire et stocker le conversation_id
+        if (conversationId == null) {
+          final responseData = json.decode(response.body);
+          if (responseData['data'] != null && responseData['data']['conversation_id'] != null) {
+            _currentConversationId = responseData['data']['conversation_id'] as int?;
+            print('🆕 Nouvelle conversation créée avec ID: $_currentConversationId');
+          }
+        }
+        
         print('✅ Message texte envoyé avec succès');
         return {
           'success': true,
@@ -139,6 +160,7 @@ class MessageService {
   }) async {
     print('📤 MessageService.sendImageMessage appelé');
 
+    // Si conversationId n'est pas fourni, le déterminer selon la documentation
     if (conversationId == null) {
       conversationId = await _determineConversationId(
         userPhoneNumber: userPhoneNumber,
@@ -156,6 +178,7 @@ class MessageService {
       request.fields['content'] = content;
       request.fields['body'] = content;
       request.fields['subject'] = subject;
+      // Selon la documentation: conversation_id doit être null s'il n'y a pas encore de conversation
       request.fields['conversation_id'] = conversationId?.toString() ?? '';
       request.fields['code_ecole'] = codeEcole;
       request.fields['matricule'] = matricule;
@@ -181,6 +204,15 @@ class MessageService {
       print('📄 Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // Si c'est une nouvelle conversation, extraire et stocker le conversation_id
+        if (conversationId == null) {
+          final responseData = json.decode(response.body);
+          if (responseData['data'] != null && responseData['data']['conversation_id'] != null) {
+            _currentConversationId = responseData['data']['conversation_id'] as int?;
+            print('🆕 Nouvelle conversation créée avec ID: $_currentConversationId');
+          }
+        }
+        
         print('✅ Message avec image envoyé avec succès');
         return {
           'success': true,
@@ -214,6 +246,7 @@ class MessageService {
   }) async {
     print('📤 MessageService.sendVoiceMessage appelé');
 
+    // Si conversationId n'est pas fourni, le déterminer selon la documentation
     if (conversationId == null) {
       conversationId = await _determineConversationId(
         userPhoneNumber: userPhoneNumber,
@@ -231,6 +264,7 @@ class MessageService {
       request.fields['content'] = content;
       request.fields['body'] = content;
       request.fields['subject'] = subject;
+      // Selon la documentation: conversation_id doit être null s'il n'y a pas encore de conversation
       request.fields['conversation_id'] = conversationId?.toString() ?? '';
       request.fields['code_ecole'] = codeEcole;
       request.fields['matricule'] = matricule;
@@ -256,6 +290,15 @@ class MessageService {
       print('📄 Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // Si c'est une nouvelle conversation, extraire et stocker le conversation_id
+        if (conversationId == null) {
+          final responseData = json.decode(response.body);
+          if (responseData['data'] != null && responseData['data']['conversation_id'] != null) {
+            _currentConversationId = responseData['data']['conversation_id'] as int?;
+            print('🆕 Nouvelle conversation créée avec ID: $_currentConversationId');
+          }
+        }
+        
         print('✅ Note vocale envoyée avec succès');
         return {
           'success': true,

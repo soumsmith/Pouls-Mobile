@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../models/coulisse_excellence.dart';
-import '../services/coulisse_excellence_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../models/gallery_image.dart';
+import '../services/gallery_service.dart';
 import '../config/app_colors.dart';
 import '../widgets/custom_sliver_app_bar.dart';
-import 'coulisse_video_feed_screen.dart';
 
 class GalleryScreen extends StatefulWidget {
-  final String ecoleId;
+  final String ecoleCode;
   final String ecoleNom;
 
   const GalleryScreen({
     super.key,
-    required this.ecoleId,
+    required this.ecoleCode,
     required this.ecoleNom,
   });
 
@@ -21,36 +21,36 @@ class GalleryScreen extends StatefulWidget {
 }
 
 class _GalleryScreenState extends State<GalleryScreen> {
-  List<CoulisseExcellence> _videos = [];
+  List<GalleryImage> _images = [];
   bool _isLoading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadVideos();
+    _loadImages();
   }
 
-  Future<void> _loadVideos() async {
-    print('=== CHARGEMENT DES VIDÉOS GALERIE ===');
-    print('École ID: ${widget.ecoleId}');
+  Future<void> _loadImages() async {
+    print('=== CHARGEMENT DES IMAGES GALERIE ===');
+    print('École Code: ${widget.ecoleCode}');
     print('École Nom: ${widget.ecoleNom}');
     
     try {
-      final videos = await CoulisseExcellenceService.getCoulisseExcellenceList(widget.ecoleId);
-      print('Vidéos reçues du service: ${videos.length}');
+      final images = await GalleryService.getGalleryImages(widget.ecoleCode);
+      print('Images reçues du service: ${images.length}');
       
       setState(() {
-        _videos = videos;
+        _images = images;
         _isLoading = false;
       });
       
-      print('State mis à jour - _videos.length: ${_videos.length}');
+      print('State mis à jour - _images.length: ${_images.length}');
       print('_isLoading: $_isLoading');
       print('_error: $_error');
       
     } catch (e) {
-      print('ERREUR lors du chargement des vidéos: $e');
+      print('ERREUR lors du chargement des images: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -64,7 +64,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
     print('=== BUILD METHOD ===');
     print('_isLoading: $_isLoading');
     print('_error: $_error');
-    print('_videos.length: ${_videos.length}');
+    print('_images.length: ${_images.length}');
 
     return Container(
       color: Colors.white,
@@ -129,7 +129,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _loadVideos,
+                  onPressed: _loadImages,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -143,12 +143,12 @@ class _GalleryScreenState extends State<GalleryScreen> {
       ];
     }
 
-    if (_videos.isEmpty) {
+    if (_images.isEmpty) {
       return [
         SliverFillRemaining(
           child: Center(
             child: Text(
-              'Aucune vidéo disponible',
+              'Aucune image disponible',
               style: TextStyle(
                 fontSize: 16,
                 color: isDark ? Colors.white : AppColors.screenTextPrimary,
@@ -167,16 +167,16 @@ class _GalleryScreenState extends State<GalleryScreen> {
             crossAxisCount: _getCrossAxisCount(context),
           ),
           delegate: SliverChildBuilderDelegate((context, index) {
-            final video = _videos[index];
+            final image = _images[index];
             final cardType = _getCardType(index);
             
             return _buildGalleryCard(
-              video: video,
+              image: image,
               index: index,
               cardType: cardType,
               isDark: isDark,
             );
-          }, childCount: _videos.length),
+          }, childCount: _images.length),
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
         ),
@@ -211,7 +211,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   Widget _buildGalleryCard({
-    required CoulisseExcellence video,
+    required GalleryImage image,
     required int index,
     required GalleryCardType cardType,
     required bool isDark,
@@ -245,81 +245,70 @@ class _GalleryScreenState extends State<GalleryScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => CoulisseVideoFeedScreen(
-                  videos: _videos,
-                  initialIndex: index,
-                ),
-              ),
-            );
+            _showImageDialog(image);
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image placeholder avec différentes tailles
+              // Image réelle avec différentes tailles
               Expanded(
                 flex: 3,
                 child: Container(
                   width: double.infinity,
                   height: imageHeight,
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.primary.withOpacity(0.8),
-                        AppColors.primary.withOpacity(0.4),
-                      ],
-                    ),
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                   ),
-                  child: Stack(
-                    children: [
-                      // Icône de lecture
-                      Center(
-                        child: Icon(
-                          Icons.play_circle_outline,
-                          size: cardType == GalleryCardType.large ? 60 : 40,
-                          color: Colors.white,
-                        ),
-                      ),
-                      // Badge en haut à droite
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.play_arrow,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'VIDÉO',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: CachedNetworkImage(
+                      imageUrl: image.imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primary.withOpacity(0.8),
+                              AppColors.primary.withOpacity(0.4),
                             ],
                           ),
                         ),
+                        child: Center(
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: cardType == GalleryCardType.large ? 60 : 40,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
-                    ],
+                      errorWidget: (context, url, error) => Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.grey.withOpacity(0.8),
+                              Colors.grey.withOpacity(0.4),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            size: cardType == GalleryCardType.large ? 60 : 40,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-              // Section texte
+              // Section texte avec informations sur l'image
               Expanded(
                 flex: 1,
                 child: Padding(
@@ -328,18 +317,18 @@ class _GalleryScreenState extends State<GalleryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        video.titre,
+                        'Image ${index + 1}',
                         style: TextStyle(
                           color: isDark ? Colors.white : AppColors.screenTextPrimary,
                           fontSize: cardType == GalleryCardType.large ? 16 : 14,
                           fontWeight: FontWeight.w600,
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${video.fullName} · ${video.classe}",
+                        'Galerie ${widget.ecoleNom}',
                         style: TextStyle(
                           color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
                           fontSize: 12,
@@ -353,6 +342,63 @@ class _GalleryScreenState extends State<GalleryScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Affiche une image en plein écran dans un dialogue
+  void _showImageDialog(GalleryImage image) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            // Image en plein écran
+            Center(
+              child: InteractiveViewer(
+                child: CachedNetworkImage(
+                  imageUrl: image.imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Bouton de fermeture
+            Positioned(
+              top: 40,
+              right: 20,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_dimensions.dart';
 
 class SectionRow extends StatelessWidget {
   final String title;
@@ -17,10 +18,13 @@ class SectionRow extends StatelessWidget {
     const kTextSecondary = Color(0xFF8A8A9E);
 
     final effectiveTextColor = textColor ?? kTextSecondary;
-    final effectiveFontSize = titleFontSize ?? 11;
+    final effectiveFontSize = titleFontSize ?? AppDimensions.getSectionTitleTextSize(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.getSectionHorizontalPadding(context), 
+        vertical: AppDimensions.getSectionVerticalMargin(context),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -39,7 +43,7 @@ class SectionRow extends StatelessWidget {
             child: Icon(
               Icons.chevron_right,
               color: kTextSecondary.withOpacity(0.5),
-              size: 18,
+              size: AppDimensions.getSectionIconSize(context),
             ),
           ),
         ],

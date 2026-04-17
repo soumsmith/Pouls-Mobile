@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<queries>
-    <!-- Déclaration pour l'intention de traitement audio -->
+<queries xmlns:android="http://schemas.android.com/apk/res/android">
     <intent>
         <action android:name="android.intent.action.PROCESS_TEXT" />
         <data android:mimeType="text/plain" />
     </intent>
-    
-    <!-- Déclaration pour l'accès au microphone -->
     <intent>
         <action android:name="android.media.action.RECORD_SOUND" />
     </intent>
-    
-    <!-- Déclaration pour les applications audio -->
     <intent>
         <action android:name="android.intent.action.MEDIA_BUTTON" />
     </intent>

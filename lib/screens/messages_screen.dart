@@ -63,6 +63,8 @@ class MessagesScreen extends StatefulWidget {
 
 class _MessagesScreenState extends State<MessagesScreen>
     with SingleTickerProviderStateMixin {
+  static const bool _enableAudioRecording = false;
+
   // ─── Conversations ──────────────────────────────────────────────────────
   List<Conversation> _conversations = [];
 
@@ -108,7 +110,9 @@ class _MessagesScreenState extends State<MessagesScreen>
   @override
   void initState() {
     super.initState();
-    _audioRecorder = AudioRecorder();
+    if (_enableAudioRecording) {
+      _audioRecorder = AudioRecorder();
+    }
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -678,9 +682,13 @@ class _MessagesScreenState extends State<MessagesScreen>
                       ),
                     )
                   : GestureDetector(
-                      onLongPressStart: (_) => _startRecording(),
-                      onLongPressEnd: (_) => _stopRecording(),
-                      onLongPressCancel: _cancelRecording,
+                      onLongPressStart: _enableAudioRecording
+                          ? (_) => _startRecording()
+                          : null,
+                      onLongPressEnd:
+                          _enableAudioRecording ? (_) => _stopRecording() : null,
+                      onLongPressCancel:
+                          _enableAudioRecording ? _cancelRecording : null,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         width: 44,
@@ -719,7 +727,8 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   // ─── APERÇU PIÈCE JOINTE ─────────────────────────────────────────────────
   Widget _buildAttachmentPreview() {
-    final isRecordedAudio = _recordedPath != null && _attachedFile == null;
+    final isRecordedAudio =
+        _enableAudioRecording && _recordedPath != null && _attachedFile == null;
     final fileName = isRecordedAudio
         ? 'Note vocale (${_formatDuration(_recordDuration)})'
         : _attachedFile!.path.split('/').last;

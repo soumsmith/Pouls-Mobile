@@ -1,8 +1,18 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.groupegain.parents_responsable">
     <!-- Permissions pour l'enregistrement audio -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    
+    <!-- Déclarations de confidentialité pour Google Play -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" 
+        android:label="Enregistrement audio pour les notes pédagogiques" />
+    
+    <!-- Déclaration de l'utilisation du microphone -->
+    <uses-feature 
+        android:name="android.hardware.microphone"
+        android:required="true" />
     
     <application
         android:label="parents_responsable"

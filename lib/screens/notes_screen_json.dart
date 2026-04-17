@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
+import 'package:fl_chart/fl_chart.dart';
 import '../config/app_colors.dart';
-import '../config/app_dimensions.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/custom_loader.dart';
@@ -44,6 +45,14 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  
+  // Variables pour le carrousel auto-play
+  late PageController _pageController;
+  Timer? _autoPlayTimer;
+  int _currentPage = 0;
+  
+  // Variable pour l'état d'extension du filtre
+  bool _isFilterExpanded = false;
 
   @override
   void initState() {
@@ -56,7 +65,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-
+    
+    // Initialiser le PageController pour le carrousel
+    _pageController = PageController(viewportFraction: 1.0);
+    
     _studentMatricule = widget.matricule;
     _anneeId = widget.anneeId;
     _classeId = widget.classeId;
@@ -72,7 +84,29 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   @override
   void dispose() {
     _fadeController.dispose();
+    _pageController.dispose();
+    _autoPlayTimer?.cancel();
     super.dispose();
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_bulletinData != null) {
+        setState(() {
+          _currentPage = (_currentPage + 1) % 3;
+        });
+        _pageController.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _stopAutoPlay() {
+    _autoPlayTimer?.cancel();
   }
 
   Future<void> _loadApiData() async {
@@ -92,6 +126,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           _isLoading = false;
         });
         _fadeController.forward(from: 0);
+        
+        // Démarrer l'auto-play du carrousel
+        _startAutoPlay();
 
         // Notification de succès
         final matieres = apiData['details'] as List<dynamic>? ?? [];
@@ -406,7 +443,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           child: Column(
             children: [
               // Student info banner
-              _buildStudentBanner(),
+              //_buildStudentBanner(),
               // Average cards
               _buildAverageCards(),
               // Content
@@ -525,32 +562,481 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   Widget _buildAverageCards() {
     if (_bulletinData == null) return const SizedBox.shrink();
 
+    return Container(
+      height: 245, // Increased height for combined slide
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index;
+                });
+                // Redémarrer l'auto-play quand l'utilisateur change manuellement
+                _stopAutoPlay();
+                Future.delayed(const Duration(seconds: 5), () {
+                  if (mounted) {
+                    _startAutoPlay();
+                  }
+                });
+              },
+              children: [
+                _buildStudentInfoPage(),
+                _buildChartPage(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildPageIndicators(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageIndicators() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < 3; i++)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _currentPage == i
+                  ? AppColors.primary
+                  : AppColors.grey300,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStudentInfoPage() {
+    final nom = _bulletinData!['nom'] ?? '';
+    final prenoms = _bulletinData!['prenoms'] ?? '';
+    final matricule = _bulletinData!['matricule'] ?? '';
+    final anneeLibelle = _bulletinData!['anneeLibelle'] ?? '';
     final moyFr = _bulletinData!['moyFr'] ?? 0.0;
     final moyGeneral = _bulletinData!['moyGeneral'] ?? 0.0;
 
     return Container(
-      height: 140, // Increased height to prevent overflow
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 12), // Better margins
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.zero,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildAverageCard(
-            'Moyenne Française',
-            moyFr.toStringAsFixed(1),
-            Icons.menu_book_outlined,
-            _getAverageColor(moyFr),
-            isFirst: true,
-          ),
-          const SizedBox(width: 12), // Fixed spacing between cards
-          _buildAverageCard(
-            'Moyenne Générale',
-            moyGeneral.toStringAsFixed(1),
-            Icons.analytics_outlined,
-            _getAverageColor(moyGeneral),
-            isLast: true,
+          // Carte d'informations de l'élève
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.screenOrange,
+                  AppColors.screenOrangeDark,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.screenOrange.withOpacity(0.2),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.screenOrange.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.screenOrange.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        color: AppColors.screenOrange,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '$prenoms $nom',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.badge,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Matricule: $matricule',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      anneeLibelle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Séparateur
+                Container(
+                  height: 1,
+                  color: Colors.white.withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                // Section des moyennes
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildCompactAverageCard(
+                        'Moyenne Française',
+                        moyFr.toStringAsFixed(1),
+                        Icons.menu_book_outlined,
+                        _getAverageColor(moyFr),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildCompactAverageCard(
+                        'Moyenne Générale',
+                        moyGeneral.toStringAsFixed(1),
+                        Icons.analytics_outlined,
+                        _getAverageColor(moyGeneral),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompactAverageCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 12,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              Text(
+                '/20',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withOpacity(0.9),
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartPage() {
+    final details = _bulletinData!['details'] as List<dynamic>? ?? [];
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.primary.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.bar_chart,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Graphique des Notes',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: details.isNotEmpty
+                ? _buildNotesChart(details)
+                : Center(
+                    child: Text(
+                      'Aucune donnée disponible',
+                      style: TextStyle(
+                        color: AppColors.screenTextSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesChart(List<dynamic> details) {
+    // Trier les matières par moyenne pour un meilleur affichage
+    final sortedDetails = List<Map<String, dynamic>>.from(
+      details.map((item) => item as Map<String, dynamic>)
+    )..sort((a, b) => (b['moyenne'] as double).compareTo(a['moyenne'] as double));
+
+    // Prendre TOUTES les matières pour un affichage complet
+    final allSubjects = sortedDetails;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Container(
+        width: (allSubjects.length * 35.0).clamp(300.0, double.infinity), // Largeur dynamique ajustée
+        height: 180,
+        child: BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceBetween, // Alignement plus serré
+            maxY: 20,
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => Theme.of(context).scaffoldBackgroundColor,
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final subject = allSubjects[group.x.toInt()];
+                  return BarTooltipItem(
+                    '${subject['matiereLibelle']}\n',
+                    TextStyle(
+                      color: AppColors.screenTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '${subject['moyenne'].toStringAsFixed(2)}/20',
+                        style: TextStyle(
+                          color: AppColors.screenTextSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            titlesData: FlTitlesData(
+              show: true,
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (value, meta) {
+                    if (value.toInt() >= 0 && value.toInt() < allSubjects.length) {
+                      final subject = allSubjects[value.toInt()];
+                      final name = subject['matiereLibelle'] as String;
+                      // Abréger les noms longs
+                      final displayName = name.length > 6 
+                          ? '${name.substring(0, 4)}...' 
+                          : name;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: RotatedBox(
+                          quarterTurns: 1, // Rotation verticale pour économiser l'espace
+                          child: Text(
+                            displayName,
+                            style: TextStyle(
+                              color: AppColors.screenTextSecondary,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    }
+                    return const Text('');
+                  },
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 32,
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      value.toInt().toString(),
+                      style: TextStyle(
+                        color: AppColors.screenTextSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            ),
+            borderData: FlBorderData(show: false),
+            barGroups: allSubjects.asMap().entries.map((entry) {
+              final index = entry.key;
+              final subject = entry.value;
+              final average = (subject['moyenne'] as double);
+              
+              // Déterminer la couleur selon la moyenne
+              Color barColor;
+              if (average >= 16) {
+                barColor = Colors.green;
+              } else if (average >= 14) {
+                barColor = Colors.blue;
+              } else if (average >= 12) {
+                barColor = Colors.orange;
+              } else if (average >= 10) {
+                barColor = Colors.deepOrange;
+              } else {
+                barColor = Colors.red;
+              }
+
+              return BarChartGroupData(
+                x: index,
+                barRods: [
+                  BarChartRodData(
+                    toY: average,
+                    color: barColor,
+                    width: 15, // Largeur augmentée pour réduire l'espacement
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(4),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -656,53 +1142,141 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   // ─── FILTERS SECTION ──────────────────────────────────────────────────────
   Widget _buildFiltersSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(20),
-        // boxShadow: const [
-        //   BoxShadow(
-        //     color: AppColors.screenShadow,
-        //     blurRadius: 12,
-        //     offset: Offset(0, 4),
-        //   ),
-        // ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header filtre
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.screenOrangeLight,
-                  borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isFilterExpanded = !_isFilterExpanded;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 0),
+        decoration: BoxDecoration(
+          color: AppColors.screenCard,
+          borderRadius: BorderRadius.circular(20),
+          // boxShadow: const [
+          //   BoxShadow(
+          //     color: AppColors.screenShadow,
+          //     blurRadius: 12,
+          //     offset: Offset(0, 4),
+          //   ),
+          // ],
+        ),
+        child: Column(
+          children: [
+            // Header avec design amélioré
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.screenOrange.withOpacity(0.1),
+                    AppColors.screenOrange.withOpacity(0.05),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                 ),
-                child: const Icon(
-                  Icons.tune,
-                  color: AppColors.screenOrange,
-                  size: 16,
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              const SizedBox(width: 10),
-              const Text(
-                'Filtres',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
-                  letterSpacing: -0.3,
-                ),
+              child: Row(
+                children: [
+                  // Icône animée avec fond circulaire
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.screenOrange,
+                          AppColors.screenOrangeDark,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.screenOrange.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _isFilterExpanded ? Icons.filter_list : Icons.tune,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Texte avec style amélioré
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Filtres',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.screenOrange,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _isFilterExpanded ? 'Réduire' : 'Étendre pour filtrer',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.screenTextSecondary,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Icône flèche animée
+                  AnimatedRotation(
+                    turns: _isFilterExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.screenOrange.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: AppColors.screenOrange,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Divider(color: AppColors.screenDivider, height: 1),
-          const SizedBox(height: 14),
+            ),
+          // Contenu du filtre avec animation
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: _isFilterExpanded ? null : 0,
+            child: _isFilterExpanded 
+                ? Container(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Divider(color: AppColors.screenDivider, height: 1),
+                        const SizedBox(height: 14),
 
           // Année scolaire (read-only)
           Column(
@@ -775,7 +1349,13 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               ),
             ],
           ),
+                      ],
+                    ),
+                  )
+                : null,
+          ),
         ],
+      ),
       ),
     );
   }

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.parents_responsable"
+    namespace = "com.groupegain.parents_responsable"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.parents_responsable"
+        applicationId = "com.groupegain.parents_responsable"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -31,11 +31,18 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("key/groupe-gain-key.jks")
+            storePassword = "groupgain2026"
+            keyAlias = "groupe-gain-key"
+            keyPassword = "groupgain2026"
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

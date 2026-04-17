@@ -1,0 +1,37 @@
+Politique de Confidentialité - Groupe Gain Parents Responsable
+
+Dernière mise à jour : 17 avril 2026
+
+1. Collecte de données
+Notre application enregistre des fichiers audio uniquement avec votre consentement explicite.
+- Les enregistrements audio sont stockés localement sur votre appareil
+- Aucun enregistrement n'est partagé avec des tiers sans votre autorisation
+- Les fichiers audio sont utilisés exclusivement pour les fonctionnalités pédagogiques de l'application
+
+2. Utilisation des données
+- Les enregistrements audio servent aux fonctionnalités suivantes :
+  - Enregistrement de notes vocales pour les devoirs
+  - Messages audio pour la communication scolaire
+  - Fonctionnalités d'apprentissage interactif
+
+3. Partage de données
+- Les enregistrements audio ne sont partagés qu'avec votre consentement
+- Les données partagées sont limitées aux besoins éducatifs
+- Aucune vente de données à des tiers
+
+4. Sécurité
+- Tous les enregistrements sont cryptés sur l'appareil
+- Accès aux enregistrements protégé par authentification
+- Suppression automatique après 30 jours pour les données temporaires
+
+5. Vos droits
+- Vous pouvez accéder à tous vos enregistrements
+- Vous pouvez supprimer任何 enregistrement à tout moment
+- Vous pouvez exporter vos données sur demande
+
+6. Contact
+Pour toute question concernant cette politique de confidentialité :
+Email : privacy@groupegain.com
+Site web : https://groupegain.com/privacy
+
+Cette politique peut être mise à jour pour refléter les changements dans nos pratiques.

@@ -75,6 +75,9 @@ dependencies:
   # Image loading and caching
   cached_network_image: ^3.3.1
 
+  # Charts
+  fl_chart: ^0.69.0
+
   # Versions Firebase plus récentes avec meilleur support Swift 5
   firebase_auth: ^5.7.0
   cloud_firestore: ^5.4.4
@@ -154,7 +157,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo-app.png"
+  image_path: "assets/images/appIcone.jpg"
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/images/logo-app.png"
+  adaptive_icon_foreground: "assets/images/appIcone.jpg"
   remove_alpha_ios: true

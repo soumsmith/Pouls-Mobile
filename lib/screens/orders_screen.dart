@@ -121,7 +121,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       value: SystemUiOverlayStyle.dark
           .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: _buildBody(),
       ),
     );
@@ -172,13 +172,13 @@ class _OrdersScreenState extends State<OrdersScreen>
       height: _isSearching ? 56 : 0,
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: AppColors.screenShadow,
+            color: AppColors.screenShadowThemed(context),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -186,9 +186,9 @@ class _OrdersScreenState extends State<OrdersScreen>
           ? Row(
               children: [
                 const SizedBox(width: 12),
-                const Icon(
+                Icon(
                   Icons.search_rounded,
-                  color: AppColors.screenTextSecondary,
+                  color: AppColors.screenTextSecondaryThemed(context),
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -196,14 +196,14 @@ class _OrdersScreenState extends State<OrdersScreen>
                   child: TextField(
                     controller: _searchController,
                     autofocus: true,
-                    style: const TextStyle(
-                      color: AppColors.screenTextPrimary,
+                    style: TextStyle(
+                      color: AppColors.screenTextPrimaryThemed(context),
                       fontSize: 14,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Rechercher une commande...',
                       hintStyle: TextStyle(
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         fontSize: 14,
                       ),
                       border: InputBorder.none,
@@ -219,11 +219,11 @@ class _OrdersScreenState extends State<OrdersScreen>
                       _searchController.clear();
                       _filterOrders('');
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.all(8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
                       child: Icon(
                         Icons.close_rounded,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         size: 16,
                       ),
                     ),
@@ -251,13 +251,13 @@ class _OrdersScreenState extends State<OrdersScreen>
             height: 40,
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.screenCard,
+              color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: AppColors.screenShadow,
+                  color: AppColors.screenShadowThemed(context),
                   blurRadius: 8,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),

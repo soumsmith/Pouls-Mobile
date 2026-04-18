@@ -500,7 +500,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         context,
       ).copyWith(textScaler: TextScaler.linear(_currentTextScale)),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: CustomScrollView(
           slivers: [
             CustomSliverAppBar(
@@ -559,13 +559,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         width: actionButtonSize,
         height: actionButtonSize,
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(
             AppDimensions.getButtonBorderRadius(context),
           ),
-          boxShadow: AppColors.screenCardShadow,
+          boxShadow: AppColors.screenCardShadowThemed(context),
         ),
-        child: Icon(icon, size: 20, color: const Color(0xFF1A1A1A)),
+        child: Icon(icon, size: 20, color: AppColors.screenTextPrimaryThemed(context)),
       ),
     );
   }
@@ -586,9 +586,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.screenSurface,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: AppColors.screenSurfaceThemed(context),
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
@@ -601,7 +601,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.grey300Adaptive(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -615,12 +615,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                     color: AppColors.screenOrange,
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Recherche avancée',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
                     overflow: TextOverflow.ellipsis,
                     softWrap: false,
@@ -654,13 +654,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: AppColors.grey100Adaptive(context),
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close_rounded,
                         size: 20,
-                        color: Color(0xFF666666),
+                        color: AppColors.grey666Adaptive(context),
                       ),
                     ),
                   ),
@@ -793,7 +793,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     return CustomLoader(
       message: 'Chargement des établissements...',
       loaderColor: AppColors.screenOrange,
-      backgroundColor: AppColors.screenSurface,
+      backgroundColor: AppColors.screenSurfaceThemed(context),
       showBackground: false,
     );
   }
@@ -809,7 +809,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFECEC),
+                color: AppColors.isDarkMode(context) 
+                    ? const Color(0xFF4A1A1A) 
+                    : const Color(0xFFFFECEC),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -819,19 +821,22 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Erreur de chargement',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF999999)),
+              style: TextStyle(
+                fontSize: 13, 
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -1011,20 +1016,20 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text(
+                        Text(
                           'Aucun établissement',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
+                            color: AppColors.screenTextPrimaryThemed(context),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Aucun résultat pour ce filtre',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF999999),
+                            color: AppColors.screenTextSecondaryThemed(context),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -1086,7 +1091,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   delegate: SliverChildBuilderDelegate((_, i) {
                     if (i == items.length && _hasMoreEcoles) {
                       return SeeMoreCard(
-                        cardColor: AppColors.screenCard,
+                        cardColor: AppColors.screenCardThemed(context),
                         borderColor: AppColors.screenOrange.withOpacity(0.3),
                         iconColor: AppColors.screenOrange,
                         textColor: AppColors.screenOrange,
@@ -1148,8 +1153,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             actionText: 'Inscrire',
             imagePath: 'assets/images/icons/integration.png',
             color: const Color(0xFF10B981),
-                      backgroundColor: const Color(0xFFF7FEFC),
-                      textColor: const Color(0xFF333333),
+                      backgroundColor: isDark
+                          ? const Color(0xFFF7FEFC).withOpacity(0.15)
+                          : const Color(0xFFF7FEFC),
+                      textColor: AppColors.screenTextPrimaryThemed(context),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => _showActionBottomSheet(
@@ -1164,8 +1171,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             actionText: 'Évaluer',
             imagePath: 'assets/images/avis-2.jpg',
              color: const Color(0xFFF59E0B),
-                      backgroundColor: const Color(0xFFFFFEF7),
-                      textColor: const Color(0xFF333333),
+                      backgroundColor: isDark
+                          ? const Color(0xFFFFFEF7).withOpacity(0.15)
+                          : const Color(0xFFFFFEF7),
+                      textColor: AppColors.screenTextPrimaryThemed(context),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => _showActionBottomSheet('rating', _kActions['rating']!),
@@ -1180,7 +1189,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             backgroundColor: isDark
                 ? const Color(0xFFE3F2FD).withOpacity(0.15)
                 : const Color(0xFFE3F2FD),
-            textColor: const Color(0xFF333333),
+            textColor: AppColors.screenTextPrimaryThemed(context),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () =>
@@ -1193,8 +1202,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             actionText: 'Voir',
             imagePath: 'assets/images/school-event.jpg',
             color: const Color(0xFF8B5CF6),
-                      backgroundColor: const Color(0xFFFCFAFF),
-                      textColor: const Color(0xFF333333),
+                      backgroundColor: isDark
+                          ? const Color(0xFFFCFAFF).withOpacity(0.15)
+                          : const Color(0xFFFCFAFF),
+                      textColor: AppColors.screenTextPrimaryThemed(context),
             
             isDark: isDark,
             allowLineBreak: true,

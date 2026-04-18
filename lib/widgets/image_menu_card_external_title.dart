@@ -49,7 +49,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.subtitle,
     this.imagePath,
     this.iconData,
-    required this.isDark,
+    this.isDark = false, // Gardé pour compatibilité mais ne sera plus utilisé
     this.icon,
     this.color,
     this.location,
@@ -133,9 +133,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                 ),
                                 fontWeight: FontWeight.w700,
                                 color: textColor ??
-                                    (isDark
-                                        ? Colors.white
-                                        : AppColors.screenTextPrimary),
+                                    AppColors.screenTextPrimaryThemed(context),
                               ),
                               textAlign: centerTitle ? TextAlign.center : null,
                               maxLines: allowLineBreak ? titleMaxLines : 1,
@@ -153,9 +151,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                       textSizeService.getScaledFontSize(9),
                                   fontWeight: FontWeight.w500,
                                   color: textColor?.withOpacity(0.7) ??
-                                      (isDark
-                                          ? Colors.white70
-                                          : AppColors.screenTextSecondary),
+                                      AppColors.screenTextSecondaryThemed(context),
                                 ),
                                 textAlign:
                                     centerTitle ? TextAlign.center : null,
@@ -204,9 +200,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                         Icons.location_on_outlined,
                                         size: 10,
                                         color: textColor?.withOpacity(0.5) ??
-                                            (isDark
-                                                ? Colors.white54
-                                                : AppColors.screenTextSecondary),
+                                            AppColors.screenTextTertiary(context),
                                       ),
                                       const SizedBox(width: 2),
                                       Flexible(
@@ -216,10 +210,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                                             fontSize: textSizeService
                                                 .getScaledFontSize(9),
                                             color: textColor?.withOpacity(0.5) ??
-                                                (isDark
-                                                    ? Colors.white54
-                                                    : AppColors
-                                                        .screenTextSecondary),
+                                                AppColors.screenTextTertiary(context),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
@@ -307,7 +298,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           borderRadius: BorderRadius.circular(
             radius + innerBorderWidth + doubleBorderGap,
           ),
-          color: isDark ? const Color(0xFF121212) : Colors.white,
+          color: AppColors.screenSurfaceThemed(context),
         ),
         padding: EdgeInsets.all(doubleBorderGap),
         child: card,
@@ -339,8 +330,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       decoration: BoxDecoration(
-        color: backgroundColor ??
-            (isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard),
+        color: backgroundColor ?? AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(radius),
       ),
       child: Stack(
@@ -352,7 +342,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                 Positioned.fill(
                   child: ColoredBox(
                     color: color?.withOpacity(0.1) ??
-                        AppColors.screenCard.withOpacity(0.1),
+                        AppColors.screenCardThemed(context).withOpacity(0.1),
                     child: _buildImageOrIcon(context),
                   ),
                 ),

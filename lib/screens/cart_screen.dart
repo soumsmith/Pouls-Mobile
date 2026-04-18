@@ -136,7 +136,7 @@ class _CartScreenState extends State<CartScreen>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: _buildBody(),
       ),
     );
@@ -188,13 +188,13 @@ class _CartScreenState extends State<CartScreen>
               height: 40,
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.screenCard,
+                color: AppColors.screenCardThemed(context),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: AppColors.screenShadow,
+                    color: AppColors.screenShadowThemed(context),
                     blurRadius: 8,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -213,27 +213,27 @@ class _CartScreenState extends State<CartScreen>
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────
   Widget _buildEmptyCart() {
     return Scaffold(
-      backgroundColor: AppColors.screenSurface,
+      backgroundColor: AppColors.screenSurfaceThemed(context),
       appBar: AppBar(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.screenTextPrimary),
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.screenTextPrimaryThemed(context)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Mon Panier',
+        title: Text(
+          'Panier',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppColors.screenTextPrimary,
+            color: AppColors.screenTextPrimaryThemed(context),
           ),
         ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 8),
             child: IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey),
+              icon: Icon(Icons.delete_outline_rounded, color: AppColors.screenTextSecondaryThemed(context)),
               onPressed: null, // Disabled when cart is empty
             ),
           ),
@@ -257,21 +257,21 @@ class _CartScreenState extends State<CartScreen>
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Panier vide',
+            Text(
+              'Votre panier est vide',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Ajoutez des produits pour\ncommencer vos achats',
+            Text(
+              'Ajoutez des produits pour commencer vos achats',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
                 height: 1.5,
               ),
             ),
@@ -281,26 +281,26 @@ class _CartScreenState extends State<CartScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.screenCard,
+                  color: AppColors.screenCardThemed(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.screenDivider,
+                    color: AppColors.screenDividerThemed(context),
                     width: 1,
                   ),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: AppColors.screenShadow,
+                      color: AppColors.screenShadowThemed(context),
                       blurRadius: 8,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                child: const Text(
+                child: Text(
                   'Continuer les achats',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.screenTextSecondary,
+                    color: AppColors.screenTextSecondaryThemed(context),
                   ),
                 ),
               ),
@@ -337,13 +337,13 @@ class _CartScreenState extends State<CartScreen>
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: AppColors.screenShadow,
+              color: AppColors.screenShadowThemed(context),
               blurRadius: 12,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -358,20 +358,22 @@ class _CartScreenState extends State<CartScreen>
                 child: Container(
                   width: 76,
                   height: 76,
-                  color: const Color(0xFFF5F5F5),
+                  color: AppColors.isDarkMode(context) 
+                      ? const Color(0xFF2A2A35)
+                      : const Color(0xFFF5F5F5),
                   child: item.product.imageUrl != null
                       ? Image.network(
                           item.product.imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (_, __, ___) => Icon(
                             Icons.image_not_supported_outlined,
-                            color: Color(0xFFCCCCCC),
+                            color: AppColors.screenTextSecondaryThemed(context),
                             size: 30,
                           ),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.shopping_bag_outlined,
-                          color: Color(0xFFCCCCCC),
+                          color: AppColors.screenTextSecondaryThemed(context),
                           size: 30,
                         ),
                 ),
@@ -407,7 +409,9 @@ class _CartScreenState extends State<CartScreen>
                             width: 28,
                             height: 28,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFF0F0),
+                              color: AppColors.isDarkMode(context) 
+                                  ? const Color(0xFF8B2A2A)
+                                  : const Color(0xFFFFF0F0),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -468,16 +472,22 @@ class _CartScreenState extends State<CartScreen>
             height: 30,
             decoration: BoxDecoration(
               color: item.quantity > 1
-                  ? const Color(0xFFF5F5F5)
-                  : const Color(0xFFEEEEEE),
+                  ? AppColors.isDarkMode(context) 
+                      ? const Color(0xFF2A2A35)
+                      : const Color(0xFFF5F5F5)
+                  : AppColors.isDarkMode(context) 
+                      ? const Color(0xFF555555)
+                      : const Color(0xFFEEEEEE),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.remove,
               size: 15,
               color: item.quantity > 1
-                  ? AppColors.screenTextPrimary
-                  : const Color(0xFFCCCCCC),
+                  ? AppColors.screenTextPrimaryThemed(context)
+                  : AppColors.isDarkMode(context) 
+                      ? const Color(0xFF888888)
+                      : const Color(0xFFCCCCCC),
             ),
           ),
         ),
@@ -515,11 +525,11 @@ class _CartScreenState extends State<CartScreen>
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: AppColors.screenShadowThemed(context),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -575,7 +585,7 @@ class _CartScreenState extends State<CartScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.screenSurface,
+              color: AppColors.screenSurfaceThemed(context),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -583,9 +593,9 @@ class _CartScreenState extends State<CartScreen>
                 _buildPriceRow('Sous-total', '${(_cart?.totalAmount ?? 0).toStringAsFixed(0)} FCFA'),
                 const SizedBox(height: 8),
                 _buildPriceRow('Frais de livraison', 'Calculés à l\'étape suivante'),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(color: AppColors.screenDivider, height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(color: AppColors.screenDividerThemed(context), height: 1),
                 ),
                 _buildPriceRow(
                   'Total',
@@ -640,8 +650,12 @@ class _CartScreenState extends State<CartScreen>
           gradient: _isCheckingOut
               ? LinearGradient(
                   colors: [
-                    Colors.grey.shade300,
-                    Colors.grey.shade300,
+                    AppColors.isDarkMode(context) 
+                        ? Colors.grey.shade600
+                        : Colors.grey.shade300,
+                    AppColors.isDarkMode(context) 
+                        ? Colors.grey.shade600
+                        : Colors.grey.shade300,
                   ],
                 )
               : const LinearGradient(
@@ -930,9 +944,9 @@ class _CartScreenState extends State<CartScreen>
     return StatefulBuilder(
       builder: (context, setSheetState) {
         return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: AppColors.screenCardThemed(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: DraggableScrollableSheet(
             initialChildSize: 0.92,
@@ -952,7 +966,7 @@ class _CartScreenState extends State<CartScreen>
                             width: 36,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: AppColors.screenDivider,
+                              color: AppColors.screenDividerThemed(context),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -1002,8 +1016,8 @@ class _CartScreenState extends State<CartScreen>
                           ],
                         ),
                         const SizedBox(height: 16),
-                        const Divider(
-                          color: AppColors.screenDivider,
+                        Divider(
+                          color: AppColors.screenDividerThemed(context),
                           height: 1,
                         ),
                       ],
@@ -1149,10 +1163,10 @@ class _CartScreenState extends State<CartScreen>
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.screenSurface,
+                              color: AppColors.screenSurfaceThemed(context),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.screenDivider,
+                                color: AppColors.screenDividerThemed(context),
                               ),
                             ),
                             child: Column(
@@ -1168,10 +1182,10 @@ class _CartScreenState extends State<CartScreen>
                                   '${_prixLivraison.toStringAsFixed(0)} FCFA',
                                   isSubtitle: true,
                                 ),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 10),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
                                   child: Divider(
-                                    color: AppColors.screenDivider,
+                                    color: AppColors.screenDividerThemed(context),
                                     height: 1,
                                   ),
                                 ),
@@ -1192,9 +1206,9 @@ class _CartScreenState extends State<CartScreen>
                   // Submit button (fixed bottom)
                   Container(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    decoration: const BoxDecoration(
-                      color: AppColors.screenCard,
-                      border: Border(
+                    decoration: BoxDecoration(
+                      color: AppColors.screenCardThemed(context),
+                      border: const Border(
                         top: BorderSide(color: AppColors.screenDivider),
                       ),
                     ),
@@ -1430,28 +1444,28 @@ class _CartScreenState extends State<CartScreen>
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: AppColors.screenTextPrimary,
+            color: AppColors.screenTextPrimaryThemed(context),
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+            hintStyle: TextStyle(fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
             prefixIcon: Icon(icon, color: AppColors.screenOrange, size: 18),
             filled: true,
-            fillColor: AppColors.screenSurface,
+            fillColor: AppColors.screenSurfaceThemed(context),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 14,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
+              borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
+              borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

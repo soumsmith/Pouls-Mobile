@@ -360,7 +360,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: CustomScrollView(
           slivers: [
             _buildSliverAppBar(),
@@ -392,10 +392,10 @@ class _LibraryScreenState extends State<LibraryScreen>
       _buildCustomActionButton(
         icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
         color:
-            _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimary,
+            _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimaryThemed(context),
         bgColor: _isSearching
             ? AppColors.shopBlueSurface
-            : AppColors.screenCard,
+            : AppColors.screenCardThemed(context),
         onTap: () {
           setState(() {
             _isSearching = !_isSearching;
@@ -411,15 +411,15 @@ class _LibraryScreenState extends State<LibraryScreen>
       const SizedBox(width: 4),
       _buildCustomActionButton(
         icon: Icons.tune,
-        color: AppColors.screenTextPrimary,
-        bgColor: AppColors.screenCard,
+        color: AppColors.screenTextPrimaryThemed(context),
+        bgColor: AppColors.screenCardThemed(context),
         onTap: _showAdvancedSearchBottomSheet,
       ),
       const SizedBox(width: 4),
       _buildCustomActionButton(
         icon: Icons.shopping_bag_outlined,
-        color: AppColors.screenTextPrimary,
-        bgColor: AppColors.screenCard,
+        color: AppColors.screenTextPrimaryThemed(context),
+        bgColor: AppColors.screenCardThemed(context),
         badge: _cartItemCount > 0 ? '$_cartItemCount' : null,
         badgeColor: AppColors.shopGreen,
         onTap: () {
@@ -432,8 +432,8 @@ class _LibraryScreenState extends State<LibraryScreen>
       const SizedBox(width: 4),
       _buildCustomActionButton(
         icon: Icons.receipt_long_outlined,
-        color: AppColors.screenTextPrimary,
-        bgColor: AppColors.screenCard,
+        color: AppColors.screenTextPrimaryThemed(context),
+        bgColor: AppColors.screenCardThemed(context),
         badge: _ordersCount > 0
             ? (_ordersCount > 99 ? '99+' : '$_ordersCount')
             : null,
@@ -469,11 +469,11 @@ class _LibraryScreenState extends State<LibraryScreen>
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: AppColors.screenShadow,
+                  color: AppColors.screenShadowThemed(context),
                   blurRadius: 8,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -490,7 +490,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                   color: badgeColor ?? AppColors.shopGreen,
                   borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
                   border: Border.all(
-                    color: AppColors.screenSurface,
+                    color: AppColors.screenSurfaceThemed(context),
                     width: 1.5,
                   ),
                 ),
@@ -556,9 +556,9 @@ class _LibraryScreenState extends State<LibraryScreen>
       child: Container(
         constraints:
             BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-        decoration: const BoxDecoration(
-          color: AppColors.screenSurface,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: AppColors.screenSurfaceThemed(context),
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
@@ -571,7 +571,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.grey300Adaptive(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -582,12 +582,12 @@ class _LibraryScreenState extends State<LibraryScreen>
                   const Icon(Icons.tune_rounded,
                       size: 20, color: AppColors.shopBlue),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Recherche avancée',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
                     overflow: TextOverflow.ellipsis,
                     softWrap: false,
@@ -619,11 +619,14 @@ class _LibraryScreenState extends State<LibraryScreen>
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: AppColors.grey100Adaptive(context),
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: const Icon(Icons.close_rounded,
-                          size: 20, color: Color(0xFF666666)),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: AppColors.grey666Adaptive(context),
+                      ),
                     ),
                   ),
                 ],

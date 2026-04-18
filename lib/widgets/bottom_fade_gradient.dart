@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../config/app_colors.dart';
 
 /// Un widget réutilisable qui affiche un dégradé de fondu en bas de l'écran
 /// pour créer un effet de transition douce avec le fond de page
@@ -22,7 +21,11 @@ class BottomFadeGradient extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final finalEndColor = endColor ?? AppColors.screenSurface;
+    final themeEndColor = Theme.of(context).colorScheme.surface;
+    final finalEndColor = endColor ?? themeEndColor;
+    final effectiveStartColor = startColor.value == 0x00F8F8F8
+        ? finalEndColor.withOpacity(0)
+        : startColor;
     
     return Positioned(
       bottom: 0,
@@ -36,7 +39,7 @@ class BottomFadeGradient extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                startColor,
+                effectiveStartColor,
                 finalEndColor,
                 finalEndColor,
                 finalEndColor,

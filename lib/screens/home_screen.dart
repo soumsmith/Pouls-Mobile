@@ -41,8 +41,6 @@ import 'coulisse_video_feed_screen.dart';
 const _kDarkBg = Color(0xFF0F0F14);
 const _kDarkCard = Color(0xFF1E1E2A);
 const _kDarkBorder = Color(0xFF2A2A35);
-const _kDarkAlert = Color(0xFF1A1020);
-const _kDarkAlertBorder = Color(0xFF2D1830);
 const _kOrange = Color(0xFFFF7A3C);
 const _kOrangeDeep = Color(0xFFFF5C1B);
 const _kSheetBg = Color(0xFFF5F5F7);
@@ -87,6 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _coulisseVideosLoading = true;
   String? _coulisseVideosError;
 
+  bool get _hasCoulisseExcellenceData =>
+      !_coulisseVideosLoading &&
+      _coulisseVideosError == null &&
+      _coulisseVideos.isNotEmpty;
+
   final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
   @override
@@ -99,6 +102,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadUnreadNotificationsCount();
     _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
     _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
+  }
+
+  Future<void> _refreshHome() async {
+    await _loadChildren();
+    await Future.wait([
+      _loadUnreadNotificationsCount(),
+      _loadCoulisseVideos(),
+    ]);
+    await _loadChildrenNotifications();
   }
 
   @override
@@ -303,6 +315,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Charger les vidéos Coulisses de l'Excellence
   Future<void> _loadCoulisseVideos() async {
+    if (mounted) {
+      setState(() {
+        _coulisseVideosLoading = true;
+        _coulisseVideosError = null;
+      });
+    }
     try {
       final videos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos();
       if (mounted) {
@@ -324,57 +342,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Construire la section Coulisses de l'Excellence
   Widget _buildCoulisseExcellenceSection() {
-    if (_coulisseVideosLoading) {
-      return Container(
-        height: 120,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (_coulisseVideosError != null) {
-      return Container(
-        height: 120,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Colors.grey[400],
-                size: 32,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Erreur de chargement',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_coulisseVideos.isEmpty) {
-      return Container(
-        height: 120,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Center(
-          child: Text(
-            'Aucune vidéo disponible',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
-        ),
-      );
+    if (!_hasCoulisseExcellenceData) {
+      return const SizedBox.shrink();
     }
 
     return Container(
@@ -576,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: _kDarkBg,
+        backgroundColor: AppColors.homeBg(context),
         body: Column(
           children: [
             // ── Dark top section ──
@@ -592,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── DARK HEADER SECTION ───────────────────────────────────────────────────
   Widget _buildDarkHeader() {
     return Container(
-      color: _kDarkBg,
+      color: AppColors.homeBg(context),
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -634,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(24),
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppColors.homeTextPrimary(context),
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -715,10 +684,14 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: _kDarkCard,
+              color: AppColors.homeTopCard(context),
               borderRadius: BorderRadius.circular(11),
             ),
-            child: Icon(icon, size: 17, color: Colors.white),
+            child: Icon(
+              icon,
+              size: 17,
+              color: AppColors.homeTextPrimary(context),
+            ),
           ),
         ),
         if (showBadge && badgeCount > 0)
@@ -731,7 +704,10 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: Colors.red,
                 shape: BoxShape.circle,
-                border: Border.all(color: _kDarkBg, width: 1.5),
+                border: Border.all(
+                  color: AppColors.homeBg(context),
+                  width: 1.5,
+                ),
               ),
               child: Center(
                 child: Text(
@@ -757,8 +733,8 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
         decoration: BoxDecoration(
-          color: _kDarkAlert,
-          border: Border.all(color: _kDarkAlertBorder),
+          color: AppColors.homeAlertBg(context),
+          border: Border.all(color: AppColors.homeAlertBorder(context)),
           borderRadius: BorderRadius.circular(13),
         ),
         child: Row(
@@ -779,7 +755,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Absence signalée — Fatoumat, 6ème G',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.homeTextPrimary(context),
                       fontSize: _textSizeService.getScaledFontSize(12),
                       fontWeight: FontWeight.w600,
                     ),
@@ -790,14 +766,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Ce matin · Collège Hînneh Biabou',
                     style: TextStyle(
-                      color: _kTextSecondary,
+                      color: AppColors.homeTextSecondary(context),
                       fontSize: _textSizeService.getScaledFontSize(10),
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: _kTextSecondary, size: 18),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.homeTextSecondary(context),
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -817,16 +797,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           height: 42,
           decoration: BoxDecoration(
-            color: _kDarkCard,
+            color: AppColors.homeTopCard(context),
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: _kDarkBorder),
+            border: Border.all(color: AppColors.homeTopBorder(context)),
           ),
           child: Row(
             children: [
               const SizedBox(width: 12),
-              const Icon(
+              Icon(
                 Icons.search_rounded,
-                color: _kTextSecondary,
+                color: AppColors.homeTextSecondary(context),
                 size: 18,
               ),
               const SizedBox(width: 8),
@@ -835,13 +815,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   controller: _searchController,
                   autofocus: true,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.homeTextPrimary(context),
                     fontSize: _textSizeService.getScaledFontSize(13),
                   ),
                   decoration: InputDecoration(
                     hintText: 'Rechercher par nom ou ecole...',
                     hintStyle: TextStyle(
-                      color: _kTextSecondary,
+                      color: AppColors.homeTextSecondary(context),
                       fontSize: _textSizeService.getScaledFontSize(13),
                     ),
                     border: InputBorder.none,
@@ -857,11 +837,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     _searchController.clear();
                     _onSearchChanged('');
                   },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Icon(
                       Icons.close_rounded,
-                      color: _kTextSecondary,
+                      color: AppColors.homeTextSecondary(context),
                       size: 16,
                     ),
                   ),
@@ -1176,7 +1156,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               child.firstName,
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.homeTextPrimary(context),
                 fontSize: AppDimensions.getChildNameTextSize(context),
                 fontWeight: FontWeight.w500,
               ),
@@ -1258,110 +1238,113 @@ class _HomeScreenState extends State<HomeScreen> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
-      decoration: const BoxDecoration(
-        color: _kSheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      decoration: BoxDecoration(
+        color: AppColors.homeSheetBg(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       child: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.only(top: 16),
-            children: [
-              SectionRow(title: 'INSCRIPTIONS & DÉMARCHES'),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: AppDimensions.getPaymentBannerCardHeight(context) +10,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.8),
-                  children: [
-                    _buildCard(
-                      index: 0,
-                      cardKey: 'inscription',
-                      title: 'Inscription \n en ligne',
-                      imagePath: 'assets/images/icons/inscription.png',
-                      color: AppColors.cardLightGrey,
-                      backgroundColor: const Color(0xFFF8FCFF),
-                      textColor: const Color(0xFF333333),
-                      actionText: '',
-                      allowLineBreak: true,
-                      enableInnerBorder: false,
-                      enableOuterBorder: false,
-                      innerBorderColor: const Color(0xFF93C5FD),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                      width: AppDimensions.getSquareCardWidthSize(context),
-                      height: AppDimensions.getSquareCardHeightSize(context),
-                      centerTitle: true,
-                      onTap: () => InscriptionBottomSheet.show(context),
-                    ),
-                    SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
-                    _buildCard(
-                      index: 1,
-                      cardKey: 'integration',
-                      title: 'Demande\nintégration',
-                      imagePath: 'assets/images/icons/integration.png',
-                      color: AppColors.cardLightGrey,
-                      backgroundColor: const Color(0xFFF7FEFC),
-                      textColor: const Color(0xFF333333),
-                      actionText: '',
-                      enableInnerBorder: false,
-                      enableOuterBorder: false,
-                      allowLineBreak: true,
-                      innerBorderColor: const Color(0xFF6EE7B7),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                      width: AppDimensions.getSquareCardWidthSize(context),
-                      height: AppDimensions.getSquareCardHeightSize(context),
-                      centerTitle: true,
-                      onTap: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => const IntegrationBottomSheet(),
+          RefreshIndicator(
+            onRefresh: _refreshHome,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(top: 16),
+              children: [
+                SectionRow(title: 'INSCRIPTIONS & DÉMARCHES'),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: AppDimensions.getPaymentBannerCardHeight(context) +10,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.8),
+                    children: [
+                      _buildCard(
+                        index: 0,
+                        cardKey: 'inscription',
+                        title: 'Inscription \n en ligne',
+                        imagePath: 'assets/images/icons/inscription.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFF8FCFF),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        allowLineBreak: true,
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        innerBorderColor: const Color(0xFF93C5FD),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () => InscriptionBottomSheet.show(context),
                       ),
-                    ),
-                    SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
-                    _buildCard(
-                      index: 2,
-                      cardKey: 'consulter_demande',
-                      title: 'Consulter\ndemande',
-                      imagePath: 'assets/images/icons/consulter.png',
-                      color: AppColors.cardLightGrey,
-                      backgroundColor: const Color(0xFFFFFEF7),
-                      textColor: const Color(0xFF333333),
-                      actionText: '',
-                      enableInnerBorder: false,
-                      enableOuterBorder: false,
-                      allowLineBreak: true,
-                      innerBorderColor: const Color(0xFFFCD34D),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                      width: AppDimensions.getSquareCardWidthSize(context),
-                      height: AppDimensions.getSquareCardHeightSize(context),
-                      centerTitle: true,
-                      onTap: () => IntegrationRequestBottomSheet.show(context),
-                    ),
-                    SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
-                    _buildCard(
-                      index: 3,
-                      cardKey: 'parrainage',
-                      title: 'Parrainer\nutilisateur',
-                      imagePath: 'assets/images/icons/parrainer.png',
-                      color: AppColors.cardLightGrey,
-                      backgroundColor: const Color(0xFFFCFAFF),
-                      textColor: const Color(0xFF333333),
-                      actionText: '',
-                      enableInnerBorder: false,
-                      allowLineBreak: true,
-                      enableOuterBorder: false,
-                      innerBorderColor: const Color(0xFFC4B5FD),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                      width: AppDimensions.getSquareCardWidthSize(context),
-                      height: AppDimensions.getSquareCardHeightSize(context),
-                      centerTitle: true,
-                      onTap: () => showSponsorshipBottomSheet(context),
-                    ),
-                  ],
+                      SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                      _buildCard(
+                        index: 1,
+                        cardKey: 'integration',
+                        title: 'Demande\nintégration',
+                        imagePath: 'assets/images/icons/integration.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFF7FEFC),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        allowLineBreak: true,
+                        innerBorderColor: const Color(0xFF6EE7B7),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const IntegrationBottomSheet(),
+                        ),
+                      ),
+                      SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                      _buildCard(
+                        index: 2,
+                        cardKey: 'consulter_demande',
+                        title: 'Consulter\ndemande',
+                        imagePath: 'assets/images/icons/consulter.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFFFFEF7),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        allowLineBreak: true,
+                        innerBorderColor: const Color(0xFFFCD34D),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () => IntegrationRequestBottomSheet.show(context),
+                      ),
+                      SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                      _buildCard(
+                        index: 3,
+                        cardKey: 'parrainage',
+                        title: 'Parrainer\nutilisateur',
+                        imagePath: 'assets/images/icons/parrainer.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFFCFAFF),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        allowLineBreak: true,
+                        enableOuterBorder: false,
+                        innerBorderColor: const Color(0xFFC4B5FD),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () => showSponsorshipBottomSheet(context),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
               // SectionRow(title: 'SCOLARITÉ'),
               // SizedBox(
@@ -1580,11 +1563,13 @@ class _HomeScreenState extends State<HomeScreen> {
               //   ),
               // ),
 
-               // Section Coulisses de l'Excellence
-              SectionRow(title: 'COULISSES DE L\'EXCELLENCE'),
-              const SizedBox(height: 16),
-              _buildCoulisseExcellenceSection(),
-               const SizedBox(height: 16),
+              if (_hasCoulisseExcellenceData) ...[
+                // Section Coulisses de l'Excellence
+                SectionRow(title: 'COULISSES DE L\'EXCELLENCE'),
+                const SizedBox(height: 16),
+                _buildCoulisseExcellenceSection(),
+                const SizedBox(height: 16),
+              ],
 
               SectionRow(title: 'BOUTIQUE & ACHATS'),
               SizedBox(
@@ -1663,8 +1648,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 125),
-            ],
+                const SizedBox(height: 125),
+              ],
+            ),
           ),
           const BottomFadeGradient(),
         ],

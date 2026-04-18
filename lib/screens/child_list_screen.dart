@@ -914,7 +914,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
+      backgroundColor: AppColors.screenBg(context),
       body: Stack(
         children: [
           CustomScrollView(
@@ -2826,6 +2826,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ? const Color(0xFF90CAF9)
                 : const Color(0xFF0D47A1),
             actionText: 'Consulter',
+             width: 175,
             actionTextColor: const Color(0xFF1976D2),
             onTap: () {
               if (_matricule != null && _anneeId != null && _classeId != null) {
@@ -2854,7 +2855,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             cardKey: 'timetable',
             title: 'Emploi du temps',
             imagePath: 'assets/images/emploi-du-temps.jpg',
-            width: AppDimensions.getHorizontalCardWidth(context),
+            width: 175, //AppDimensions.getHorizontalCardWidth(context),
             iconData: Icons.calendar_today_rounded,
             isDark: isDark,
             color: const Color(0xFFF57C00),
@@ -3111,7 +3112,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             imagePath: 'assets/images/messages.jpg',
             iconData: Icons.message_rounded,
             isDark: isDark,
-            //width: 165,
+            width: 175,
             color: const Color(0xFF0288D1),
             backgroundColor: isDark
                 ? const Color(0xFF001A2E)
@@ -3160,6 +3161,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 : const Color(0xFFFF6F00),
             actionText: 'Voir suggestions',
             actionTextColor: const Color(0xFFFFB300),
+            width: 175,
             onTap: () async {
               if (_suggestions.isEmpty && !_isLoadingSuggestions) {
                 await _loadSuggestionsData();

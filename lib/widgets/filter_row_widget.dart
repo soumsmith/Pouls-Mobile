@@ -23,7 +23,7 @@ class FilterRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.screenCard,
+      color: AppColors.screenCardThemed(context),
       padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: SizedBox(
         height: AppDimensions.getFilterContainerHeight(context),
@@ -48,7 +48,7 @@ class FilterRowWidget extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     gradient: isSelected ? (selectedGradient ?? AppColors.screenOrangeGradient) : null,
-                    color: isSelected ? (selectedColor ?? null) : AppColors.screenSurface,
+                    color: isSelected ? (selectedColor ?? null) : AppColors.screenSurfaceThemed(context),
                     borderRadius: BorderRadius.circular(AppDimensions.getFilterBorderRadius(context)),
                     boxShadow: isSelected
                         ? [
@@ -65,7 +65,7 @@ class FilterRowWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: AppDimensions.getFilterFontSize(context),
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? (selectedTextColor ?? Colors.white) : const Color(0xFF666666),
+                      color: isSelected ? (selectedTextColor ?? Colors.white) : AppColors.grey666Adaptive(context),
                     ),
                   ),
                 ),

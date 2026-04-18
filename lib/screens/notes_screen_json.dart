@@ -8,7 +8,7 @@ import '../widgets/searchable_dropdown.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/subtle_retry_button.dart';
-import '../widgets/custom_sliver_app_bar_fixed.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 
 class NotesScreenJson extends StatefulWidget {
   final String matricule;
@@ -264,25 +264,42 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenBg(context),
         body: CustomScrollView(
           slivers: [
-            CustomSliverAppBarFixed(
+            CustomSliverAppBar(
               title: 'Mes Notes',
-              isDark: false,
               pinned: true,
               floating: false,
               elevation: 0,
               actions: [
-                AppBarIconButton(
-                  icon: Icons.refresh_outlined,
-                  isDark: false,
+                GestureDetector(
                   onTap: () {
                     setState(() => _isLoading = true);
                     _loadApiData();
                     _showInfo('Actualisation des notes en cours...');
                   },
-                  tooltip: 'Actualiser',
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.screenCardThemed(context),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.screenShadowThemed(context),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.refresh_outlined,
+                      size: 20,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -301,7 +318,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     return CustomLoader(
       message: 'Chargement des notes...',
       loaderColor: AppColors.screenOrange,
-      backgroundColor: AppColors.screenSurface,
+      backgroundColor: AppColors.screenBg(context),
       showBackground: false,
     );
   }
@@ -310,7 +327,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   Widget _buildAppBar() {
     final matieres = _getFilteredMatieres();
     return Container(
-      color: AppColors.screenSurface,
+      color: AppColors.screenBg(context),
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -324,13 +341,13 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.screenCard,
+                    color: AppColors.screenCardThemed(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_back_ios_new,
                     size: 16,
-                    color: AppColors.screenTextPrimary,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                 ),
               ),
@@ -340,21 +357,21 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Mes Notes',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
+                        color: AppColors.screenTextPrimaryThemed(context),
                         letterSpacing: -0.5,
                       ),
                     ),
                     if (_bulletinData != null)
                       Text(
                         '${matieres.length} matière${matieres.length > 1 ? 's' : ''}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.screenTextSecondary,
+                          color: AppColors.screenTextSecondaryThemed(context),
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -389,31 +406,33 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 Container(
                   width: 100,
                   height: 100,
-                  decoration: const BoxDecoration(
-                    color: AppColors.screenOrangeLight,
+                  decoration: BoxDecoration(
+                    color: AppColors.isDarkMode(context) 
+                        ? const Color(0xFF8B4513)
+                        : AppColors.screenOrangeLight,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.assignment_outlined,
                     size: 48,
                     color: AppColors.screenOrange,
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Erreur de chargement',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Impossible de charger les données.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.screenTextSecondary,
+                    color: AppColors.screenTextSecondaryThemed(context),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -478,8 +497,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFFF7A3C), 
+            AppColors.screenOrange,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -895,7 +917,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     child: Text(
                       'Aucune donnée disponible',
                       style: TextStyle(
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         fontSize: 14,
                       ),
                     ),
@@ -932,7 +954,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   return BarTooltipItem(
                     '${subject['matiereLibelle']}\n',
                     TextStyle(
-                      color: AppColors.screenTextPrimary,
+                      color: AppColors.screenTextPrimaryThemed(context),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -940,7 +962,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       TextSpan(
                         text: '${subject['moyenne'].toStringAsFixed(2)}/20',
                         style: TextStyle(
-                          color: AppColors.screenTextSecondary,
+                          color: AppColors.screenTextSecondaryThemed(context),
                           fontSize: 11,
                         ),
                       ),
@@ -965,11 +987,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       return Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: RotatedBox(
-                          quarterTurns: 1, // Rotation verticale pour économiser l'espace
+                          quarterTurns: 1,
                           child: Text(
                             displayName,
                             style: TextStyle(
-                              color: AppColors.screenTextSecondary,
+                              color: AppColors.screenTextSecondaryThemed(context),
                               fontSize: 8,
                               fontWeight: FontWeight.w500,
                             ),
@@ -990,7 +1012,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     return Text(
                       value.toInt().toString(),
                       style: TextStyle(
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1151,7 +1173,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 0),
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
           // boxShadow: const [
           //   BoxShadow(
@@ -1229,7 +1251,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.screenTextSecondary,
+                            color: AppColors.screenTextSecondaryThemed(context),
                             letterSpacing: 0.1,
                           ),
                         ),
@@ -1275,19 +1297,19 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Divider(color: AppColors.screenDivider, height: 1),
+                        Divider(color: AppColors.screenDividerThemed(context), height: 1),
                         const SizedBox(height: 14),
 
           // Année scolaire (read-only)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Année scolaire',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.screenTextSecondary,
+                  color: AppColors.screenTextSecondaryThemed(context),
                   letterSpacing: 0.2,
                 ),
               ),
@@ -1298,9 +1320,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.screenSurface,
+                  color: AppColors.screenSurfaceThemed(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.screenDivider),
+                  border: Border.all(color: AppColors.screenDividerThemed(context)),
                 ),
                 child: Row(
                   children: [
@@ -1312,9 +1334,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     const SizedBox(width: 10),
                     Text(
                       _selectedYear ?? 'Chargement...',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.screenTextPrimary,
+                        color: AppColors.screenTextPrimaryThemed(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1429,9 +1451,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
         // Cards matières
         Container(
-          decoration: const BoxDecoration(
-            color: AppColors.screenCard,
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: AppColors.screenCardThemed(context),
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
             // boxShadow: [
             //   BoxShadow(
             //     color: AppColors.screenShadow,
@@ -1447,9 +1469,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 children: [
                   _buildSubjectCard(entry.value, entry.key),
                   if (!isLast)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Divider(color: AppColors.screenDivider, height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Divider(color: AppColors.screenDividerThemed(context), height: 1),
                     ),
                 ],
               );
@@ -1519,19 +1541,19 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         children: [
                           Text(
                             subjectName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.screenTextPrimary,
+                              color: AppColors.screenTextPrimaryThemed(context),
                               letterSpacing: -0.2,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${notes.length} évaluation${notes.length > 1 ? 's' : ''}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.screenTextSecondary,
+                              color: AppColors.screenTextSecondaryThemed(context),
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -1564,7 +1586,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       duration: const Duration(milliseconds: 250),
                       child: Icon(
                         Icons.keyboard_arrow_down,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         size: 20,
                       ),
                     ),
@@ -1582,7 +1604,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 14),
-                      const Divider(color: AppColors.screenDivider, height: 1),
+                      Divider(color: AppColors.screenDividerThemed(context), height: 1),
                       const SizedBox(height: 14),
 
                       // Titre détail
@@ -1721,18 +1743,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.screenSurface,
+            color: AppColors.screenCardThemed(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.screenDivider),
+            border: Border.all(color: AppColors.screenDividerThemed(context)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'N°${i + 1}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
-                  color: AppColors.screenTextSecondary,
+                  color: AppColors.screenTextSecondaryThemed(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1747,9 +1769,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               ),
               Text(
                 '/${sur.toInt()}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
-                  color: AppColors.screenTextSecondary,
+                  color: AppColors.screenTextSecondaryThemed(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1824,21 +1846,21 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Aucune note disponible',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
+              color: AppColors.screenTextPrimaryThemed(context),
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Modifiez les filtres pour afficher des résultats',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: AppColors.screenTextSecondary,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
           ),
         ],

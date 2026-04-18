@@ -142,6 +142,166 @@ class AppColors {
   static Color getPureAppBarBackground(bool isDark) {
     return isDark ? pureBlack : pureWhite;
   }
+
+  static bool isDarkMode(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark;
+  }
+
+  static Color homeBg(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF0F0F14) : Colors.white;
+  }
+
+  static Color homeTopCard(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFF1E1E2A)
+        : const Color(0xFFF2F2F6);
+  }
+
+  static Color homeTopBorder(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFF2A2A35)
+        : const Color(0xFFE1E1E8);
+  }
+
+  static Color homeSheetBg(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFF14141C)
+        : const Color(0xFFF5F5F7);
+  }
+
+  static Color homeTextPrimary(BuildContext context) {
+    return isDarkMode(context) ? Colors.white : const Color(0xFF1A1A2A);
+  }
+
+  static Color homeTextSecondary(BuildContext context) {
+    return isDarkMode(context) ? Colors.white70 : const Color(0xFF8A8A9E);
+  }
+
+  static Color homeAlertBg(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFF1A1020)
+        : const Color(0xFFF6F0FF);
+  }
+
+  static Color homeAlertBorder(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFF2D1830)
+        : const Color(0xFFE6D6FF);
+  }
+
+  static Color bottomNavBg(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFF1E1E2A).withOpacity(0.92)
+        : Colors.white.withOpacity(0.92);
+  }
+
+  static Color bottomNavBorder(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFF2A2A35)
+        : const Color(0xFFEEEEEE);
+  }
+
+  static Color bottomNavShadow1(BuildContext context) {
+    return isDarkMode(context) ? const Color(0x1A000000) : const Color(0x14000000);
+  }
+
+  static Color bottomNavShadow2(BuildContext context) {
+    return isDarkMode(context) ? const Color(0x0F000000) : const Color(0x08000000);
+  }
+
+  static Color bottomNavUnselected(BuildContext context) {
+    return isDarkMode(context) ? Colors.white70 : const Color(0xFF8A8A8A);
+  }
+
+  static Color bottomNavBadgeBorder(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF1E1E2A) : Colors.white;
+  }
+
+  // ================= COLORS FOR ESTABLISHMENT & SHOP SCREENS =================
+
+  // Backgrounds & Surfaces (theme-aware)
+  static Color screenBg(BuildContext context) {
+    return isDarkMode(context) ? const Color.fromARGB(255, 0, 0, 0) : Colors.white;
+  }
+
+  static Color screenSurfaceThemed(BuildContext context) {
+    return isDarkMode(context) ? const Color.fromRGBO(0, 0, 0, 1) : Colors.white;
+  }
+
+  static Color screenCardThemed(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF2A2A35) : Colors.white;
+  }
+
+  // Textes (theme-aware)
+  static Color screenTextPrimaryThemed(BuildContext context) {
+    return isDarkMode(context) ? Colors.white : const Color(0xFF1A1A2A);
+  }
+
+  static Color screenTextSecondaryThemed(BuildContext context) {
+    return isDarkMode(context) ? Colors.white70 : const Color(0xFF757575);
+  }
+
+  static Color screenTextTertiary(BuildContext context) {
+    return isDarkMode(context) ? Colors.white54 : const Color(0xFF9AA0A6);
+  }
+
+  // Bordures & Dividers (theme-aware)
+  static Color screenBorder(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF2A2A35) : const Color(0xFFE0E0E0);
+  }
+
+  static Color screenDividerThemed(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF333333) : const Color(0xFFE0E0E0);
+  }
+
+  // Ombres (theme-aware)
+  static Color screenShadowThemed(BuildContext context) {
+    return isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
+  }
+
+  static List<BoxShadow> screenCardShadowThemed(BuildContext context) {
+    final shadowColor = isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
+    return [
+      BoxShadow(color: shadowColor, blurRadius: 12, offset: const Offset(0, 4)),
+      BoxShadow(color: shadowColor.withOpacity(0.6), blurRadius: 4, offset: const Offset(0, 1)),
+    ];
+  }
+
+  // Gris adaptatifs (noms différents pour éviter les conflits)
+  static Color grey100Adaptive(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF2A2A35) : const Color(0xFFF5F5F5);
+  }
+
+  static Color grey300Adaptive(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF424242) : const Color(0xFFE0E0E0);
+  }
+
+  static Color grey600Adaptive(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF757575) : const Color(0xFF757575);
+  }
+
+  static Color grey666Adaptive(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF9E9E9E) : const Color(0xFF666666);
+  }
+
+  // Boutons et actions
+  static Color screenActionBg(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF2A2A35) : const Color(0xFFF5F5F5);
+  }
+
+  static Color screenActionIcon(BuildContext context) {
+    return isDarkMode(context) ? Colors.white70 : const Color(0xFF1A1A2A);
+  }
+
+  // Bottom sheets et modales
+  static Color bottomSheetBg(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF1E1E2A) : Colors.white;
+  }
+
+  static Color bottomSheetHandle(BuildContext context) {
+    return isDarkMode(context) ? const Color(0xFF424242) : const Color(0xFFE0E0E0);
+  }
+
   // ================= GRADIENTS =================
 
   static const LinearGradient primaryGradient = LinearGradient(
@@ -367,6 +527,47 @@ class AppColors {
 
   static Color whiteWithOpacity(double opacity) =>
       Colors.white.withOpacity(opacity);
+
+  // ================= COLORS FOR PRODUCT DETAIL SCREEN =================
+
+  // Product Detail Badge Background
+  static Color productDetailBadgeBg(BuildContext context) {
+    return isDarkMode(context) 
+        ? const Color(0xFF2A2A35).withOpacity(0.92)
+        : Colors.white.withOpacity(0.92);
+  }
+
+  // Product Detail Stepper Colors
+  static Color productDetailStepperDisabled(BuildContext context) {
+    return isDarkMode(context) 
+        ? const Color(0xFF555555)
+        : const Color(0xFFEEEEEE);
+  }
+
+  static Color productDetailStepperNormal(BuildContext context) {
+    return isDarkMode(context) 
+        ? const Color(0xFF2A2A35)
+        : const Color(0xFFF4F4F0);
+  }
+
+  static Color productDetailStepperIconDisabled(BuildContext context) {
+    return isDarkMode(context) 
+        ? const Color(0xFF888888)
+        : const Color(0xFFCCCCCC);
+  }
+
+  // Product Detail Button Colors
+  static Color productDetailButtonDisabled(BuildContext context) {
+    return isDarkMode(context) 
+        ? const Color(0xFF555555)
+        : const Color(0xFFDDDDDD);
+  }
+
+  static Color productDetailButtonDisabledText(BuildContext context) {
+    return isDarkMode(context) 
+        ? const Color(0xFF888888)
+        : const Color(0xFFAAAAAA);
+  }
 }
 
 // ================= ENUM =================

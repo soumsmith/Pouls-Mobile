@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
-import '../config/app_dimensions.dart';
-import '../config/app_typography.dart';
 import '../models/product.dart';
 import '../services/cart_service.dart';
 import '../services/produit_service.dart';
@@ -10,39 +8,54 @@ import '../utils/image_helper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/snackbar.dart';
 
-// ─── DESIGN TOKENS LOCAUX ─────────────────────────────────────────────────
-// Tous les tokens utilisent les couleurs originales du projet.
-// Aucune dépendance externe ajoutée.
+// ─── DESIGN TOKENS THEME-AWARE ─────────────────────────────────────────────────
+// Utilise les méthodes theme-aware d'AppColors pour le dark/light mode
 class _T {
-  // Surfaces
-  static const bg = Color(0xFFF4F4F0); // fond principal légèrement chaud
-  static const card = Colors.white;
-  static const cardBorder = Color(0xFFEAEAE6);
-  static const divider = Color(0xFFEEEEEA);
-  static const stepperBg = Color(0xFFF4F4F0);
+  // Méthodes theme-aware
+  static Color bg(BuildContext context) => AppColors.screenBg(context);
+  static Color card(BuildContext context) => AppColors.screenCardThemed(context);
+  static Color cardBorder(BuildContext context) => AppColors.screenBorder(context);
+  static Color divider(BuildContext context) => AppColors.screenDividerThemed(context);
+  static Color stepperBg(BuildContext context) => AppColors.screenBg(context);
 
   // Textes
-  static const textPrimary = Color(0xFF1A1A1A);
-  static const textSecondary = Color(0xFF888888);
-  static const textMuted = Color(0xFFAAAAAA);
+  static Color textPrimary(BuildContext context) => AppColors.screenTextPrimaryThemed(context);
+  static Color textSecondary(BuildContext context) => AppColors.screenTextSecondaryThemed(context);
+  static Color textMuted(BuildContext context) => AppColors.screenTextTertiary(context);
 
-  // Accents (reprend AppColors.shopGreen et AppColors.screenOrange)
-  static const green = AppColors.shopGreen; // #2E7D32 ou équivalent
-  static const greenLight = Color(0xFFEDF7EE);
-  static const greenBorder = Color(0xFFB8D9BA);
-  static const orange = AppColors.screenOrange; // #FF5500 ou équivalent
-  static const orangeLight = Color(0xFFFFF3E8);
-  static const orangeBorder = Color(0xFFF5C9A0);
-  static const orangeGlow = Color(0x4DFF5500);
+  // Accents (garder les constantes existantes)
+  static const green = AppColors.shopGreen;
+  static Color greenLight(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0xFF1A3A1A) 
+      : const Color(0xFFEDF7EE);
+  static Color greenBorder(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0xFF2E5A2E) 
+      : const Color(0xFFB8D9BA);
+  static const orange = AppColors.screenOrange;
+  static Color orangeLight(BuildContext context) => AppColors.screenOrangeLight;
+  static Color orangeBorder(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0xFF8B4513) 
+      : const Color(0xFFF5C9A0);
+  static Color orangeGlow(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0x4DFF8C00) 
+      : const Color(0x4DFF5500);
 
   // Nav pill
-  static const navPill = Color(0xCCFFFFFF);
-  static const navBorder = Color(0x0F000000);
+  static Color navPill(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0xCC1E1E2A) 
+      : const Color(0xCCFFFFFF);
+  static Color navBorder(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0x1FFFFFFF) 
+      : const Color(0x0F000000);
 
   // Shadows
-  static const shadowSoft = Color(0x0A000000);
-  static const shadowMedium = Color(0x14000000);
-  static const shadowStrong = Color(0x20000000);
+  static Color shadowSoft(BuildContext context) => AppColors.screenShadowThemed(context);
+  static Color shadowMedium(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0x1A000000) 
+      : const Color(0x14000000);
+  static Color shadowStrong(BuildContext context) => AppColors.isDarkMode(context) 
+      ? const Color(0x26000000) 
+      : const Color(0x20000000);
 }
 
 // ─── SCREEN ───────────────────────────────────────────────────────────────
@@ -147,8 +160,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         backgroundColor: isError
             ? Colors.red[400]
             : isSuccess
-            ? Colors.green[500]
-            : Colors.blue[500],
+            ? _T.green
+            : _T.orange,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -169,13 +182,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: _T.bg,
+        backgroundColor: _T.bg(context),
         body: _isDetailLoading
             ? Center(
                 child: CustomLoader(
                   message: 'Chargement du produit...',
                   loaderColor: AppColors.shopGreen,
-                  backgroundColor: _T.bg,
+                  backgroundColor: _T.bg(context),
                   showBackground: false,
                 ),
               )
@@ -220,7 +233,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
-      backgroundColor: _T.bg,
+      backgroundColor: _T.bg(context),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       automaticallyImplyLeading: false,
@@ -238,17 +251,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               fit: BoxFit.cover,
             ),
             // Fade progressif bas → fond clair
-            const DecoratedBox(
+            Container(
+              height: 20,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: [0.0, 0.5, 0.82, 1.0],
                   colors: [
                     Colors.transparent,
                     Colors.transparent,
-                    Color(0x66F4F4F0),
-                    _T.bg,
+                    AppColors.isDarkMode(context) 
+                        ? const Color(0x660F0F14) 
+                        : const Color(0x66F4F4F0),
+                    _T.bg(context),
                   ],
                 ),
               ),
@@ -300,18 +315,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: _T.navPill,
+            color: _T.navPill(context),
             shape: BoxShape.circle,
-            border: Border.all(color: _T.navBorder),
-            boxShadow: const [
+            border: Border.all(color: _T.navBorder(context)),
+            boxShadow: [
               BoxShadow(
-                color: _T.shadowMedium,
+                color: _T.shadowMedium(context),
                 blurRadius: 8,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: Icon(icon, size: 15, color: _T.textPrimary),
+          child: Icon(icon, size: 15, color: _T.textPrimary(context)),
         ),
       ),
     );
@@ -367,13 +382,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: AppColors.productDetailBadgeBg(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: _T.shadowMedium,
+            color: _T.shadowMedium(context),
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -422,7 +437,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   Widget _buildDivider() {
     return Container(
       height: 1,
-      color: _T.divider,
+      color: _T.divider(context),
       margin: const EdgeInsets.symmetric(vertical: 14),
     );
   }
@@ -438,10 +453,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             children: [
               Text(
                 product.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: _T.textPrimary,
+                  color: _T.textPrimary(context),
                   letterSpacing: -0.6,
                   height: 1.15,
                 ),
@@ -449,9 +464,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               const SizedBox(height: 5),
               Text(
                 product.subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: _T.textSecondary,
+                  color: _T.textSecondary(context),
                   fontWeight: FontWeight.w400,
                   height: 1.4,
                 ),
@@ -475,9 +490,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ),
               ),
               const SizedBox(height: 3),
-              const Text(
+              Text(
                 'FCFA / unité',
-                style: TextStyle(fontSize: 10, color: _T.textMuted),
+                style: TextStyle(fontSize: 10, color: _T.textMuted(context)),
               ),
             ],
           ),
@@ -492,7 +507,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAEAE6),
+        color: _T.card(context),
         borderRadius: BorderRadius.circular(13),
       ),
       child: Row(
@@ -506,14 +521,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: active ? Colors.white : Colors.transparent,
+                  color: active ? _T.card(context) : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: active
-                      ? const [
+                      ? [
                           BoxShadow(
-                            color: _T.shadowMedium,
+                            color: _T.shadowMedium(context),
                             blurRadius: 6,
-                            offset: Offset(0, 1),
+                            offset: const Offset(0, 1),
                           ),
                         ]
                       : null,
@@ -525,7 +540,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.2,
-                    color: active ? _T.textPrimary : _T.textSecondary,
+                    color: active ? _T.textPrimary(context) : _T.textSecondary(context),
                   ),
                 ),
               ),
@@ -544,11 +559,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _T.card,
+        color: _T.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _T.cardBorder),
-        boxShadow: const [
-          BoxShadow(color: _T.shadowSoft, blurRadius: 8, offset: Offset(0, 2)),
+        border: Border.all(color: _T.cardBorder(context)),
+        boxShadow: [
+          BoxShadow(color: _T.shadowSoft(context), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -556,10 +571,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         children: [
           // ── Label ──
           Row(
-            children: const [
-              Icon(Icons.info_outline_rounded, size: 14, color: _T.green),
-              SizedBox(width: 7),
-              Text(
+            children: [
+              const Icon(Icons.info_outline_rounded, size: 14, color: _T.green),
+              const SizedBox(width: 7),
+              const Text(
                 'DESCRIPTION',
                 style: TextStyle(
                   fontSize: 10,
@@ -582,18 +597,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               product.description,
               maxLines: _descMaxLines,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: _T.textSecondary,
+                color: _T.textSecondary(context),
                 height: 1.65,
               ),
             ),
             // Version complète
             secondChild: Text(
               product.description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: _T.textSecondary,
+                color: _T.textSecondary(context),
                 height: 1.65,
               ),
             ),
@@ -688,16 +703,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isGreen
-            ? _T.greenLight
+            ? _T.greenLight(context)
             : isOrange
-            ? _T.orangeLight
+            ? _T.orangeLight(context)
             : color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isGreen
-              ? _T.greenBorder
+              ? _T.greenBorder(context)
               : isOrange
-              ? _T.orangeBorder
+              ? _T.orangeBorder(context)
               : color.withOpacity(0.2),
         ),
       ),
@@ -724,27 +739,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: _T.card,
+        color: _T.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _T.cardBorder),
-        boxShadow: const [
-          BoxShadow(color: _T.shadowSoft, blurRadius: 8, offset: Offset(0, 2)),
+        border: Border.all(color: _T.cardBorder(context)),
+        boxShadow: [
+          BoxShadow(color: _T.shadowSoft(context), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.shopping_bag_outlined,
             size: 17,
-            color: _T.textSecondary,
+            color: _T.textSecondary(context),
           ),
           const SizedBox(width: 10),
-          const Text(
+          Text(
             'Quantité',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: _T.textPrimary,
+              color: _T.textPrimary(context),
               letterSpacing: -0.2,
             ),
           ),
@@ -753,26 +768,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: _T.stepperBg,
+              color: _T.stepperBg(context),
               borderRadius: BorderRadius.circular(13),
-              border: Border.all(color: _T.cardBorder),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _stepperButton(
                   icon: Icons.remove,
                   enabled: _quantity > 1,
                   onTap: () => setState(() => _quantity--),
+                  isAdd: false,
                 ),
                 SizedBox(
                   width: 36,
                   child: Center(
                     child: Text(
                       '$_quantity',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: _T.textPrimary,
+                        color: _T.textPrimary(context),
                       ),
                     ),
                   ),
@@ -805,20 +821,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         height: 32,
         decoration: BoxDecoration(
           color: !enabled
-              ? const Color(0xFFEEEEEE)
+              ? AppColors.productDetailStepperDisabled(context)
               : isAdd
               ? _T.orange
-              : const Color(0xFFF4F4F0),
+              : AppColors.productDetailStepperNormal(context),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
           icon,
           size: 15,
           color: !enabled
-              ? const Color(0xFFCCCCCC)
+              ? AppColors.productDetailStepperIconDisabled(context)
               : isAdd
               ? Colors.white
-              : _T.textPrimary,
+              : _T.textPrimary(context),
         ),
       ),
     );
@@ -831,12 +847,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     final double total = product.price * _quantity;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: _T.card(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         // boxShadow: [
         //   BoxShadow(
-        //     color: _T.shadowStrong,
+        //     color: _T.shadowStrong(context),
         //     blurRadius: 24,
         //     offset: Offset(0, -6),
         //   ),
@@ -856,7 +872,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0E0DA),
+                    color: _T.divider(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -867,9 +883,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Total',
-                        style: TextStyle(fontSize: 12, color: _T.textMuted),
+                        style: TextStyle(fontSize: 12, color: _T.textMuted(context)),
                       ),
                       const SizedBox(height: 2),
                       RichText(
@@ -877,22 +893,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           children: [
                             TextSpan(
                               text: '${total.toStringAsFixed(0)} ',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
-                                color: _T.textPrimary,
+                                color: _T.textPrimary(context),
                                 letterSpacing: -0.8,
                               ),
                             ),
                             WidgetSpan(
                               child: Transform.translate(
                                 offset: const Offset(0, -4),
-                                child: const Text(
+                                child: Text(
                                   'FCFA',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
-                                    color: _T.textPrimary,
+                                    color: _T.textPrimary(context),
                                     letterSpacing: 0.2,
                                   ),
                                 ),
@@ -928,14 +944,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
   Widget _buildFreeServiceAction(Product product, Color primaryColor) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: _T.card(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: _T.shadowStrong,
+            color: _T.shadowStrong(context),
             blurRadius: 24,
-            offset: Offset(0, -6),
+            offset: const Offset(0, -6),
           ),
         ],
       ),
@@ -952,7 +968,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0E0DA),
+                    color: _T.divider(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -990,12 +1006,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   end: Alignment.bottomRight,
                 )
               : null,
-          color: enabled ? null : const Color(0xFFDDDDDD),
+          color: enabled ? null : AppColors.productDetailButtonDisabled(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: _T.orangeGlow,
+                    color: _T.orangeGlow(context),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -1018,7 +1034,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     Icon(
                       icon,
                       size: 17,
-                      color: enabled ? Colors.white : const Color(0xFFAAAAAA),
+                      color: enabled ? Colors.white : AppColors.productDetailButtonDisabledText(context),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -1026,7 +1042,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: enabled ? Colors.white : const Color(0xFFAAAAAA),
+                        color: enabled ? Colors.white : AppColors.productDetailButtonDisabledText(context),
                         letterSpacing: 0.2,
                       ),
                     ),

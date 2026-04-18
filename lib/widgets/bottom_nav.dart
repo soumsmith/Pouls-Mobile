@@ -8,10 +8,8 @@ import '../config/app_colors.dart';
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
 const _kOrangeLight = Color(0xFFFFF0E8);
-const _kCard = Colors.white;
 const _kShadow = Color(0x0D000000);
 const _kTextPrimary = Color(0xFF1A1A1A);
-const _kTextSecondary = Color(0xFF8A8A8A);
 
 const _kOrangeGradient = LinearGradient(
   colors: [Color(0xFFFF7A3C), _kOrange],
@@ -170,20 +168,20 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         0, //12 + bottomPadding,
       ),
       decoration: BoxDecoration(
-        color: _kCard.withOpacity(0.92),
+        color: AppColors.bottomNavBg(context),
         borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFEEEEEE), width: 0.8),
-        boxShadow: const [
+        border: Border.all(color: AppColors.bottomNavBorder(context), width: 0.8),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
+            color: AppColors.bottomNavShadow1(context),
             blurRadius: 24,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: Color(0x08000000),
+            color: AppColors.bottomNavShadow2(context),
             blurRadius: 48,
-            offset: Offset(0, 20),
+            offset: const Offset(0, 20),
             spreadRadius: -4,
           ),
         ],
@@ -235,6 +233,9 @@ class _NavItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unselectedColor = AppColors.bottomNavUnselected(context);
+    final activeColor = item.label == 'Boutique' ? _kShopGreen : _kOrange;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -255,9 +256,7 @@ class _NavItemWidget extends StatelessWidget {
                   Icon(
                     isSelected ? item.activeIcon : item.icon,
                     size: 24,
-                    color: isSelected
-                        ? (item.label == 'Boutique' ? _kShopGreen : _kOrange)
-                        : _kTextSecondary,
+                    color: isSelected ? activeColor : unselectedColor,
                   ),
 
                   // Badge panier (top-right)
@@ -279,9 +278,7 @@ class _NavItemWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? (item.label == 'Boutique' ? _kShopGreen : _kOrange)
-                    : _kTextSecondary,
+                color: isSelected ? activeColor : unselectedColor,
                 letterSpacing: isSelected ? 0.1 : 0,
               ),
               child: Text(item.label, maxLines: 1),
@@ -317,6 +314,7 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = AppColors.bottomNavBadgeBorder(context);
     return AnimatedScale(
       scale: count > 0 ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 200),
@@ -331,7 +329,7 @@ class _Badge extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: _kCard, width: 1.5),
+          border: Border.all(color: borderColor, width: 1.5),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFFFF3B2C).withOpacity(0.40),

@@ -2,16 +2,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.groupegain.parents_responsable">
 
-    <!-- Désactivation temporaire de l'audio (retire la permission même si ajoutée par une dépendance) -->
-    <uses-permission
-        android:name="android.permission.RECORD_AUDIO"
-        tools:node="remove" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-    <uses-feature
-        android:name="android.hardware.microphone"
-        tools:node="remove" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
         android:label="parents_responsable"
@@ -21,7 +16,7 @@
         <!-- Politique de confidentialité pour RECORD_AUDIO (exigée par Google Play) -->
         <meta-data
             android:name="android.app.PRIVACY_POLICY_URL"
-            android:value="https://groupegain.com/privacy-policy/" />
+            android:value="https://soumsmith.github.io/Pouls-Mobile/" />
 
         <activity
             android:name=".MainActivity"

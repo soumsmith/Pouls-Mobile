@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../models/coulisse_excellence.dart';
+import '../models/ecole.dart';
+import '../services/ecole_api_service.dart';
+import 'establishment_detail_screen.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -77,6 +80,50 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     }
     if (_currentIndex < _youtubeControllers.length - 1 && _youtubeControllers[_currentIndex + 1] != null) {
       _youtubeControllers[_currentIndex + 1]!.pause();
+    }
+  }
+
+  // Naviguer vers le détail de l'école
+  Future<void> _navigateToEcole(String code) async {
+    if (code.isEmpty) return;
+
+    // Mettre en pause la vidéo actuelle
+    if (_youtubeControllers[_currentIndex] != null) {
+      _youtubeControllers[_currentIndex]!.pause();
+    }
+
+    try {
+      // Charger les détails de l'école via l'API de détail
+      final ecoleDetail = await EcoleApiService.getEcoleDetail(code);
+      
+      // Créer un objet Ecole minimal avec les données récupérées
+      final ecole = Ecole(
+        pays: ecoleDetail.data.pays,
+        ville: ecoleDetail.data.ville,
+        adresse: ecoleDetail.data.adresse,
+        parametreNom: ecoleDetail.data.nom,
+        logo: ecoleDetail.data.logo ?? '',
+        telephone: ecoleDetail.data.telephone,
+        parametreCode: code,
+        statut: ecoleDetail.data.statut,
+        filiereNom: [],
+        imagefond: ecoleDetail.image,
+        paramecole: null,
+      );
+
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => EstablishmentDetailScreen(ecole: ecole),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
     }
   }
 
@@ -164,6 +211,13 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                     if (_youtubeControllers[_currentIndex] != null) {
                       _youtubeControllers[_currentIndex]!.pause();
                     }
+                  },
+                ),
+                const SizedBox(height: 16),
+                _ActionButton(
+                  icon: Icons.school,
+                  onTap: () {
+                    _navigateToEcole(widget.videos[_currentIndex].code);
                   },
                 ),
               ],

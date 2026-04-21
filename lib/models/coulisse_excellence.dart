@@ -8,6 +8,7 @@ class CoulisseExcellence {
   final String etablissement;
   final String? nompays;
   final String videoYoutube;
+  final String code;
 
   CoulisseExcellence({
     required this.id,
@@ -19,6 +20,7 @@ class CoulisseExcellence {
     required this.etablissement,
     this.nompays,
     required this.videoYoutube,
+    required this.code,
   });
 
   factory CoulisseExcellence.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class CoulisseExcellence {
       etablissement: json['etablissement'] as String,
       nompays: json['nompays'] as String?,
       videoYoutube: json['video_youtube'] as String,
+      code: json['code'] as String? ?? '',
     );
   }
 
@@ -46,6 +49,7 @@ class CoulisseExcellence {
       'etablissement': etablissement,
       'nompays': nompays,
       'video_youtube': videoYoutube,
+      'code': code,
     };
   }
 

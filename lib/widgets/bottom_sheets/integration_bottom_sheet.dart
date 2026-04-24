@@ -12,7 +12,6 @@ import 'package:parents_responsable/widgets/components/custom_select_input.dart'
 import 'package:parents_responsable/widgets/components/custom_text_input.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
-import 'package:parents_responsable/widgets/custom_text_field.dart';
 import 'package:parents_responsable/widgets/snackbar.dart';
 
 // ── Date Input Formatter ───────────────────────────────────────────────────────
@@ -98,64 +97,16 @@ void showIntegrationBottomSheet({
   void Function(String demandeUid)? onSuccess,
   void Function(String error)? onError,
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-
   showModalBottomSheet(
     context: context,
-    isScrollControlled: true,
+    isScrollControlled: true, // OBLIGATOIRE pour que le padding clavier fonctionne
+    useSafeArea: true,        // Évite le chevauchement avec la barre système
     backgroundColor: Colors.transparent,
-    builder: (_) => Container(
-      constraints: BoxConstraints(
-        minHeight: 100,
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 24,
-            offset: const Offset(0, -6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomSheetHeader(
-            icon: Icons.person_add_alt_1_rounded,
-            iconColor: const Color(0xFF3B82F6),
-            title: 'Intégrer',
-            description: 'Nous rejoindre',
-            onClose: () => Navigator.of(context).pop(),
-            titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
-            descriptionColor: AppColors.screenTextSecondary,
-            titleFontSize: 18,
-            descriptionFontSize: 13,
-            titleFontWeight: FontWeight.w800,
-            iconSize: 22,
-          ),
-          // ── Form content ────────────────────────────────────────────────
-          // MODIFIÉ : Padding avec gestion du clavier
-          Flexible(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 0,
-                top: 20,
-                right: 0,
-                bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: IntegrationFormContent(
-                ecole: ecole,
-                scaffoldMessengerKey: scaffoldMessengerKey,
-                onSuccess: onSuccess,
-                onError: onError,
-              ),
-            ),
-          ),
-        ],
-      ),
+    builder: (_) => IntegrationBottomSheet(
+      ecole: ecole,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      onSuccess: onSuccess,
+      onError: onError,
     ),
   );
 }
@@ -165,6 +116,7 @@ void showIntegrationBottomSheet({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class IntegrationBottomSheet extends StatelessWidget {
+  // CORRECTION : StatelessWidget suffit, plus besoin de gérer le clavier ici
   final Ecole? ecole;
   final GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
   final void Function(String demandeUid)? onSuccess;
@@ -181,58 +133,66 @@ class IntegrationBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final TextSizeService _textSizeService = TextSizeService();
+    final textSizeService = TextSizeService();
 
-    return Container(
-      constraints: BoxConstraints(
-        minHeight: 100,
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 24,
-            offset: const Offset(0, -6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomSheetHeader(
-            icon: Icons.person_add_alt_1_rounded,
-            iconColor: const Color(0xFF3B82F6),
-            title: 'Intégrer',
-            description: 'Nous rejoindre',
-            onClose: () => Navigator.of(context).pop(),
-            titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
-            descriptionColor: AppColors.screenTextSecondary,
-            titleFontSize: _textSizeService.getScaledFontSize(18),
-            iconSize: 22,
-          ),
-
-          // ── Form content ────────────────────────────────────────────────
-          // MODIFIÉ : Padding avec gestion du clavier
-          Flexible(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 0,
-                top: 20,
-                right: 0,
-                bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
+    return Padding(
+      // CORRECTION CLÉ : ce Padding pousse tout le sheet au-dessus du clavier
+      // Il doit entourer le DraggableScrollableSheet, pas être à l'intérieur
+      padding: MediaQuery.of(context).viewInsets,
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.98,
+        snap: true,
+        snapSizes: const [0.5, 0.75, 0.85, 0.98],
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
               ),
-              child: IntegrationFormContent(
-                ecole: ecole,
-                scaffoldMessengerKey: scaffoldMessengerKey,
-                onSuccess: onSuccess,
-                onError: onError,
-              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, -6),
+                ),
+              ],
             ),
-          ),
-        ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                BottomSheetHeader(
+                  icon: Icons.person_add_alt_1_rounded,
+                  iconColor: const Color(0xFF3B82F6),
+                  title: 'Intégrer',
+                  description: 'Nous rejoindre',
+                  onClose: () => Navigator.of(context).pop(),
+                  titleColor:
+                      isDark ? Colors.white : AppColors.screenTextPrimary,
+                  descriptionColor: AppColors.screenTextSecondary,
+                  titleFontSize: textSizeService.getScaledFontSize(18),
+                  iconSize: 22,
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    // CORRECTION : plus de reverse:true, plus de padding viewInsets ici
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                    child: IntegrationFormContent(
+                      ecole: ecole,
+                      scaffoldMessengerKey: scaffoldMessengerKey,
+                      onSuccess: onSuccess,
+                      onError: onError,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -354,84 +314,62 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       if (_studentNameController.text.isNotEmpty && _studentNameError) {
         setState(() => _studentNameError = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
     _studentFirstNameController.addListener(() {
       if (_studentFirstNameController.text.isNotEmpty &&
           _studentFirstNameError) {
         setState(() => _studentFirstNameError = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
     _matriculeController.addListener(() {
       if (_matriculeController.text.isNotEmpty && _matriculeError) {
         setState(() => _matriculeError = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
     _birthDateController.addListener(() {
       if (_birthDateController.text.isNotEmpty && _birthDateError) {
         setState(() => _birthDateError = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
-    _lieuNaissanceController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _nationaliteController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
+    _lieuNaissanceController.addListener(() => setState(() {}));
+    _nationaliteController.addListener(() => setState(() {}));
     _adresseController.addListener(() {
       if (_adresseController.text.isNotEmpty && _adresseError) {
         setState(() => _adresseError = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
     _contact1Controller.addListener(() {
       if (_contact1Controller.text.isNotEmpty && _contact1Error) {
         setState(() => _contact1Error = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
-    _contact2Controller.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
+    _contact2Controller.addListener(() => setState(() {}));
     _nomPereController.addListener(() {
       if (_nomPereController.text.isNotEmpty && _nomPereError) {
         setState(() => _nomPereError = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
     _nomMereController.addListener(() {
       if (_nomMereController.text.isNotEmpty && _nomMereError) {
         setState(() => _nomMereError = false);
       }
-      setState(() {}); // Rafraîchir le bouton Suivant
+      setState(() {});
     });
-    _nomTuteurController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _niveauAntController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _ecoleAntController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _moyenneAntController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _rangAntController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _decisionAntController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _motifController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
-    _filiereController.addListener(() {
-      setState(() {}); // Rafraîchir le bouton Suivant
-    });
+    _nomTuteurController.addListener(() => setState(() {}));
+    _niveauAntController.addListener(() => setState(() {}));
+    _ecoleAntController.addListener(() => setState(() {}));
+    _moyenneAntController.addListener(() => setState(() {}));
+    _rangAntController.addListener(() => setState(() {}));
+    _decisionAntController.addListener(() => setState(() {}));
+    _motifController.addListener(() => setState(() {}));
+    _filiereController.addListener(() => setState(() {}));
   }
 
   @override
@@ -482,13 +420,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       final isDns =
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('No address associated');
-      if (isDns && mounted)
+      if (isDns && mounted) {
         _showSnack(
           'Erreur de connexion. Vérifiez votre internet.',
           isError: true,
         );
-      else if (mounted)
+      } else if (mounted) {
         _showSnack('Erreur : ${e.toString()}', isError: true);
+      }
     }
   }
 
@@ -521,13 +460,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     if (_currentStep < _totalSteps - 1) {
       if (_validateCurrentStep()) {
         setState(() => _currentStep++);
-        // Remonter automatiquement en haut après le changement d'étape
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollController.animateTo(
-            0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
         });
       }
     } else {
@@ -538,13 +478,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   void _previousStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
-      // Remonter automatiquement en haut après le changement d'étape
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       });
     }
   }
@@ -552,7 +493,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
-        // Étape de sélection d'établissement
         if (_selectedEcoleId == null) {
           CartSnackBar.showOverlay(
             context,
@@ -565,7 +505,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         return true;
 
       case 1:
-        // Ancienne étape 0 (Informations de l'élève)
         if (_studentNameController.text.isEmpty ||
             _studentFirstNameController.text.isEmpty ||
             _matriculeController.text.isEmpty ||
@@ -592,7 +531,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         return true;
 
       case 2:
-        // Ancienne étape 1 (Contacts et Parents)
         if (_contact1Controller.text.isEmpty ||
             _nomPereController.text.isEmpty ||
             _nomMereController.text.isEmpty) {
@@ -607,15 +545,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         return true;
 
       case 3:
-        // Ancienne étape 2 (Scolarité antérieure)
-        return true;
-
       case 4:
-        // Ancienne étape 3 (Documents et finalisation)
-        return true;
-
       case 5:
-        // Ancienne étape 4 (Récapitulatif)
         return true;
 
       default:
@@ -623,15 +554,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     }
   }
 
-  // Validation silencieuse pour l'état du bouton (sans SnackBar)
   bool _canNavigateToNext() {
     switch (_currentStep) {
       case 0:
-        // Étape de sélection d'établissement
         return _selectedEcoleId != null;
 
       case 1:
-        // Informations de l'élève - Permet la navigation si au moins un champ est rempli
         return _studentNameController.text.isNotEmpty ||
             _studentFirstNameController.text.isNotEmpty ||
             _matriculeController.text.isNotEmpty ||
@@ -641,7 +569,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             _nationaliteController.text.isNotEmpty;
 
       case 2:
-        // Contacts et Parents - Permet la navigation si au moins un champ est rempli
         return _contact1Controller.text.isNotEmpty ||
             _contact2Controller.text.isNotEmpty ||
             _nomPereController.text.isNotEmpty ||
@@ -649,15 +576,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             _nomTuteurController.text.isNotEmpty;
 
       case 3:
-        // Scolarité antérieure - Permet la navigation sans obligation
-        return true;
-
       case 4:
-        // Documents et finalisation - Permet la navigation sans obligation
-        return true;
-
       case 5:
-        // Récapitulatif - Permet toujours la navigation vers la soumission
         return true;
 
       default:
@@ -779,18 +699,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
 
     try {
-      print('DEBUG: paramecole utilisé: "${_selectedEcoleParametre}"');
       final result = await IntegrationService.submitIntegrationRequest(
         _selectedEcoleParametre ?? '',
         requestData,
       );
-      // Fermer le loader
       Navigator.of(context).pop();
 
       if (result['success'] == true) {
         final demandeUid = result['data']?['demande_uid'] as String? ?? '';
 
-        // Afficher la notification de succès AVANT de fermer le bottom sheet
         if (mounted) {
           CartSnackBar.showOverlay(
             context,
@@ -802,15 +719,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
         widget.onSuccess?.call(demandeUid);
 
-        // Attendre un peu pour que l'utilisateur voie la notification
         await Future.delayed(const Duration(milliseconds: 1500));
 
-        // Fermer le bottom sheet après la notification
         if (mounted) {
           Navigator.of(context).pop();
         }
 
-        // Afficher le dialogue de succès si disponible
         if (demandeUid.isNotEmpty && mounted) {
           _showSuccessDialog(demandeUid);
         }
@@ -1003,7 +917,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                   ),
                   child: const Text(
                     'OK, j\'ai compris',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -1015,37 +932,27 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  //  Build — MODIFIÉ : progress + navigation fixes, seul le step scrolle
+  //  Build
   // ═══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      // mainAxisSize: MainAxisSize.min retiré → on veut occuper tout l'espace
-      // disponible pour que Flexible + SingleChildScrollView fonctionnent
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // ── Progress indicator (FIXE) ───────────────────────────────────────
+        // ── Progress indicator ────────────────────────────────────────────
         _buildProgressIndicator(),
         const SizedBox(height: 20),
 
-        // ── Contenu de l'étape (SCROLLABLE) ────────────────────────────────
-        Flexible(
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            reverse:
-                true, // Permet de voir les champs en bas quand le clavier apparaît
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            child: _buildCurrentStep(),
-          ),
-        ),
+        // ── Contenu de l'étape ────────────────────────────────────────────
+        // CORRECTION : pas de Flexible ici (on est déjà dans un SingleChildScrollView parent)
+        // pas de reverse, pas de padding viewInsets
+        _buildCurrentStep(),
 
         const SizedBox(height: 16),
 
-        // ── Navigation buttons (FIXE) ───────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _buildNavigationButtons(),
-        ),
+        // ── Navigation buttons ────────────────────────────────────────────
+        _buildNavigationButtons(),
         const SizedBox(height: 20),
       ],
     );
@@ -1053,129 +960,115 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Progress indicator ─────────────────────────────────────────────────────
   Widget _buildProgressIndicator() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(
-            AppDimensions.getMediumCardBorderRadius(context),
-          ),
-          boxShadow: AppDimensions.getLightShadow(context),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.screenCard,
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getMediumCardBorderRadius(context),
         ),
-        child: Column(
-          children: [
-            Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: (_currentStep + 1) / _totalSteps,
-                    backgroundColor: AppColors.screenDivider,
-                    valueColor: const AlwaysStoppedAnimation(
-                      AppColors.shopBlue,
-                    ),
-                    minHeight: 4,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                // Stepper horizontal avec défilement
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(_totalSteps, (index) {
-                      final isCompleted = index < _currentStep;
-                      final isCurrent = index == _currentStep;
-                      final isClickable = index < _currentStep;
+        boxShadow: AppDimensions.getLightShadow(context),
+      ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (_currentStep + 1) / _totalSteps,
+              backgroundColor: AppColors.screenDivider,
+              valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
+              minHeight: 4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(_totalSteps, (index) {
+                final isCompleted = index < _currentStep;
+                final isCurrent = index == _currentStep;
+                final isClickable = index < _currentStep;
 
-                      return GestureDetector(
-                        onTap: isClickable
-                            ? () {
-                                setState(() => _currentStep = index);
-                              }
-                            : null,
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          child: Column(
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                width: isCurrent ? 34 : 28,
-                                height: isCurrent ? 34 : 28,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isCompleted
-                                      ? Colors.green
-                                      : isCurrent
-                                      ? AppColors.shopBlue
-                                      : AppColors.screenDivider,
-                                  boxShadow: isCurrent
-                                      ? [
-                                          BoxShadow(
-                                            color: AppColors.shopBlue
-                                                .withOpacity(0.25),
-                                            blurRadius: 6,
-                                            spreadRadius: 1,
-                                          ),
-                                        ]
-                                      : isCompleted
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.green.withOpacity(
-                                              0.25,
-                                            ),
-                                            blurRadius: 4,
-                                            spreadRadius: 1,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Icon(
-                                  isCompleted
-                                      ? Icons.check_rounded
-                                      : _stepIcons[index],
-                                  color: (isCompleted || isCurrent)
-                                      ? Colors.white
-                                      : AppColors.screenTextSecondary,
-                                  size: isCurrent ? 18 : 14,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              SizedBox(
-                                width:
-                                    80, // Largeur fixe pour éviter le overflow
-                                child: Text(
-                                  _stepTitles[index],
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: isCurrent
-                                        ? FontWeight.w700
-                                        : isCompleted
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                    color: isCurrent
-                                        ? AppColors.shopBlue
-                                        : isCompleted
-                                        ? Colors.green
-                                        : AppColors.screenTextSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
+                return GestureDetector(
+                  onTap: isClickable
+                      ? () => setState(() => _currentStep = index)
+                      : null,
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    child: Column(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: isCurrent ? 34 : 28,
+                          height: isCurrent ? 34 : 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isCompleted
+                                ? Colors.green
+                                : isCurrent
+                                ? AppColors.shopBlue
+                                : AppColors.screenDivider,
+                            boxShadow: isCurrent
+                                ? [
+                                    BoxShadow(
+                                      color:
+                                          AppColors.shopBlue.withOpacity(0.25),
+                                      blurRadius: 6,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : isCompleted
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.25),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Icon(
+                            isCompleted
+                                ? Icons.check_rounded
+                                : _stepIcons[index],
+                            color: (isCompleted || isCurrent)
+                                ? Colors.white
+                                : AppColors.screenTextSecondary,
+                            size: isCurrent ? 18 : 14,
                           ),
                         ),
-                      );
-                    }),
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            _stepTitles[index],
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: isCurrent
+                                  ? FontWeight.w700
+                                  : isCompleted
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: isCurrent
+                                  ? AppColors.shopBlue
+                                  : isCompleted
+                                  ? Colors.green
+                                  : AppColors.screenTextSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                );
+              }),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -1184,19 +1077,19 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   Widget _buildCurrentStep() {
     switch (_currentStep) {
       case 0:
-        return _buildStep0(); // Nouvelle étape : Sélection de l'établissement
+        return _buildStep0();
       case 1:
-        return _buildStep1(); // Ancienne étape 0
+        return _buildStep1();
       case 2:
-        return _buildStep2(); // Ancienne étape 1
+        return _buildStep2();
       case 3:
-        return _buildStep3(); // Ancienne étape 2
+        return _buildStep3();
       case 4:
-        return _buildStep4(); // Ancienne étape 3
+        return _buildStep4();
       case 5:
-        return _buildStep5(); // Ancienne étape 4
+        return _buildStep5();
       default:
-        return Container();
+        return const SizedBox.shrink();
     }
   }
 
@@ -1296,43 +1189,42 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
   }
 
-  // ── Step 0: Sélection de l'établissement ───────────────────────────────────────
+  // ── Step 0: Sélection de l'établissement ──────────────────────────────────
   Widget _buildStep0() {
     return _formSectionCard(
       title: 'Sélection de l\'établissement',
       icon: Icons.school_rounded,
       children: [
-        // Description
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.screenOrangeLight.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.screenOrange.withOpacity(0.2)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: AppColors.screenOrange, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Sélectionnez l\'établissement où vous souhaitez intégrer votre enfant.',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(13),
-                    color: AppColors.screenTextSecondary,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Champ de sélection de l'établissement
+        // Container(
+        //   padding: const EdgeInsets.all(16),
+        //   decoration: BoxDecoration(
+        //     color: AppColors.screenOrangeLight.withOpacity(0.3),
+        //     borderRadius: BorderRadius.circular(12),
+        //     border: Border.all(color: AppColors.screenOrange.withOpacity(0.2)),
+        //   ),
+        //   child: Row(
+        //     children: [
+        //       const Icon(
+        //         Icons.info_outline,
+        //         color: AppColors.screenOrange,
+        //         size: 20,
+        //       ),
+        //       const SizedBox(width: 12),
+        //       Expanded(
+        //         child: Text(
+        //           'Sélectionnez l\'établissement où vous souhaitez intégrer votre enfant.',
+        //           style: TextStyle(
+        //             fontSize: _textSizeService.getScaledFontSize(13),
+        //             color: AppColors.screenTextSecondary,
+        //             height: 1.4,
+        //           ),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        // const SizedBox(height: 20),
         _buildEcoleField(),
-
-        // Message d'erreur si nécessaire
         if (_ecoleErrorMessage != null) ...[
           const SizedBox(height: 12),
           _buildErrorBanner(_ecoleErrorMessage!),
@@ -1359,7 +1251,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('Établissement', required: true),
         const SizedBox(height: 6),
         CustomSelectInput(
           label: 'Établissement',
@@ -1372,10 +1263,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             setState(() {
               _selectedEcoleId = ecole.ecoleid;
               _selectedEcoleName = selected;
-              // Utiliser paramecole, sinon parametreCode comme repli
-              _selectedEcoleParametre = (ecole.paramecole?.isNotEmpty == true) 
-                  ? ecole.paramecole 
-                  : ecole.parametreCode;
+              _selectedEcoleParametre =
+                  (ecole.paramecole?.isNotEmpty == true)
+                      ? ecole.paramecole
+                      : ecole.parametreCode;
               _ecoleErrorMessage = null;
             });
           },
@@ -1472,31 +1363,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _fieldLabel(String label, {bool required = false}) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.screenTextSecondary,
-            letterSpacing: 0.2,
-          ),
-        ),
-        if (required)
-          const Text(
-            ' *',
-            style: TextStyle(
-              color: AppColors.screenOrange,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-      ],
     );
   }
 
@@ -1701,7 +1567,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
   }
 
-  // ── Step 4: Documents and Finalization ─────────────────────────────────────────
+  // ── Step 4: Documents and Finalization ────────────────────────────────────
   Widget _buildStep4() {
     return Column(
       children: [
@@ -1763,7 +1629,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                 Icons.assignment_turned_in_rounded,
                 value: _selectedStatutAff,
                 items: ['Affecté', 'En attente', 'Refusé'],
-                onChanged: (v) => ss(() => _selectedStatutAff = v ?? 'Affecté'),
+                onChanged: (v) =>
+                    ss(() => _selectedStatutAff = v ?? 'Affecté'),
               ),
             ),
             CustomTextInput(
@@ -1778,7 +1645,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
   }
 
-  // ── Step 5: Récapitulatif ─────────────────────────────────────────────────────
+  // ── Step 5: Récapitulatif ──────────────────────────────────────────────────
   Widget _buildStep5() {
     return Column(
       children: [
@@ -1790,7 +1657,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               'Nom: ${_studentNameController.text}',
               'Prénoms: ${_studentFirstNameController.text}',
               'Matricule: ${_matriculeController.text}',
-              'Sexe: ${_selectedSexe}',
+              'Sexe: $_selectedSexe',
               'Date de naissance: ${_birthDateController.text}',
               'Lieu: ${_lieuNaissanceController.text}',
               'Nationalité: ${_nationaliteController.text}',
@@ -1821,7 +1688,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             const SizedBox(height: 16),
             _buildSummaryItem('Détails de la demande', [
               'Motif: ${_motifController.text}',
-              'Statut: ${_selectedStatutAff}',
+              'Statut: $_selectedStatutAff',
               'Filière: ${_filiereController.text}',
             ]),
             const SizedBox(height: 16),
@@ -1829,7 +1696,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               if (_bulletinFile != null) '✅ Bulletin scolaire',
               if (_certificatVaccinationFile != null)
                 '✅ Certificat de vaccination',
-              if (_certificatScolariteFile != null) '✅ Certificat de scolarité',
+              if (_certificatScolariteFile != null)
+                '✅ Certificat de scolarité',
               if (_extraitNaissanceFile != null) '✅ Extrait de naissance',
               if (_cniParentFile != null) '✅ CNI des parents',
               if (_bulletinFile == null &&

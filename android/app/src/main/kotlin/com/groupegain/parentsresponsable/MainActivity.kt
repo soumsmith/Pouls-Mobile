@@ -1,4 +1,4 @@
-package com.groupegain.parents_responsable
+package com.groupegain.parentsresponsable
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -247,13 +247,9 @@ class _SplashScreenState extends State<SplashScreen>
                         borderRadius: BorderRadius.circular(AppDimensions.smallBorderRadius),
                       ),
                       child: Center(
-                        child: Text(
-                          'LOGO',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            fontSize: AppDimensions.isMobile(context) ? 10 : 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Image.asset(
+                          'assets/images/cropped-logo-1.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),

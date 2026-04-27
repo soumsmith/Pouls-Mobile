@@ -13,12 +13,14 @@ import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
 import '../services/integration_request_service.dart';
 import '../services/auth_service.dart';
+import '../services/recommendation_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/search_bar_widget.dart';
 import '../config/app_colors.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/components/section_row.dart';
+import '../widgets/recommendation_bottom_sheet.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
 import 'shop_screen.dart';
@@ -36,6 +38,10 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../services/coulisse_excellence_service.dart';
 import '../models/coulisse_excellence.dart';
 import 'coulisse_video_feed_screen.dart';
+import '../services/event_service.dart';
+import '../models/event.dart';
+import 'event_detail_screen.dart';
+import 'all_events_screen.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -67,6 +73,24 @@ class _HomeScreenState extends State<HomeScreen> {
   final ThemeService _themeService = ThemeService();
   final TextEditingController _matriculeController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+
+  final TextEditingController _recommenderNameController =
+      TextEditingController();
+  final TextEditingController _etablissementController = TextEditingController();
+  final TextEditingController _paysRecommendController = TextEditingController();
+  final TextEditingController _villeRecommendController = TextEditingController();
+  final TextEditingController _parentNomController = TextEditingController();
+  final TextEditingController _parentPrenomController = TextEditingController();
+  final TextEditingController _parentTelephoneController =
+      TextEditingController();
+  final TextEditingController _parentEmailController = TextEditingController();
+  final TextEditingController _ordreController = TextEditingController();
+  final TextEditingController _adresseEtablissementController =
+      TextEditingController();
+  final TextEditingController _paysParentController = TextEditingController();
+  final TextEditingController _villeParentController = TextEditingController();
+  final TextEditingController _adresseParentController = TextEditingController();
+
   bool _isSearching = false;
 
   int _unreadNotificationsCount = 0;
@@ -90,6 +114,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _coulisseVideosError == null &&
       _coulisseVideos.isNotEmpty;
 
+  // Variables pour les événements
+  List<Event> _events = [];
+  bool _eventsLoading = true;
+  String? _eventsError;
+
+  bool get _hasEventsData =>
+      !_eventsLoading &&
+      _eventsError == null &&
+      _events.isNotEmpty;
+
   final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
   @override
@@ -102,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadUnreadNotificationsCount();
     _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
     _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
+    _loadEvents(); // Charger les événements
   }
 
   Future<void> _refreshHome() async {
@@ -109,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.wait([
       _loadUnreadNotificationsCount(),
       _loadCoulisseVideos(),
+      _loadEvents(),
     ]);
     await _loadChildrenNotifications();
   }
@@ -118,7 +154,104 @@ class _HomeScreenState extends State<HomeScreen> {
     _textSizeService.removeListener(() {});
     _matriculeController.dispose();
     _searchController.dispose();
+
+    _recommenderNameController.dispose();
+    _etablissementController.dispose();
+    _paysRecommendController.dispose();
+    _villeRecommendController.dispose();
+    _parentNomController.dispose();
+    _parentPrenomController.dispose();
+    _parentTelephoneController.dispose();
+    _parentEmailController.dispose();
+    _ordreController.dispose();
+    _adresseEtablissementController.dispose();
+    _paysParentController.dispose();
+    _villeParentController.dispose();
+    _adresseParentController.dispose();
+
     super.dispose();
+  }
+
+  void _showRecommendationBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => RecommendationBottomSheet(
+        accentColor: _kOrange,
+        recommenderNameController: _recommenderNameController,
+        etablissementController: _etablissementController,
+        paysRecommendController: _paysRecommendController,
+        villeRecommendController: _villeRecommendController,
+        parentNomController: _parentNomController,
+        parentPrenomController: _parentPrenomController,
+        parentTelephoneController: _parentTelephoneController,
+        parentEmailController: _parentEmailController,
+        ordreController: _ordreController,
+        adresseEtablissementController: _adresseEtablissementController,
+        paysParentController: _paysParentController,
+        villeParentController: _villeParentController,
+        adresseParentController: _adresseParentController,
+        onSubmit: (context) async {
+          try {
+            await RecommendationService.submitRecommendation(
+              etablissement: _etablissementController.text,
+              pays: _paysRecommendController.text,
+              ville: _villeRecommendController.text,
+              ordre: _ordreController.text.isEmpty ? '1' : _ordreController.text,
+              adresseEtablissement: _adresseEtablissementController
+                      .text.isEmpty
+                  ? 'Non spécifiée'
+                  : _adresseEtablissementController.text,
+              nomParent: _parentNomController.text,
+              prenomParent: _parentPrenomController.text,
+              telephone: _parentTelephoneController.text,
+              email: _parentEmailController.text.isEmpty
+                  ? 'email@example.com'
+                  : _parentEmailController.text,
+              paysParent: _paysParentController.text.isEmpty
+                  ? _paysRecommendController.text
+                  : _paysParentController.text,
+              villeParent: _villeParentController.text.isEmpty
+                  ? _villeRecommendController.text
+                  : _villeParentController.text,
+              adresseParent: _adresseParentController.text.isEmpty
+                  ? 'Non spécifiée'
+                  : _adresseParentController.text,
+            );
+
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(this.context).showSnackBar(
+              const SnackBar(
+                content: Text('Recommandation envoyée avec succès!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            _etablissementController.clear();
+            _paysRecommendController.clear();
+            _villeRecommendController.clear();
+            _parentNomController.clear();
+            _parentPrenomController.clear();
+            _parentTelephoneController.clear();
+            _parentEmailController.clear();
+            _ordreController.clear();
+            _adresseEtablissementController.clear();
+            _paysParentController.clear();
+            _villeParentController.clear();
+            _adresseParentController.clear();
+            _recommenderNameController.clear();
+          } catch (e) {
+            ScaffoldMessenger.of(this.context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
 
   Future<void> _loadUnreadNotificationsCount() async {
@@ -340,6 +473,33 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Charger les événements depuis l'API
+  Future<void> _loadEvents() async {
+    if (mounted) {
+      setState(() {
+        _eventsLoading = true;
+        _eventsError = null;
+      });
+    }
+    try {
+      final events = await EventService.getEventsList();
+      if (mounted) {
+        setState(() {
+          _events = events;
+          _eventsLoading = false;
+          _eventsError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _eventsLoading = false;
+          _eventsError = e.toString();
+        });
+      }
+    }
+  }
+
   // Construire la section Coulisses de l'Excellence
   Widget _buildCoulisseExcellenceSection() {
     if (!_hasCoulisseExcellenceData) {
@@ -482,6 +642,367 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Construire la section Événements et Faits Scolaires
+  Widget _buildEventsSection() {
+    return Container(
+      height: 160,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _events.length > 5 ? 6 : _events.length + 1, // 5 événements + bouton Voir+
+        itemBuilder: (context, index) {
+          if (index < _events.length && index < 5) {
+            // Afficher les 5 premiers événements
+            return _buildEventCard(_events[index]);
+          } else if (index == 5 || (index == _events.length && _events.length <= 5)) {
+            // Afficher le bouton Voir+
+            return _buildSeeMoreEventsCard();
+          } else {
+            return const SizedBox.shrink();
+          }
+        },
+      ),
+    );
+  }
+
+  // Construire une carte d'événement
+  Widget _buildEventCard(Event event) {
+    final uiData = event.toUiMap();
+    
+    return GestureDetector(
+      onTap: () {
+        // Action pour voir les détails de l'événement
+        _handleEventAction(event);
+      },
+      child: Container(
+        width: 280,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image de l'événement
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Container(
+                height: 90,
+                width: 280,
+                color: Colors.grey[200],
+                child: event.image != null && event.image!.isNotEmpty
+                    ? Image.network(
+                        event.image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Icon(
+                              Icons.event,
+                              color: Colors.grey[600],
+                              size: 40,
+                            ),
+                          );
+                        },
+                      )
+                    : Icon(
+                        Icons.event,
+                        color: Colors.grey[600],
+                        size: 40,
+                      ),
+              ),
+            ),
+            // Informations de l'événement
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A2A),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    event.nomecole,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    uiData['date'] as String,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: uiData['color'] as Color,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Construire la carte "Voir+"
+  Widget _buildSeeMoreEventsCard() {
+    return GestureDetector(
+      onTap: () {
+        // Action pour voir tous les événements
+        _handleSeeMoreEvents();
+      },
+      child: Container(
+        width: 120,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFFF3F4F6),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF6366F1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Voir+',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6366F1),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tous les événements',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Gérer l'action sur un événement
+  void _handleEventAction(Event event) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EventDetailScreen(event: event),
+      ),
+    );
+  }
+
+  // Gérer l'action "Voir+"
+  void _handleSeeMoreEvents() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const AllEventsScreen(),
+      ),
+    );
+  }
+
+  // Construire la section Visite guidée
+  Widget _buildVisiteGuideeSection() {
+    return Container(
+      height: 120,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: 3, // Nombre de cartes pour la visite guidée
+        itemBuilder: (context, index) {
+          return _buildVisiteGuideeCard(index);
+        },
+      ),
+    );
+  }
+
+  // Construire une carte pour la visite guidée
+  Widget _buildVisiteGuideeCard(int index) {
+    final visiteData = [
+      {
+        'title': 'Visite virtuelle',
+        'subtitle': 'Découvrez nos installations',
+        'image': 'assets/images/ecole.jpg',
+        'color': const Color(0xFF3B82F6),
+        'backgroundColor': const Color(0xFFEFF6FF),
+      },
+      {
+        'title': 'Présentation',
+        'subtitle': 'Notre projet pédagogique',
+        'image': 'assets/images/icons/inscription.png',
+        'color': const Color(0xFF10B981),
+        'backgroundColor': const Color(0xFFECFDF5),
+      },
+      {
+        'title': 'Contact',
+        'subtitle': 'Prenez rendez-vous',
+        'image': 'assets/images/icons/consulter.png',
+        'color': const Color(0xFFF59E0B),
+        'backgroundColor': const Color(0xFFFFF7ED),
+      },
+    ];
+
+    final data = visiteData[index];
+    
+    return GestureDetector(
+      onTap: () {
+        // Action à définir selon le type de visite
+        _handleVisiteGuideeAction(index);
+      },
+      child: Container(
+        width: 300,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: data['backgroundColor'] as Color,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Icône ou image
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: (data['color'] as Color).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getVisiteIcon(index),
+                  color: data['color'] as Color,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Texte
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      data['title'] as String,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: data['color'] as Color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      data['subtitle'] as String,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Flèche
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey[400],
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Obtenir l'icône appropriée pour chaque type de visite
+  IconData _getVisiteIcon(int index) {
+    switch (index) {
+      case 0:
+        return Icons.explore;
+      case 1:
+        return Icons.school;
+      case 2:
+        return Icons.calendar_today;
+      default:
+        return Icons.info;
+    }
+  }
+
+  // Gérer les actions de la visite guidée
+  void _handleVisiteGuideeAction(int index) {
+    switch (index) {
+      case 0:
+        // Visite virtuelle - ouvrir une page ou une vidéo
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Visite virtuelle bientôt disponible'),
+            backgroundColor: _kOrange,
+          ),
+        );
+        break;
+      case 1:
+        // Présentation - ouvrir une page de présentation
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Présentation du projet pédagogique bientôt disponible'),
+            backgroundColor: _kOrange,
+          ),
+        );
+        break;
+      case 2:
+        // Contact - ouvrir une page de contact ou prendre rendez-vous
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Formulaire de contact bientôt disponible'),
+            backgroundColor: _kOrange,
+          ),
+        );
+        break;
+    }
+  }
+
   Future<void> _updatePhotosInBackground(List<Child> children) async {
     final poulsApiService = PoulsScolaireApiService();
     for (final child in children) {
@@ -545,7 +1066,7 @@ class _HomeScreenState extends State<HomeScreen> {
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.homeBg(context),
+        backgroundColor: Colors.black,
         body: Column(
           children: [
             // ── Dark top section ──
@@ -561,7 +1082,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── DARK HEADER SECTION ───────────────────────────────────────────────────
   Widget _buildDarkHeader() {
     return Container(
-      color: AppColors.homeBg(context),
+      color: Colors.black,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -603,7 +1124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(24),
                     fontWeight: FontWeight.w700,
-                    color: AppColors.homeTextPrimary(context),
+                    color: Colors.white,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -733,7 +1254,7 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.homeAlertBg(context),
+          color: Colors.transparent,
           border: Border.all(color: AppColors.homeAlertBorder(context)),
           borderRadius: BorderRadius.circular(13),
         ),
@@ -755,7 +1276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Absence signalée — Fatoumat, 6ème G',
                     style: TextStyle(
-                      color: AppColors.homeTextPrimary(context),
+                      color: Colors.white,
                       fontSize: _textSizeService.getScaledFontSize(12),
                       fontWeight: FontWeight.w600,
                     ),
@@ -766,7 +1287,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Ce matin · Collège Hînneh Biabou',
                     style: TextStyle(
-                      color: AppColors.homeTextSecondary(context),
+                      color: Colors.white70,
                       fontSize: _textSizeService.getScaledFontSize(10),
                     ),
                   ),
@@ -1156,7 +1677,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               child.firstName,
               style: TextStyle(
-                color: AppColors.homeTextPrimary(context),
+                color: Colors.white,
                 fontSize: AppDimensions.getChildNameTextSize(context),
                 fontWeight: FontWeight.w500,
               ),
@@ -1250,7 +1771,7 @@ class _HomeScreenState extends State<HomeScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.only(top: 16),
               children: [
-                SectionRow(title: 'INSCRIPTIONS & DÉMARCHES'),
+                SectionRow(title: 'ACTIONS RAPIDES'),
                 const SizedBox(height: 16),
                 SizedBox(
                   height: AppDimensions.getPaymentBannerCardHeight(context) +10,
@@ -1341,6 +1862,78 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: AppDimensions.getSquareCardHeightSize(context),
                         centerTitle: true,
                         onTap: () => showSponsorshipBottomSheet(context),
+                      ),
+                      SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                      _buildCard(
+                        index: 4,
+                        cardKey: 'panier',
+                        title: 'Mon\npanier',
+                        imagePath: 'assets/images/mes-commandes.jpg',
+                        color: _kOrange,
+                        backgroundColor: const Color(0xFFFFF4EE),
+                        textColor: const Color(0xFF9A3412),
+                        actionText: 'Voir',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        allowLineBreak: true,
+                        innerBorderColor: const Color(0xFFFB923C),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CartScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                      _buildCard(
+                        index: 5,
+                        cardKey: 'commandes',
+                        title: 'Mes\ncommandes',
+                        imagePath: 'assets/images/mes-commandes.jpg',
+                        color: const Color(0xFF10B981),
+                        backgroundColor: const Color(0xFFECFDF5),
+                        textColor: const Color(0xFF065F46),
+                        actionText: 'Voir',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        allowLineBreak: true,
+                        innerBorderColor: const Color(0xFF34D399),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const OrdersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                      _buildCard(
+                        index: 6,
+                        cardKey: 'recommendation',
+                        title: 'Recommander\nune école',
+                        imagePath: 'assets/images/icons/note-avis.png',
+                        color: _kOrange,
+                        backgroundColor: const Color(0xFFFFF7ED),
+                        textColor: const Color(0xFF9A3412),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        allowLineBreak: true,
+                        innerBorderColor: const Color(0xFFFDBA74),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: _showRecommendationBottomSheet,
                       ),
                     ],
                   ),
@@ -1571,83 +2164,97 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
               ],
 
-              SectionRow(title: 'BOUTIQUE & ACHATS'),
-              SizedBox(
-                height: AppDimensions.getPaymentBannerCardHeight(context),
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.only(
-                    left: AppDimensions.getSectionHorizontalPadding(context), 
-                    right: AppDimensions.getSectionHorizontalPadding(context) + 8,
-                  ),
-                  children: [
-                    _buildCard(
-                      index: 0,
-                      cardKey: 'panier',
-                      title: 'Mon panier',
-                      imagePath: 'assets/images/mes-commandes.jpg',
-                      color: _kOrange,
-                      width: AppDimensions.getHorizontalCardWidth(context),
-                      height: AppDimensions.getHorizontalCardHeight(context), // Ajout d'une hauteur dynamique
-                      backgroundColor: const Color(0xFFFFF4EE),
-                      textColor: const Color(0xFF9A3412),
-                      actionText: 'Voir',
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const CartScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildCard(
-                      index: 1,
-                      cardKey: 'commandes',
-                      title: 'Mes commandes',
-                      imagePath: 'assets/images/mes-commandes.jpg',
-                      color: const Color(0xFF10B981),
-                      width: AppDimensions.getHorizontalCardWidth(context),
-                      height: AppDimensions.getHorizontalCardHeight(context), // Ajout d'une hauteur dynamique
-                      backgroundColor: const Color(0xFFECFDF5),
-                      textColor: const Color(0xFF065F46),
-                      actionText: 'Voir',
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const OrdersScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildCard(
-                      index: 2,
-                      cardKey: 'boutique_libouli',
-                      title: 'Boutique\n(Libouli)',
-                      imagePath: 'assets/images/mes-commandes.jpg',
-                      color: const Color(0xFF8B5CF6),
-                      width: AppDimensions.getHorizontalCardWidth(context),
-                      height: AppDimensions.getHorizontalCardHeight(context), // Ajout d'une hauteur dynamique
-                      backgroundColor: const Color(0xFFF3E8FF),
-                      textColor: const Color(0xFF6B21A8),
-                      actionText: 'Accéder',
-                      onTap: () {
-                        final wrapper = MainScreenWrapper.maybeOf(context);
-                        if (wrapper != null) {
-                          wrapper.updateCurrentIndex(1);
-                        } else {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const MainScreenWrapper(initialIndex: 1),
-                            ),
-                            (r) => false,
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              // Section Événements et Faits Scolaires
+              if (_hasEventsData) ...[
+                SectionRow(title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES'),
+                const SizedBox(height: 16),
+                _buildEventsSection(),
+                const SizedBox(height: 16),
+              ],
+
+              // Section Visite guidée
+              SectionRow(title: 'VISITE GUIDÉE'),
+              const SizedBox(height: 16),
+              _buildVisiteGuideeSection(),
+              // const SizedBox(height: 16),
+
+              // SectionRow(title: 'BOUTIQUE & ACHATS'),
+              // SizedBox(
+              //   height: AppDimensions.getPaymentBannerCardHeight(context) + 50,
+              //   child: ListView(
+              //     scrollDirection: Axis.horizontal,
+              //     padding: EdgeInsets.only(
+              //       left: AppDimensions.getSectionHorizontalPadding(context), 
+              //       right: AppDimensions.getSectionHorizontalPadding(context) + 8,
+              //     ),
+              //     children: [
+              //       _buildCard(
+              //         index: 0,
+              //         cardKey: 'panier',
+              //         title: 'Mon panier',
+              //         imagePath: 'assets/images/mes-commandes.jpg',
+              //         color: _kOrange,
+              //         width: AppDimensions.getHorizontalCardWidth(context),
+              //         height: AppDimensions.getHorizontalCardHeight(context)  + 50, // Ajout d'une hauteur dynamique
+              //         backgroundColor: const Color(0xFFFFF4EE),
+              //         textColor: const Color(0xFF9A3412),
+              //         actionText: 'Voir',
+              //         onTap: () {
+              //           Navigator.of(context).push(
+              //             MaterialPageRoute(
+              //               builder: (_) => const CartScreen(),
+              //             ),
+              //           );
+              //         },
+              //       ),
+              //       _buildCard(
+              //         index: 1,
+              //         cardKey: 'commandes',
+              //         title: 'Mes commandes',
+              //         imagePath: 'assets/images/mes-commandes.jpg',
+              //         color: const Color(0xFF10B981),
+              //         width: AppDimensions.getHorizontalCardWidth(context),
+              //         height: AppDimensions.getHorizontalCardHeight(context)  + 50, // Ajout d'une hauteur dynamique
+              //         backgroundColor: const Color(0xFFECFDF5),
+              //         textColor: const Color(0xFF065F46),
+              //         actionText: 'Voir',
+              //         onTap: () {
+              //           Navigator.of(context).push(
+              //             MaterialPageRoute(
+              //               builder: (_) => const OrdersScreen(),
+              //             ),
+              //           );
+              //         },
+              //       ),
+              //       _buildCard(
+              //         index: 2,
+              //         cardKey: 'boutique_libouli',
+              //         title: 'Boutique\n(Libouli)',
+              //         imagePath: 'assets/images/mes-commandes.jpg',
+              //         color: const Color(0xFF8B5CF6),
+              //         width: AppDimensions.getHorizontalCardWidth(context),
+              //         height: AppDimensions.getHorizontalCardHeight(context) + 50, // Ajout d'une hauteur dynamique
+              //         backgroundColor: const Color(0xFFF3E8FF),
+              //         textColor: const Color(0xFF6B21A8),
+              //         actionText: 'Accéder',
+              //         onTap: () {
+              //           final wrapper = MainScreenWrapper.maybeOf(context);
+              //           if (wrapper != null) {
+              //             wrapper.updateCurrentIndex(1);
+              //           } else {
+              //             Navigator.of(context).pushAndRemoveUntil(
+              //               MaterialPageRoute(
+              //                 builder: (_) =>
+              //                     const MainScreenWrapper(initialIndex: 1),
+              //               ),
+              //               (r) => false,
+              //             );
+              //           }
+              //         },
+              //       ),
+              //     ],
+              //   ),
+              // ),
                 const SizedBox(height: 125),
               ],
             ),

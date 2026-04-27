@@ -26,6 +26,7 @@ import '../widgets/filter_row_widget.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/image_menu_card.dart';
 import '../widgets/app_loader.dart';
+import '../widgets/recommendation_bottom_sheet.dart';
 import 'all_events_screen.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
@@ -1276,7 +1277,79 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       case 'share':
         return _buildShareForm();
       case 'recommend':
-        return _buildRecommendationForm();
+        return RecommendationBottomSheet(
+          accentColor: _kActions['recommend']!.color,
+          recommenderNameController: _recommenderNameController,
+          etablissementController: _etablissementController,
+          paysRecommendController: _paysRecommendController,
+          villeRecommendController: _villeRecommendController,
+          parentNomController: _parentNomController,
+          parentPrenomController: _parentPrenomController,
+          parentTelephoneController: _parentTelephoneController,
+          parentEmailController: _parentEmailController,
+          ordreController: _ordreController,
+          adresseEtablissementController: _adresseEtablissementController,
+          paysParentController: _paysParentController,
+          villeParentController: _villeParentController,
+          adresseParentController: _adresseParentController,
+          onSubmit: (context) async {
+            try {
+              await RecommendationService.submitRecommendation(
+                etablissement: _etablissementController.text,
+                pays: _paysRecommendController.text,
+                ville: _villeRecommendController.text,
+                ordre: _ordreController.text.isEmpty ? '1' : _ordreController.text,
+                adresseEtablissement: _adresseEtablissementController
+                        .text.isEmpty
+                    ? 'Non spécifiée'
+                    : _adresseEtablissementController.text,
+                nomParent: _parentNomController.text,
+                prenomParent: _parentPrenomController.text,
+                telephone: _parentTelephoneController.text,
+                email: _parentEmailController.text.isEmpty
+                    ? 'email@example.com'
+                    : _parentEmailController.text,
+                paysParent: _paysParentController.text.isEmpty
+                    ? _paysRecommendController.text
+                    : _paysParentController.text,
+                villeParent: _villeParentController.text.isEmpty
+                    ? _villeRecommendController.text
+                    : _villeParentController.text,
+                adresseParent: _adresseParentController.text.isEmpty
+                    ? 'Non spécifiée'
+                    : _adresseParentController.text,
+              );
+
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Recommandation envoyée avec succès!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              _etablissementController.clear();
+              _paysRecommendController.clear();
+              _villeRecommendController.clear();
+              _parentNomController.clear();
+              _parentPrenomController.clear();
+              _parentTelephoneController.clear();
+              _parentEmailController.clear();
+              _ordreController.clear();
+              _adresseEtablissementController.clear();
+              _paysParentController.clear();
+              _villeParentController.clear();
+              _adresseParentController.clear();
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Erreur: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        );
       default:
         return const Center(child: Text('Contenu non disponible'));
     }
@@ -1562,301 +1635,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.grey[400]
                   : const Color(0xFF666666),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecommendationForm() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final actionColor = _kActions['recommend']!.color;
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenSurface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.screenDivider,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: actionColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    Icons.recommend_rounded,
-                    size: 24,
-                    color: actionColor,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Recommander un établissement',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF1A1A1A),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Suggérez une école à la communauté',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark
-                              ? Colors.grey[400]
-                              : const Color(0xFF666666),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 20,
-                      color: isDark ? Colors.white54 : const Color(0xFF666666),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  CustomTextField(
-                    label: 'Votre nom',
-                    hint: 'Entrez votre nom complet',
-                    icon: Icons.person_rounded,
-                    controller: _recommenderNameController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: "Nom de l'établissement",
-                    hint: "Entrez le nom de l'école",
-                    icon: Icons.business_rounded,
-                    controller: _etablissementController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: 'Pays',
-                    hint: 'Entrez le pays',
-                    icon: Icons.public_rounded,
-                    controller: _paysRecommendController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: 'Ville',
-                    hint: 'Entrez la ville',
-                    icon: Icons.location_city_rounded,
-                    controller: _villeRecommendController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Informations du parent',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: 'Nom du parent',
-                    hint: 'Entrez votre nom',
-                    icon: Icons.person_rounded,
-                    controller: _parentNomController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: 'Prénom du parent',
-                    hint: 'Entrez votre prénom',
-                    icon: Icons.person_outline_rounded,
-                    controller: _parentPrenomController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: 'Téléphone',
-                    hint: 'Entrez votre numéro de téléphone',
-                    icon: Icons.phone_rounded,
-                    controller: _parentTelephoneController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: 'Email',
-                    hint: 'Entrez votre email',
-                    icon: Icons.email_rounded,
-                    controller: _parentEmailController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: "Adresse de l'établissement",
-                    hint: "Entrez l'adresse (optionnel)",
-                    icon: Icons.location_on_rounded,
-                    controller: _adresseEtablissementController,
-                    iconColor: actionColor,
-                    focusBorderColor: actionColor,
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (_etablissementController.text.isEmpty ||
-                            _paysRecommendController.text.isEmpty ||
-                            _villeRecommendController.text.isEmpty ||
-                            _parentNomController.text.isEmpty ||
-                            _parentPrenomController.text.isEmpty ||
-                            _parentTelephoneController.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Veuillez remplir tous les champs obligatoires',
-                              ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
-                        }
-                        try {
-                          await RecommendationService.submitRecommendation(
-                            etablissement: _etablissementController.text,
-                            pays: _paysRecommendController.text,
-                            ville: _villeRecommendController.text,
-                            ordre: _ordreController.text.isEmpty
-                                ? '1'
-                                : _ordreController.text,
-                            adresseEtablissement:
-                                _adresseEtablissementController.text.isEmpty
-                                ? 'Non spécifiée'
-                                : _adresseEtablissementController.text,
-                            nomParent: _parentNomController.text,
-                            prenomParent: _parentPrenomController.text,
-                            telephone: _parentTelephoneController.text,
-                            email: _parentEmailController.text.isEmpty
-                                ? 'email@example.com'
-                                : _parentEmailController.text,
-                            paysParent: _paysParentController.text.isEmpty
-                                ? _paysRecommendController.text
-                                : _paysParentController.text,
-                            villeParent: _villeParentController.text.isEmpty
-                                ? _villeRecommendController.text
-                                : _villeParentController.text,
-                            adresseParent: _adresseParentController.text.isEmpty
-                                ? 'Non spécifiée'
-                                : _adresseParentController.text,
-                          );
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Recommandation envoyée avec succès!',
-                              ),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                          _etablissementController.clear();
-                          _paysRecommendController.clear();
-                          _villeRecommendController.clear();
-                          _parentNomController.clear();
-                          _parentPrenomController.clear();
-                          _parentTelephoneController.clear();
-                          _parentEmailController.clear();
-                          _ordreController.clear();
-                          _adresseEtablissementController.clear();
-                          _paysParentController.clear();
-                          _villeParentController.clear();
-                          _adresseParentController.clear();
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Erreur: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: actionColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Envoyer la recommandation',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
             ),
           ),
         ],

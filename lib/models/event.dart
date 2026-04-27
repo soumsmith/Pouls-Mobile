@@ -152,10 +152,16 @@ class EventsResponse {
       data: (json['data'] as List)
           .map((item) => Event.fromJson(item as Map<String, dynamic>))
           .toList(),
-      currentPage: json['current_page'] as int,
-      perPage: json['per_page'] as int,
-      total: json['total'] as int,
-      totalPages: json['total_pages'] as int,
+      currentPage: _parseInt(json['current_page']),
+      perPage: _parseInt(json['per_page']),
+      total: _parseInt(json['total']),
+      totalPages: _parseInt(json['total_pages']),
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }

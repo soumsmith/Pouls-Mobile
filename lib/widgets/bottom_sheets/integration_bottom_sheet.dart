@@ -1195,35 +1195,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       title: 'Sélection de l\'établissement',
       icon: Icons.school_rounded,
       children: [
-        // Container(
-        //   padding: const EdgeInsets.all(16),
-        //   decoration: BoxDecoration(
-        //     color: AppColors.screenOrangeLight.withOpacity(0.3),
-        //     borderRadius: BorderRadius.circular(12),
-        //     border: Border.all(color: AppColors.screenOrange.withOpacity(0.2)),
-        //   ),
-        //   child: Row(
-        //     children: [
-        //       const Icon(
-        //         Icons.info_outline,
-        //         color: AppColors.screenOrange,
-        //         size: 20,
-        //       ),
-        //       const SizedBox(width: 12),
-        //       Expanded(
-        //         child: Text(
-        //           'Sélectionnez l\'établissement où vous souhaitez intégrer votre enfant.',
-        //           style: TextStyle(
-        //             fontSize: _textSizeService.getScaledFontSize(13),
-        //             color: AppColors.screenTextSecondary,
-        //             height: 1.4,
-        //           ),
-        //         ),
-        //       ),
-        //     ],
-        //   ),
-        // ),
-        // const SizedBox(height: 20),
         _buildEcoleField(),
         if (_ecoleErrorMessage != null) ...[
           const SizedBox(height: 12),

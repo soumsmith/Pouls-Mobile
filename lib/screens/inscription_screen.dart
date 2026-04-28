@@ -193,11 +193,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     );
     return [
       _kStepScolarite,
-      _kStepReservation,
       if (_servicesEnabled) ...[
         _kStepServices,
         if (hasTransSelected) _kStepZones,
         _kStepEcheancier,
+        _kStepReservation,
+      ] else ...[
+        _kStepReservation,
       ],
       _kStepRecap,
     ];

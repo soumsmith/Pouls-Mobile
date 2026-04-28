@@ -27,6 +27,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   late PageController _pageController;
   int _currentIndex = 0;
   List<YoutubePlayerController?> _youtubeControllers = [];
+  final Set<int> _likedVideoIds = <int>{};
 
   @override
   void initState() {
@@ -181,6 +182,17 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     );
   }
 
+  void _toggleLike() {
+    final video = widget.videos[_currentIndex];
+    setState(() {
+      if (_likedVideoIds.contains(video.id)) {
+        _likedVideoIds.remove(video.id);
+      } else {
+        _likedVideoIds.add(video.id);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -276,6 +288,14 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                   onTap: () {
                     _navigateToEcole(widget.videos[_currentIndex].code);
                   },
+                ),
+                const SizedBox(height: 16),
+                _ActionButton(
+                  icon: _likedVideoIds.contains(widget.videos[_currentIndex].id)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  label: 'J\'aime',
+                  onTap: _toggleLike,
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(

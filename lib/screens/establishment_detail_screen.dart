@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/screens/visite_guidee_video_feed_screen.dart';
@@ -40,6 +41,8 @@ import '../models/parent_suggestion.dart';
 import '../models/lieu_livraison.dart';
 import '../models/school_supply.dart';
 import '../models/place_reservation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../models/classe.dart';
 import '../models/matiere.dart';
 import '../models/eleve.dart';
@@ -2589,6 +2592,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         actionText: 'Voir',
         onTap: () =>
             _showActionBottomSheet('scolarite', _kActions['scolarite']!),
+      ),
+      EstablishmentAction(
+        key: 'services_complementaires',
+        title: 'Services complémentaires',
+        subtitle: 'Options',
+        imagePath: 'assets/images/services.jpg',
+        color: Colors.purple,
+        actionText: 'Découvrir',
+        onTap: () => _showServicesComplementairesBottomSheet(),
       ),
     ];
 
@@ -6142,6 +6154,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       children: [
         _buildSimplifiedOverviewSection(),
         const SizedBox(height: 16),
+        _buildQRCodeSection(),
+        const SizedBox(height: 16),
         _buildContactInfoSection(),
         const SizedBox(height: 16),
         _buildAcademicInfoSection(),
@@ -6232,6 +6246,39 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Code DREN',
+                  _ecoleDetail?.data.codedren ?? widget.ecole.codedren ?? 'Non spécifié',
+                  Icons.code_rounded,
+                  AppColors.screenOrange,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    final latitude = _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
+                    final longitude = _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
+                    if (latitude != null && longitude != null && latitude != 0.0 && longitude != 0.0) {
+                      _openInMaps(latitude, longitude);
+                    }
+                  },
+                  child: _buildStatCard(
+                    'Localisation',
+                    (_ecoleDetail?.data.latitude != 0.0 && _ecoleDetail?.data.longitude != 0.0) 
+                        ? 'Voir sur la carte' 
+                        : 'Non disponible',
+                    Icons.location_on_rounded,
+                    Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(12),
@@ -6263,6 +6310,490 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Section Carte Interactive ───────────────────────────────────────
+  Widget _buildMapSection() {
+    // Utiliser les données de _ecoleDetail si disponibles, sinon celles de widget.ecole
+    final latitude = _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
+    final longitude = _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
+    
+    if (latitude == null || longitude == null || latitude == 0.0 || longitude == 0.0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.red.shade400, Colors.red.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.map_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Localisation',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade600,
+                      ),
+                    ),
+                    Text(
+                      'Position géographique de l\'établissement',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                        color: AppColors.screenTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: AppDimensions.getLightShadow(context),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(latitude, longitude),
+                  zoom: 15,
+                ),
+                markers: {
+                  Marker(
+                    markerId: MarkerId(widget.ecole.ecoleid.toString()),
+                    position: LatLng(latitude, longitude),
+                    infoWindow: InfoWindow(
+                      title: widget.ecole.parametreNom,
+                      snippet: widget.ecole.adresse,
+                    ),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueRed,
+                    ),
+                  ),
+                },
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+                zoomControlsEnabled: true,
+                scrollGesturesEnabled: true,
+                zoomGesturesEnabled: true,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.screenCard,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on_rounded,
+                  color: Colors.red.shade600,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Lat: ${latitude.toStringAsFixed(6)}, Lng: ${longitude.toStringAsFixed(6)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.screenTextSecondary,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _openInMaps(latitude, longitude),
+                  icon: Icon(
+                    Icons.directions_rounded,
+                    color: Colors.red.shade600,
+                  ),
+                  tooltip: 'Ouvrir dans Google Maps',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Section QR Code ───────────────────────────────────────────────
+  Widget _buildQRCodeSection() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.qr_code_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'QR Code',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.screenOrange,
+                      ),
+                    ),
+                    Text(
+                      'Informations de l\'établissement',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                        color: AppColors.screenTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.screenCard,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: AppDimensions.getLightShadow(context),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.screenOrange.withOpacity(0.3)),
+                  ),
+                  child: Center(
+                    child: QrImageView(
+                      data: _generateQRCodeData(),
+                      version: QrVersions.auto,
+                      size: 150.0,
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Scannez pour obtenir les informations',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.screenTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  String _generateQRCodeData() {
+    final Map<String, dynamic> qrData = {
+      'id': _ecoleDetail?.data.id ?? widget.ecole.ecoleid,
+      'code': _ecoleDetail?.data.code ?? widget.ecole.ecolecode,
+      'nom': _ecoleDetail?.data.nom ?? widget.ecole.parametreNom,
+      'adresse': _ecoleDetail?.data.adresse ?? widget.ecole.adresse,
+      'ville': _ecoleDetail?.data.ville ?? widget.ecole.ville,
+      'pays': _ecoleDetail?.data.pays ?? widget.ecole.pays,
+      'telephone': _ecoleDetail?.data.telephone ?? widget.ecole.telephone,
+      'codedren': _ecoleDetail?.data.codedren ?? widget.ecole.codedren,
+      'latitude': _ecoleDetail?.data.latitude ?? widget.ecole.latitude ?? 0.0,
+      'longitude': _ecoleDetail?.data.longitude ?? widget.ecole.longitude ?? 0.0,
+    };
+    
+    // Convertir en JSON string pour le QR code
+    return qrData.entries
+        .map((e) => '${e.key}:${e.value}')
+        .join('|');
+  }
+
+  void _openInMaps(double latitude, double longitude) async {
+    final url = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    // Utiliser url_launcher pour ouvrir Google Maps
+    if (await canLaunch(url)) {
+      await launch(url);
+    }
+  }
+
+  void _showServicesComplementairesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildServicesComplementairesBottomSheet(),
+    );
+  }
+
+  Widget _buildServicesComplementairesBottomSheet() {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurfaceThemed(context),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.grey300Adaptive(context),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.miscellaneous_services_rounded,
+                    color: Colors.purple,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Services complémentaires',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                        ),
+                      ),
+                      Text(
+                        'Options et services additionnels',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.screenTextSecondaryThemed(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.grey100Adaptive(context),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: AppColors.grey666Adaptive(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  _buildServiceCard(
+                    'Cantine',
+                    'Repas équilibrés et surveillés',
+                    Icons.restaurant_rounded,
+                    Colors.orange,
+                    () {
+                      Navigator.of(context).pop();
+                      // Action pour la cantine
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildServiceCard(
+                    'Transport scolaire',
+                    'Navette sécurisée vers l\'école',
+                    Icons.bus_alert_rounded,
+                    Colors.blue,
+                    () {
+                      Navigator.of(context).pop();
+                      // Action pour le transport
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildServiceCard(
+                    'Activités périscolaires',
+                    'Ateliers et clubs diversifiés',
+                    Icons.sports_soccer_rounded,
+                    Colors.green,
+                    () {
+                      Navigator.of(context).pop();
+                      // Action pour les activités
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildServiceCard(
+                    'Soutien scolaire',
+                    'Aide aux devoirs et remédiation',
+                    Icons.school_rounded,
+                    Colors.purple,
+                    () {
+                      Navigator.of(context).pop();
+                      // Action pour le soutien
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildServiceCard(
+                    'Garderie',
+                    'Accueil avant et après les cours',
+                    Icons.access_time_rounded,
+                    Colors.red,
+                    () {
+                      Navigator.of(context).pop();
+                      // Action pour la garderie
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceCard(
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2)),
+          boxShadow: AppDimensions.getLightShadow(context),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: AppColors.screenTextSecondaryThemed(context),
+            ),
+          ],
+        ),
       ),
     );
   }

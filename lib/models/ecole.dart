@@ -11,6 +11,9 @@ class Ecole {
   final List<String> filiereNom;
   final String? imagefond;
   final String? paramecole;
+  final String? codedren;
+  final double? longitude;
+  final double? latitude;
 
   // Champs pour la compatibilité avec le code existant
   int get ecoleid => _ecoleid ?? parametreCode.hashCode;
@@ -37,6 +40,9 @@ class Ecole {
     required this.filiereNom,
     this.imagefond,
     this.paramecole,
+    this.codedren,
+    this.longitude,
+    this.latitude,
     int? ecoleid,
     String? ecocode,
   }) : _ecoleid = ecoleid, _ecolecode = ecocode;
@@ -64,6 +70,9 @@ class Ecole {
       filiereNom: filieres,
       imagefond: json['imagefond'] as String?,
       paramecole: json['paramecole'] as String?,
+      codedren: json['codedren'] as String?,
+      longitude: json['longitude'] as double?,
+      latitude: json['latitude'] as double?,
       ecoleid: json['ecoleid'] as int?,
       ecocode: json['ecolecode'] as String?,
     );
@@ -82,6 +91,9 @@ class Ecole {
       'filiere_nom': filiereNom,
       'imagefond': imagefond,
       'paramecole': paramecole,
+      'codedren': codedren,
+      'longitude': longitude,
+      'latitude': latitude,
     };
   }
 

@@ -15,7 +15,11 @@ import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_config.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
+import '../widgets/recommendation_bottom_sheet.dart';
+import '../services/recommendation_service.dart';
 import 'login_screen.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
@@ -35,6 +39,30 @@ class _AddChildScreenState extends State<AddChildScreen>
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
   final TextSizeService _textSizeService = TextSizeService();
 
+  final TextEditingController _recommenderNameController =
+      TextEditingController();
+  final TextEditingController _etablissementController =
+      TextEditingController();
+  final TextEditingController _paysRecommendController =
+      TextEditingController();
+  final TextEditingController _villeRecommendController =
+      TextEditingController();
+
+  final TextEditingController _parentNomController = TextEditingController();
+  final TextEditingController _parentPrenomController = TextEditingController();
+  final TextEditingController _parentTelephoneController =
+      TextEditingController();
+  final TextEditingController _parentEmailController = TextEditingController();
+
+  final TextEditingController _ordreController = TextEditingController();
+  final TextEditingController _adresseEtablissementController =
+      TextEditingController();
+
+  final TextEditingController _paysParentController = TextEditingController();
+  final TextEditingController _villeParentController = TextEditingController();
+  final TextEditingController _adresseParentController =
+      TextEditingController();
+
   bool _isLoading = false;
   bool _isSearching = false;
   bool _isLoadingEcoles = false;
@@ -49,6 +77,8 @@ class _AddChildScreenState extends State<AddChildScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  bool _isFoundStudentSheetOpen = false;
 
   @override
   void initState() {
@@ -77,9 +107,113 @@ class _AddChildScreenState extends State<AddChildScreen>
     _animationController.forward();
   }
 
+  void _showRecommendationBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => RecommendationBottomSheet(
+        accentColor: AppColors.screenOrange,
+        recommenderNameController: _recommenderNameController,
+        etablissementController: _etablissementController,
+        paysRecommendController: _paysRecommendController,
+        villeRecommendController: _villeRecommendController,
+        parentNomController: _parentNomController,
+        parentPrenomController: _parentPrenomController,
+        parentTelephoneController: _parentTelephoneController,
+        parentEmailController: _parentEmailController,
+        ordreController: _ordreController,
+        adresseEtablissementController: _adresseEtablissementController,
+        paysParentController: _paysParentController,
+        villeParentController: _villeParentController,
+        adresseParentController: _adresseParentController,
+        title: 'Recommander une école',
+        subtitle:
+            'Votre école n\'est pas dans la liste ? Proposez-la pour l\'ajouter.',
+        onSubmit: (context) async {
+          try {
+            await RecommendationService.submitRecommendation(
+              etablissement: _etablissementController.text,
+              pays: _paysRecommendController.text,
+              ville: _villeRecommendController.text,
+              ordre: _ordreController.text.isEmpty
+                  ? '1'
+                  : _ordreController.text,
+              adresseEtablissement: _adresseEtablissementController.text.isEmpty
+                  ? 'Non spécifiée'
+                  : _adresseEtablissementController.text,
+              nomParent: _parentNomController.text,
+              prenomParent: _parentPrenomController.text,
+              telephone: _parentTelephoneController.text,
+              email: _parentEmailController.text.isEmpty
+                  ? 'email@example.com'
+                  : _parentEmailController.text,
+              paysParent: _paysParentController.text.isEmpty
+                  ? _paysRecommendController.text
+                  : _paysParentController.text,
+              villeParent: _villeParentController.text.isEmpty
+                  ? _villeRecommendController.text
+                  : _villeParentController.text,
+              adresseParent: _adresseParentController.text.isEmpty
+                  ? 'Non spécifiée'
+                  : _adresseParentController.text,
+            );
+
+            if (mounted) Navigator.of(context).pop();
+            if (mounted) {
+              ScaffoldMessenger.of(this.context).showSnackBar(
+                const SnackBar(
+                  content: Text('Recommandation envoyée avec succès!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+
+            _etablissementController.clear();
+            _paysRecommendController.clear();
+            _villeRecommendController.clear();
+            _parentNomController.clear();
+            _parentPrenomController.clear();
+            _parentTelephoneController.clear();
+            _parentEmailController.clear();
+            _ordreController.clear();
+            _adresseEtablissementController.clear();
+            _paysParentController.clear();
+            _villeParentController.clear();
+            _adresseParentController.clear();
+            _recommenderNameController.clear();
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(this.context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _matriculeController.dispose();
+
+    _recommenderNameController.dispose();
+    _etablissementController.dispose();
+    _paysRecommendController.dispose();
+    _villeRecommendController.dispose();
+    _parentNomController.dispose();
+    _parentPrenomController.dispose();
+    _parentTelephoneController.dispose();
+    _parentEmailController.dispose();
+    _ordreController.dispose();
+    _adresseEtablissementController.dispose();
+    _paysParentController.dispose();
+    _villeParentController.dispose();
+    _adresseParentController.dispose();
+
     _animationController.dispose();
     super.dispose();
   }
@@ -157,6 +291,13 @@ class _AddChildScreenState extends State<AddChildScreen>
           _foundEcole = ecole;
           _isSearching = false;
         });
+
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _showFoundStudentBottomSheet();
+          });
+        }
       } else {
         setState(() {
           _errorMessage = 'Aucun élève trouvé avec ce matricule';
@@ -298,42 +439,102 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   void _showHelpDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Comment trouver le matricule ?',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Le matricule se trouve sur :',
-              style: TextStyle(color: AppColors.screenTextSecondary),
-            ),
-            const SizedBox(height: 12),
-            _helpItem('📄', 'Carnet de correspondance'),
-            _helpItem('🎓', 'Bulletin scolaire'),
-            _helpItem('📝', 'Carte d\'élève'),
-            _helpItem('💻', 'Portail en ligne de l\'école'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Compris',
-              style: TextStyle(
-                color: AppColors.screenOrange,
-                fontWeight: FontWeight.w700,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return SafeArea(
+          top: false,
+          bottom: false,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.screenSurfaceThemed(context),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, -8),
+                ),
+              ],
+            ),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              20 + MediaQuery.of(context).padding.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.screenDivider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text(
+                  'Comment trouver le matricule ?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: _textSizeService.getScaledFontSize(17),
+                    color: AppColors.screenTextPrimaryThemed(context),
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Le matricule se trouve sur :',
+                  style: TextStyle(
+                    color: AppColors.screenTextSecondaryThemed(context),
+                    fontSize: _textSizeService.getScaledFontSize(13),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _helpItem('📄', 'Carnet de correspondance'),
+                _helpItem('🎓', 'Bulletin scolaire'),
+                _helpItem('📝', 'Carte d\'élève'),
+                _helpItem('💻', 'Portail en ligne de l\'école'),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.screenOrange,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.getButtonBorderRadius(context),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      'Compris',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -365,10 +566,13 @@ class _AddChildScreenState extends State<AddChildScreen>
         backgroundColor: AppColors.screenSurface,
         body: FadeTransition(
           opacity: _fadeAnimation,
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
+          child: CustomScrollView(
+            slivers: [
+              CustomSliverAppBar(
+                title: 'Ajouter un élève',
+                actions: [_buildHelpAppBarAction()],
+              ),
+              SliverToBoxAdapter(
                 child: SlideTransition(
                   position: _slideAnimation,
                   child: _buildBody(),
@@ -381,91 +585,30 @@ class _AddChildScreenState extends State<AddChildScreen>
     );
   }
 
-  // ─── APP BAR ───────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
-    return Container(
-      color: AppColors.screenSurface,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCard,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.screenShadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 16,
-                    color: AppColors.screenTextPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Title
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ajouter un élève',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(18),
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    Text(
-                      'Recherche par matricule',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(12),
-                        color: AppColors.screenTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Help button
-              GestureDetector(
-                onTap: _showHelpDialog,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCard,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.screenShadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.help_outline,
-                    size: 18,
-                    color: AppColors.screenOrange,
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildHelpAppBarAction() {
+    return GestureDetector(
+      onTap: _showHelpDialog,
+      child: Container(
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getSmallCardBorderRadius(context),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.screenShadowThemed(context),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.help_outline,
+          size: 18,
+          color: AppColors.screenOrange,
         ),
       ),
     );
@@ -473,7 +616,7 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   // ─── BODY ──────────────────────────────────────────────────────────────────
   Widget _buildBody() {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
       child: Form(
         key: _formKey,
@@ -483,70 +626,115 @@ class _AddChildScreenState extends State<AddChildScreen>
             _buildHeroBanner(),
             const SizedBox(height: 20),
             _buildSearchPanel(),
-            if (_foundEleve != null && _foundEcole != null) ...[
-              const SizedBox(height: 16),
-              _buildFoundStudentCard(),
-            ],
           ],
         ),
       ),
     );
   }
 
+  void _showFoundStudentBottomSheet() {
+    if (_isFoundStudentSheetOpen) return;
+    if (_foundEleve == null || _foundEcole == null) return;
+
+    _isFoundStudentSheetOpen = true;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return SafeArea(
+          top: false,
+          bottom: false,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.screenSurfaceThemed(context),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, -8),
+                ),
+              ],
+            ),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              10,
+              16,
+              16 + MediaQuery.of(context).padding.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.screenDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildFoundStudentContent(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ).whenComplete(() {
+      if (mounted) setState(() => _isFoundStudentSheetOpen = false);
+      if (!mounted) _isFoundStudentSheetOpen = false;
+    });
+  }
+
   // ─── HERO BANNER ───────────────────────────────────────────────────────────
   Widget _buildHeroBanner() {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.screenOrange.withOpacity(0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.person_add_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.screenOrange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.person_add_rounded,
+                    color: AppColors.screenOrange,
+                    size: 24,
+                  ),
+                ),
                 Text(
                   'Ajouter votre enfant',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(16),
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: Colors.black,
                     letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   'Entrez le matricule scolaire pour retrouver votre enfant',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.black,
                     height: 1.3,
                   ),
                 ),
@@ -561,22 +749,22 @@ class _AddChildScreenState extends State<AddChildScreen>
   // ─── SEARCH PANEL ──────────────────────────────────────────────────────────
   Widget _buildSearchPanel() {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+      // decoration: BoxDecoration(
+      //   color: AppColors.screenCard,
+      //   borderRadius: BorderRadius.circular(24),
+      //   boxShadow: const [
+      //     BoxShadow(
+      //       color: AppColors.screenShadow,
+      //       blurRadius: 16,
+      //       offset: Offset(0, 4),
+      //     ),
+      //   ],
+      // ),
       child: Column(
         children: [
           // Header du panneau
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
             child: Row(
               children: [
                 Container(
@@ -606,22 +794,9 @@ class _AddChildScreenState extends State<AddChildScreen>
             ),
           ),
 
-          // Drag handle décoratif
-          Center(
-            child: Container(
-              width: 36,
-              height: 3,
-              margin: const EdgeInsets.only(top: 14, bottom: 4),
-              decoration: BoxDecoration(
-                color: AppColors.screenDivider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
           // Formulaire
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 20),
             child: Column(
               children: [
                 // Champ école
@@ -661,6 +836,8 @@ class _AddChildScreenState extends State<AddChildScreen>
       return Column(
         children: [
           _buildEmptyEcoleField(),
+          const SizedBox(height: 10),
+          _buildRecommendSchoolButton(),
           if (_errorMessage != null) ...[
             const SizedBox(height: 10),
             _buildRetryButton(),
@@ -784,6 +961,38 @@ class _AddChildScreenState extends State<AddChildScreen>
     );
   }
 
+  Widget _buildRecommendSchoolButton() {
+    return GestureDetector(
+      onTap: _showRecommendationBottomSheet,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.screenOrangeLight,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.recommend_rounded,
+              color: AppColors.screenOrange,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Recommander une école',
+              style: TextStyle(
+                color: AppColors.screenOrange,
+                fontWeight: FontWeight.w700,
+                fontSize: _textSizeService.getScaledFontSize(13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── MATRICULE FIELD ───────────────────────────────────────────────────────
   Widget _buildMatriculeField() {
     return Column(
@@ -792,11 +1001,6 @@ class _AddChildScreenState extends State<AddChildScreen>
         _fieldLabel('Matricule de l\'élève', required: true),
         const SizedBox(height: 6),
         Container(
-          decoration: BoxDecoration(
-            color: AppColors.screenSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.screenDivider),
-          ),
           child: TextField(
             controller: _matriculeController,
             autofocus: false,
@@ -899,231 +1103,197 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   // ─── FOUND STUDENT CARD ────────────────────────────────────────────────────
-  Widget _buildFoundStudentCard() {
+  Widget _buildFoundStudentContent() {
     final eleve = _foundEleve!;
     final ecole = _foundEcole!;
 
+    return Column(
+      children: [
+        Row(
+          children: [
+            Hero(
+              tag: 'student_photo_${eleve.matriculeEleve}',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  color: AppColors.screenSurface,
+                  child: eleve.urlPhoto != null && eleve.urlPhoto!.isNotEmpty
+                      ? Image.network(
+                          eleve.urlPhoto!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person,
+                            color: AppColors.screenTextSecondary,
+                            size: 28,
+                          ),
+                          loadingBuilder: (_, child, progress) =>
+                              progress == null
+                              ? child
+                              : const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.screenOrange,
+                                  ),
+                                ),
+                        )
+                      : const Icon(
+                          Icons.person,
+                          color: AppColors.screenTextSecondary,
+                          size: 28,
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    eleve.nomEleve ?? 'Nom inconnu',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.screenTextPrimary,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    eleve.prenomEleve ?? 'Prénom inconnu',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(13),
+                      color: AppColors.screenTextSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.screenSurface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.screenDivider.withOpacity(0.8),
+                          ),
+                        ),
+                        child: Text(
+                          eleve.classe.isNotEmpty
+                              ? eleve.classe
+                              : 'Classe inconnue',
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(11),
+                            color: AppColors.screenTextSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.successLight,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.check_rounded,
+                              size: 14,
+                              color: AppColors.white,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Trouvé',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        const Divider(color: AppColors.screenDivider, height: 1),
+        const SizedBox(height: 12),
+        _infoRow(Icons.school_outlined, 'École', ecole.ecoleclibelle),
+        const SizedBox(height: 10),
+        _infoRow(Icons.badge_outlined, 'Matricule', eleve.matriculeEleve),
+        const SizedBox(height: 16),
+        _buildOrangeButton(
+          label: 'Ajouter cet élève à mon compte',
+          onTap: _isLoading ? null : _handleAddChild,
+          isLoading: _isLoading,
+          icon: Icons.person_add_rounded,
+          color: AppColors.success,
+          shadowColor: AppColors.success,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFoundStudentCard() {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.screenDivider.withOpacity(0.6)),
         boxShadow: const [
           BoxShadow(
             color: AppColors.screenShadow,
-            blurRadius: 16,
-            offset: Offset(0, 4),
+            blurRadius: 10,
+            offset: Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // ── Header succès ──
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            decoration: const BoxDecoration(
-              color: AppColors.successLight,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: AppColors.success,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Élève trouvé !',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(15),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.success,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Contenu ──
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Photo + nom
-                Row(
-                  children: [
-                    Hero(
-                      tag: 'student_photo_${eleve.matriculeEleve}',
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          width: 64,
-                          height: 64,
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Color(0xFFFF7A3C),
-                                AppColors.screenOrange,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child:
-                              eleve.urlPhoto != null &&
-                                  eleve.urlPhoto!.isNotEmpty
-                              ? Image.network(
-                                  eleve.urlPhoto!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.person,
-                                    color: Colors.white,
-                                    size: 32,
-                                  ),
-                                  loadingBuilder: (_, child, progress) =>
-                                      progress == null
-                                      ? child
-                                      : const Center(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                )
-                              : const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            eleve.nomEleve ?? 'Nom inconnu',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(17),
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.screenTextPrimary,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            eleve.prenomEleve ?? 'Prénom inconnu',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(14),
-                              color: AppColors.screenTextSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.screenOrangeLight,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              eleve.classe.isNotEmpty
-                                  ? eleve.classe
-                                  : 'Classe inconnue',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  11,
-                                ),
-                                color: AppColors.screenOrange,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-                const Divider(color: AppColors.screenDivider, height: 1),
-                const SizedBox(height: 14),
-
-                // Infos détaillées
-                _infoRow(Icons.school_outlined, 'École', ecole.ecoleclibelle),
-                const SizedBox(height: 8),
-                _infoRow(
-                  Icons.badge_outlined,
-                  'Matricule',
-                  eleve.matriculeEleve,
-                ),
-
-                const SizedBox(height: 16),
-
-                // Bouton ajouter
-                _buildOrangeButton(
-                  label: 'Ajouter cet élève à mon compte',
-                  onTap: _isLoading ? null : _handleAddChild,
-                  isLoading: _isLoading,
-                  icon: Icons.person_add_rounded,
-                  color: AppColors.success,
-                  shadowColor: AppColors.success,
-                ),
-              ],
-            ),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: _buildFoundStudentContent(),
       ),
     );
   }
 
   Widget _infoRow(IconData icon, String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.screenSurface,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
       child: Row(
         children: [
           Container(
             width: 30,
             height: 30,
             decoration: BoxDecoration(
-              color: AppColors.screenOrangeLight,
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.screenSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.screenDivider.withOpacity(0.8),
+              ),
             ),
-            child: Icon(icon, color: AppColors.screenOrange, size: 15),
+            child: Icon(icon, color: AppColors.screenTextSecondary, size: 15),
           ),
           const SizedBox(width: 10),
-          Text(
-            '$label :',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.screenTextSecondary,
-            ),
-          ),
-          const SizedBox(width: 6),
           Expanded(
             child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13,
+              '$label : $value',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(13),
                 fontWeight: FontWeight.w600,
                 color: AppColors.screenTextPrimary,
               ),
@@ -1159,13 +1329,13 @@ class _AddChildScreenState extends State<AddChildScreen>
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: (shadowColor ?? color).withOpacity(0.3),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          // boxShadow: [
+          //   BoxShadow(
+          //     color: (shadowColor ?? color).withOpacity(0.3),
+          //     blurRadius: 14,
+          //     offset: const Offset(0, 5),
+          //   ),
+          // ],
         ),
         child: Center(
           child: isLoading

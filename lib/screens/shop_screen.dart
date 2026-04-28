@@ -1037,7 +1037,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         isDark: false,
         color: accent,
         tag: product.type,
-        height: 120,
+        height: AppDimensions.getEcoleCardHeight(context),
         //imageFlex: AppDimensions.getProductCardImageFlex(context), // Adaptatif selon taille de l'appareil
         externalTitleSpacing: 4,
         titleMaxLines: 2,

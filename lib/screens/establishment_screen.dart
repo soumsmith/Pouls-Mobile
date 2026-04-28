@@ -14,6 +14,7 @@ import '../services/integration_service.dart';
 import '../services/video_api_service.dart';
 import '../models/ecole.dart';
 import '../models/video.dart';
+import '../models/coulisse_excellence.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/see_more_card.dart';
@@ -28,6 +29,7 @@ import '../widgets/image_menu_card.dart';
 import '../widgets/app_loader.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
 import 'all_events_screen.dart';
+import 'coulisse_video_feed_screen.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
@@ -1116,7 +1118,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         tag: items[i].typePrincipal,
                         titleMaxLines: 2,
                         externalTitleSpacing: 8,
-                        height: 120,
+                        height: AppDimensions.getEcoleCardHeight(context),
                         //imageFlex: AppDimensions.getProductCardImageFlex(context),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
@@ -1959,6 +1961,8 @@ class _FeaturedSchoolsSlider extends StatelessWidget {
               itemCount: featuredSchools.length,
               itemBuilder: (context, index) => _FeaturedSchoolCard(
                 school: featuredSchools[index],
+                index: index,
+                schools: featuredSchools,
                 showText: showText,
               ),
             ),
@@ -1997,8 +2001,34 @@ class _FeaturedSchoolsSlider extends StatelessWidget {
 class _FeaturedSchoolCard extends StatelessWidget {
   final Map<String, String> school;
   final bool showText;
+  final int index;
+  final List<Map<String, String>> schools;
 
-  const _FeaturedSchoolCard({required this.school, required this.showText});
+  const _FeaturedSchoolCard({
+    required this.school,
+    required this.showText,
+    required this.index,
+    required this.schools,
+  });
+
+  List<CoulisseExcellence> _buildQueue(List<Map<String, String>> items) {
+    return items.asMap().entries.map((entry) {
+      final i = entry.key;
+      final item = entry.value;
+      return CoulisseExcellence(
+        id: i,
+        nom: '',
+        prenoms: '',
+        classe: '',
+        titre: item['name'] ?? 'Vidéo',
+        description: item['description'] ?? '',
+        etablissement: item['location'] ?? '',
+        nompays: null,
+        videoYoutube: item['video'] ?? '',
+        code: '',
+      );
+    }).toList();
+  }
 
   // Extraire l'ID YouTube d'une URL
   String? _extractYouTubeId(String url) {
@@ -2331,7 +2361,25 @@ class _FeaturedSchoolCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (isVideo) {
-          _launchVideo(context, school['video']!);
+          final queue = _buildQueue(schools)
+              .where((v) => v.videoYoutube.trim().isNotEmpty)
+              .toList();
+          if (queue.isEmpty) return;
+
+          final initialIndex = schools
+              .take(index + 1)
+              .where((m) => (m['video'] ?? '').trim().isNotEmpty)
+              .length -
+              1;
+
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => CoulisseVideoFeedScreen(
+                videos: queue,
+                initialIndex: initialIndex >= 0 ? initialIndex : 0,
+              ),
+            ),
+          );
         }
       },
       child: Stack(

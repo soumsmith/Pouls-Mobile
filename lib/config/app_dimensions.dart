@@ -111,9 +111,9 @@ class AppDimensions {
       if (width < 360) {
         return 2; // Petits téléphones (ex: iPhone SE, anciens Android)
       } else if (width < 400) {
-        return 3; // Téléphones standards (ex: iPhone 12/13 mini)
+        return 2; // Téléphones standards (ex: iPhone 12/13 mini)
       } else {
-        return 3; // Grands téléphones (ex: iPhone Pro Max, Galaxy S Ultra)
+        return 2; // Grands téléphones (ex: iPhone Pro Max, Galaxy S Ultra)
       }
     }
     return 3; // Valeur par défaut si ce n'est pas un mobile
@@ -940,6 +940,53 @@ class AppDimensions {
       return 9.0; // iPad : petit
     } else {
       return 10.0; // Desktop : standard
+    }
+  }
+
+  /// Hauteur dynamique pour les cartes d'établissements selon le nombre d'éléments par ligne
+  static double getEcoleCardHeight(BuildContext context) {
+    final columns = getEcolesGridColumns(context);
+    
+    if (isMobile(context)) {
+      // Mobile : hauteur selon le nombre de colonnes
+      switch (columns) {
+        case 2:
+          return 190.0; // 2 colonnes : hauteur standard pour bonne lisibilité
+        case 3:
+          return 160.0; // 3 colonnes : hauteur réduite pour optimiser l'espace
+        default:
+          return 190.0; // Par défaut : hauteur standard
+      }
+    } else if (isSmallTablet(context)) {
+      // iPad Mini : hauteur selon le nombre de colonnes
+      switch (columns) {
+        case 4:
+          return 160.0; // 4 colonnes : hauteur modérée
+        case 5:
+          return 140.0; // 5 colonnes : hauteur réduite
+        default:
+          return 160.0;
+      }
+    } else if (isTablet(context)) {
+      // iPad : hauteur selon le nombre de colonnes
+      switch (columns) {
+        case 5:
+          return 150.0; // 5 colonnes : hauteur équilibrée
+        case 6:
+          return 130.0; // 6 colonnes : hauteur optimisée
+        default:
+          return 150.0;
+      }
+    } else {
+      // Desktop : hauteur selon le nombre de colonnes
+      switch (columns) {
+        case 6:
+          return 140.0; // 6 colonnes : hauteur confortable
+        case 8:
+          return 120.0; // 8 colonnes : hauteur compacte
+        default:
+          return 140.0;
+      }
     }
   }
 

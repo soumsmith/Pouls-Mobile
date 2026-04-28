@@ -928,7 +928,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                       _buildModernProfileHeader(),
                       // const SizedBox(height: 20),
                       // _buildEleveDetailSection(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 24),
+                      _buildSectionHeader('Aperçu rapide', AppColors.primary),
                       _buildModernSummaryCards(),
                       const SizedBox(height: 8),
                       _buildPaymentBannerCard(),
@@ -2736,7 +2737,35 @@ class _ChildListScreenState extends State<ChildListScreen>
                 width: AppDimensions.getPaymentBannerCardSpacing(context),
               ),
               _buildCard(
-                index: 2,
+                index: 3,
+                cardKey: 'reservations',
+                title: 'Réservations',
+                imagePath: 'assets/images/icons/reservation.png',
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFE8F5E9),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                innerBorderColor: const Color(0xFF81C784),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                onTap: () async {
+                  if (_reservations.isEmpty && !_isLoadingReservations) {
+                    await _loadReservationsData();
+                  }
+                  if (mounted) {
+                    _showReservationsBottomSheet();
+                  }
+                },
+              ),
+              SizedBox(
+                width: AppDimensions.getPaymentBannerCardSpacing(context),
+              ),
+              _buildCard(
+                index: 4,
                 cardKey: 'scolarite',
                 title: 'Scolarité \n élève',
                 imagePath: 'assets/images/icons/scolarite.png',
@@ -2778,7 +2807,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 width: AppDimensions.getPaymentBannerCardSpacing(context),
               ),
               _buildCard(
-                index: 4,
+                index: 5,
                 cardKey: 'integration_requests',
                 title: 'Demandes\n intégration',
                 imagePath: 'assets/images/icons/consulter.png',
@@ -2807,73 +2836,82 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
-      
+
         SectionRow(title: 'Suivi scolaire'),
         _buildHorizontalCards([
           ImageMenuCard(
             index: 0,
-            cardKey: 'notes',
-            title: 'Mes Notes',
-            imagePath: 'assets/images/notes.jpg',
-            iconData: Icons.bar_chart_rounded,
+            cardKey: 'access_control',
+            title: 'Contrôle d\'accès',
+            imagePath: null,
+            iconData: Icons.fingerprint_rounded,
             isDark: isDark,
             height: AppDimensions.getHorizontalCardHeight(context),
-            color: const Color(0xFF1976D2),
+            color: const Color(0xFFC2185B),
             backgroundColor: isDark
-                ? const Color(0xFF0D1A2E)
-                : const Color(0xFFE3F2FD),
+                ? const Color(0xFF2D0A1E)
+                : const Color(0xFFFCE4EC),
             textColor: isDark
-                ? const Color(0xFF90CAF9)
-                : const Color(0xFF0D47A1),
-            actionText: 'Consulter',
-             width: 175,
-            actionTextColor: const Color(0xFF1976D2),
-            onTap: () {
-              if (_matricule != null && _anneeId != null && _classeId != null) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => NotesScreenJson(
-                      matricule: _matricule!,
-                      anneeId: _anneeId!.toString(),
-                      classeId: _classeId!.toString(),
-                      anneeLibelle:
-                          'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
-                    ),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Informations élève non disponibles'),
-                  ),
-                );
+                ? const Color(0xFFF48FB1)
+                : const Color(0xFF880E4F),
+            actionText: 'Voir accès',
+            width: 175,
+            actionTextColor: const Color(0xFFC2185B),
+            onTap: () async {
+              if (_accessEntries.isEmpty && !_isLoadingAccessControl) {
+                await _loadAccessControlData();
+              }
+              if (mounted) {
+                _showAccessControlBottomSheet();
               }
             },
           ),
           ImageMenuCard(
-            index: 2,
-            cardKey: 'timetable',
-            title: 'Emploi du temps',
-            imagePath: 'assets/images/emploi-du-temps.jpg',
-            width: 175, //AppDimensions.getHorizontalCardWidth(context),
-            iconData: Icons.calendar_today_rounded,
+            index: 1,
+            cardKey: 'control_extras',
+            title: 'Contrôle extras',
+            imagePath: null,
+            iconData: Icons.playlist_add_check_rounded,
             isDark: isDark,
-            color: const Color(0xFFF57C00),
+            height: AppDimensions.getHorizontalCardHeight(context),
+            color: const Color(0xFF7B1FA2),
             backgroundColor: isDark
-                ? const Color(0xFF2D1600)
-                : const Color(0xFFFFF3E0),
+                ? const Color(0xFF1E0A2E)
+                : const Color(0xFFF3E5F5),
             textColor: isDark
-                ? const Color(0xFFFFCC80)
-                : const Color(0xFFE65100),
-            actionText: 'Voir emploi',
-            actionTextColor: const Color(0xFFF57C00),
-            onTap: () async {
-              if (_timetableResponse == null && !_isLoadingTimetable) {
-                await _loadTimetableData();
-              }
-              if (mounted) {
-                _showTimetableBottomSheet();
-              }
+                ? const Color(0xFFCE93D8)
+                : const Color(0xFF4A148C),
+            actionText: 'Voir extras',
+            width: 175,
+            actionTextColor: const Color(0xFF7B1FA2),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Contrôle extras - Fonctionnalité à venir')),
+              );
+            },
+          ),
+          ImageMenuCard(
+            index: 2,
+            cardKey: 'events',
+            title: 'Événements',
+            imagePath: null,
+            iconData: Icons.event_rounded,
+            isDark: isDark,
+            height: AppDimensions.getHorizontalCardHeight(context),
+            color: const Color(0xFF3F51B5),
+            backgroundColor: isDark
+                ? const Color(0xFF0A1540)
+                : const Color(0xFFE8EAF6),
+            textColor: isDark
+                ? const Color(0xFF9FA8DA)
+                : const Color(0xFF1A237E),
+            actionText: 'Voir events',
+            width: 175,
+            actionTextColor: const Color(0xFF3F51B5),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Événements - Fonctionnalité à venir')),
+              );
             },
           ),
           // ImageMenuCard(
@@ -2941,6 +2979,24 @@ class _ChildListScreenState extends State<ChildListScreen>
 
                   final schoolLifeItems = [
                     {
+                      'title': 'Mes Notes',
+                      'subtitle': 'Notes et évaluations',
+                      'imagePath': 'assets/images/notes.jpg',
+                      'iconData': null,
+                      'color': const Color(0xFF1976D2),
+                      'buttonText': 'Consulter',
+                      'key': 'notes',
+                    },
+                    {
+                      'title': 'Emploi du temps',
+                      'subtitle': 'Planning des cours',
+                      'imagePath': 'assets/images/emploi-du-temps.jpg',
+                      'iconData': null,
+                      'color': const Color(0xFFF57C00),
+                      'buttonText': 'Voir emploi',
+                      'key': 'timetable',
+                    },
+                    {
                       'title': 'Présence & Conduite',
                       'subtitle': 'Suivi des absences et retards',
                       'imagePath': 'assets/images/messages.jpg',
@@ -2948,15 +3004,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                       'color': const Color(0xFF00796B),
                       'buttonText': 'Voir présence',
                       'key': 'attendance',
-                    },
-                    {
-                      'title': 'Contrôle accès',
-                      'subtitle': 'Historique des pointages',
-                      'imagePath': null,
-                      'iconData': Icons.fingerprint_rounded,
-                      'color': const Color(0xFFC2185B),
-                      'buttonText': 'Voir accès',
-                      'key': 'accessControl',
                     },
                     {
                       'title': 'Sanctions',
@@ -2994,15 +3041,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                       'buttonText': 'Voir difficultés',
                       'key': 'difficulties',
                     },
-                    {
-                      'title': 'Événements',
-                      'subtitle': 'Activités et sorties scolaires',
-                      'imagePath': null,
-                      'iconData': Icons.event_rounded,
-                      'color': const Color(0xFF3F51B5),
-                      'buttonText': 'Voir events',
-                      'key': 'events',
-                    },
                   ];
 
                   Widget buildCard(Map<String, Object?> item) {
@@ -3015,38 +3053,51 @@ class _ChildListScreenState extends State<ChildListScreen>
                       color: item['color'] as Color,
                       buttonText: item['buttonText'] as String,
                       onTap: () {
-                        if (item['key'] == 'accessControl') {
+                        if (item['key'] == 'notes') {
+                          return () {
+                            if (_matricule != null && _anneeId != null && _classeId != null) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => NotesScreenJson(
+                                    matricule: _matricule!,
+                                    anneeId: _anneeId!.toString(),
+                                    classeId: _classeId!.toString(),
+                                    anneeLibelle:
+                                        'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Informations élève non disponibles'),
+                                ),
+                              );
+                            }
+                          };
+                        } else if (item['key'] == 'timetable') {
                           return () async {
-                            if (_accessEntries.isEmpty &&
-                                !_isLoadingAccessControl) {
-                              await _loadAccessControlData();
+                            if (_timetableResponse == null && !_isLoadingTimetable) {
+                              await _loadTimetableData();
                             }
                             if (mounted) {
-                              _showAccessControlBottomSheet();
+                              _showTimetableBottomSheet();
                             }
                           };
                         } else {
                           switch (item['key'] as String) {
-                            case 'notes':
-                              return () => _showNotesBottomSheet();
                             case 'bulletins':
                               return () => _showBulletinsBottomSheet();
-                            case 'timetable':
-                              return () => _showTimetableBottomSheet();
                             case 'homework':
                               return () => _showHomeworkBottomSheet();
                             case 'attendance':
                               return () => _showAttendanceBottomSheet();
-                            case 'accessControl':
-                              return () => _showAccessControlBottomSheet();
                             case 'sanctions':
                               return () => _showSanctionsBottomSheet();
                             case 'messages':
                               return () => _showMessagesBottomSheet();
                             case 'difficulties':
                               return () => _showDifficultiesBottomSheet();
-                            case 'events':
-                              return () => _showEventsBottomSheet();
                             case 'supplies':
                               return () => _showSuppliesBottomSheet();
                             case 'orders':
@@ -3219,30 +3270,50 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFF00ACC1),
             onTap: () => _showOrdersBottomSheet(),
           ),
-          ImageMenuCard(
-            index: 2,
-            cardKey: 'informations',
-            title: 'Réservations',
+                    ImageMenuCard(
+            index: 3,
+            cardKey: 'tickets',
+            title: 'Tickets',
             height: 110,
             width: 120,
-            iconData: Icons.event_seat_rounded,
+            iconData: Icons.confirmation_number_rounded,
             isDark: isDark,
-            color: const Color(0xFF4CAF50),
+            color: const Color(0xFFE91E63),
             backgroundColor: isDark
-                ? const Color(0xFF0D2010)
-                : const Color(0xFFE8F5E9),
+                ? const Color(0xFF2D0A1E)
+                : const Color(0xFFFCE4EC),
             textColor: isDark
-                ? const Color(0xFFA5D6A7)
-                : const Color(0xFF2E7D32),
-            actionText: 'Voir réservations',
-            actionTextColor: const Color(0xFF4CAF50),
-            onTap: () async {
-              if (_reservations.isEmpty && !_isLoadingReservations) {
-                await _loadReservationsData();
-              }
-              if (mounted) {
-                _showReservationsBottomSheet();
-              }
+                ? const Color(0xFFF48FB1)
+                : const Color(0xFFC2185B),
+            actionText: 'Voir tickets',
+            actionTextColor: const Color(0xFFE91E63),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tickets - Fonctionnalité à venir')),
+              );
+            },
+          ),
+          ImageMenuCard(
+            index: 4,
+            cardKey: 'tuteur_adom',
+            title: 'Tuteur Adom',
+            height: 110,
+            width: 120,
+            iconData: Icons.person_search_rounded,
+            isDark: isDark,
+            color: const Color(0xFF9C27B0),
+            backgroundColor: isDark
+                ? const Color(0xFF1E0A2E)
+                : const Color(0xFFF3E5F5),
+            textColor: isDark
+                ? const Color(0xFFCE93D8)
+                : const Color(0xFF6A1B9A),
+            actionText: 'Voir tuteur',
+            actionTextColor: const Color(0xFF9C27B0),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tuteur Adom - Fonctionnalité à venir')),
+              );
             },
           ),
           // ImageMenuCard(
@@ -3446,12 +3517,12 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildModernSummaryCards() {
     // Vérifier si toutes les données nécessaires sont chargées
-    bool allDataLoaded =
-        !_isLoading && !_isLoadingNotes && _eleveDetail != null;
+    // bool allDataLoaded =
+    //     !_isLoading && !_isLoadingNotes && _eleveDetail != null;
 
-    if (!allDataLoaded) {
-      return _buildLoadingSummaryCards();
-    }
+    // if (!allDataLoaded) {
+    //   return _buildLoadingSummaryCards();
+    // }
 
     return _buildSummaryCardsGrid();
   }
@@ -3490,14 +3561,12 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (cards.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: EdgeInsets.all(AppDimensions.getAdaptivePadding(context)),
+      padding: EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('Aperçu rapide', AppColors.primary),
-          const SizedBox(height: 16),
           SizedBox(
-            height: 140,
+            height: 80,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: 4),
@@ -3515,7 +3584,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                   ),
                   child: Container(
-                    width: 140,
+                    width: 100,
                     margin: EdgeInsets.only(right: index < cards.length - 1 ? 12.0 : 0.0),
                     child: cards[index],
                   ),
@@ -9107,145 +9176,122 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildEnhancedSummaryCard(
-    String title,
-    String value,
-    Color color,
-    IconData icon, {
-    String? subtitle,
-    bool isLoading = false,
-    LinearGradient? gradient,
-    int maxLines = 1,
-  }) {
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          // Ajouter un feedback haptique ou une action si nécessaire
-        },
-        borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
-        child: Container(
-          padding: EdgeInsets.all(AppDimensions.getEventCardPadding(context)),
-          decoration: BoxDecoration(
-            gradient: gradient ?? _getGradientForColor(color),
-            borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
+  String title,
+  String value,
+  Color color,
+  IconData icon, {
+  String? subtitle,
+  bool isLoading = false,
+  LinearGradient? gradient,
+  int maxLines = 1,
+}) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () {},
+      borderRadius: BorderRadius.circular(
+          AppDimensions.getMediumCardBorderRadius(context)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: gradient ?? _getGradientForColor(color),
+          borderRadius: BorderRadius.circular(
+              AppDimensions.getMediumCardBorderRadius(context)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Icône et titre
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      icon,
-                      color: color,
-                      size: 18,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Indicateur visuel
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Valeur principale
-              if (isLoading)
-                Container(
-                  height: 20,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                )
-              else
-                Flexible(
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(18),
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                      height: 1.2,
-                    ),
-                    maxLines: maxLines,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              
-              const SizedBox(height: 4),
-              
-              // Titre et sous-titre
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(11),
-                      color: Colors.white.withOpacity(0.9),
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(9),
-                        color: Colors.white.withOpacity(0.7),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1,
           ),
         ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min, // ← clé pour hauteur minimale
+          children: [
+            // Icône seule (dot supprimé)
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(7),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: color, size: 12),
+            ),
+
+            // Valeur principale
+            if (isLoading)
+              Container(
+                height: 16,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              )
+            else
+              Flexible(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                    height: 1.2,
+                  ),
+                  maxLines: maxLines,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            // Titre + sous-titre
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(10),
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                // if (subtitle != null) ...[
+                //   const SizedBox(height: 1),
+                //   Text(
+                //     subtitle,
+                //     style: TextStyle(
+                //       fontSize: _textSizeService.getScaledFontSize(8),
+                //       color: Colors.white.withOpacity(0.7),
+                //       fontWeight: FontWeight.w500,
+                //     ),
+                //   ),
+                // ],
+              ],
+            ),
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

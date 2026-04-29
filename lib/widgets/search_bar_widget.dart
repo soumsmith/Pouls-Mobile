@@ -37,16 +37,16 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       height: widget.isSearching ? 60 : 0,
-      color: AppColors.screenCard,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      //color: AppColors.screenCardThemed(context),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
       child: widget.isSearching
           ? Container(
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.screenSurface,
+                color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.screenOrange.withOpacity(0.4),
+                  color: AppColors.screenCardThemed(context),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -62,7 +62,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                 onChanged: widget.onChanged,
                 decoration: InputDecoration(
                   hintText: widget.hintText,
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  hintStyle: TextStyle(color: AppColors.screenTextSecondaryThemed(context), fontSize: 14),
                   prefixIcon: const Icon(
                     Icons.search_rounded,
                     size: 18,
@@ -78,7 +78,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                           child: Icon(
                             Icons.cancel_rounded,
                             size: 18,
-                            color: Colors.grey[400],
+                            color: AppColors.screenTextSecondaryThemed(context),
                           ),
                         )
                       : null,

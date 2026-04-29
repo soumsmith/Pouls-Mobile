@@ -319,27 +319,22 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   void _applyFilters() {
     setState(() {
-      _filteredProducts = _products;
-      if (_selectedFilter != 'Tous') {
-        _filteredProducts = _filteredProducts
-            .where(
-              (p) =>
-                  p.category.toLowerCase() == _selectedFilter.toLowerCase(),
-            )
-            .toList();
+      if (_selectedFilter == 'Tous') {
+        _type = null;
+      } else {
+        _type = _selectedFilter;
       }
     });
+    _loadProducts();
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+    CartSnackBar.show(
+      context,
+      productName: 'Erreur',
+      message: msg,
+      backgroundColor: Colors.red[400],
+      duration: const Duration(seconds: 3),
     );
   }
 
@@ -365,7 +360,12 @@ class _LibraryScreenState extends State<LibraryScreen>
           slivers: [
             _buildSliverAppBar(),
             SliverToBoxAdapter(child: _buildSearchBar()),
-            SliverToBoxAdapter(child: _buildFilterTabs()),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: _buildFilterTabs(),
+              ),
+            ),
             SliverToBoxAdapter(child: _buildResultsHeader()),
             SliverFillRemaining(child: _buildGrid()),
           ],

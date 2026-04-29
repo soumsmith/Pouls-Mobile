@@ -245,7 +245,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
-            _showImageDialog(image);
+            final initialIndex = _images.indexOf(image);
+            _showImageDialog(initialIndex);
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,59 +348,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
     );
   }
 
-  /// Affiche une image en plein écran dans un dialogue
-  void _showImageDialog(GalleryImage image) {
+  /// Affiche une image en plein écran dans un dialogue avec navigation par swipe
+  void _showImageDialog(int initialIndex) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Stack(
-          children: [
-            // Image en plein écran
-            Center(
-              child: InteractiveViewer(
-                child: CachedNetworkImage(
-                  imageUrl: image.imageUrl,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.black,
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.white,
-                        size: 64,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Bouton de fermeture
-            Positioned(
-              top: 40,
-              right: 20,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+      builder: (context) => _ImageDialog(
+        images: _images,
+        initialIndex: initialIndex,
       ),
     );
   }
@@ -409,4 +364,295 @@ enum GalleryCardType {
   small,
   medium,
   large,
+}
+
+/// Dialogue pour afficher les images avec navigation par swipe et flèches
+class _ImageDialog extends StatefulWidget {
+  final List<GalleryImage> images;
+  final int initialIndex;
+
+  const _ImageDialog({
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_ImageDialog> createState() => _ImageDialogState();
+}
+
+class _ImageDialogState extends State<_ImageDialog> {
+  late PageController _pageController;
+  late int _currentIndex;
+  double _scale = 1.0;
+  final TransformationController _transformationController = TransformationController();
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+    _transformationController.addListener(() {
+      setState(() {
+        _scale = _transformationController.value.getMaxScaleOnAxis();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _zoomIn() {
+    final newScale = _scale * 1.5;
+    if (newScale <= 4.0) {
+      _transformationController.value = Matrix4.identity()..scale(newScale);
+    }
+  }
+
+  void _zoomOut() {
+    final newScale = _scale / 1.5;
+    if (newScale >= 0.5) {
+      _transformationController.value = Matrix4.identity()..scale(newScale);
+    }
+  }
+
+  void _resetZoom() {
+    _transformationController.value = Matrix4.identity();
+  }
+
+  void _previousImage() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _nextImage() {
+    if (_currentIndex < widget.images.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          // PageView pour navigation par swipe
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentIndex = index;
+                  _resetZoom();
+                });
+              },
+              physics: _scale > 1.0 ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
+              itemCount: widget.images.length,
+              itemBuilder: (context, index) {
+                final image = widget.images[index];
+                return Center(
+                  child: InteractiveViewer(
+                    transformationController: _transformationController,
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    panEnabled: true,
+                    child: CachedNetworkImage(
+                      imageUrl: image.imageUrl,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.black,
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white,
+                            size: 64,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Bouton fermeture
+          Positioned(
+            top: 40,
+            right: 20,
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+          // Flèche gauche
+          Positioned(
+            left: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: _currentIndex > 0 ? _previousImage : null,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: (_currentIndex > 0)
+                        ? Colors.black.withOpacity(0.7)
+                        : Colors.black.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chevron_left,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Flèche droite
+          Positioned(
+            right: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: _currentIndex < widget.images.length - 1 ? _nextImage : null,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: (_currentIndex < widget.images.length - 1)
+                        ? Colors.black.withOpacity(0.7)
+                        : Colors.black.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Indicateur de position
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${_currentIndex + 1} / ${widget.images.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Boutons de zoom
+          Positioned(
+            bottom: 100,
+            right: 20,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Bouton zoom in
+                GestureDetector(
+                  onTap: _zoomIn,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Bouton zoom out
+                GestureDetector(
+                  onTap: _zoomOut,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.remove,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Bouton reset zoom
+                GestureDetector(
+                  onTap: _resetZoom,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

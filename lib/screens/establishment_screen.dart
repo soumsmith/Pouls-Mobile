@@ -566,7 +566,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           borderRadius: BorderRadius.circular(
             AppDimensions.getButtonBorderRadius(context),
           ),
-          boxShadow: AppColors.screenCardShadowThemed(context),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.screenShadowThemed(context),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Icon(icon, size: 20, color: AppColors.screenTextPrimaryThemed(context)),
       ),
@@ -982,7 +988,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               ),
               SliverToBoxAdapter(child: const SizedBox(height: 0)),
               SliverToBoxAdapter(
-                child: SectionRow(title: 'Nos etablissements'),
+                child: SectionRow(title: 'Nos établissements'),
               ),
               SliverToBoxAdapter(child: const SizedBox(height: 16)),
               // ── Filtre horizontal ─────────────────────────────
@@ -1235,13 +1241,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     bool allowLineBreak = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(right: 20),
+      padding: const EdgeInsets.only(right: 10),
       child: ImageMenuCardExternalTitle(
         index: index,
         cardKey: cardKey,
         title: title,
-        width: 70,
-        height: 100, // Augmentation de la hauteur pour accommoder les retours à la ligne
+        width: 85,
+        height: 120, // Augmentation de la hauteur pour accommoder les retours à la ligne
         imageFlex: 2,
         imagePath: imagePath,
         isDark: isDark,

@@ -10,6 +10,10 @@ class SchoolLifeItemCard extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   final String buttonText;
+  final double mediaWidth;
+  final double mediaHeight;
+  final double mediaBorderRadius;
+  final bool showActionButton;
 
   const SchoolLifeItemCard({
     super.key,
@@ -21,6 +25,10 @@ class SchoolLifeItemCard extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.buttonText = 'Obtenir',
+    this.mediaWidth = 40,
+    this.mediaHeight = 40,
+    this.mediaBorderRadius = 10,
+    this.showActionButton = true,
   });
 
   @override
@@ -46,11 +54,11 @@ class SchoolLifeItemCard extends StatelessWidget {
             children: [
               // Icon or Image
               Container(
-                width: 40,
-                height: 40,
+                width: mediaWidth,
+                height: mediaHeight,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(mediaBorderRadius),
                 ),
                 child: _buildImageOrIcon(),
               ),
@@ -86,34 +94,40 @@ class SchoolLifeItemCard extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(width: 12),
-              
-              // Button (now decorative)
-              SizedBox(
-                width: 90,
-                child: TextButton(
-                  onPressed: null, // Disable button click
-                  style: TextButton.styleFrom(
-                    foregroundColor: color,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    textStyle: TextStyle(
-                      fontSize: textSizeService.getScaledFontSize(12),
-                      fontWeight: FontWeight.w600,
+              if (showActionButton) ...[
+                const SizedBox(width: 12),
+
+                // Button (now decorative)
+                SizedBox(
+                  width: 90,
+                  child: TextButton(
+                    onPressed: null, // Disable button click
+                    style: TextButton.styleFrom(
+                      foregroundColor: color,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      textStyle: TextStyle(
+                        fontSize: textSizeService.getScaledFontSize(12),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side:
+                            BorderSide(color: color.withOpacity(0.3), width: 1),
+                      ),
+                      minimumSize: const Size(90, 32),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: color.withOpacity(0.3), width: 1),
+                    child: Text(
+                      buttonText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: color),
                     ),
-                    minimumSize: const Size(90, 32),
-                  ),
-                  child: Text(
-                    buttonText,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: color),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -126,11 +140,11 @@ class SchoolLifeItemCard extends StatelessWidget {
     // Priorité à l'image si elle est spécifiée
     if (imagePath != null && imagePath!.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(mediaBorderRadius),
         child: Image.asset(
           imagePath!,
-          width: 40,
-          height: 40,
+          width: mediaWidth,
+          height: mediaHeight,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             // Si l'image ne se charge pas, afficher l'icône de secours

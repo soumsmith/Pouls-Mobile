@@ -23,8 +23,8 @@ class FilterRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.screenCardThemed(context),
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
+      //color: AppColors.screenCardThemed(context),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: SizedBox(
         height: AppDimensions.getFilterContainerHeight(context),
         child: ListView.separated(

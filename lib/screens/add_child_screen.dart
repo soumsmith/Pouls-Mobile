@@ -320,9 +320,18 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   Future<void> _handleAddChild() async {
-    if (_foundEleve == null || _foundEcole == null) return;
+    print('🔘 BUTTON CLICKED: _handleAddChild called');
+    print('🔘 DEBUG: _foundEleve = ${_foundEleve?.prenomEleve} ${_foundEleve?.nomEleve}');
+    print('🔘 DEBUG: _foundEcole = ${_foundEcole?.ecoleclibelle}');
+    
+    if (_foundEleve == null || _foundEcole == null) {
+      print('❌ DEBUG: _foundEleve or _foundEcole is null');
+      _showSnackbar('Erreur: informations élève ou école manquantes', isError: true);
+      return;
+    }
     final eleve = _foundEleve!;
     final ecole = _foundEcole!;
+    print('✅ DEBUG: Starting add child process for ${eleve.prenomEleve} ${eleve.nomEleve}');
     setState(() => _isLoading = true);
     try {
       User? currentUser = AuthService.instance.getCurrentUser();
@@ -378,13 +387,18 @@ class _AddChildScreenState extends State<AddChildScreen>
         eleve.matriculeEleve,
       );
       final success = await apiService.addChild(parentId, newChild);
+      print('🔍 DEBUG: API service addChild result: $success');
       setState(() => _isLoading = false);
       if (success && mounted) {
+        print('✅ DEBUG: Child added successfully');
         _showSnackbar('Élève ajouté avec succès');
-        Navigator.of(context).pop(true);
-      } else if (mounted)
+        Navigator.of(context).pop(true); // Retourner au HomeScreen avec résultat true
+      } else if (mounted) {
+        print('❌ DEBUG: Failed to add child via API');
         _showSnackbar('Erreur lors de l\'ajout', isError: true);
+      }
     } catch (e) {
+      print('💥 DEBUG: Exception in _handleAddChild: $e');
       setState(() => _isLoading = false);
       if (mounted) _showSnackbar('Erreur : $e', isError: true);
     }
@@ -1238,13 +1252,48 @@ class _AddChildScreenState extends State<AddChildScreen>
         const SizedBox(height: 10),
         _infoRow(Icons.badge_outlined, 'Matricule', eleve.matriculeEleve),
         const SizedBox(height: 16),
-        _buildOrangeButton(
-          label: 'Ajouter cet élève à mon compte',
-          onTap: _isLoading ? null : _handleAddChild,
-          isLoading: _isLoading,
-          icon: Icons.person_add_rounded,
-          color: AppColors.success,
-          shadowColor: AppColors.success,
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : () {
+              print('🔘 ELEVATED BUTTON PRESSED!');
+              _handleAddChild();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.person_add_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ajouter cet élève à mon compte',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );
@@ -1314,57 +1363,62 @@ class _AddChildScreenState extends State<AddChildScreen>
     Color color = AppColors.screenOrange,
     Color? shadowColor,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 54,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: color == AppColors.screenOrange
-                ? const [Color(0xFFFF7A3C), AppColors.screenOrange]
-                : [color.withOpacity(0.85), color],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: (shadowColor ?? color).withOpacity(0.3),
-          //     blurRadius: 14,
-          //     offset: const Offset(0, 5),
-          //   ),
-          // ],
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: double.infinity,
+      height: 54,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: color == AppColors.screenOrange
+              ? const [Color(0xFFFF7A3C), AppColors.screenOrange]
+              : [color.withOpacity(0.85), color],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) ...[
-                      Icon(icon, color: Colors.white, size: 18),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(14),
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.1,
-                      ),
+        borderRadius: BorderRadius.circular(16),
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: (shadowColor ?? color).withOpacity(0.3),
+        //     blurRadius: 14,
+        //     offset: const Offset(0, 5),
+        //   ),
+        // ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: isLoading ? null : onTap,
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
-                  ],
-                ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

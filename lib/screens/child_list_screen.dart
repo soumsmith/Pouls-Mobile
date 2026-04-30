@@ -60,6 +60,7 @@ import '../models/ecole.dart';
 import '../services/group_message_service.dart';
 import '../widgets/custom_loader.dart';
 import '../services/ecole_eleve_service.dart';
+import '../services/statistiques_presence_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../widgets/subtle_retry_button.dart';
@@ -349,6 +350,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Variables pour les réservations
   List<PlaceReservation> _reservations = [];
   bool _isLoadingReservations = false;
+
+  // Variables pour les statistiques de présence
+  Map<String, dynamic>? _presenceStats;
+  bool _isLoadingPresenceStats = false;
 
   // Variables pour les demandes d'intégration
   List<Ecole> _ecoles = [];
@@ -905,6 +910,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('✅ Détails de l\'élève chargés et stockés avec succès');
       print('═══════════════════════════════════════════════════════════');
       print('');
+
+      // Charger les statistiques de présence après les détails de l'élève
+      await _loadPresenceStats();
     } catch (e) {
       print('❌ Erreur lors du chargement des détails de l\'élève: $e');
       print(
@@ -913,6 +921,37 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('═══════════════════════════════════════════════════════════');
       print('');
       // Ne pas bloquer le processus si cette API échoue
+    }
+  }
+
+  Future<void> _loadPresenceStats() async {
+    if (_matricule == null || _ecoleCode == null) {
+      print('⚠️ Informations manquantes pour charger les statistiques de présence');
+      return;
+    }
+
+    setState(() {
+      _isLoadingPresenceStats = true;
+    });
+
+    try {
+      print('📡 Chargement des statistiques de présence...');
+      final stats = await StatistiquesPresenceService.getStatistiquesPresence(
+        _matricule!,
+        _ecoleCode!,
+      );
+
+      setState(() {
+        _presenceStats = stats;
+        _isLoadingPresenceStats = false;
+      });
+
+      print('✅ Statistiques de présence chargées: $stats');
+    } catch (e) {
+      print('❌ Erreur lors du chargement des statistiques de présence: $e');
+      setState(() {
+        _isLoadingPresenceStats = false;
+      });
     }
   }
 
@@ -937,7 +976,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       // _buildEleveDetailSection(),
                       const SizedBox(height: 24),
                       _buildSectionHeader('Aperçu rapide', AppColors.primary),
-                      _buildModernSummaryCards(),
+                      _buildSummaryCardsGrid(),
                       const SizedBox(height: 8),
                       _buildPaymentBannerCard(),
                       const SizedBox(height: 24),
@@ -1482,6 +1521,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               description: 'Gérez vos réservations et places',
               onClose: () => Navigator.of(context).pop(),
             ),
+            // Statistiques de présence
+            if (_presenceStats != null) _buildPresenceStatsSection(),
             Expanded(child: _buildSimpleReservationsTab()),
           ],
         ),
@@ -3667,12 +3708,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       CustomLoaderOverlay.hide();
     }
   }
-
-  Widget _buildModernSummaryCards() {
-
-    return _buildSummaryCardsGrid();
-  }
-
   
 
   Widget _buildSummaryCardsGrid() {
@@ -5081,6 +5116,110 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  Widget _buildPresenceStatsSection() {
+    final isDarkMode = _themeService.isDarkMode;
+    final stats = _presenceStats!;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+        border: Border(
+          bottom: BorderSide(
+            color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Résumé mensuel',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(14),
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.white70 : Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatCircle(
+                stats['total_present']?.toString() ?? '0',
+                'Présences',
+                Colors.green,
+              ),
+              _buildStatCircle(
+                stats['total_absent']?.toString() ?? '0',
+                'Absences',
+                Colors.red,
+              ),
+              _buildStatCircle(
+                '${stats['taux_presence']?.toStringAsFixed(1) ?? '0'}%',
+                'Taux',
+                Colors.blue,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (stats['total_absent'] == 0 || stats['total_absent'] == '0')
+            Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: Colors.green,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Aucune absence enregistrée ce mois-ci',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(12),
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCircle(String value, String label, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 2),
+          ),
+          child: Center(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(18),
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: _textSizeService.getScaledFontSize(12),
+            color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSimpleReservationsTab() {
     final isDarkMode = _themeService.isDarkMode;
 
@@ -5089,12 +5228,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '🪑 Réservations',
-            'Consultez et gérez les réservations de places pour votre enfant.',
-            Colors.indigo,
-          ),
-          const SizedBox(height: 20),
           _buildDynamicReservations(),
         ],
       ),
@@ -5116,42 +5249,34 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_reservations.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _themeService.isDarkMode
-                ? Colors.grey[700]!
-                : Colors.grey[200]!,
+      return SizedBox(
+        height: MediaQuery.of(context).size.height * 0.5,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.event_seat, size: 48, color: Colors.indigo[400]),
+              const SizedBox(height: 12),
+              Text(
+                'Aucune réservation disponible',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _themeService.isDarkMode
+                      ? Colors.white70
+                      : Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => _loadReservationsData(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Actualiser'),
+              ),
+            ],
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.event_seat, size: 48, color: Colors.indigo[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Aucune réservation disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadReservationsData(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Actualiser'),
-            ),
-          ],
         ),
       );
     }
@@ -9169,18 +9294,6 @@ class _ChildListScreenState extends State<ChildListScreen>
           gradient: gradient ?? _getGradientForColor(color),
           borderRadius: BorderRadius.circular(
               AppDimensions.getMediumCardBorderRadius(context)),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
             width: 1,
@@ -9208,6 +9321,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
               child: Icon(icon, color: color, size: 12),
             ),
+            const SizedBox(height: 5),
 
             // Valeur principale
             if (isLoading)
@@ -9224,8 +9338,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 child: Text(
                   value,
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(16),
-                    fontWeight: FontWeight.w800,
+                    fontSize: _textSizeService.getScaledFontSize(15),
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                     letterSpacing: -0.5,
                     height: 1.2,
@@ -9243,7 +9357,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(10),
                     color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.normal,
                     letterSpacing: 0.2,
                   ),
                 ),

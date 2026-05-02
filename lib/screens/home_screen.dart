@@ -1712,7 +1712,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final result = await Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
-        if (result == true) _loadChildren();
+        // Le résultat n'est plus nécessaire car la redirection est gérée dans AddChildScreen
       },
       child: SizedBox(
         width: AppDimensions.getChildImageSize(context) + 16,

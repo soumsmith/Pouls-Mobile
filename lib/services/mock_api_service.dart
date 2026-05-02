@@ -5,7 +5,8 @@ import '../models/timetable_entry.dart';
 import '../models/message.dart';
 import '../models/fee.dart';
 import 'api_service.dart';
-import 'database_service.dart';
+import '../services/database_service.dart';
+import '../config/app_config.dart';
 import 'package:flutter/material.dart';
 
 /// Implémentation MOCK de ApiService
@@ -452,6 +453,18 @@ class MockApiService implements ApiService {
 
   @override
   Future<bool> addChild(String parentId, Child child) async {
+    print('═══════════════════════════════════════════════════════════');
+    print('🔌 API REQUEST - ADD CHILD');
+    print('═══════════════════════════════════════════════════════════');
+    print('👤 Parent ID: $parentId');
+    print('👶 Child ID: ${child.id}');
+    print('📝 Child Name: ${child.firstName} ${child.lastName}');
+    print('🏫 Establishment: ${child.establishment}');
+    print('📚 Grade: ${child.grade}');
+    print('🔗 URL: POST ${AppConfig.API_BASE_URL}/parents/$parentId/children');
+    print('⏱️  Timestamp: ${DateTime.now().toIso8601String()}');
+    print('═══════════════════════════════════════════════════════════');
+    
     await _simulateDelay();
     
     try {
@@ -459,6 +472,7 @@ class MockApiService implements ApiService {
       // par AddChildScreen avant d'appeler cette méthode
       // Vérifier s'il existe déjà
       final existingChild = await DatabaseService.instance.getChildById(child.id);
+      print('🔍 Vérification existence enfant: ${existingChild != null ? "Déjà existant" : "Nouveau"}');
       
       if (existingChild == null) {
         // Si l'enfant n'existe pas encore en base, le sauvegarder
@@ -475,13 +489,29 @@ class MockApiService implements ApiService {
       final existingIndex = list.indexWhere((c) => c.id == child.id);
       if (existingIndex >= 0) {
         list[existingIndex] = child;
+        print('🔄 Enfant mis à jour dans le cache');
       } else {
         list.add(child);
+        print('➕ Enfant ajouté au cache');
       }
+      
+      print('═══════════════════════════════════════════════════════════');
+      print('✅ API RESPONSE - ADD CHILD SUCCESS');
+      print('═══════════════════════════════════════════════════════════');
+      print('📊 Status Code: 201 (Created)');
+      print('📄 Body Length: ${child.toString().length} characters');
+      print('👶 Child Added: ${child.firstName} ${child.lastName}');
+      print('📚 Total children for parent: ${list.length}');
+      print('═══════════════════════════════════════════════════════════');
       
       return true;
     } catch (e) {
-      print('Erreur lors de l\'ajout de l\'enfant: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('❌ API RESPONSE - ADD CHILD ERROR');
+      print('═══════════════════════════════════════════════════════════');
+      print('📊 Status Code: 500 (Internal Server Error)');
+      print('💥 Error: $e');
+      print('═══════════════════════════════════════════════════════════');
       return false;
     }
   }

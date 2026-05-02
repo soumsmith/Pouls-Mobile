@@ -19,8 +19,11 @@ import '../config/app_dimensions.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
+import '../widgets/snackbar.dart';
 import '../services/recommendation_service.dart';
 import 'login_screen.dart';
+import '../main.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -321,6 +324,7 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   Future<void> _handleAddChild() async {
     print('🔘 BUTTON CLICKED: _handleAddChild called');
+    print('🔘 DEBUG: _isLoading = $_isLoading');
     print('🔘 DEBUG: _foundEleve = ${_foundEleve?.prenomEleve} ${_foundEleve?.nomEleve}');
     print('🔘 DEBUG: _foundEcole = ${_foundEcole?.ecoleclibelle}');
     
@@ -352,13 +356,29 @@ class _AddChildScreenState extends State<AddChildScreen>
         }
       }
       final parentId = currentUser.id;
-      final apiService = AppConfig.MOCK_MODE
-          ? MockApiService()
-          : RemoteApiService();
       if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty)
         throw Exception('Informations élève incomplètes');
+      
+      final childId = eleve.inscriptionsidEleve.toString();
+      print('🔍 Vérification si l\'élève existe déjà...');
+      print('👶 Child ID: $childId');
+      print('👤 Parent ID: $parentId');
+      
+      // Vérifier si l'élève existe déjà dans la base de données locale
+      final existingChild = await DatabaseService.instance.getChildById(childId);
+      if (existingChild != null) {
+        print('❌ Élève déjà ajouté: ${existingChild.firstName} ${existingChild.lastName}');
+        setState(() => _isLoading = false);
+        if (mounted) {
+          _showSnackbar('Cet élève est déjà ajouté', isError: true);
+        }
+        return;
+      }
+      
+      print('✅ Élève non trouvé, procédons à l\'ajout...');
+      
       final newChild = Child(
-        id: eleve.inscriptionsidEleve.toString(),
+        id: childId,
         firstName: eleve.prenomEleve,
         lastName: eleve.nomEleve,
         establishment: ecole.ecoleclibelle.isNotEmpty
@@ -371,6 +391,8 @@ class _AddChildScreenState extends State<AddChildScreen>
             ? ecole.paramecole
             : ecole.ecolecode,
       );
+      
+      print('💾 Sauvegarde locale de l\'élève...');
       await DatabaseService.instance.saveChild(
         newChild,
         matricule: eleve.matriculeEleve,
@@ -382,20 +404,26 @@ class _AddChildScreenState extends State<AddChildScreen>
         classeId: eleve.classeid,
         classeName: eleve.classe,
       );
+      print('✅ Sauvegarde locale terminée');
       await _updateNotificationTokenWithNewMatricule(
         parentId,
         eleve.matriculeEleve,
       );
-      final success = await apiService.addChild(parentId, newChild);
-      print('🔍 DEBUG: API service addChild result: $success');
+      
+      print('✅ Élève ajouté localement avec succès');
       setState(() => _isLoading = false);
-      if (success && mounted) {
-        print('✅ DEBUG: Child added successfully');
+      if (mounted) {
         _showSnackbar('Élève ajouté avec succès');
-        Navigator.of(context).pop(true); // Retourner au HomeScreen avec résultat true
-      } else if (mounted) {
-        print('❌ DEBUG: Failed to add child via API');
-        _showSnackbar('Erreur lors de l\'ajout', isError: true);
+        
+        // Forcer la navigation vers la home screen et remplacer toute la pile
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const MainScreenWrapper(
+              showChildAddedSuccess: true,
+            ),
+          ),
+          (route) => false, // Supprimer tous les écrans précédents
+        );
       }
     } catch (e) {
       print('💥 DEBUG: Exception in _handleAddChild: $e');
@@ -406,14 +434,15 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   // ─── HELPERS UI ────────────────────────────────────────────────────────────
   void _showSnackbar(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: isError ? Colors.red[400] : AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+    // Utiliser CartSnackBar.showOverlay pour afficher au-dessus du bottomsheet avec une hauteur personnalisée
+    CartSnackBar.showOverlay(
+      context,
+      productName: msg,
+      message: '',
+      backgroundColor: isError ? Colors.red[400] : AppColors.success,
+      duration: const Duration(seconds: 3),
+      minHeight: 80, // Hauteur personnalisée pour une meilleure présentation
+      icon: isError ? Icons.error_outline : Icons.check_circle_outline, // Icône selon le type
     );
   }
 

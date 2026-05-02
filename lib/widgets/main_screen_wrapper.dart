@@ -19,8 +19,14 @@ import '../services/text_size_service.dart';
 class MainScreenWrapper extends StatefulWidget {
   final Widget? child;
   final int initialIndex;
+  final bool showChildAddedSuccess;
 
-  const MainScreenWrapper({super.key, this.child, this.initialIndex = 0});
+  const MainScreenWrapper({
+    super.key, 
+    this.child, 
+    this.initialIndex = 0,
+    this.showChildAddedSuccess = false,
+  });
 
   @override
   State<MainScreenWrapper> createState() => _MainScreenWrapperState();
@@ -51,6 +57,21 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
     final user = AuthService.instance.getCurrentUser();
     _currentUserId = user?.id;
     _setupNotificationListener();
+    
+    // Afficher le message de succès si un enfant vient d'être ajouté
+    if (widget.showChildAddedSuccess) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Enfant ajouté avec succès !'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
+    }
   }
 
   void _setupNotificationListener() {

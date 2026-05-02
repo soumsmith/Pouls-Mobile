@@ -65,6 +65,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../widgets/subtle_retry_button.dart';
 import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
+import '../services/bulletin_api_service.dart';
+import 'pdf_viewer_screen.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 // ─── MODÈLE POUR CARTE DE MENU D'ÉLÈVE ────────────────────────────────────────
 class StudentMenuCardItem {
@@ -390,6 +396,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Variables pour les données de notes globales
   GlobalAverage? _globalAverage;
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
+  final BulletinApiService _bulletinApiService = BulletinApiService();
 
   // Informations de l'enfant pour l'API
   int? _ecoleId;
@@ -403,6 +410,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Détails complets de l'élève
   Map<String, dynamic>? _eleveDetail;
+
+  // Données des bulletins
+  List<dynamic>? _bulletins;
+  bool _isLoadingBulletins = false;
+  String? _expandedBulletinId;
 
   @override
   void initState() {
@@ -473,7 +485,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       // Si c'est une erreur 404 avec "Aucune fourniture scolaire trouvée", ne pas afficher d'erreur
       // car l'UI affiche déjà "Aucune fourniture trouvée"
       final errorString = e.toString();
-      if (!errorString.contains('404') || !errorString.contains('Aucune fourniture scolaire trouvée')) {
+      if (!errorString.contains('404') ||
+          !errorString.contains('Aucune fourniture scolaire trouvée')) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -926,7 +939,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadPresenceStats() async {
     if (_matricule == null || _ecoleCode == null) {
-      print('⚠️ Informations manquantes pour charger les statistiques de présence');
+      print(
+        '⚠️ Informations manquantes pour charger les statistiques de présence',
+      );
       return;
     }
 
@@ -1026,29 +1041,65 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showBulletinsBottomSheet() {
+    // Reset pour permettre un rechargement propre à chaque ouverture
+    _bulletins = null;
+    _isLoadingBulletins = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.description_rounded,
-              iconColor: const Color(0xFF2E7D32),
-              title: 'Bulletins',
-              description: 'Accédez aux bulletins trimestriels et annuels',
-              onClose: () => Navigator.of(context).pop(),
+      builder: (context) {
+        // Déclencher le chargement une seule fois
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_bulletins == null && !_isLoadingBulletins) {
+            _loadBulletins();
+          }
+        });
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          decoration: BoxDecoration(
+            color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
             ),
-            Expanded(child: _buildBulletinsTab()),
-          ],
-        ),
-      ),
+          ),
+          child: Column(
+            children: [
+              BottomSheetHeader(
+                icon: Icons.description_rounded,
+                iconColor: const Color(0xFF2E7D32),
+                title: 'Bulletins',
+                description: 'Accédez aux bulletins trimestriels et annuels',
+                onClose: () => Navigator.of(context).pop(),
+              ),
+              // ↓ CLEF DU FIX : utilisation simple de l'état
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    print('🔍 DEBUG Builder: _isLoadingBulletins=$_isLoadingBulletins, _bulletins=${_bulletins?.length}');
+                    
+                    if (_isLoadingBulletins) {
+                      return _buildBulletinsLoadingState();
+                    } else if (_bulletins == null || _bulletins!.isEmpty) {
+                      return _buildBulletinsEmptyState();
+                    } else {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        child: _buildBulletinsList(),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1301,10 +1352,11 @@ class _ChildListScreenState extends State<ChildListScreen>
           });
 
           try {
-            print('📚 Chargement des fournitures pour le matricule: $_matricule');
-            final suppliesResponse = await _schoolSupplyService.getSchoolSupplies(
-              _matricule!,
+            print(
+              '📚 Chargement des fournitures pour le matricule: $_matricule',
             );
+            final suppliesResponse = await _schoolSupplyService
+                .getSchoolSupplies(_matricule!);
 
             modalSetState(() {
               supplies = suppliesResponse.data;
@@ -1333,9 +1385,12 @@ class _ChildListScreenState extends State<ChildListScreen>
             return Container(
               height: MediaQuery.of(context).size.height * 0.8,
               decoration: BoxDecoration(
-                color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
+                color: _themeService.isDarkMode
+                    ? Colors.grey[900]
+                    : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 children: [
@@ -2562,6 +2617,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                           ),
                         ],
                       ),
+
+                      const SizedBox(height: 24),
+
+                      // Bouton pour retirer l'enfant
+                      _buildRemoveChildSection(),
                     ],
                   ),
                 ),
@@ -2571,6 +2631,270 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
       ),
     );
+  }
+
+  // ─── MÉTHODES DE SUPPRESSION D'ENFANT ─────────────────────────────────────
+
+  void _showRemoveChildConfirmation() {
+    final isDarkMode = _themeService.isDarkMode;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.only(top: 100),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.warning_rounded,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Retirer cet enfant',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cette action est irréversible',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  const Text(
+                    'Êtes-vous sûr de vouloir retirer cet enfant de votre liste ?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.child.fullName,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.child.grade,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Toutes les données associées à cet enfant seront définitivement supprimées.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+
+            // Actions
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(
+                          color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!,
+                        ),
+                      ),
+                      child: Text(
+                        'Annuler',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Fermer le bottom sheet de confirmation
+                        Navigator.of(context).pop(); // Fermer le bottom sheet d'informations
+                        _removeChild();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Retirer',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removeChild() async {
+    try {
+      // Afficher un indicateur de chargement
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
+
+      // Supprimer l'enfant de la base de données
+      await DatabaseService.instance.deleteChild(widget.child.id);
+
+      // Afficher un message de succès
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Enfant retiré avec succès'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+
+      // Naviguer vers l'écran d'accueil et rafraîchir la liste
+      if (mounted) {
+        MainScreenWrapper.of(context).navigateToHome();
+        // Forcer le rafraîchissement de l'écran d'accueil
+        MainScreenWrapper.of(context).refreshCurrentUser();
+      }
+
+    } catch (e) {
+      // Afficher un message d'erreur
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du retrait: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Widget _buildFamilySection({
@@ -2608,6 +2932,80 @@ class _ChildListScreenState extends State<ChildListScreen>
         const SizedBox(height: 16),
         ...children,
       ],
+    );
+  }
+
+  Widget _buildRemoveChildSection() {
+    final isDarkMode = _themeService.isDarkMode;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.red.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.person_remove,
+                  color: Colors.red,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Gestion de l\'enfant',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showRemoveChildConfirmation,
+              icon: const Icon(Icons.delete_forever, color: Colors.white),
+              label: Text(
+                'Retirer cet enfant',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(14),
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2806,7 +3204,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         SectionRow(title: 'Paiements & Inscription'),
         SizedBox(
-          height: AppDimensions.getPaymentBannerCardHeight(context) +10,
+          height: AppDimensions.getPaymentBannerCardHeight(context) + 10,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(
@@ -3009,7 +3407,6 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
-
         SectionRow(title: 'Vie scolaire'),
         _buildHorizontalCards([
           ImageMenuCard(
@@ -3057,7 +3454,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFF7B1FA2),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Contrôle extras - Fonctionnalité à venir')),
+                const SnackBar(
+                  content: Text('Contrôle extras - Fonctionnalité à venir'),
+                ),
               );
             },
           ),
@@ -3081,7 +3480,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFF3F51B5),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Événements - Fonctionnalité à venir')),
+                const SnackBar(
+                  content: Text('Événements - Fonctionnalité à venir'),
+                ),
               );
             },
           ),
@@ -3221,15 +3622,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                       imagePath: item['imagePath'] as String?,
                       iconData: item['iconData'] as IconData?,
                       isDark: isDark,
-                      mediaWidth : 70,
-                      mediaHeight : 70,
+                      mediaWidth: 70,
+                      mediaHeight: 70,
                       showActionButton: false,
                       mediaBorderRadius: 20,
                       color: item['color'] as Color,
                       buttonText: item['buttonText'] as String,
                       onTap: () {
                         if (item['key'] == 'notes') {
-                          if (_matricule != null && _anneeId != null && _classeId != null) {
+                          if (_matricule != null &&
+                              _anneeId != null &&
+                              _classeId != null) {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => NotesScreenJson(
@@ -3244,19 +3647,26 @@ class _ChildListScreenState extends State<ChildListScreen>
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Informations élève non disponibles'),
+                                content: Text(
+                                  'Informations élève non disponibles',
+                                ),
                               ),
                             );
                           }
                         } else if (item['key'] == 'timetable') {
                           _showTimetableBottomSheet();
-                          if (_timetableResponse == null && !_isLoadingTimetable) {
+                          if (_timetableResponse == null &&
+                              !_isLoadingTimetable) {
                             _loadTimetableData();
                           }
                         } else {
                           switch (item['key'] as String) {
                             case 'bulletins':
                               _showBulletinsBottomSheet();
+                              // Charger les bulletins immédiatement lors de l'ouverture
+                              if (_bulletins == null && !_isLoadingBulletins) {
+                                _loadBulletins();
+                              }
                               break;
                             case 'homework':
                               _showHomeworkBottomSheet();
@@ -3309,9 +3719,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                               child: Divider(
                                 height: 1,
                                 thickness: 1,
-                                color: (isDark
-                                        ? Colors.white
-                                        : Colors.black)
+                                color: (isDark ? Colors.white : Colors.black)
                                     .withOpacity(0.08),
                               ),
                             ),
@@ -3464,7 +3872,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFF00ACC1),
             onTap: () => _showOrdersBottomSheet(),
           ),
-                    ImageMenuCard(
+          ImageMenuCard(
             index: 3,
             cardKey: 'tickets',
             title: 'Tickets',
@@ -3483,7 +3891,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFFE91E63),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tickets - Fonctionnalité à venir')),
+                const SnackBar(
+                  content: Text('Tickets - Fonctionnalité à venir'),
+                ),
               );
             },
           ),
@@ -3506,7 +3916,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFF9C27B0),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tuteur Adom - Fonctionnalité à venir')),
+                const SnackBar(
+                  content: Text('Tuteur Adom - Fonctionnalité à venir'),
+                ),
               );
             },
           ),
@@ -3708,7 +4120,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       CustomLoaderOverlay.hide();
     }
   }
-  
 
   Widget _buildSummaryCardsGrid() {
     final cards = _buildAvailableSummaryCards();
@@ -3732,14 +4143,13 @@ class _ChildListScreenState extends State<ChildListScreen>
                   curve: Curves.easeOutCubic,
                   builder: (context, value, child) => Transform.scale(
                     scale: 0.8 + (0.2 * value),
-                    child: Opacity(
-                      opacity: value,
-                      child: child,
-                    ),
+                    child: Opacity(opacity: value, child: child),
                   ),
                   child: Container(
                     width: 100,
-                    margin: EdgeInsets.only(right: index < cards.length - 1 ? 12.0 : 0.0),
+                    margin: EdgeInsets.only(
+                      right: index < cards.length - 1 ? 12.0 : 0.0,
+                    ),
                     child: cards[index],
                   ),
                 );
@@ -3751,7 +4161,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  
   List<Widget> _buildAvailableSummaryCards() {
     List<Widget> cards = [];
 
@@ -3795,7 +4204,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           isPresent ? AppColors.success : AppColors.error,
           isPresent ? Icons.check_circle : Icons.cancel,
           subtitle: "Aujourd'hui",
-          gradient: _getGradientForColor(isPresent ? AppColors.success : AppColors.error),
+          gradient: _getGradientForColor(
+            isPresent ? AppColors.success : AppColors.error,
+          ),
         ),
       );
     }
@@ -3826,7 +4237,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           solde > 0 ? Colors.orange : AppColors.success,
           Icons.account_balance_wallet,
           subtitle: solde > 0 ? 'À payer' : 'Réglée',
-          gradient: _getGradientForColor(solde > 0 ? Colors.orange : AppColors.success),
+          gradient: _getGradientForColor(
+            solde > 0 ? Colors.orange : AppColors.success,
+          ),
         ),
       );
     }
@@ -3841,7 +4254,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           isRedoublant ? Colors.red : AppColors.success,
           Icons.refresh,
           subtitle: 'Statut',
-          gradient: _getGradientForColor(isRedoublant ? Colors.red : AppColors.success),
+          gradient: _getGradientForColor(
+            isRedoublant ? Colors.red : AppColors.success,
+          ),
         ),
       );
     }
@@ -4346,10 +4761,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 20),
-          _buildDynamicSuggestions(),
-        ],
+        children: [const SizedBox(height: 20), _buildDynamicSuggestions()],
       ),
     );
   }
@@ -5166,11 +5578,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           if (stats['total_absent'] == 0 || stats['total_absent'] == '0')
             Row(
               children: [
-                Icon(
-                  Icons.check_circle,
-                  size: 16,
-                  color: Colors.green,
-                ),
+                Icon(Icons.check_circle, size: 16, color: Colors.green),
                 const SizedBox(width: 8),
                 Text(
                   'Aucune absence enregistrée ce mois-ci',
@@ -5227,9 +5635,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildDynamicReservations(),
-        ],
+        children: [_buildDynamicReservations()],
       ),
     );
   }
@@ -7097,55 +7503,220 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  Future<void> _loadBulletins() async {
+    if (_isLoadingBulletins) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) return;
+    if (_anneeId == null || _classeId == null) return;
+
+    void updateState(VoidCallback fn) {
+      print('🔧 DEBUG: updateState appelé - mounted: $mounted');
+      // Le StatefulBuilder sera reconstruit automatiquement quand setState sera appelé
+      if (mounted) {
+        print('🔧 DEBUG: Appel de setState');
+        setState(fn);
+      }
+    }
+
+    updateState(() => _isLoadingBulletins = true);
+
+    try {
+      final bulletins = await _bulletinApiService.getBulletinsForStudent(
+        annee: _anneeId.toString(),
+        classe: _classeId.toString(),
+        matricule: matricule,
+      );
+      print('🔧 DEBUG: Mise à jour de l état après réception des données');
+      updateState(() {
+        _bulletins = bulletins;
+        _isLoadingBulletins = false;
+      });
+      print('🔧 DEBUG: État mis à jour - _isLoadingBulletins: $_isLoadingBulletins, _bulletins: ${_bulletins?.length}');
+    } catch (e) {
+      updateState(() => _isLoadingBulletins = false);
+      print('❌ Erreur lors du chargement des bulletins: $e');
+    }
+  }
+
+  
   Widget _buildBulletinsTab() {
+    // Les bulletins sont maintenant chargés directement dans _showBulletinsBottomSheet()
+
+    // Debug logs pour diagnostiquer le problème
+    print('🔍 DEBUG _buildBulletinsTab:');
+    print('   _isLoadingBulletins: $_isLoadingBulletins');
+    print('   _bulletins: $_bulletins');
+    print('   _bulletins?.length: ${_bulletins?.length}');
+    print('   _bulletins == null: ${_bulletins == null}');
+    print('   _bulletins?.isEmpty: ${_bulletins?.isEmpty}');
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '📊 Bulletins scolaires',
-            'Consultez les bulletins trimestriels et annuels de votre enfant pour suivre sa progression scolaire.',
-            Colors.green,
-          ),
           const SizedBox(height: 20),
-          _buildBulletinsList(),
+          if (_isLoadingBulletins) ...[
+            (() {
+              print('🔍 DEBUG: Affichage du loader');
+              return _buildBulletinsLoadingState();
+            })(),
+          ] else if (_bulletins == null || _bulletins!.isEmpty) ...[
+            (() {
+              print('🔍 DEBUG: Affichage de l\'état vide');
+              return _buildBulletinsEmptyState();
+            })(),
+          ] else ...[
+            (() {
+              print('🔍 DEBUG: Affichage de la liste des bulletins');
+              return _buildBulletinsList();
+            })(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletinsLoadingState() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          CustomLoader(
+            message: 'Chargement des bulletins...',
+            loaderColor: AppColors.screenOrange,
+            backgroundColor: Colors.transparent,
+            showBackground: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletinsEmptyState() {
+    final isDarkMode = _themeService.isDarkMode;
+
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xFF8B4513)
+                  : AppColors.screenOrangeLight,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.description_outlined,
+              size: 40,
+              color: AppColors.screenOrange,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Aucun bulletin disponible',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Les bulletins ne sont pas encore disponibles pour cette période scolaire.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 24),
+          SubtleRetryButtonWithText(
+            onTap: _loadBulletins,
+            color: AppColors.screenOrange,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildBulletinsList() {
+    if (_bulletins == null || _bulletins!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Trier les bulletins par période (du plus récent au plus ancien)
+    final sortedBulletins = List<Map<String, dynamic>>.from(
+      _bulletins!.map((item) => item as Map<String, dynamic>),
+    )..sort((a, b) => (b['periodeId'] as int).compareTo(a['periodeId'] as int));
+
     return Column(
-      children: [
-        _buildBulletinCard(
-          'Bulletin du 1er trimestre',
-          'Année scolaire 2023-2024',
-          'Moyenne générale: 14.5/20',
-          'Publié le 15 décembre 2023',
-          Icons.description_rounded,
-          Colors.blue,
-        ),
-        const SizedBox(height: 12),
-        _buildBulletinCard(
-          'Bulletin du 2ème trimestre',
-          'Année scolaire 2023-2024',
-          'Moyenne générale: 15.2/20',
-          'Publié le 20 mars 2024',
-          Icons.description_rounded,
-          Colors.green,
-        ),
-        const SizedBox(height: 12),
-        _buildBulletinCard(
-          'Bulletin du 3ème trimestre',
-          'Année scolaire 2023-2024',
-          'Moyenne générale: 16.8/20',
-          'Publié le 25 juin 2024',
-          Icons.description_rounded,
-          Colors.orange,
-        ),
-      ],
+      children: sortedBulletins.map((bulletin) {
+        final periode = bulletin['libellePeriode'] as String? ?? 'Période';
+        final annee = bulletin['anneeLibelle'] as String? ?? 'Année scolaire';
+        final moyenne = bulletin['moyGeneral'] as double? ?? 0.0;
+        final dateCreation = bulletin['dateCreation'] as String? ?? '';
+
+        // Formater la date
+        String formattedDate = '';
+        if (dateCreation.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(dateCreation);
+            formattedDate =
+                'Publié le ${dateTime.day} ${_getMonthName(dateTime.month)} ${dateTime.year}';
+          } catch (e) {
+            formattedDate = 'Publié récemment';
+          }
+        }
+
+        // Déterminer la couleur en fonction de la moyenne
+        Color color = _getBulletinColor(moyenne);
+
+        return Column(
+          children: [
+            _buildBulletinCard(
+              'Bulletin $periode',
+              annee,
+              'Moyenne générale: ${moyenne.toStringAsFixed(2)}/20',
+              formattedDate,
+              Icons.description_rounded,
+              color,
+              bulletin,
+            ),
+            if (bulletin != sortedBulletins.last) const SizedBox(height: 12),
+          ],
+        );
+      }).toList(),
     );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
+    ];
+    return month >= 1 && month <= 12 ? months[month - 1] : 'mois';
+  }
+
+  Color _getBulletinColor(double moyenne) {
+    if (moyenne >= 16) return const Color(0xFF10B981); // Vert
+    if (moyenne >= 14) return const Color(0xFF3B82F6); // Bleu
+    if (moyenne >= 12) return const Color(0xFFF59E0B); // Orange
+    return const Color(0xFFEF4444); // Rouge
   }
 
   Widget _buildBulletinCard(
@@ -7155,89 +7726,343 @@ class _ChildListScreenState extends State<ChildListScreen>
     String date,
     IconData icon,
     Color color,
+    Map<String, dynamic> bulletinData,
   ) {
     final isDarkMode = _themeService.isDarkMode;
+    final bulletinId = bulletinData['id'] as String? ?? '';
+    final isExpanded = _expandedBulletinId == bulletinId;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.15), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    // fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        grade,
-                        style: TextStyle(
-                          fontSize: 12,
-                          // fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      date,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 16,
-            color: isDarkMode ? Colors.grey[400] : Colors.grey[400],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: Column(
+        children: [
+          // Main card content (tappable)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _expandedBulletinId = isExpanded ? null : bulletinId;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                grade,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              date,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[500],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Expanded section with action buttons
+          if (isExpanded)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF2A2A2A)
+                    : const Color(0xFFF8F9FA),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    const Divider(height: 1),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            'Consulter',
+                            Icons.visibility_outlined,
+                            const Color(0xFFFF7A3C),
+                            () => _viewBulletin(bulletinData),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            'Télécharger',
+                            Icons.download_outlined,
+                            const Color(0xFF10B981),
+                            () => _downloadBulletin(bulletinData),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            'Partager',
+                            Icons.share_outlined,
+                            const Color(0xFF3B82F6),
+                            () => _shareBulletin(bulletinData),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildActionButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    final isDarkMode = _themeService.isDarkMode;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── BULLETIN ACTIONS ───────────────────────────────────────────────────────
+
+  Future<void> _viewBulletin(Map<String, dynamic> bulletinData) async {
+    try {
+      final pdfUrl = _buildBulletinPdfUrl(bulletinData);
+      final periode = bulletinData['libellePeriode'] as String? ?? 'Bulletin';
+
+      print('🌐 Ouverture du PDF: $pdfUrl');
+
+      // Navigate to PDF viewer screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              PDFViewerScreen(pdfUrl: pdfUrl, title: 'Bulletin $periode'),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'ouverture du bulletin: $e'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadBulletin(Map<String, dynamic> bulletinData) async {
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Téléchargement en cours...')),
+        );
+      }
+
+      final pdfUrl = _buildBulletinPdfUrl(bulletinData);
+      final periode = bulletinData['libellePeriode'] as String? ?? 'Bulletin';
+      final annee = bulletinData['anneeLibelle'] as String? ?? 'Année';
+
+      // Download PDF
+      final uri = Uri.parse(pdfUrl);
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        // Get directory for saving
+        final directory = await getExternalStorageDirectory();
+        if (directory != null) {
+          final documentsPath = directory.path;
+          final fileName =
+              'Bulletin_${periode.replaceAll(' ', '_')}_$annee.pdf';
+          final filePath = '$documentsPath/$fileName';
+
+          // Save file
+          final file = File(filePath);
+          await file.writeAsBytes(response.bodyBytes);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Bulletin téléchargé avec succès\n$fileName'),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Impossible d\'accéder au stockage'),
+              ),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Erreur lors du téléchargement: ${response.statusCode}',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du téléchargement: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareBulletin(Map<String, dynamic> bulletinData) async {
+    try {
+      final pdfUrl = _buildBulletinPdfUrl(bulletinData);
+      final periode = bulletinData['libellePeriode'] as String? ?? 'Bulletin';
+      final annee = bulletinData['anneeLibelle'] as String? ?? 'Année';
+      final nom = bulletinData['nom'] as String? ?? '';
+      final prenoms = bulletinData['prenoms'] as String? ?? '';
+
+      // Share PDF URL
+      final shareText = 'Bulletin $periode de $prenoms $nom - $annee\n$pdfUrl';
+
+      await Share.share(
+        shareText,
+        subject: 'Bulletin $periode - $prenoms $nom',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur lors du partage: $e')));
+      }
+    }
+  }
+
+  String _buildBulletinPdfUrl(Map<String, dynamic> bulletinData) {
+    final ecoleId = _ecoleId?.toString() ?? '';
+    final periode = bulletinData['libellePeriode'] as String? ?? '';
+    final anneeLibelle = bulletinData['anneeLibelle'] as String? ?? '';
+    final classeId = bulletinData['classeId']?.toString() ?? '';
+    final matricule = bulletinData['matricule'] as String? ?? '';
+
+    // Encode URL components
+    final encodedPeriode = Uri.encodeComponent(periode);
+    final encodedAnneeLibelle = Uri.encodeComponent(anneeLibelle);
+
+    return '${AppConfig.POULS_SCOLAIRE_API_URL}/imprimer-bulletin-list/spider-bulletin-matricule/$ecoleId/$encodedPeriode/$encodedAnneeLibelle/$classeId/$matricule/false/2/false/true/true/false/false/true/false/false/false/false';
   }
 
   Widget _buildDifficultiesTab() {
@@ -7574,7 +8399,11 @@ class _ChildListScreenState extends State<ChildListScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey[400]),
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Aucune fourniture trouvée',
@@ -9263,121 +10092,117 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   LinearGradient _getGradientForColor(Color baseColor) {
     return LinearGradient(
-      colors: [
-        baseColor.withOpacity(0.8),
-        baseColor,
-      ],
+      colors: [baseColor.withOpacity(0.8), baseColor],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
   }
 
   Widget _buildEnhancedSummaryCard(
-  String title,
-  String value,
-  Color color,
-  IconData icon, {
-  String? subtitle,
-  bool isLoading = false,
-  LinearGradient? gradient,
-  int maxLines = 1,
-}) {
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(
-          AppDimensions.getMediumCardBorderRadius(context)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: gradient ?? _getGradientForColor(color),
-          borderRadius: BorderRadius.circular(
-              AppDimensions.getMediumCardBorderRadius(context)),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1,
-          ),
+    String title,
+    String value,
+    Color color,
+    IconData icon, {
+    String? subtitle,
+    bool isLoading = false,
+    LinearGradient? gradient,
+    int maxLines = 1,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {},
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getMediumCardBorderRadius(context),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          mainAxisSize: MainAxisSize.min, // ← clé pour hauteur minimale
-          children: [
-            // Icône seule (dot supprimé)
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(7),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: gradient ?? _getGradientForColor(color),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.getMediumCardBorderRadius(context),
+            ),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min, // ← clé pour hauteur minimale
+            children: [
+              // Icône seule (dot supprimé)
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(7),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: color, size: 12),
+              ),
+              const SizedBox(height: 5),
+
+              // Valeur principale
+              if (isLoading)
+                Container(
+                  height: 16,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
                   ),
+                )
+              else
+                Flexible(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(15),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                      height: 1.2,
+                    ),
+                    maxLines: maxLines,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              // Titre + sous-titre
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(10),
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.normal,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  // if (subtitle != null) ...[
+                  //   const SizedBox(height: 1),
+                  //   Text(
+                  //     subtitle,
+                  //     style: TextStyle(
+                  //       fontSize: _textSizeService.getScaledFontSize(8),
+                  //       color: Colors.white.withOpacity(0.7),
+                  //       fontWeight: FontWeight.w500,
+                  //     ),
+                  //   ),
+                  // ],
                 ],
               ),
-              child: Icon(icon, color: color, size: 12),
-            ),
-            const SizedBox(height: 5),
-
-            // Valeur principale
-            if (isLoading)
-              Container(
-                height: 16,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              )
-            else
-              Flexible(
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(15),
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                    height: 1.2,
-                  ),
-                  maxLines: maxLines,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            // Titre + sous-titre
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(10),
-                    color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.normal,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                // if (subtitle != null) ...[
-                //   const SizedBox(height: 1),
-                //   Text(
-                //     subtitle,
-                //     style: TextStyle(
-                //       fontSize: _textSizeService.getScaledFontSize(8),
-                //       color: Colors.white.withOpacity(0.7),
-                //       fontWeight: FontWeight.w500,
-                //     ),
-                //   ),
-                // ],
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

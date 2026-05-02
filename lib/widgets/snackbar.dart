@@ -71,6 +71,8 @@ class CartSnackBar {
     Color? backgroundColor,
     Duration duration = const Duration(seconds: 2),
     VoidCallback? onUndo,
+    double? minHeight,
+    IconData? icon,
   }) {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
@@ -89,6 +91,8 @@ class CartSnackBar {
             duration: duration,
             onUndo: onUndo,
             onDismiss: () => overlayEntry.remove(),
+            minHeight: minHeight,
+            icon: icon,
           ),
         ),
       ),
@@ -112,6 +116,8 @@ class _SnackBarOverlay extends StatefulWidget {
   final Duration duration;
   final VoidCallback? onUndo;
   final VoidCallback onDismiss;
+  final double? minHeight;
+  final IconData? icon;
 
   const _SnackBarOverlay({
     required this.productName,
@@ -120,6 +126,8 @@ class _SnackBarOverlay extends StatefulWidget {
     required this.duration,
     this.onUndo,
     required this.onDismiss,
+    this.minHeight,
+    this.icon,
   });
 
   @override
@@ -165,7 +173,10 @@ class _SnackBarOverlayState extends State<_SnackBarOverlay>
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         child: Container(
           margin: const EdgeInsets.all(0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          constraints: BoxConstraints(
+            minHeight: widget.minHeight ?? 60, // Hauteur minimale garantie ou personnalisée
+          ),
           decoration: BoxDecoration(
             color: widget.backgroundColor,
             boxShadow: [
@@ -178,23 +189,43 @@ class _SnackBarOverlayState extends State<_SnackBarOverlay>
           ),
           child: Row(
             children: [
+              // ── Icône ─────────────────────────────────────────────────────────────
+              if (widget.icon != null) ...[
+                Icon(
+                  widget.icon,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+              ],
+              
               // ── Contenu : texte simple, nom en gras ──────────────────────────
               Expanded(
                 child: RichText(
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   text: TextSpan(
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
-                      height: 1.4,
+                      fontSize: 16,
+                      height: 1.5,
                     ),
                     children: [
                       TextSpan(
                         text: widget.productName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                      TextSpan(text: ' ${widget.message}'),
+                      if (widget.message.isNotEmpty) 
+                        TextSpan(
+                          text: ' ${widget.message}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
                     ],
                   ),
                 ),

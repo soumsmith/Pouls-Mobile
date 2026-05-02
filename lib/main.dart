@@ -10,6 +10,9 @@ import 'services/theme_service.dart';
 import 'services/database_service.dart';
 import 'services/auth_service.dart';
 
+// NavigatorKey global pour accéder au contexte depuis n'importe quel écran
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -57,6 +60,7 @@ class _MyAppState extends State<MyApp> {
           splitScreenMode: true,
           builder: (context, child) {
             return MaterialApp(
+              navigatorKey: navigatorKey,
               title: 'Parents Responsable',
               debugShowCheckedModeBanner: false,
               theme: _themeService.lightTheme,

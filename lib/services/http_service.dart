@@ -41,6 +41,7 @@ class HttpService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
+      print('🌐 HttpService GET URL: $uri');
 
       final response = await http
           .get(
@@ -53,8 +54,14 @@ class HttpService {
           )
           .timeout(timeout);
 
+      print('🌐 HttpService Response status: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        print('🌐 HttpService Response body: ${response.body}');
+      }
+
       return _handleResponse(response);
     } catch (e) {
+      print('🌐 HttpService Error: $e');
       throw _handleError(e);
     }
   }

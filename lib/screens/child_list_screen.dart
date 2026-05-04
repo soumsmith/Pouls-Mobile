@@ -61,6 +61,8 @@ import '../services/group_message_service.dart';
 import '../widgets/custom_loader.dart';
 import '../services/ecole_eleve_service.dart';
 import '../services/statistiques_presence_service.dart';
+import '../services/gestion_presence_eleve_service.dart';
+import '../models/gestion_presence_eleve_entry.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../widgets/subtle_retry_button.dart';
@@ -324,6 +326,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Variables pour l'emploi du temps dynamique
   StudentTimetableResponse? _timetableResponse;
   bool _isLoadingTimetable = false;
+  StateSetter? _timetableModalSetState;
 
   // Variables pour le contrôle d'accès
   List<AccessControlEntry> _accessEntries = [];
@@ -358,7 +361,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isLoadingReservations = false;
 
   // Variables pour les statistiques de présence
-  Map<String, dynamic>? _presenceStats;
+  StatistiquesPresence? _presenceStats;
   bool _isLoadingPresenceStats = false;
 
   // Variables pour les demandes d'intégration
@@ -415,10 +418,12 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<dynamic>? _bulletins;
   bool _isLoadingBulletins = false;
   String? _expandedBulletinId;
+  StateSetter? _bulletinsModalSetState;
 
   @override
   void initState() {
     super.initState();
+    _loadData();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -429,14 +434,11 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
 
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
-    _loadData();
+    _animationController.forward();
     _loadNotifications(); // Charger les notifications automatiquement
     //_loadEcoles();
     _animationController.forward();
@@ -1049,58 +1051,66 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        // Déclencher le chargement une seule fois
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_bulletins == null && !_isLoadingBulletins) {
-            _loadBulletins();
-          }
-        });
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          _bulletinsModalSetState = setModalState;
 
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.8,
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
+          // Déclencher le chargement une seule fois
+          if (_bulletins == null && !_isLoadingBulletins) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_bulletins == null && !_isLoadingBulletins) {
+                _loadBulletins(setModalState);
+              }
+            });
+          }
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: BoxDecoration(
+              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              BottomSheetHeader(
-                icon: Icons.description_rounded,
-                iconColor: const Color(0xFF2E7D32),
-                title: 'Bulletins',
-                description: 'Accédez aux bulletins trimestriels et annuels',
-                onClose: () => Navigator.of(context).pop(),
-              ),
-              // ↓ CLEF DU FIX : utilisation simple de l'état
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    print('🔍 DEBUG Builder: _isLoadingBulletins=$_isLoadingBulletins, _bulletins=${_bulletins?.length}');
-                    
-                    if (_isLoadingBulletins) {
-                      return _buildBulletinsLoadingState();
-                    } else if (_bulletins == null || _bulletins!.isEmpty) {
-                      return _buildBulletinsEmptyState();
-                    } else {
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: _buildBulletinsList(),
-                      );
-                    }
-                  },
+            child: Column(
+              children: [
+                BottomSheetHeader(
+                  icon: Icons.description_rounded,
+                  iconColor: const Color(0xFF2E7D32),
+                  title: 'Bulletins',
+                  description: 'Accédez aux bulletins trimestriels et annuels',
+                  onClose: () => Navigator.of(context).pop(),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+                // ↓ CLEF DU FIX : utilisation simple de l'état
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      print('🔍 DEBUG Builder: _isLoadingBulletins=$_isLoadingBulletins, _bulletins=${_bulletins?.length}');
+                      
+                      if (_isLoadingBulletins) {
+                        return _buildBulletinsLoadingState();
+                      } else if (_bulletins == null || _bulletins!.isEmpty) {
+                        return _buildBulletinsEmptyState();
+                      } else {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          child: _buildBulletinsList(),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ).whenComplete(() {
+      _bulletinsModalSetState = null;
+    });
   }
 
   void _showTimetableBottomSheet() {
@@ -1108,26 +1118,44 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.calendar_today_rounded,
-              iconColor: const Color(0xFFF57C00),
-              title: 'Emploi du temps',
-              description: 'Consultez l\'emploi du temps et les horaires',
-              onClose: () => Navigator.of(context).pop(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          _timetableModalSetState = setModalState;
+
+          if (_timetableResponse == null && !_isLoadingTimetable) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_timetableResponse == null && !_isLoadingTimetable) {
+                _loadTimetableData(setModalState);
+              }
+            });
+          }
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: BoxDecoration(
+              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
-            Expanded(child: _buildSimpleTimetableTab()),
-          ],
-        ),
+            child: Column(
+              children: [
+                BottomSheetHeader(
+                  icon: Icons.calendar_today_rounded,
+                  iconColor: const Color(0xFFF57C00),
+                  title: 'Emploi du temps',
+                  description: 'Consultez l\'emploi du temps et les horaires',
+                  onClose: () => Navigator.of(context).pop(),
+                ),
+                Expanded(child: _buildSimpleTimetableTab()),
+              ],
+            ),
+          );
+        },
       ),
-    );
+    ).whenComplete(() {
+      _timetableModalSetState = null;
+    });
   }
 
   void _showHomeworkBottomSheet() {
@@ -1162,26 +1190,46 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.person_off_rounded,
-              iconColor: const Color(0xFF00796B),
-              title: 'Présence & Conduite',
-              description: 'Vérifiez la présence et la conduite',
-              onClose: () => Navigator.of(context).pop(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          _presenceModalSetState = setModalState;
+          _presenceStatsModalSetState = setModalState;
+
+          if (_presenceEntries.isEmpty && !_isLoadingPresence) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_presenceEntries.isEmpty && !_isLoadingPresence) {
+                _loadPresenceData(setModalState);
+              }
+            });
+          }
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: BoxDecoration(
+              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
-            Expanded(child: _buildAbsencesTab()),
-          ],
-        ),
+            child: Column(
+              children: [
+                BottomSheetHeader(
+                  icon: Icons.person_off_rounded,
+                  iconColor: const Color(0xFF00796B),
+                  title: 'Présence',
+                  description: 'Vérifiez la présence et la conduite',
+                  onClose: () => Navigator.of(context).pop(),
+                ),
+                Expanded(child: _buildAbsencesTab()),
+              ],
+            ),
+          );
+        },
       ),
-    );
+    ).whenComplete(() {
+      _presenceModalSetState = null;
+      _presenceStatsModalSetState = null;
+    });
   }
 
   void _showAccessControlBottomSheet() {
@@ -3655,18 +3703,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                           }
                         } else if (item['key'] == 'timetable') {
                           _showTimetableBottomSheet();
-                          if (_timetableResponse == null &&
-                              !_isLoadingTimetable) {
-                            _loadTimetableData();
-                          }
                         } else {
                           switch (item['key'] as String) {
                             case 'bulletins':
                               _showBulletinsBottomSheet();
-                              // Charger les bulletins immédiatement lors de l'ouverture
-                              if (_bulletins == null && !_isLoadingBulletins) {
-                                _loadBulletins();
-                              }
                               break;
                             case 'homework':
                               _showHomeworkBottomSheet();
@@ -4366,12 +4406,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '📅 Emploi du temps',
-            'Consultez l\'emploi du temps de la semaine pour suivre les cours de votre enfant.',
-            Colors.orange,
-          ),
-          const SizedBox(height: 20),
           _buildDynamicTimetable(),
         ],
       ),
@@ -4480,16 +4514,19 @@ class _ChildListScreenState extends State<ChildListScreen>
     final coursesByDay = _timetableResponse!.coursesByDay;
     final days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
 
-    return Column(
-      children: days.map((day) {
-        if (coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: _buildDynamicDaySchedule(day, coursesByDay[day]!),
-          );
-        }
-        return const SizedBox.shrink();
-      }).toList(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: days.map((day) {
+          if (coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildDynamicDaySchedule(day, coursesByDay[day]!),
+            );
+          }
+          return const SizedBox.shrink();
+        }).toList(),
+      ),
     );
   }
 
@@ -5558,24 +5595,24 @@ class _ChildListScreenState extends State<ChildListScreen>
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatCircle(
-                stats['total_present']?.toString() ?? '0',
+                stats.totalPresent,
                 'Présences',
                 Colors.green,
               ),
               _buildStatCircle(
-                stats['total_absent']?.toString() ?? '0',
+                stats.totalAbsent,
                 'Absences',
                 Colors.red,
               ),
               _buildStatCircle(
-                '${stats['taux_presence']?.toStringAsFixed(1) ?? '0'}%',
+                '${stats.tauxPresence.toStringAsFixed(1)}%',
                 'Taux',
                 Colors.blue,
               ),
             ],
           ),
           const SizedBox(height: 12),
-          if (stats['total_absent'] == 0 || stats['total_absent'] == '0')
+          if (stats.totalAbsent == '0')
             Row(
               children: [
                 Icon(Icons.check_circle, size: 16, color: Colors.green),
@@ -6804,7 +6841,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Future<void> _loadTimetableData() async {
+  Future<void> _loadTimetableData([StateSetter? setModalState]) async {
     if (_isLoadingTimetable) return;
 
     final matricule = widget.child.matricule;
@@ -6820,12 +6857,21 @@ class _ChildListScreenState extends State<ChildListScreen>
       return;
     }
 
-    print('✅ Matricule valide, début du chargement...');
-    if (mounted) {
-      setState(() {
-        _isLoadingTimetable = true;
-      });
+    final effectiveModalSetState = setModalState ?? _timetableModalSetState;
+
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) {
+        effectiveModalSetState(fn);
+      }
+      if (mounted) {
+        setState(fn);
+      }
     }
+
+    print('✅ Matricule valide, début du chargement...');
+    updateState(() {
+      _isLoadingTimetable = true;
+    });
 
     try {
       print('📡 Appel du service StudentTimetableService...');
@@ -6842,20 +6888,16 @@ class _ChildListScreenState extends State<ChildListScreen>
       );
       print('✅ Réponse reçue: ${response.data.length} créneaux');
 
-      if (mounted) {
-        setState(() {
-          _timetableResponse = response;
-          _isLoadingTimetable = false;
-        });
-        print('📊 Mise à jour de l\'UI terminée');
-      }
+      updateState(() {
+        _timetableResponse = response;
+        _isLoadingTimetable = false;
+      });
+      print('📊 Mise à jour de l\'UI terminée');
     } catch (e) {
       print('❌ Erreur lors du chargement de l\'emploi du temps: $e');
-      if (mounted) {
-        setState(() {
-          _isLoadingTimetable = false;
-        });
-      }
+      updateState(() {
+        _isLoadingTimetable = false;
+      });
     }
   }
 
@@ -7503,16 +7545,21 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Future<void> _loadBulletins() async {
+  Future<void> _loadBulletins([StateSetter? setModalState]) async {
     if (_isLoadingBulletins) return;
 
     final matricule = _matricule ?? widget.child.matricule;
     if (matricule == null || matricule.isEmpty) return;
     if (_anneeId == null || _classeId == null) return;
 
+    final effectiveModalSetState = setModalState ?? _bulletinsModalSetState;
+
     void updateState(VoidCallback fn) {
-      print('🔧 DEBUG: updateState appelé - mounted: $mounted');
-      // Le StatefulBuilder sera reconstruit automatiquement quand setState sera appelé
+      print('🔧 DEBUG: updateState appelé - setModalState: ${effectiveModalSetState != null}, mounted: $mounted');
+      if (effectiveModalSetState != null) {
+        print('🔧 DEBUG: Appel de setModalState');
+        effectiveModalSetState(fn);
+      }
       if (mounted) {
         print('🔧 DEBUG: Appel de setState');
         setState(fn);
@@ -7732,114 +7779,134 @@ class _ChildListScreenState extends State<ChildListScreen>
     final bulletinId = bulletinData['id'] as String? ?? '';
     final isExpanded = _expandedBulletinId == bulletinId;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+    final nextExpandedId = isExpanded ? null : bulletinId;
+
+    void toggleExpanded() {
+      final modalSetState = _bulletinsModalSetState;
+      if (modalSetState != null) {
+        modalSetState(() {
+          _expandedBulletinId = nextExpandedId;
+        });
+      }
+      if (mounted) {
+        setState(() {
+          _expandedBulletinId = nextExpandedId;
+        });
+      }
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: toggleExpanded,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.15), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.15), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Main card content (tappable)
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _expandedBulletinId = isExpanded ? null : bulletinId;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+          child: Column(
+            children: [
+              // Main card content
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, color: color, size: 24),
                     ),
-                    child: Icon(icon, color: color, size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDarkMode
-                                ? Colors.grey[400]
-                                : Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                grade,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: color,
-                                ),
-                              ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  isDarkMode ? Colors.white : Colors.black87,
                             ),
-                            const Spacer(),
-                            Text(
-                              date,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDarkMode
-                                    ? Colors.grey[400]
-                                    : Colors.grey[500],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              isExpanded
-                                  ? Icons.keyboard_arrow_up_rounded
-                                  : Icons.keyboard_arrow_down_rounded,
-                              size: 20,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 14,
                               color: isDarkMode
                                   ? Colors.grey[400]
                                   : Colors.grey[600],
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  grade,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: color,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  date,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                isExpanded
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                size: 20,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
 
           // Expanded section with action buttons
           if (isExpanded)
@@ -7895,7 +7962,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
               ),
             ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -9487,12 +9556,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '📈 Suivi de présence',
-            'Cher parents,\nMerci de vous impliquer régulièrement dans le suivi et l\'amélioration du résultat scolaire de votre enfant.',
-            Colors.green,
-          ),
-          const SizedBox(height: 20),
           _buildAttendanceSummary(),
           const SizedBox(height: 20),
           _buildAbsencesList(),
@@ -9502,10 +9565,22 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildAttendanceSummary() {
+    // Charger les statistiques si pas encore chargées
+    if (_statistiquesPresence == null && !_isLoadingStatistiques) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_statistiquesPresence == null && !_isLoadingStatistiques) {
+          _loadStatistiquesPresence(_presenceStatsModalSetState);
+        }
+      });
+    }
+
+    final isDarkMode = _themeService.isDarkMode;
+    
     return Container(
+      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[800] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -9515,30 +9590,270 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         ],
       ),
+      child: _isLoadingStatistiques
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Statistiques de présence',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(18),
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white70 : Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Center(
+                  child: CustomLoader(
+                    message: 'Chargement des statistiques...',
+                    loaderColor: Color(0xFF1565C0),
+                    size: 40.0,
+                    showBackground: false,
+                  ),
+                ),
+              ],
+            )
+          : _statistiquesPresence != null
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Statistiques de présence',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white70 : Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Carte principale avec taux de présence
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: _statistiquesPresence!.tauxPresence >= 95
+                              ? [Colors.green.shade400, Colors.green.shade600]
+                              : _statistiquesPresence!.tauxPresence >= 90
+                                  ? [Colors.orange.shade400, Colors.orange.shade600]
+                                  : [Colors.red.shade400, Colors.red.shade600],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _statistiquesPresence!.tauxPresence >= 95
+                                    ? Icons.check_circle
+                                    : _statistiquesPresence!.tauxPresence >= 90
+                                        ? Icons.warning
+                                        : Icons.error,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Taux de présence',
+                                    style: TextStyle(
+                                      fontSize: _textSizeService.getScaledFontSize(14),
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_statistiquesPresence!.tauxPresence.toStringAsFixed(1)}%',
+                                    style: TextStyle(
+                                      fontSize: _textSizeService.getScaledFontSize(24),
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Statistiques détaillées
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDetailedStatCard(
+                            'Présences',
+                            _statistiquesPresence!.totalPresent,
+                            Icons.check_circle,
+                            Colors.green,
+                            isDarkMode,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildDetailedStatCard(
+                            'Absences',
+                            _statistiquesPresence!.totalAbsent,
+                            Icons.cancel,
+                            Colors.red,
+                            isDarkMode,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Information totale
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.grey[700] : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDarkMode ? Colors.grey[600]! : Colors.grey[200]!,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF1565C0).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.calendar_today,
+                              color: Color(0xFF1565C0),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Total des séances',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(12),
+                                    color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_statistiquesPresence!.totalSeances} séances cette année',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(14),
+                                    color: isDarkMode ? Colors.white : Colors.grey[800],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Statistiques de présence',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(18),
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white70 : Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Impossible de charger les statistiques',
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(14),
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () => _loadStatistiquesPresence(_presenceStatsModalSetState),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1565C0),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Réessayer'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+            ),
+    );
+  }
+
+  Widget _buildDetailedStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isDarkMode,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[700] : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Résumé mensuel',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: _buildAttendanceStat('Présences', '18', Colors.green),
-              ),
-              Expanded(
-                child: _buildAttendanceStat('Retards', '2', Colors.orange),
-              ),
-              Expanded(
-                child: _buildAttendanceStat('Absences', '0', Colors.red),
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(12),
+                  color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(20),
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -9579,35 +9894,504 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  List<GestionPresenceEleveEntry> _presenceEntries = [];
+  List<GestionPresenceEleveEntry> _filteredPresenceEntries = [];
+  bool _isLoadingPresence = false;
+  StateSetter? _presenceModalSetState;
+  StatistiquesPresence? _statistiquesPresence;
+  bool _isLoadingStatistiques = false;
+  StateSetter? _presenceStatsModalSetState;
+  
+  // Filtres pour la liste des absences
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
+  int? _filterType; // null = tous, 0 = absent, 1 = présent
+
   Widget _buildAbsencesList() {
+    // Appliquer les filtres
+    _applyPresenceFilters();
+    
     return Column(
       children: [
-        Container(
+        // Section des filtres
+        _buildPresenceFilters(),
+        
+        // Bouton pour charger les données de présence
+        Padding(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _loadPresenceData(),
+              icon: _isLoadingPresence 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.refresh),
+              label: Text(_isLoadingPresence ? 'Chargement...' : 'Actualiser'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1F2937),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
           ),
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 24),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Aucune absence enregistrée ce mois-ci',
+        ),
+        
+        // Liste des entrées de présence
+        if (_filteredPresenceEntries.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          ...List.generate(_filteredPresenceEntries.length, (index) {
+            final entry = _filteredPresenceEntries[index];
+            final isPresent = (entry.profpresent ?? 0) == 1;
+            final debutDate = _tryParseApiDate(entry.debut);
+            final timeStr = debutDate != null
+                ? '${debutDate.day.toString().padLeft(2, '0')}/${debutDate.month.toString().padLeft(2, '0')} ${debutDate.hour.toString().padLeft(2, '0')}:${debutDate.minute.toString().padLeft(2, '0')}'
+                : entry.debut ?? '';
+            
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isPresent ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: isPresent ? Colors.green : Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          isPresent ? 'Présence' : 'Absence',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isPresent ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        entry.matiere ?? 'Matière inconnue',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, size: 16, color: Color(0xFF6B7280)),
+                      const SizedBox(width: 4),
+                      Text(
+                        timeStr,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (entry.nomProf != null && entry.prenomProf != null) ...[
+                        Expanded(
+                          child: Text(
+                            'Prof: ${entry.prenomProf} ${entry.nomProf}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7280),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+        
+        // Message si aucune donnée
+        if (!_isLoadingPresence && _presenceEntries.isEmpty)
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 48,
+                  color: Colors.grey[600],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Aucune donnée de présence disponible',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF065F46),
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF6B7280),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  DateTime? _tryParseApiDate(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value.replaceFirst(' ', 'T'));
+  }
+
+  Future<void> _loadPresenceData([StateSetter? setModalState]) async {
+    if (_matricule == null || _ecoleCode == null) {
+      print('⚠️ Informations manquantes pour charger les données de présence');
+      return;
+    }
+
+    final effectiveModalSetState = setModalState ?? _presenceModalSetState;
+
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) {
+        effectiveModalSetState(fn);
+      }
+      if (mounted) {
+        setState(fn);
+      }
+    }
+
+    updateState(() => _isLoadingPresence = true);
+    
+    try {
+      print('📡 Chargement présence/absence: matricule=$_matricule, ecole=$_ecoleCode');
+      final entries = await GestionPresenceEleveService.getGestionPresenceEleve(
+        _matricule!,
+        _ecoleCode!,
+      );
+      
+      updateState(() {
+        _presenceEntries = entries;
+        _isLoadingPresence = false;
+      });
+      
+      print('✅ ${entries.length} entrée(s) de présence/absence chargée(s)');
+    } catch (e) {
+      print('❌ Erreur lors du chargement des données de présence: $e');
+      updateState(() => _isLoadingPresence = false);
+    }
+  }
+
+  Future<void> _loadStatistiquesPresence([StateSetter? setModalState]) async {
+    if (_matricule == null || _ecoleCode == null) {
+      print('⚠️ Informations manquantes pour charger les statistiques de présence');
+      return;
+    }
+
+    final effectiveModalSetState = setModalState ?? _presenceModalSetState;
+
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) {
+        effectiveModalSetState(fn);
+      }
+      if (mounted) {
+        setState(fn);
+      }
+    }
+
+    updateState(() => _isLoadingStatistiques = true);
+    
+    try {
+      final statistiques = await StatistiquesPresenceService.getStatistiquesPresence(
+        _matricule!,
+        _ecoleCode!,
+      );
+      
+      updateState(() {
+        _statistiquesPresence = statistiques;
+        _isLoadingStatistiques = false;
+      });
+      
+      if (statistiques != null) {
+        print('✅ Statistiques présence: ${statistiques!.tauxPresence}% présence, ${statistiques!.totalAbsent} absences');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des statistiques de présence: $e');
+      if (mounted) {
+        updateState(() => _isLoadingStatistiques = false);
+      }
+    }
+  }
+
+  void _applyPresenceFilters() {
+    _filteredPresenceEntries = _presenceEntries.where((entry) {
+      // Filtre par type
+      if (_filterType != null) {
+        final isPresent = (entry.profpresent ?? 0) == 1;
+        if (_filterType == 0 && isPresent) return false; // Filtre absent seulement
+        if (_filterType == 1 && !isPresent) return false; // Filtre présent seulement
+      }
+      
+      // Filtre par date
+      if (_filterStartDate != null) {
+        final entryDate = DateTime.tryParse(entry.debut ?? '');
+        if (entryDate != null && entryDate.isBefore(_filterStartDate!)) {
+          return false;
+        }
+      }
+      
+      if (_filterEndDate != null) {
+        final entryDate = DateTime.tryParse(entry.debut ?? '');
+        if (entryDate != null && entryDate.isAfter(_filterEndDate!)) {
+          return false;
+        }
+      }
+      
+      return true;
+    }).toList();
+  }
+
+  Widget _buildPresenceFilters() {
+    final isDarkMode = _themeService.isDarkMode;
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Filtres',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(16),
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.white70 : Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Filtre par type
+          Text(
+            'Type',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(14),
+              fontWeight: FontWeight.w500,
+              color: isDarkMode ? Colors.white70 : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              _buildFilterChip('Tous', null),
+              _buildFilterChip('Absences', 0),
+              _buildFilterChip('Présences', 1),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Filtre par date
+          Text(
+            'Période (facultatif)',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(14),
+              fontWeight: FontWeight.w500,
+              color: isDarkMode ? Colors.white70 : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _selectDate(context, true),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        Text(
+                          _filterStartDate != null 
+                              ? '${_filterStartDate!.day}/${_filterStartDate!.month}/${_filterStartDate!.year}'
+                              : 'Date début',
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(12),
+                            color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.arrow_forward, size: 16, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _selectDate(context, false),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        Text(
+                          _filterEndDate != null 
+                              ? '${_filterEndDate!.day}/${_filterEndDate!.month}/${_filterEndDate!.year}'
+                              : 'Date fin',
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(12),
+                            color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          
+          const SizedBox(height: 12),
+          if (_filterStartDate != null || _filterEndDate != null || _filterType != null)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final effectiveModalSetState = _presenceModalSetState;
+                      if (effectiveModalSetState != null && mounted) {
+                        effectiveModalSetState(() {
+                          _filterStartDate = null;
+                          _filterEndDate = null;
+                          _filterType = null;
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.clear),
+                    label: const Text('Effacer les filtres'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[600],
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildFilterChip(String label, int? value) {
+    final isDarkMode = _themeService.isDarkMode;
+    final isSelected = _filterType == value;
+    
+    return GestureDetector(
+      onTap: () {
+        final effectiveModalSetState = _presenceModalSetState;
+        if (effectiveModalSetState != null && mounted) {
+          effectiveModalSetState(() {
+            _filterType = isSelected ? null : value;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? (isDarkMode ? Colors.blue[300] : Colors.blue[600])
+              : (isDarkMode ? Colors.grey[700] : Colors.grey[200]),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: _textSizeService.getScaledFontSize(12),
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected 
+                ? Colors.white 
+                : (isDarkMode ? Colors.white70 : Colors.grey[600]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isStartDate ? _filterStartDate ?? DateTime.now() : _filterEndDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (picked != null) {
+      final effectiveModalSetState = _presenceModalSetState;
+      if (effectiveModalSetState != null && mounted) {
+        effectiveModalSetState(() {
+          if (isStartDate) {
+            _filterStartDate = picked;
+          } else {
+            _filterEndDate = picked;
+          }
+        });
+      }
+    }
   }
 
   Widget _buildSanctionsTab() {

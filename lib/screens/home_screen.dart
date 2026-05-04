@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_sheet.dart';
@@ -7,7 +9,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../config/app_dimensions.dart';
 import '../models/child.dart';
+import '../models/gestion_presence_eleve_entry.dart';
 import '../services/database_service.dart';
+import '../services/gestion_presence_eleve_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
@@ -57,6 +61,20 @@ const _kDivider = Color(0xFFD1D1D6);
 const _kChipActive = Color(0xFF1A1A2A);
 const _kChipBg = Color(0xFFEBEBEF);
 
+class _PresenceBannerItem {
+  final String key;
+  final Child child;
+  final GestionPresenceEleveEntry entry;
+  final bool isPresence;
+
+  const _PresenceBannerItem({
+    required this.key,
+    required this.child,
+    required this.entry,
+    required this.isPresence,
+  });
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -104,6 +122,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, bool> _childrenNotificationsLoading = {};
   Map<String, bool> _childrenEcheancesLoading = {};
 
+  List<_PresenceBannerItem> _presenceBannerItems = [];
+  final Set<String> _dismissedPresenceBannerItemKeys = {};
+  bool _presenceBannerLoading = false;
+  PageController? _presencePageController;
+  Timer? _presenceAutoScrollTimer;
+
   // Variables pour les vidéos Coulisses de l'Excellence
   List<CoulisseExcellence> _coulisseVideos = [];
   bool _coulisseVideosLoading = true;
@@ -137,6 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
     _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
     _loadEvents(); // Charger les événements
+    _startPresenceAutoScrollIfNeeded();
   }
 
   Future<void> _refreshHome() async {
@@ -147,6 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadEvents(),
     ]);
     await _loadChildrenNotifications();
+    await _loadChildrenPresenceSignals();
   }
 
   @override
@@ -154,6 +180,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _textSizeService.removeListener(() {});
     _matriculeController.dispose();
     _searchController.dispose();
+
+    _presenceAutoScrollTimer?.cancel();
+    _presencePageController?.dispose();
 
     _recommenderNameController.dispose();
     _etablissementController.dispose();
@@ -170,6 +199,149 @@ class _HomeScreenState extends State<HomeScreen> {
     _adresseParentController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> _loadChildrenPresenceSignals() async {
+    print('=== DÉBUT CHARGEMENT PRÉSENCE/ABSENCE POUR TOUS LES ENFANTS ===');
+    if (_presenceBannerLoading) return;
+
+    if (_children.isEmpty) {
+      print('📭 Aucun enfant à charger pour présence/absence');
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _presenceBannerLoading = true;
+      });
+    }
+
+    try {
+      final futures = _children.map((child) async {
+        print('👤 Enfant: ${child.fullName} (${child.id})');
+        final childInfo = await DatabaseService.instance.getChildInfoById(
+          child.id,
+        );
+        final matricule = childInfo?['matricule'] as String?;
+        final paramEcole = childInfo?['paramEcole'] as String?;
+
+        print('🔍 Info enfant: matricule=$matricule, paramEcole=$paramEcole');
+
+        if (matricule == null || matricule.isEmpty) {
+          print('⚠️ Matricule manquant pour ${child.fullName}');
+          return null;
+        }
+        if (paramEcole == null || paramEcole.isEmpty) {
+          print('⚠️ Code école (paramEcole) manquant pour ${child.fullName}');
+          return null;
+        }
+
+        final entries = await GestionPresenceEleveService.getGestionPresenceEleve(
+          matricule,
+          paramEcole,
+        );
+
+        print('📊 ${entries.length} entrée(s) reçue(s) pour ${child.fullName}');
+
+        final signaled = entries
+            .where((e) => e.status == 0)
+            .cast<GestionPresenceEleveEntry?>()
+            .toList();
+
+        if (signaled.isEmpty) {
+          print('ℹ️ Aucune entrée signalée (status==0) pour ${child.fullName}');
+          return null;
+        }
+
+        // Trier par date pour afficher dans l'ordre chronologique
+        signaled.sort((a, b) {
+          final da = _tryParseApiDate(a?.debut)?.millisecondsSinceEpoch ?? 0;
+          final db = _tryParseApiDate(b?.debut)?.millisecondsSinceEpoch ?? 0;
+          return da.compareTo(db);
+        });
+
+        // Créer un item par matière avec status=0 (absent)
+        final items = signaled.map((entry) {
+          if (entry == null) return null;
+          final isPresence = (entry.profpresent ?? 0) == 1;
+          final key = '${child.id}::${entry.debut ?? ''}::${entry.fin ?? ''}::${entry.matiere ?? ''}::${entry.status ?? ''}';
+          print('✅ Signalisation pour ${child.fullName}: ${isPresence ? 'Présence' : 'Absence'} - ${entry.matiere} (${entry.debut})');
+          return _PresenceBannerItem(
+            key: key,
+            child: child,
+            entry: entry,
+            isPresence: isPresence,
+          );
+        }).whereType<_PresenceBannerItem>().toList();
+
+        // Retourner le premier item pour le PageView (le carousel gérera les autres)
+        if (items.isEmpty) return null;
+        return items.first;
+      }).toList();
+
+      final results = await Future.wait(futures);
+      final items = results.whereType<_PresenceBannerItem>().toList();
+      final visibleItems = items
+          .where((i) => !_dismissedPresenceBannerItemKeys.contains(i.key))
+          .toList();
+
+      print('🎯 Bannières visibles: ${visibleItems.length} / ${items.length} (dont ${items.length - visibleItems.length} déjà masquées)');
+
+      if (!mounted) return;
+      setState(() {
+        _presenceBannerItems = visibleItems;
+        _presenceBannerLoading = false;
+      });
+      _ensurePresencePagerReady();
+      _startPresenceAutoScrollIfNeeded();
+      print('=== FIN CHARGEMENT PRÉSENCE/ABSENCE ===');
+    } catch (e) {
+      print('❌ Erreur globale chargement présence/absence: $e');
+      if (!mounted) return;
+      setState(() {
+        _presenceBannerItems = [];
+        _presenceBannerLoading = false;
+      });
+      _stopPresenceAutoScroll();
+    }
+  }
+
+  DateTime? _tryParseApiDate(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value.replaceFirst(' ', 'T'));
+  }
+
+  void _ensurePresencePagerReady() {
+    if (_presencePageController != null) return;
+    _presencePageController = PageController();
+  }
+
+  void _startPresenceAutoScrollIfNeeded() {
+    _presenceAutoScrollTimer?.cancel();
+    if (_presenceBannerItems.length <= 1) return;
+
+    _ensurePresencePagerReady();
+
+    _presenceAutoScrollTimer = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) {
+        final controller = _presencePageController;
+        if (controller == null || !controller.hasClients) return;
+
+        final currentPage = controller.page?.round() ?? controller.initialPage;
+        final nextPage = (currentPage + 1) % _presenceBannerItems.length;
+        controller.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 450),
+          curve: Curves.easeInOut,
+        );
+      },
+    );
+  }
+
+  void _stopPresenceAutoScroll() {
+    _presenceAutoScrollTimer?.cancel();
+    _presenceAutoScrollTimer = null;
   }
 
   void _showRecommendationBottomSheet() {
@@ -292,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
       _updatePhotosInBackground(children);
+      await _loadChildrenPresenceSignals();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -1248,61 +1421,121 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── ALERT BANNER ──────────────────────────────────────────────────────────
   Widget _buildAlertBanner() {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          border: Border.all(color: AppColors.homeAlertBorder(context)),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: const BoxDecoration(
-                color: _kOrange,
-                shape: BoxShape.circle,
-              ),
+    if (_presenceBannerLoading) {
+      return const SizedBox.shrink();
+    }
+
+    if (_presenceBannerItems.isEmpty) {
+      _stopPresenceAutoScroll();
+      return const SizedBox.shrink();
+    }
+
+    _ensurePresencePagerReady();
+    _startPresenceAutoScrollIfNeeded();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      height: 54,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        border: Border.all(color: AppColors.homeAlertBorder(context)),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: PageView.builder(
+        controller: _presencePageController,
+        itemCount: _presenceBannerItems.length,
+        itemBuilder: (context, index) {
+          final item = _presenceBannerItems[index];
+          return _buildPresenceBannerItem(item);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPresenceBannerItem(_PresenceBannerItem item) {
+    final titlePrefix = item.isPresence ? 'Présence signalée' : 'Absence signalée';
+    final grade = item.child.grade;
+    final enfant = item.child.firstName.isNotEmpty
+        ? item.child.firstName
+        : (item.entry.prenomEleve ?? '');
+    final matiere = item.entry.matiere ?? '';
+
+    final debutDate = _tryParseApiDate(item.entry.debut);
+    final timeLabel = debutDate == null
+        ? ''
+        : _isSameDate(debutDate, DateTime.now())
+            ? 'Aujourd\'hui'
+            : '${debutDate.day.toString().padLeft(2, '0')}/${debutDate.month.toString().padLeft(2, '0')}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: item.isPresence ? Colors.greenAccent : _kOrange,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Absence signalée — Fatoumat, 6ème G',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: _textSizeService.getScaledFontSize(12),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$titlePrefix — $enfant, $grade',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: _textSizeService.getScaledFontSize(12),
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    'Ce matin · Collège Hînneh Biabou',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: _textSizeService.getScaledFontSize(10),
-                    ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  matiere.isNotEmpty ? '$matiere · ${timeLabel.isEmpty ? '' : '$timeLabel · '}${item.child.establishment}' : '${timeLabel.isEmpty ? '' : '$timeLabel · '}${item.child.establishment}',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: _textSizeService.getScaledFontSize(10),
                   ),
-                ],
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            Icon(
-              Icons.chevron_right,
+          ),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _dismissedPresenceBannerItemKeys.add(item.key);
+                _presenceBannerItems.removeWhere((i) => i.key == item.key);
+              });
+              if (_presenceBannerItems.length <= 1) {
+                _stopPresenceAutoScroll();
+              }
+            },
+            child: Icon(
+              Icons.close_rounded,
               color: AppColors.homeTextSecondary(context),
               size: 18,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right,
+            color: AppColors.homeTextSecondary(context),
+            size: 18,
+          ),
+        ],
       ),
     );
+  }
+
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   // ─── SEARCH BAR ────────────────────────────────────────────────────────────

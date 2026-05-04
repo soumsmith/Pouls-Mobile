@@ -63,7 +63,7 @@ class MessagesScreen extends StatefulWidget {
 
 class _MessagesScreenState extends State<MessagesScreen>
     with SingleTickerProviderStateMixin {
-  static const bool _enableAudioRecording = false;
+  static const bool _enableAudioRecording = true;
 
   // ─── Conversations ──────────────────────────────────────────────────────
   List<Conversation> _conversations = [];
@@ -110,9 +110,7 @@ class _MessagesScreenState extends State<MessagesScreen>
   @override
   void initState() {
     super.initState();
-    if (_enableAudioRecording) {
-      _audioRecorder = AudioRecorder();
-    }
+    _audioRecorder = AudioRecorder();
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),

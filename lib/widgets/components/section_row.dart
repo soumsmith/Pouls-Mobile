@@ -5,12 +5,16 @@ class SectionRow extends StatelessWidget {
   final String title;
   final Color? textColor;
   final double? titleFontSize;
+  final VoidCallback? onSeeMore;
+  final String? seeMoreText;
 
   const SectionRow({
     super.key,
     required this.title,
     this.textColor,
     this.titleFontSize,
+    this.onSeeMore,
+    this.seeMoreText,
   });
 
   @override
@@ -38,14 +42,34 @@ class SectionRow extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: Icon(
-              Icons.chevron_right,
-              color: kTextSecondary.withOpacity(0.5),
-              size: AppDimensions.getSectionIconSize(context),
+          if (onSeeMore != null)
+            GestureDetector(
+              onTap: onSeeMore,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: effectiveTextColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  seeMoreText ?? 'Voir plus',
+                  style: TextStyle(
+                    color: effectiveTextColor,
+                    fontSize: effectiveFontSize - 2,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                Icons.chevron_right,
+                color: kTextSecondary.withOpacity(0.5),
+                size: AppDimensions.getSectionIconSize(context),
+              ),
             ),
-          ),
         ],
       ),
     );

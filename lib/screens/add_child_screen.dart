@@ -606,7 +606,9 @@ class _AddChildScreenState extends State<AddChildScreen>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+            ? Theme.of(context).scaffoldBackgroundColor 
+            : Colors.white, // Fond blanc en mode clair
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: CustomScrollView(
@@ -767,7 +769,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(16),
                     fontWeight: FontWeight.w800,
-                    color: Colors.black,
+                    color: Theme.of(context).textTheme.headlineSmall?.color ?? Colors.black,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -777,7 +779,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
-                    color: Colors.black,
+                    color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
                     height: 1.3,
                   ),
                 ),
@@ -897,6 +899,7 @@ class _AddChildScreenState extends State<AddChildScreen>
           label: 'École',
           value: _selectedEcoleName ?? 'Sélectionner une école...',
           items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+          isDarkMode: Theme.of(context).brightness == Brightness.dark,
           onChanged: (String selected) {
             final ecole = _ecoles.firstWhere(
               (e) => e.ecoleclibelle == selected,
@@ -909,7 +912,6 @@ class _AddChildScreenState extends State<AddChildScreen>
               _errorMessage = null;
             });
           },
-          isDarkMode: false,
         ),
       ],
     );
@@ -1047,16 +1049,16 @@ class _AddChildScreenState extends State<AddChildScreen>
           child: TextField(
             controller: _matriculeController,
             autofocus: false,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppColors.screenTextPrimary,
+              color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.screenTextPrimary,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
               hintText: 'Ex: 24047355B',
-              hintStyle: const TextStyle(
+              hintStyle: TextStyle(
                 fontSize: 13,
-                color: Color(0xFFBBBBBB),
+                color: Theme.of(context).hintColor,
               ),
               prefixIcon: const Icon(
                 Icons.badge_outlined,
@@ -1064,7 +1066,9 @@ class _AddChildScreenState extends State<AddChildScreen>
                 size: 18,
               ),
               filled: true,
-              fillColor: AppColors.screenSurface,
+              fillColor: Theme.of(context).brightness == Brightness.dark 
+                  ? Theme.of(context).cardColor 
+                  : Colors.white, // Fond blanc en mode clair
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 14,

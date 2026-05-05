@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_dimensions.dart';
 
 class SeeMoreCard extends StatelessWidget {
   final Color cardColor;
@@ -9,6 +10,9 @@ class SeeMoreCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final IconData icon;
+  final double? width;
+  final double? height;
 
   const SeeMoreCard({
     Key? key,
@@ -20,6 +24,9 @@ class SeeMoreCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    required this.icon,
+    this.width,
+    this.height,
   }) : super(key: key);
 
   @override
@@ -27,9 +34,12 @@ class SeeMoreCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimensions.getMediumCardBorderRadius(context)),
           border: Border.all(color: borderColor, width: 1),
         ),
         child: Column(
@@ -42,7 +52,7 @@ class SeeMoreCard extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.add,
+                icon,
                 color: iconColor,
                 size: 24,
               ),

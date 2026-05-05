@@ -40,6 +40,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final double innerBorderWidth;
   final double outerBorderWidth;
   final double doubleBorderGap;
+  final bool showPlayIcon;
 
   const ImageMenuCardExternalTitle({
     super.key,
@@ -80,6 +81,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.innerBorderWidth = 2.5,
     this.outerBorderWidth = 1.5,
     this.doubleBorderGap = 3.0,
+    this.showPlayIcon = false, // Par défaut, ne pas afficher l'icône de play
   });
 
   @override
@@ -100,7 +102,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
               crossAxisAlignment: centerTitle
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
-              mainAxisAlignment: allowLineBreak ? MainAxisAlignment.start : MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start, // Toujours aligner en haut
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
@@ -364,25 +366,50 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
               ],
             ),
           ),
-          if (tag != null)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  tag!,
-                  style: const TextStyle(
+          // Toujours afficher un espace pour le badge pour éviter le décalage
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: tag != null ? color : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: tag != null 
+                  ? Text(
+                      tag!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  : const SizedBox.shrink(), // Espace vide mais même taille
+            ),
+          ),
+          // Icône de play au centre pour les vidéos (affichage conditionnel)
+          if (showPlayIcon)
+            Positioned.fill(
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
                     color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                    size: 24,
                   ),
                 ),
               ),

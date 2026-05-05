@@ -10191,8 +10191,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
     
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(12), // Réduit de 16 à 12
+      padding: const EdgeInsets.all(12), // Réduit de 16 à 12
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[800] : Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -10211,7 +10211,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: isDarkMode ? Colors.white70 : Colors.grey[700],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8), // Réduit de 12 à 8
           
           // Filtre par type
           Text(
@@ -10222,9 +10222,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: isDarkMode ? Colors.white70 : Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6), // Réduit de 8 à 6
           Wrap(
-            spacing: 8,
+            spacing: 6, // Réduit de 8 à 6
             children: [
               _buildFilterChip('Tous', null),
               _buildFilterChip('Absences', 0),
@@ -10232,7 +10232,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             ],
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 12), // Réduit de 16 à 12
           
           // Filtre par date
           Text(
@@ -10243,14 +10243,14 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: isDarkMode ? Colors.white70 : Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6), // Réduit de 8 à 6
           Row(
             children: [
               Expanded(
                 child: GestureDetector(
                   onTap: () => _selectDate(context, true),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Réduit padding
                     decoration: BoxDecoration(
                       color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
@@ -10258,7 +10258,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     child: Row(
                       children: [
                         Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6), // Réduit de 8 à 6
                         Text(
                           _filterStartDate != null 
                               ? '${_filterStartDate!.day}/${_filterStartDate!.month}/${_filterStartDate!.year}'
@@ -10273,14 +10273,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6), // Réduit de 8 à 6
               Icon(Icons.arrow_forward, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6), // Réduit de 8 à 6
               Expanded(
                 child: GestureDetector(
                   onTap: () => _selectDate(context, false),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Réduit padding
                     decoration: BoxDecoration(
                       color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
@@ -10288,7 +10288,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     child: Row(
                       children: [
                         Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6), // Réduit de 8 à 6
                         Text(
                           _filterEndDate != null 
                               ? '${_filterEndDate!.day}/${_filterEndDate!.month}/${_filterEndDate!.year}'
@@ -10306,7 +10306,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             ],
           ),
           
-          const SizedBox(height: 12),
+          const SizedBox(height: 8), // Réduit de 12 à 8
           if (_filterStartDate != null || _filterEndDate != null || _filterType != null)
             Row(
               children: [

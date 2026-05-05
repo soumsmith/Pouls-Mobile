@@ -8,7 +8,6 @@ import '../screens/new_settings_screen.dart';
 import '../screens/messages_screen.dart';
 import '../screens/orders_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
-import '../widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
@@ -54,35 +53,16 @@ class BottomSheetMenu extends StatefulWidget {
   State<BottomSheetMenu> createState() => _BottomSheetMenuState();
 }
 
-class _BottomSheetMenuState extends State<BottomSheetMenu>
-    with SingleTickerProviderStateMixin {
+class _BottomSheetMenuState extends State<BottomSheetMenu> {
   final CartService _cartService = MockCartService();
   int _cartItemCount = 0;
   int _unreadMessages = 5; // demo
   int _ticketCount = 2; // demo
 
-  late AnimationController _sheetController;
-  late Animation<double> _sheetAnim;
-
   @override
   void initState() {
     super.initState();
-    _sheetController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-    );
-    _sheetAnim = CurvedAnimation(
-      parent: _sheetController,
-      curve: Curves.easeOutCubic,
-    );
-    _sheetController.forward();
     _loadCartCount();
-  }
-
-  @override
-  void dispose() {
-    _sheetController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadCartCount() async {
@@ -93,9 +73,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
   // ── Build ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _sheetAnim,
-      child: Container(
+    return Container(
         decoration: const BoxDecoration(
           color: _kCard,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -126,7 +104,6 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
             SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
           ],
         ),
-      ),
     );
   }
 
@@ -138,19 +115,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu>
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Column(
         children: List.generate(items.length, (i) {
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: Duration(milliseconds: 280 + i * 55),
-            curve: Curves.easeOutCubic,
-            builder: (_, v, child) => Opacity(
-              opacity: v,
-              child: Transform.translate(
-                offset: Offset(0, 14 * (1 - v)),
-                child: child,
-              ),
-            ),
-            child: _MenuTile(item: items[i], showDivider: i < items.length - 1),
-          );
+          return _MenuTile(item: items[i], showDivider: i < items.length - 1);
         }),
       ),
     );

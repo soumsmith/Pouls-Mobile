@@ -83,6 +83,7 @@ import '../widgets/section_header_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/see_more_card.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
 import 'all_events_screen.dart';
@@ -254,7 +255,7 @@ const _kActions = <String, _ActionDef>{
   ),
   'consult_requests': _ActionDef(
     icon: Icons.search_rounded,
-    label: 'Mes demandes',
+    label: 'Consulter une demande',
     subtitle: 'Consulter',
     color: Color(0xFF06B6D4),
   ),
@@ -2573,7 +2574,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ),
       EstablishmentAction(
         key: 'consult_requests',
-        title: 'Mes demandes',
+        title: 'Consulter une demande',
         subtitle: 'Consulter',
         imagePath: 'assets/images/mes-demande.jpg',
         color: _kActions['consult_requests']!.color,
@@ -2683,6 +2684,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           isDark: isDark,
           useExternalTitle: true,
           cardWidth: AppDimensions.getHorizontalMenuCardWidth(context) - 20,
+          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context)  + 40,
         ),
         const SizedBox(height: 16),
 
@@ -2694,6 +2696,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           isDark: isDark,
           useExternalTitle: true,
           cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
+          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 40,
         ),
         const SizedBox(height: 20),
         // Section Communauté
@@ -2706,13 +2709,39 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         const SizedBox(height: 20),
 
         // Section Visites Guidées
-        SectionRow(title: 'VISITES GUIDÉES'),
+        SectionRow(
+          title: 'VISITES GUIDÉES',
+          onSeeMore: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VisiteGuideeVideoFeedScreen(
+                  videos: _visiteGuideeVideos,
+                  initialIndex: 0,
+                ),
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 16),
         _buildVisiteGuideeSection(),
         const SizedBox(height: 20),
 
         // Section Coulisses de l'Excellence
-        SectionRow(title: 'COULISSES DE L\'EXCELLENCE'),
+        SectionRow(
+          title: 'COULISSES DE L\'EXCELLENCE',
+          onSeeMore: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CoulisseVideoFeedScreen(
+                  videos: _coulisseExcellenceVideos,
+                  initialIndex: 0,
+                ),
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 10),
         _buildCoulisseExcellenceSection(),
       ],
@@ -2763,142 +2792,143 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     }
 
     return Container(
-      height: 120,
+      height: 140,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _visiteGuideeVideos.length,
+        itemCount: _visiteGuideeVideos.length > 5
+            ? 6 // 5 vidéos + bouton Voir+
+            : _visiteGuideeVideos.length, // Uniquement les vidéos si ≤5
         itemBuilder: (context, index) {
-          final video = _visiteGuideeVideos[index];
-          return _buildVisiteGuideeVideoCard(video, index);
+          if (index < _visiteGuideeVideos.length && index < 5) {
+            // Afficher les 5 premières vidéos
+            return _buildVisiteGuideeVideoCard(_visiteGuideeVideos[index]);
+          } else if (index == 5 && _visiteGuideeVideos.length > 5) {
+            // Afficher le bouton Voir+ uniquement s'il y a plus de 5 vidéos
+            return _buildSeeMoreVisitesCard();
+          } else {
+            return const SizedBox.shrink();
+          }
         },
       ),
     );
   }
 
-  // Construire une carte de vidéo pour le carrousel
-  Widget _buildVisiteGuideeVideoCard(VisiteGuideeVideo video, int index) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => VisiteGuideeVideoFeedScreen(
-              videos: _visiteGuideeVideos,
-              initialIndex: index,
-            ),
+  // Construire une carte de vidéo pour les visites guidées
+  Widget _buildVisiteGuideeVideoCard(VisiteGuideeVideo video) {
+    // Créer des données d'école d'exemple à partir des données vidéo
+    final schoolData = _createVisiteGuideeDataFromVideo(video);
+    
+    return Padding(
+      padding: const EdgeInsets.only(right: 10), // Espacement horizontal augmenté
+      child: ImageMenuCardExternalTitle(
+        index: 0,
+        cardKey: 'visite_${video.typeVideo}',
+        title: schoolData['title'] as String,
+        subtitle: schoolData['subtitle'] as String,
+        imagePath: schoolData['imagePath'] as String?,
+        iconData: Icons.location_on,
+        isDark: Theme.of(context).brightness == Brightness.dark,
+        color: schoolData['color'] as Color,
+        //location: schoolData['location'] as String?, // Permettre null
+        //tag: schoolData['tag'] as String?, // Permettre null
+        titleMaxLines: 1,
+        externalTitleSpacing: 4,
+        height: 140, // Hauteur réduite pour éviter l'overflow
+        width: 120,
+        allowLineBreak: false,
+        centerTitle: false,
+        showPlayIcon: true, // Activer l'icône de play pour les vidéos
+        onTap: () {
+          // Action pour voir les détails de la visite
+          _handleVisiteGuideeAction(schoolData);
+        },
+      ),
+    );
+  }
+
+  // Créer des données de visite guidée à partir des données vidéo
+  Map<String, dynamic> _createVisiteGuideeDataFromVideo(VisiteGuideeVideo video) {
+    return {
+      'title': video.displayTitle.isNotEmpty ? video.displayTitle : 'Visite Guidée',
+      'subtitle': video.displayDescription.isNotEmpty ? video.displayDescription : 'Découvrez nos installations',
+      'imagePath': video.youtubeUrl.isNotEmpty 
+          ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
+          : null,
+      'color': _getVisiteGuideeColor(video.typeVideo.hashCode),
+      'location': null,
+      'tag': null,
+    };
+  }
+
+  // Obtenir une couleur pour les visites guidées
+  Color _getVisiteGuideeColor(int seed) {
+    final colors = [
+      const Color(0xFF3F51B5), // Bleu indigo
+      const Color(0xFF2196F3), // Bleu
+      const Color(0xFF00BCD4), // Cyan
+      const Color(0xFF009688), // Teal
+      const Color(0xFF4CAF50), // Vert
+      const Color(0xFF8BC34A), // Vert clair
+    ];
+    return colors[seed % colors.length];
+  }
+
+  // Gérer l'action sur une visite guidée (lire la vidéo)
+  void _handleVisiteGuideeAction(Map<String, dynamic> schoolData) {
+    // Trouver la vidéo correspondante dans la liste
+    final videoIndex = _visiteGuideeVideos.indexWhere((video) => 
+        video.displayTitle == schoolData['title'] as String);
+    
+    if (videoIndex != -1) {
+      // Naviguer vers l'écran de lecture vidéo
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VisiteGuideeVideoFeedScreen(
+            videos: _visiteGuideeVideos,
+            initialIndex: videoIndex,
           ),
-        );
-      },
-      child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            children: [
-              // Image miniature de la vidéo YouTube
-              FadeInImage.assetNetwork(
-                width: 280,
-                height: 140,
-                fit: BoxFit.cover,
-                placeholder: 'assets/images/video-placeholder.jpg',
-                image:
-                    'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg',
-                imageErrorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 280,
-                    height: 140,
-                    color: Colors.grey[300],
-                    child: const Icon(
-                      Icons.movie,
-                      color: Colors.grey,
-                      size: 48,
-                    ),
-                  );
-                },
-              ),
+        ),
+      );
+    } else {
+      // Afficher un message si la vidéo n'est pas trouvée
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vidéo non trouvée: ${schoolData['title']}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
-              // Overlay sombre pour améliorer la lisibilité
-              Container(
-                width: 280,
-                height: 140,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-                  ),
-                ),
-              ),
+  // Construire la carte "Voir+" pour les visites guidées
+  Widget _buildSeeMoreVisitesCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(right: 16), // Espacement horizontal cohérent
+      child: SeeMoreCard(
+        cardColor: isDarkMode ? const Color.fromARGB(255, 0, 0, 0) : const Color(0xFFF3F4F6),
+        borderColor: const Color(0xFF3F51B5),
+        iconColor: Colors.white,
+        textColor: const Color(0xFF3F51B5),
+        subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+        title: 'Voir+',
+        subtitle: 'de visites',
+        onTap: _handleSeeMoreVisites,
+        icon: Icons.location_on,
+        width: 120,
+        height: 100,
+      ),
+    );
+  }
 
-              // Icône de lecture centrale
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Center(
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.8),
-                        width: 2,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Informations en bas
-              Positioned(
-                bottom: 8,
-                left: 8,
-                right: 8,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        video.displayTitle,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      video.displayDescription,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+  // Gérer l'action pour voir plus de visites guidées
+  void _handleSeeMoreVisites() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VisiteGuideeVideoFeedScreen(
+          videos: _visiteGuideeVideos,
+          initialIndex: 0,
         ),
       ),
     );
@@ -2948,142 +2978,147 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     }
 
     return Container(
-      height: 120,
+      height: 140,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _coulisseExcellenceVideos.length,
+        itemCount: _coulisseExcellenceVideos.length > 5
+            ? 6 // 5 vidéos + bouton Voir+
+            : _coulisseExcellenceVideos.length, // Uniquement les vidéos si ≤5
         itemBuilder: (context, index) {
-          final video = _coulisseExcellenceVideos[index];
-          return _buildCoulisseExcellenceCard(video, index);
+          if (index < _coulisseExcellenceVideos.length && index < 5) {
+            // Afficher les 5 premières vidéos
+            return _buildVideoCard(_coulisseExcellenceVideos[index]);
+          } else if (index == 5 && _coulisseExcellenceVideos.length > 5) {
+            // Afficher le bouton Voir+ uniquement s'il y a plus de 5 vidéos
+            return _buildSeeMoreVideosCard();
+          } else {
+            return const SizedBox.shrink();
+          }
         },
       ),
     );
   }
 
-  // Construire une carte de vidéo pour Coulisses de l'Excellence
-  Widget _buildCoulisseExcellenceCard(CoulisseExcellence video, int index) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => CoulisseVideoFeedScreen(
-              videos: _coulisseExcellenceVideos,
-              initialIndex: index,
-            ),
+  // Construire une carte d'école pour les vidéos Coulisses de l'Excellence
+  Widget _buildVideoCard(CoulisseExcellence video) {
+    // Créer des données d'école d'exemple à partir des données vidéo
+    final schoolData = _createSchoolDataFromVideo(video);
+    
+    return Padding(
+      padding: const EdgeInsets.only(right: 10), // Espacement horizontal augmenté
+      child: ImageMenuCardExternalTitle(
+        index: 0,
+        cardKey: 'school_${video.id}',
+        title: schoolData['title'] as String,
+        subtitle: schoolData['subtitle'] as String,
+        imagePath: schoolData['imagePath'] as String?,
+        iconData: Icons.business,
+        isDark: Theme.of(context).brightness == Brightness.dark,
+        color: schoolData['color'] as Color,
+        //location: schoolData['location'] as String?, // Permettre null
+        //tag: schoolData['tag'] as String?, // Permettre null
+        titleMaxLines: 1,
+        externalTitleSpacing: 4,
+        height: 140, // Hauteur réduite pour éviter l'overflow
+        width: 120,
+        allowLineBreak: false,
+        centerTitle: false,
+        showPlayIcon: true, // Activer l'icône de play pour les vidéos
+        onTap: () {
+          // Action pour voir les détails de l'école
+          _handleSchoolAction(schoolData);
+        },
+      ),
+    );
+  }
+
+  // Créer des données d'école à partir des données vidéo
+  Map<String, dynamic> _createSchoolDataFromVideo(CoulisseExcellence video) {
+    // Classe optionnelle : afficher seulement si la classe est disponible et selon une logique
+    final shouldShowClass = video.classe.isNotEmpty && (video.id % 2) == 0; // 1 chance sur 2 d'afficher la classe si disponible
+    final shouldShowLocation = (video.id % 3) == 0; // 1 chance sur 3 d'afficher la localisation
+    
+    return {
+      'title': video.titre.isNotEmpty ? video.titre : 'École Excellence',
+      'subtitle': video.description.isNotEmpty ? video.description : 'Établissement scolaire',
+      'imagePath': video.videoYoutube.isNotEmpty 
+          ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
+          : null,
+      'color': _getRandomSchoolColor(video.id.hashCode),
+      'location': shouldShowLocation ? 'Paris, France' : null,
+      'tag': shouldShowClass ? video.classe : null, // Utiliser la classe réelle de l'élève
+    };
+  }
+
+  // Obtenir une couleur aléatoire pour l'école
+  Color _getRandomSchoolColor(int seed) {
+    final colors = [
+      const Color(0xFF3B82F6), // Bleu
+      const Color(0xFF10B981), // Vert
+      const Color(0xFFF59E0B), // Ambre
+      const Color(0xFFEF4444), // Rouge
+      const Color(0xFF8B5CF6), // Violet
+      const Color(0xFF06B6D4), // Cyan
+    ];
+    return colors[seed % colors.length];
+  }
+
+  // Gérer l'action sur une école (lire la vidéo)
+  void _handleSchoolAction(Map<String, dynamic> schoolData) {
+    // Trouver la vidéo correspondante dans la liste
+    final videoIndex = _coulisseExcellenceVideos.indexWhere((video) => 
+        video.titre == schoolData['title'] as String);
+    
+    if (videoIndex != -1) {
+      // Naviguer vers l'écran de lecture vidéo
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CoulisseVideoFeedScreen(
+            videos: _coulisseExcellenceVideos,
+            initialIndex: videoIndex,
           ),
-        );
-      },
-      child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            children: [
-              // Image miniature de la vidéo YouTube
-              FadeInImage.assetNetwork(
-                width: 280,
-                height: 140,
-                fit: BoxFit.cover,
-                placeholder: 'assets/images/video-placeholder.jpg',
-                image:
-                    'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg',
-                imageErrorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 280,
-                    height: 140,
-                    color: Colors.grey[300],
-                    child: const Icon(
-                      Icons.movie,
-                      color: Colors.grey,
-                      size: 48,
-                    ),
-                  );
-                },
-              ),
+        ),
+      );
+    } else {
+      // Afficher un message si la vidéo n'est pas trouvée
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vidéo non trouvée: ${schoolData['title']}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
-              // Overlay sombre pour améliorer la lisibilité
-              Container(
-                width: 280,
-                height: 140,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-                  ),
-                ),
-              ),
+  // Construire la carte "Voir+" pour les vidéos
+  Widget _buildSeeMoreVideosCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(right: 16), // Espacement horizontal cohérent
+      child: SeeMoreCard(
+        cardColor: isDarkMode ? const Color.fromARGB(255, 0, 0, 0) : const Color(0xFFF3F4F6),
+        borderColor: const Color(0xFF10B981),
+        iconColor: Colors.white,
+        textColor: const Color(0xFF10B981),
+        subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+        title: 'Voir+',
+        subtitle: 'de vidéos',
+        onTap: _handleSeeMoreVideos,
+        icon: Icons.play_arrow,
+        width: 120,
+        height: 100,
+      ),
+    );
+  }
 
-              // Icône de lecture centrale
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Center(
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.8),
-                        width: 2,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Informations en bas
-              Positioned(
-                bottom: 8,
-                left: 8,
-                right: 8,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        video.titre,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${video.fullName} - ${video.classe}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+  // Gérer l'action pour voir plus de vidéos
+  void _handleSeeMoreVideos() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CoulisseVideoFeedScreen(
+          videos: _coulisseExcellenceVideos,
+          initialIndex: 0,
         ),
       ),
     );
@@ -3186,7 +3221,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   Flexible(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                      child: _buildActionContent(actionType),
+                      child: _buildActionContent(actionType, def.color),
                     ),
                   ),
                 ],
@@ -3200,7 +3235,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ══════════════════════════════════════════════════════════════════════════
   //  Coulisses Excellence Content
-  Widget _buildCoulissesContent() {
+  Widget _buildCoulissesContent(Color headerColor) {
     // Récupérer le code de l'école
     final ecoleCode = widget.ecole.parametreCode ?? 'gainhs'; // Valeur par défaut si null
     final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
@@ -3222,38 +3257,38 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
   //  ACTION CONTENT ROUTER
   // ══════════════════════════════════════════════════════════════════════════
-  Widget _buildActionContent(String actionType) {
+  Widget _buildActionContent(String actionType, Color headerColor) {
     switch (actionType) {
       case 'rating':
-        return _buildRatingForm();
+        return _buildRatingForm(headerColor);
       case 'recommend':
-        return _buildRecommendationForm();
+        return _buildRecommendationForm(headerColor);
       case 'share':
-        return _buildShareForm();
+        return _buildShareForm(headerColor);
       case 'consult_requests':
-        return _buildConsultRequestsContent();
+        return _buildConsultRequestsContent(headerColor);
       case 'informations':
-        return _buildInformationsContent();
+        return _buildInformationsContent(headerColor);
       case 'communication':
-        return _buildCommunicationTab();
+        return _buildCommunicationTab(headerColor);
       case 'niveaux':
-        return _buildLevelsTab();
+        return _buildLevelsTab(headerColor);
       case 'school_events':
-        return _buildEventsTab();
+        return _buildEventsTab(headerColor);
       case 'scolarite':
-        return _buildScolariteTab();
+        return _buildScolariteTab(headerColor);
       case 'voir_les_avis':
-        return _buildRatingForm();
+        return _buildRatingForm(headerColor);
       case 'coulisses':
-        return _buildCoulissesContent();
+        return _buildCoulissesContent(headerColor);
       default:
         return const Center(child: Text('Contenu non disponible'));
     }
   }
 
   // ── Recommendation form ────────────────────────────────────────────────────
-  Widget _buildRecommendationForm() {
-    final actionColor = _kActions['recommend']!.color;
+  Widget _buildRecommendationForm(Color headerColor) {
+    final actionColor = headerColor;
 
     // Pré-remplir les données de l'établissement pour la soumission (non affichées)
     _etablissementController.text = widget.ecole.parametreNom ?? '';
@@ -3456,7 +3491,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Share form ─────────────────────────────────────────────────────────────
-  Widget _buildShareForm() {
+  Widget _buildShareForm(Color headerColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3563,7 +3598,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
 
   // ── Communication tab ─────────────────────────────────────────────────────
-  Widget _buildCommunicationTab() {
+  Widget _buildCommunicationTab(Color headerColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3594,7 +3629,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           )
         else if (_blogsError != null)
-          _buildTabError(_blogsError!, _loadBlogsEventsAndAvis)
+          _buildTabError(_blogsError!, _loadBlogsEventsAndAvis, _kActions['communication']!.color)
         else if (_blogs.isEmpty)
           _buildTabEmpty(
             Icons.article_outlined,
@@ -3796,7 +3831,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Levels tab ─────────────────────────────────────────────────────────────
-  Widget _buildLevelsTab() {
+  Widget _buildLevelsTab(Color headerColor) {
     final ecoleCode = widget.ecole.parametreCode ?? '';
     return FutureBuilder<List<Niveau>>(
       future: NiveauService.getNiveauxByEcole(ecoleCode),
@@ -3815,6 +3850,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           return _buildTabError(
             snapshot.error.toString(),
             () => setState(() {}),
+            _kActions['niveaux']!.color,
           );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -4197,7 +4233,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Events tab ─────────────────────────────────────────────────────────────
-  Widget _buildEventsTab() {
+  Widget _buildEventsTab(Color headerColor) {
     // Ne plus recharger automatiquement les événements ici
     // Ils sont maintenant chargés uniquement lors du clic sur le bouton
 
@@ -4231,7 +4267,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           )
         else if (_eventsError != null)
-          _buildTabError(_eventsError!, _loadBlogsEventsAndAvis)
+          _buildTabError(_eventsError!, _loadBlogsEventsAndAvis, _kActions['school_events']!.color)
         else if (_schoolEvents.isEmpty)
           _buildTabEmpty(
             Icons.event_outlined,
@@ -4639,7 +4675,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Scolarité tab ──────────────────────────────────────────────────────────
-  Widget _buildScolariteTab() {
+  Widget _buildScolariteTab(Color headerColor) {
     if (_scolariteFuture == null) {
       return const Center(
         child: CustomLoader(
@@ -4671,7 +4707,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 widget.ecole.parametreCode ?? '',
               );
             });
-          });
+          }, _kActions['scolarite']!.color);
         }
         if (!snapshot.hasData || snapshot.data!.data.isEmpty) {
           return _buildTabEmpty(
@@ -5414,7 +5450,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.screenOrange,
+                    backgroundColor: headerColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
@@ -5438,7 +5474,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Tab helpers ────────────────────────────────────────────────────────────
-  Widget _buildTabError(String error, VoidCallback onRetry) {
+  Widget _buildTabError(String error, VoidCallback onRetry, Color headerColor) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -5467,7 +5503,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ElevatedButton(
               onPressed: onRetry,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.screenOrange,
+                backgroundColor: headerColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -5713,7 +5749,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Rating form (Style WhatsApp) ────────────────────────────────────────────────────// Rating form - utilise le widget externalisé RatingBottomSheet
-  Widget _buildRatingForm() {
+  Widget _buildRatingForm(Color headerColor) {
     return RatingBottomSheet(
       schoolId: widget.ecole.id ?? '',
       schoolName: widget.ecole.parametreNom ?? 'Établissement',
@@ -6025,7 +6061,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Réessayer'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0288D1),
+                backgroundColor: headerColor,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -6148,7 +6184,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Informations content ───────────────────────────────────────────────────
-  Widget _buildInformationsContent() {
+  Widget _buildInformationsContent(Color headerColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -7419,9 +7455,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── CONSULT REQUESTS CONTENT ───────────────────────────────────────────────
-  Widget _buildConsultRequestsContent() {
+  Widget _buildConsultRequestsContent(Color headerColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final actionColor = _kActions['consult_requests']!.color;
+    final actionColor = headerColor;
     final TextEditingController _matriculeController = TextEditingController();
 
     return Padding(

@@ -844,6 +844,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                           title: 'Voir plus',
                           subtitle: 'produits',
                           onTap: _loadMoreProducts,
+                          icon: Icons.add,
                         );
                       }
                       return _buildProductCard(

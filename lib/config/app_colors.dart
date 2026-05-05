@@ -32,7 +32,7 @@ class AppColors {
   static const Color grey500 = Color(0xFF9AA0A6);
   static const Color grey600 = Color(0xFF80868B);
   static const Color grey700 = Color(0xFF5F6368);
-  static const Color grey800 = Color(0xFF3C4043);
+  static const Color grey800 = Color(0xFF000000);
   static const Color grey900 = Color(0xFF202124);
 
   // Noir avec opacité Material

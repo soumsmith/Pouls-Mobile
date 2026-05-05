@@ -1108,6 +1108,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
                         subtitle: _isLoadingMore ? '' : 'établissements',
                         onTap: _isLoadingMore ? () {} : _loadMoreEcoles,
+                        icon: Icons.add,
                       );
                     }
                     if (i < items.length) {

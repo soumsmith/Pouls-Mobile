@@ -17,6 +17,7 @@ import '../services/database_service.dart';
 import '../services/order_service.dart';
 import '../models/order.dart';
 import '../services/auth_service.dart';
+import '../services/message_api_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_config.dart';
@@ -2019,22 +2020,83 @@ class _ChildListScreenState extends State<ChildListScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
 
-                      // Action "Marquer comme lu"
+                      // Action "Marquer comme lu" / "Lu"
+                      const SizedBox(height: 8),
                       if (!notification.estLu) ...[
-                        const SizedBox(height: 8),
                         GestureDetector(
-                          onTap: () => _markNotificationAsRead(
-                            notification.id,
+                          onTap: () => _markNotificationAsReadWithAPI(
+                            notification,
                             setModalState,
                           ),
-                          child: Text(
-                            'Marquer comme lu',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(11),
-                              color: isDark
-                                  ? Colors.white30
-                                  : const Color(0xFFAAAAAA),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
                             ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF1976D2).withOpacity(0.1),
+                                  const Color(0xFF42A5F5).withOpacity(0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFF1976D2).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  size: 12,
+                                  color: const Color(0xFF1976D2),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Marquer comme lu',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(11),
+                                    color: const Color(0xFF1976D2),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.grey[700] : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 12,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Lu',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -2093,6 +2155,98 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
     } catch (e) {
       print('❌ Erreur lors du marquage du message: $e');
+    }
+  }
+
+  Future<void> _markNotificationAsReadWithAPI(
+    GroupMessage notification,
+    StateSetter setModalState,
+  ) async {
+    if (notification.conversationId != null) {
+      // Utiliser la nouvelle API POST si conversation_id est disponible
+      final currentUser = AuthService.instance.getCurrentUser();
+      final numeroParent = currentUser?.phone ?? '0707074647'; // Valeur par défaut si non disponible
+
+      try {
+        print('📝 Marquage de la conversation ${notification.conversationId} comme lue...');
+        print('📞 Numéro parent utilisé: $numeroParent');
+        final messageApiService = MessageApiService();
+        final success = await messageApiService.markMessagesAsRead(
+          numeroParent: numeroParent,
+          conversationId: notification.conversationId!,
+        );
+
+        if (success) {
+          // Mettre à jour l'état local
+          setModalState(() {
+            final index = _notifications.indexWhere((n) => n.id == notification.id);
+            if (index != -1) {
+              _notifications[index] = _notifications[index].copyWith(estLu: true);
+            }
+          });
+
+          // Mettre à jour l'état du widget
+          if (mounted) {
+            setState(() {
+              final index = _notifications.indexWhere((n) => n.id == notification.id);
+              if (index != -1) {
+                _notifications[index] = _notifications[index].copyWith(
+                  estLu: true,
+                );
+              }
+            });
+          }
+
+          print('✅ Conversation marquée comme lue avec succès');
+        } else {
+          print('❌ Échec du marquage de la conversation comme lue');
+        }
+      } catch (e) {
+        print('❌ Erreur lors du marquage de la conversation: $e');
+      }
+    } else {
+      // Utiliser l'ancienne API PUT si conversation_id n'est pas disponible
+      await _markNotificationAsRead(notification.id, setModalState);
+    }
+  }
+
+  Future<void> _markEcheanceAsRead(EcheanceNotification echeance) async {
+    if (echeance.conversationId == null) {
+      print('❌ conversation_id non disponible pour marquer l\'échéance comme lue');
+      return;
+    }
+
+    // Récupérer le numéro du parent connecté
+    final currentUser = AuthService.instance.getCurrentUser();
+    final numeroParent = currentUser?.phone ?? '0707074647'; // Valeur par défaut si non disponible
+
+    try {
+      print('📝 Marquage de l\'échéance conversation ${echeance.conversationId} comme lue...');
+      print('📞 Numéro parent utilisé: $numeroParent');
+      final messageApiService = MessageApiService();
+      final success = await messageApiService.markMessagesAsRead(
+        numeroParent: numeroParent,
+        conversationId: echeance.conversationId!,
+      );
+
+      if (success) {
+        // Mettre à jour l'état local
+        setState(() {
+          _echeanceNotification = EcheanceNotification(
+            data: echeance.data,
+            status: echeance.status,
+            message: echeance.message,
+            conversationId: echeance.conversationId,
+            estLu: true,
+          );
+        });
+
+        print('✅ Échéance marquée comme lue avec succès');
+      } else {
+        print('❌ Échec du marquage de l\'échéance comme lue');
+      }
+    } catch (e) {
+      print('❌ Erreur lors du marquage de l\'échéance: $e');
     }
   }
 
@@ -3252,14 +3406,16 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         SectionRow(title: 'Paiements & Inscription'),
         SizedBox(
-          height: AppDimensions.getPaymentBannerCardHeight(context) + 10,
-          child: ListView(
+          height: AppDimensions.getPaymentBannerCardHeight(context) + 20,
+          child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(
               horizontal:
                   AppDimensions.getPaymentBannerCardSpacing(context) * 0.8,
             ),
-            children: [
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               _buildCard(
                 index: 0,
                 cardKey: 'paiement',
@@ -3450,6 +3606,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ],
           ),
+        ),
         ),
 
         // ════════════════════════════════════════════════════════════════
@@ -10693,14 +10850,97 @@ class _ChildListScreenState extends State<ChildListScreen>
                   color: isDark ? Colors.grey[800] : Colors.grey[50],
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  echeance.formattedMessage,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(13),
-                    color: isDark ? Colors.grey[300] : const Color(0xFF4A4A4A),
-                    height: 1.5,
-                    fontWeight: FontWeight.w400,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      echeance.formattedMessage,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(13),
+                        color: isDark ? Colors.grey[300] : const Color(0xFF4A4A4A),
+                        height: 1.5,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    if (echeance.conversationId != null && !echeance.estLu) ...[
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () => _markEcheanceAsRead(echeance),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF1976D2).withOpacity(0.1),
+                                const Color(0xFF42A5F5).withOpacity(0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFF1976D2).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                size: 14,
+                                color: const Color(0xFF1976D2),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Marquer comme lu',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  color: const Color(0xFF1976D2),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (echeance.estLu) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey[700] : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              size: 14,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Lu',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(11),
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],

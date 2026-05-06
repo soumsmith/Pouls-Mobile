@@ -125,22 +125,38 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                             ? MainAxisSize.max
                             : MainAxisSize.min,
                         children: [
-                          SizedBox(
-                            width: centerTitle ? double.infinity : null,
-                            child: Text(
-                              title!,
-                              style: TextStyle(
-                                fontSize: textSizeService.getScaledFontSize(
-                                  titleFontSize ?? 11,
+                          Builder(
+                            builder: (context) {
+                              final fs = textSizeService.getScaledFontSize(
+                                titleFontSize ?? 11,
+                              );
+                              final maxL = allowLineBreak ? titleMaxLines : 1;
+                              final titleHeight = fs * maxL * 1.4;
+                              return SizedBox(
+                                width: centerTitle ? double.infinity : null,
+                                height: titleHeight,
+                                child: Align(
+                                  alignment: centerTitle
+                                      ? Alignment.topCenter
+                                      : Alignment.topLeft,
+                                  child: Text(
+                                    title!,
+                                    style: TextStyle(
+                                      fontSize: fs,
+                                      fontWeight: FontWeight.w700,
+                                      color: textColor ??
+                                          AppColors.screenTextPrimaryThemed(
+                                            context,
+                                          ),
+                                    ),
+                                    textAlign:
+                                        centerTitle ? TextAlign.center : null,
+                                    maxLines: maxL,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                fontWeight: FontWeight.w700,
-                                color: textColor ??
-                                    AppColors.screenTextPrimaryThemed(context),
-                              ),
-                              textAlign: centerTitle ? TextAlign.center : null,
-                              maxLines: allowLineBreak ? titleMaxLines : 1,
-                              overflow: allowLineBreak ? null : TextOverflow.ellipsis,
-                            ),
+                              );
+                            },
                           ),
                           if (subtitle?.isNotEmpty == true) ...[
                             const SizedBox(height: 1),

@@ -454,9 +454,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _loadVisiteGuideeVideos(); // Charger les vidéos de visites guidées
     _loadCoulisseExcellenceVideos(); // Charger les vidéos des Coulisses de l'Excellence
     _fadeController.forward();
-    _scolariteFuture = ScolariteService.getScolaritesByEcole(
-      widget.ecole.parametreCode,
-    );
 
     // Initialize search controller
     _searchController = TextEditingController();
@@ -503,8 +500,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     // Récupérer les matricules des enfants de l'utilisateur
     final authService = AuthService();
-    final currentUser = authService.
-    getCurrentUser();
+    final currentUser = authService.getCurrentUser();
 
     print('Utilisateur connecté: ${currentUser != null}');
     if (currentUser != null) {
@@ -2540,9 +2536,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             color: def.color,
             onTap: () => _showActionBottomSheet(actions[i], def),
             actionText: def.subtitle,
-            actionTextColor: def.color,
+            actionTextColor: Colors.black,
             backgroundColor: def.color.withOpacity(0.1),
-            textColor: isDark ? Colors.white : AppColors.screenTextPrimary,
+            textColor: isDark
+                ? Colors.white
+                : AppColors.screenTextPrimaryThemed(context),
           );
         },
       ),
@@ -2684,7 +2682,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           isDark: isDark,
           useExternalTitle: true,
           cardWidth: AppDimensions.getHorizontalMenuCardWidth(context) - 20,
-          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context)  + 40,
+          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
         ),
         const SizedBox(height: 16),
 
@@ -2696,7 +2694,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           isDark: isDark,
           useExternalTitle: true,
           cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
-          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 40,
+          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
         ),
         const SizedBox(height: 20),
         // Section Communauté
@@ -2818,9 +2816,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildVisiteGuideeVideoCard(VisiteGuideeVideo video) {
     // Créer des données d'école d'exemple à partir des données vidéo
     final schoolData = _createVisiteGuideeDataFromVideo(video);
-    
+
     return Padding(
-      padding: const EdgeInsets.only(right: 10), // Espacement horizontal augmenté
+      padding: const EdgeInsets.only(
+        right: 10,
+      ), // Espacement horizontal augmenté
       child: ImageMenuCardExternalTitle(
         index: 0,
         cardKey: 'visite_${video.typeVideo}',
@@ -2848,11 +2848,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // Créer des données de visite guidée à partir des données vidéo
-  Map<String, dynamic> _createVisiteGuideeDataFromVideo(VisiteGuideeVideo video) {
+  Map<String, dynamic> _createVisiteGuideeDataFromVideo(
+    VisiteGuideeVideo video,
+  ) {
     return {
-      'title': video.displayTitle.isNotEmpty ? video.displayTitle : 'Visite Guidée',
-      'subtitle': video.displayDescription.isNotEmpty ? video.displayDescription : 'Découvrez nos installations',
-      'imagePath': video.youtubeUrl.isNotEmpty 
+      'title': video.displayTitle.isNotEmpty
+          ? video.displayTitle
+          : 'Visite Guidée',
+      'subtitle': video.displayDescription.isNotEmpty
+          ? video.displayDescription
+          : 'Découvrez nos installations',
+      'imagePath': video.youtubeUrl.isNotEmpty
           ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
           : null,
       'color': _getVisiteGuideeColor(video.typeVideo.hashCode),
@@ -2877,9 +2883,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // Gérer l'action sur une visite guidée (lire la vidéo)
   void _handleVisiteGuideeAction(Map<String, dynamic> schoolData) {
     // Trouver la vidéo correspondante dans la liste
-    final videoIndex = _visiteGuideeVideos.indexWhere((video) => 
-        video.displayTitle == schoolData['title'] as String);
-    
+    final videoIndex = _visiteGuideeVideos.indexWhere(
+      (video) => video.displayTitle == schoolData['title'] as String,
+    );
+
     if (videoIndex != -1) {
       // Naviguer vers l'écran de lecture vidéo
       Navigator.of(context).push(
@@ -2905,9 +2912,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildSeeMoreVisitesCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(right: 16), // Espacement horizontal cohérent
+      padding: const EdgeInsets.only(
+        right: 16,
+      ), // Espacement horizontal cohérent
       child: SeeMoreCard(
-        cardColor: isDarkMode ? const Color.fromARGB(255, 0, 0, 0) : const Color(0xFFF3F4F6),
+        cardColor: isDarkMode
+            ? const Color.fromARGB(255, 0, 0, 0)
+            : const Color(0xFFF3F4F6),
         borderColor: const Color(0xFF3F51B5),
         iconColor: Colors.white,
         textColor: const Color(0xFF3F51B5),
@@ -3004,9 +3015,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildVideoCard(CoulisseExcellence video) {
     // Créer des données d'école d'exemple à partir des données vidéo
     final schoolData = _createSchoolDataFromVideo(video);
-    
+
     return Padding(
-      padding: const EdgeInsets.only(right: 10), // Espacement horizontal augmenté
+      padding: const EdgeInsets.only(
+        right: 10,
+      ), // Espacement horizontal augmenté
       child: ImageMenuCardExternalTitle(
         index: 0,
         cardKey: 'school_${video.id}',
@@ -3036,18 +3049,26 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // Créer des données d'école à partir des données vidéo
   Map<String, dynamic> _createSchoolDataFromVideo(CoulisseExcellence video) {
     // Classe optionnelle : afficher seulement si la classe est disponible et selon une logique
-    final shouldShowClass = video.classe.isNotEmpty && (video.id % 2) == 0; // 1 chance sur 2 d'afficher la classe si disponible
-    final shouldShowLocation = (video.id % 3) == 0; // 1 chance sur 3 d'afficher la localisation
-    
+    final shouldShowClass =
+        video.classe.isNotEmpty &&
+        (video.id % 2) ==
+            0; // 1 chance sur 2 d'afficher la classe si disponible
+    final shouldShowLocation =
+        (video.id % 3) == 0; // 1 chance sur 3 d'afficher la localisation
+
     return {
       'title': video.titre.isNotEmpty ? video.titre : 'École Excellence',
-      'subtitle': video.description.isNotEmpty ? video.description : 'Établissement scolaire',
-      'imagePath': video.videoYoutube.isNotEmpty 
+      'subtitle': video.description.isNotEmpty
+          ? video.description
+          : 'Établissement scolaire',
+      'imagePath': video.videoYoutube.isNotEmpty
           ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
           : null,
       'color': _getRandomSchoolColor(video.id.hashCode),
       'location': shouldShowLocation ? 'Paris, France' : null,
-      'tag': shouldShowClass ? video.classe : null, // Utiliser la classe réelle de l'élève
+      'tag': shouldShowClass
+          ? video.classe
+          : null, // Utiliser la classe réelle de l'élève
     };
   }
 
@@ -3067,9 +3088,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // Gérer l'action sur une école (lire la vidéo)
   void _handleSchoolAction(Map<String, dynamic> schoolData) {
     // Trouver la vidéo correspondante dans la liste
-    final videoIndex = _coulisseExcellenceVideos.indexWhere((video) => 
-        video.titre == schoolData['title'] as String);
-    
+    final videoIndex = _coulisseExcellenceVideos.indexWhere(
+      (video) => video.titre == schoolData['title'] as String,
+    );
+
     if (videoIndex != -1) {
       // Naviguer vers l'écran de lecture vidéo
       Navigator.of(context).push(
@@ -3095,9 +3117,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildSeeMoreVideosCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(right: 16), // Espacement horizontal cohérent
+      padding: const EdgeInsets.only(
+        right: 16,
+      ), // Espacement horizontal cohérent
       child: SeeMoreCard(
-        cardColor: isDarkMode ? const Color.fromARGB(255, 0, 0, 0) : const Color(0xFFF3F4F6),
+        cardColor: isDarkMode
+            ? const Color.fromARGB(255, 0, 0, 0)
+            : const Color(0xFFF3F4F6),
         borderColor: const Color(0xFF10B981),
         iconColor: Colors.white,
         textColor: const Color(0xFF10B981),
@@ -3165,6 +3191,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         _schoolEvents.isEmpty &&
         _eventsError == null) {
       _loadEventsOnly();
+    }
+    if (actionType == 'scolarite') {
+      setState(() {
+        _scolariteFuture = ScolariteService.getScolaritesByEcole(
+          widget.ecole.parametreCode ?? '',
+        );
+      });
     }
 
     // Cas spécial : coulisses navigue directement vers l'écran TikTok
@@ -3237,7 +3270,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   //  Coulisses Excellence Content
   Widget _buildCoulissesContent(Color headerColor) {
     // Récupérer le code de l'école
-    final ecoleCode = widget.ecole.parametreCode ?? 'gainhs'; // Valeur par défaut si null
+    final ecoleCode =
+        widget.ecole.parametreCode ?? 'gainhs'; // Valeur par défaut si null
     final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
 
     // Naviguer immédiatement vers l'écran TikTok-style
@@ -3515,18 +3549,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             children: [
               Text(
                 widget.ecole.parametreNom ?? 'École',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
+                  color: AppColors.screenTextPrimaryThemed(context),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 widget.ecole.adresse ?? '',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.screenTextSecondary,
+                  color: AppColors.screenTextSecondaryThemed(context),
                 ),
               ),
               const SizedBox(height: 20),
@@ -3582,9 +3616,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.screenTextSecondary,
+              color: AppColors.screenTextSecondaryThemed(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -3607,15 +3641,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           style: TextStyle(
             fontSize: _textSizeService.getScaledFontSize(20),
             fontWeight: FontWeight.bold,
-            color: AppColors.screenTextPrimary,
+            color: AppColors.screenTextPrimaryThemed(context),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           'Dernières communications de ${widget.ecole.parametreNom}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: AppColors.screenTextSecondary,
+            color: AppColors.screenTextSecondaryThemed(context),
           ),
         ),
         const SizedBox(height: 20),
@@ -3629,7 +3663,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           )
         else if (_blogsError != null)
-          _buildTabError(_blogsError!, _loadBlogsEventsAndAvis, _kActions['communication']!.color)
+          _buildTabError(
+            _blogsError!,
+            _loadBlogsEventsAndAvis,
+            _kActions['communication']!.color,
+          )
         else if (_blogs.isEmpty)
           _buildTabEmpty(
             Icons.article_outlined,
@@ -3753,9 +3791,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     const SizedBox(width: 8),
                     Text(
                       blog['date'] as String? ?? '',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -3763,10 +3801,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 const SizedBox(height: 10),
                 Text(
                   blog['title'] as String? ?? 'Sans titre',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -3774,9 +3812,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 const SizedBox(height: 6),
                 Text(
                   blog['content'] as String? ?? '',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.screenTextSecondary,
+                    color: AppColors.screenTextSecondaryThemed(context),
                     height: 1.4,
                   ),
                   maxLines: 3,
@@ -3785,35 +3823,35 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.person_outline,
                       size: 14,
-                      color: AppColors.screenTextSecondary,
+                      color: AppColors.screenTextSecondaryThemed(context),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         blog['auteur'] as String? ?? 'Administration',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.screenTextSecondary,
+                          color: AppColors.screenTextSecondaryThemed(context),
                         ),
                       ),
                     ),
                     if ((blog['establishment'] as String?)?.isNotEmpty ==
                         true) ...[
-                      const Icon(
+                      Icon(
                         Icons.location_on_outlined,
                         size: 13,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                       const SizedBox(width: 3),
                       Flexible(
                         child: Text(
                           blog['establishment'] as String? ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.screenTextSecondary,
+                            color: AppColors.screenTextSecondaryThemed(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -3882,16 +3920,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(20),
                 fontWeight: FontWeight.bold,
-                color: AppColors.screenTextPrimary,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               '${niveaux.length} classe${niveaux.length > 1 ? 's' : ''} disponible${niveaux.length > 1 ? 's' : ''}',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.black),
             ),
             const SizedBox(height: 20),
             ...sortedFilieres.map((filiere) {
@@ -3910,6 +3945,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 filiere,
                 sortedNiveauKeys,
                 niveauxMap,
+                headerColor,
               );
             }).toList(),
           ],
@@ -3922,23 +3958,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     String filiere,
     List<String> sortedNiveauKeys,
     Map<String, List<Niveau>> niveauxMap,
+    Color headerColor,
   ) {
-    final color = _getFiliereColor(filiere);
     final totalClasses = niveauxMap.values.fold(0, (s, l) => s + l.length);
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: AppDimensions.getMainShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.08),
+              color: headerColor.withOpacity(0.1),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(12),
               ),
@@ -3946,16 +3981,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             child: Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: color,
+                    color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    _getFiliereIcon(filiere),
-                    color: Colors.white,
-                    size: 22,
+                    Icons.school_rounded,
+                    color: Colors.black,
+                    size: 18,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -3964,39 +3999,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getFiliereLabel(filiere),
+                        filiere,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: color,
+                          color: Colors.black,
                         ),
                       ),
                       Text(
                         '$totalClasses classe${totalClasses > 1 ? 's' : ''} · ${sortedNiveauKeys.length} niveau${sortedNiveauKeys.length > 1 ? 'x' : ''}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: color.withOpacity(0.7),
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.black),
                       ),
                     ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    filiere,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                    ),
                   ),
                 ),
               ],
@@ -4008,7 +4022,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               children: sortedNiveauKeys.map((nl) {
                 final classes = niveauxMap[nl]!
                   ..sort((a, b) => (a.ordre ?? 0).compareTo(b.ordre ?? 0));
-                return _buildNiveauGroup(nl, classes, color);
+                return _buildNiveauGroup(nl, classes);
               }).toList(),
             ),
           ),
@@ -4017,12 +4031,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     );
   }
 
-  Widget _buildNiveauGroup(
-    String niveauLabel,
-    List<Niveau> classes,
-    Color color,
-  ) {
-    if (classes.length == 1) return _buildSingleClassTile(classes.first, color);
+  Widget _buildNiveauGroup(String niveauLabel, List<Niveau> classes) {
+    if (classes.length == 1) return _buildSingleClassTile(classes.first);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -4036,7 +4046,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   width: 3,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: color,
+                    color: Colors.grey[400],
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -4046,7 +4056,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: color,
+                    color: Colors.black,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -4056,14 +4066,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${classes.length} séries',
                     style: TextStyle(
                       fontSize: 10,
-                      color: color,
+                      color: Colors.black,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -4074,21 +4084,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: classes.map((c) => _buildClassChip(c, color)).toList(),
+            children: classes.map((c) => _buildClassChip(c)).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSingleClassTile(Niveau niveau, Color color) {
+  Widget _buildSingleClassTile(Niveau niveau) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Row(
         children: [
@@ -4096,7 +4106,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: Colors.grey[200],
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -4108,7 +4118,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: color,
+                  color: Colors.black,
                 ),
               ),
             ),
@@ -4120,51 +4130,51 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               children: [
                 Text(
                   niveau.nom ?? 'Classe',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.screenTextPrimary,
+                    color: Colors.black,
                   ),
                 ),
-                if (niveau.niveau != null && niveau.niveau!.isNotEmpty)
-                  Text(
-                    'Niveau : ${niveau.niveau}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.screenTextSecondary,
-                    ),
-                  ),
+                // if (niveau.niveau != null && niveau.niveau!.isNotEmpty)
+                //   Text(
+                //     'Niveau : ${niveau.niveau}',
+                //     style: TextStyle(
+                //       fontSize: 11,
+                //       color: Colors.black,
+                //     ),
+                //   ),
               ],
             ),
           ),
-          if (niveau.code != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                niveau.code!,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+          // if (niveau.code != null)
+          //   Container(
+          //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          //     decoration: BoxDecoration(
+          //       color: Colors.grey[200],
+          //       borderRadius: BorderRadius.circular(12),
+          //     ),
+          //     child: Text(
+          //       niveau.code!,
+          //       style: TextStyle(
+          //         fontSize: 10,
+          //         color: Colors.black,
+          //         fontWeight: FontWeight.w700,
+          //       ),
+          //     ),
+          //   ),
         ],
       ),
     );
   }
 
-  Widget _buildClassChip(Niveau niveau, Color color) {
+  Widget _buildClassChip(Niveau niveau) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -4174,62 +4184,20 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: color,
+              color: Colors.black,
             ),
           ),
-          if (niveau.serie != null && niveau.serie!.isNotEmpty)
-            Text(
-              'Série ${niveau.serie}',
-              style: TextStyle(fontSize: 10, color: color.withOpacity(0.7)),
-            ),
+          // if (niveau.serie != null && niveau.serie!.isNotEmpty)
+          //   Text(
+          //     'Série ${niveau.serie}',
+          //     style: TextStyle(
+          //       fontSize: 10,
+          //       color: Colors.black
+          //     ),
+          //   ),
         ],
       ),
     );
-  }
-
-  Color _getFiliereColor(String f) {
-    switch (f.toUpperCase()) {
-      case 'PRIMAIRE':
-        return const Color(0xFF3B82F6);
-      case 'GENERAL':
-        return const Color(0xFF8B5CF6);
-      case 'TECHNIQUE':
-        return const Color(0xFF10B981);
-      case 'PROFESSIONNEL':
-        return const Color(0xFFF59E0B);
-      default:
-        return const Color(0xFF6366F1);
-    }
-  }
-
-  IconData _getFiliereIcon(String f) {
-    switch (f.toUpperCase()) {
-      case 'PRIMAIRE':
-        return Icons.child_care_rounded;
-      case 'GENERAL':
-        return Icons.menu_book_rounded;
-      case 'TECHNIQUE':
-        return Icons.precision_manufacturing_rounded;
-      case 'PROFESSIONNEL':
-        return Icons.work_rounded;
-      default:
-        return Icons.school_rounded;
-    }
-  }
-
-  String _getFiliereLabel(String f) {
-    switch (f.toUpperCase()) {
-      case 'PRIMAIRE':
-        return 'Enseignement Primaire';
-      case 'GENERAL':
-        return 'Enseignement Général';
-      case 'TECHNIQUE':
-        return 'Enseignement Technique';
-      case 'PROFESSIONNEL':
-        return 'Enseignement Professionnel';
-      default:
-        return f;
-    }
   }
 
   // ── Events tab ─────────────────────────────────────────────────────────────
@@ -4245,15 +4213,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           style: TextStyle(
             fontSize: _textSizeService.getScaledFontSize(20),
             fontWeight: FontWeight.bold,
-            color: AppColors.screenTextPrimary,
+            color: AppColors.screenTextPrimaryThemed(context),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           'Découvrez les événements de ${widget.ecole.parametreNom}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: AppColors.screenTextSecondary,
+            color: AppColors.screenTextSecondaryThemed(context),
           ),
         ),
         const SizedBox(height: 20),
@@ -4267,7 +4235,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           )
         else if (_eventsError != null)
-          _buildTabError(_eventsError!, _loadBlogsEventsAndAvis, _kActions['school_events']!.color)
+          _buildTabError(
+            _eventsError!,
+            _loadBlogsEventsAndAvis,
+            _kActions['school_events']!.color,
+          )
         else if (_schoolEvents.isEmpty)
           _buildTabEmpty(
             Icons.event_outlined,
@@ -4354,7 +4326,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     child: Text(
                       'Fin des événements',
                       style: TextStyle(
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -4486,7 +4458,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               context,
                             ),
                             fontWeight: FontWeight.w700,
-                            color: AppColors.screenTextPrimary,
+                            color: AppColors.screenTextPrimaryThemed(context),
                             letterSpacing: -0.3,
                           ),
                           maxLines: 2,
@@ -4517,7 +4489,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     subtitle,
                     style: TextStyle(
                       fontSize: AppDimensions.getEventSubtitleFontSize(context),
-                      color: AppColors.screenTextSecondary,
+                      color: AppColors.screenTextSecondaryThemed(context),
                       fontWeight: FontWeight.w400,
                     ),
                     maxLines: 1,
@@ -4636,9 +4608,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Annuler',
-              style: TextStyle(color: AppColors.screenTextSecondary),
+              style: TextStyle(
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
             ),
           ),
           ElevatedButton(
@@ -4775,7 +4749,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
-                    vertical: 14,
+                    vertical: 10,
                   ),
                   hintStyle: const TextStyle(
                     color: Color(0xFFBBBBBB),
@@ -4784,7 +4758,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ...scolaritesParBranche.entries
                 .where(
                   (e) =>
@@ -4830,7 +4804,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return GestureDetector(
       onTap: () => onExpandedChanged(isExpanded ? null : branche),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -4839,15 +4813,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
                           color: Colors.grey.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -4859,10 +4833,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         child: Icon(
                           Icons.school_rounded,
                           color: Colors.grey[600],
-                          size: 20,
+                          size: 18,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4871,7 +4845,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               branche,
                               style: TextStyle(
                                 fontSize: _textSizeService.getScaledFontSize(
-                                  16,
+                                  15,
                                 ),
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.screenOrange,
@@ -4879,9 +4853,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             ),
                             Text(
                               '${scolarites.length} frais',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.screenTextSecondary,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.screenTextSecondaryThemed(
+                                  context,
+                                ),
                               ),
                             ),
                           ],
@@ -4893,14 +4869,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         child: Icon(
                           Icons.expand_more,
                           color: Colors.grey[600],
-                          size: 24,
+                          size: 20,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.grey.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
@@ -4917,7 +4893,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         ),
                         Container(
                           width: 1,
-                          height: 30,
+                          height: 24,
                           color: AppColors.screenDivider,
                         ),
                         _buildTotalItem(
@@ -4937,7 +4913,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               curve: Curves.easeInOut,
               child: isExpanded
                   ? Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -4949,7 +4925,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               isAffecte: true,
                               totalMontant: totaux['AFF'] ?? 0,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                           ],
                           if (nonAffectes.isNotEmpty)
                             _buildStatutSection(
@@ -4978,8 +4954,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   ) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(height: 3),
+        Icon(icon, color: color, size: 16),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
@@ -4988,7 +4964,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         Text(
           ScolariteService.formaterMontant(montant),
           style: TextStyle(
@@ -5078,7 +5054,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   Widget _buildScolariteCard(Scolarite scolarite, Color color) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 6, left: 8, right: 8),
+      margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
       decoration: BoxDecoration(
         color: AppColors.screenSurface,
         borderRadius: BorderRadius.circular(12),
@@ -5086,10 +5062,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ),
       child: ListTile(
         dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         leading: Container(
-          width: 32,
-          height: 32,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
@@ -5099,7 +5075,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 ? Icons.how_to_reg_rounded
                 : Icons.menu_book_rounded,
             color: color,
-            size: 16,
+            size: 14,
           ),
         ),
         title: Text(
@@ -5128,7 +5104,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           child: Text(
             ScolariteService.getStatutLibelle(scolarite.statut),
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               color: color,
               fontWeight: FontWeight.w600,
             ),
@@ -5195,10 +5171,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           Expanded(
                             child: Text(
                               avi['auteur'] as String? ?? '',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.screenTextPrimary,
+                                color: AppColors.screenTextPrimaryThemed(
+                                  context,
+                                ),
                               ),
                             ),
                           ),
@@ -5207,9 +5185,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       const SizedBox(height: 3),
                       Text(
                         avi['date'] as String? ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.screenTextSecondary,
+                          color: AppColors.screenTextSecondaryThemed(context),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -5219,9 +5197,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         padding: const EdgeInsets.fromLTRB(0, 0, 24, 0),
                         child: Text(
                           avi['content'] as String? ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.screenTextPrimary,
+                            color: AppColors.screenTextPrimaryThemed(context),
                             height: 1.5,
                           ),
                         ),
@@ -5450,7 +5428,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: headerColor,
+                    backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
@@ -5537,10 +5515,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
             const SizedBox(height: 6),
@@ -5878,9 +5856,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   // Date
                   Text(
                     _formatAvisDate(date),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: AppColors.screenTextSecondary,
+                      color: AppColors.screenTextSecondaryThemed(context),
                     ),
                   ),
                 ],
@@ -5921,11 +5899,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 ),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       'Votre note:',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -6061,7 +6039,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Réessayer'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: headerColor,
+                backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -6252,7 +6230,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       widget.ecole.parametreNom ?? 'Établissement',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -6288,7 +6266,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               Expanded(
                 child: _buildStatCard(
                   'Code DREN',
-                  _ecoleDetail?.data.codedren ?? widget.ecole.codedren ?? 'Non spécifié',
+                  _ecoleDetail?.data.codedren ??
+                      widget.ecole.codedren ??
+                      'Non spécifié',
                   Icons.code_rounded,
                   AppColors.screenOrange,
                 ),
@@ -6297,16 +6277,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               Expanded(
                 child: GestureDetector(
                   onTap: () {
-                    final latitude = _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
-                    final longitude = _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
-                    if (latitude != null && longitude != null && latitude != 0.0 && longitude != 0.0) {
+                    final latitude =
+                        _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
+                    final longitude =
+                        _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
+                    if (latitude != null &&
+                        longitude != null &&
+                        latitude != 0.0 &&
+                        longitude != 0.0) {
                       _openInMaps(latitude, longitude);
                     }
                   },
                   child: _buildStatCard(
                     'Localisation',
-                    (_ecoleDetail?.data.latitude != 0.0 && _ecoleDetail?.data.longitude != 0.0) 
-                        ? 'Voir sur la carte' 
+                    (_ecoleDetail?.data.latitude != 0.0 &&
+                            _ecoleDetail?.data.longitude != 0.0)
+                        ? 'Voir sur la carte'
                         : 'Non disponible',
                     Icons.location_on_rounded,
                     Colors.red,
@@ -6355,8 +6341,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     // Utiliser les données de _ecoleDetail si disponibles, sinon celles de widget.ecole
     final latitude = _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
     final longitude = _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
-    
-    if (latitude == null || longitude == null || latitude == 0.0 || longitude == 0.0) {
+
+    if (latitude == null ||
+        longitude == null ||
+        latitude == 0.0 ||
+        longitude == 0.0) {
       return const SizedBox.shrink();
     }
 
@@ -6401,7 +6390,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       'Position géographique de l\'établissement',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -6465,7 +6454,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     'Lat: ${latitude.toStringAsFixed(6)}, Lng: ${longitude.toStringAsFixed(6)}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.screenTextSecondary,
+                      color: AppColors.screenTextSecondaryThemed(context),
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -6500,7 +6489,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
+                    colors: [
+                      AppColors.screenOrange,
+                      AppColors.screenOrangeDark,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -6529,7 +6521,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       'Informations de l\'établissement',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -6552,7 +6544,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.screenOrange.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.screenOrange.withOpacity(0.3),
+                    ),
                   ),
                   child: Center(
                     child: QrImageView(
@@ -6580,7 +6574,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     );
   }
 
-
   String _generateQRCodeData() {
     final Map<String, dynamic> qrData = {
       'id': _ecoleDetail?.data.id ?? widget.ecole.ecoleid,
@@ -6592,17 +6585,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       'telephone': _ecoleDetail?.data.telephone ?? widget.ecole.telephone,
       'codedren': _ecoleDetail?.data.codedren ?? widget.ecole.codedren,
       'latitude': _ecoleDetail?.data.latitude ?? widget.ecole.latitude ?? 0.0,
-      'longitude': _ecoleDetail?.data.longitude ?? widget.ecole.longitude ?? 0.0,
+      'longitude':
+          _ecoleDetail?.data.longitude ?? widget.ecole.longitude ?? 0.0,
     };
-    
+
     // Convertir en JSON string pour le QR code
-    return qrData.entries
-        .map((e) => '${e.key}:${e.value}')
-        .join('|');
+    return qrData.entries.map((e) => '${e.key}:${e.value}').join('|');
   }
 
   void _openInMaps(double latitude, double longitude) async {
-    final url = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    final url =
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
     // Utiliser url_launcher pour ouvrir Google Maps
     if (await canLaunch(url)) {
       await launch(url);
@@ -6944,7 +6937,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       'Informations de contact',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -7109,7 +7102,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       'Détails administratifs',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -7259,9 +7252,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           width: 64,
                           height: 64,
                           color: AppColors.screenSurface,
-                          child: const Icon(
+                          child: Icon(
                             Icons.school_rounded,
-                            color: AppColors.screenTextSecondary,
+                            color: AppColors.screenTextSecondaryThemed(context),
                           ),
                         ),
                       ),
@@ -7289,10 +7282,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       children: [
                         Text(
                           data.nom,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.screenTextPrimary,
+                            color: AppColors.screenTextPrimaryThemed(context),
                           ),
                           maxLines: 2,
                         ),
@@ -7568,7 +7561,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : AppColors.screenTextPrimary,
+              color: isDark
+                  ? Colors.white
+                  : AppColors.screenTextPrimaryThemed(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -7827,7 +7822,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       'Informations de contact',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -7938,7 +7933,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       'Détails de l\'établissement',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -7946,20 +7941,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               ),
             ],
           ),
-          // const SizedBox(height: 16),
-          // _buildInfoDetailCard(
-          //   'Type',
-          //   widget.ecole.typePrincipal,
-          //   Icons.category_rounded,
-          //   Colors.orange,
-          // ),
-          // const SizedBox(height: 8),
-          // _buildInfoDetailCard(
-          //   'Statut',
-          //   widget.ecole.statut ?? 'Actif',
-          //   Icons.verified_rounded,
-          //   Colors.purple,
-          // ),
           const SizedBox(height: 8),
           if (widget.ecole.filiereNom.isNotEmpty)
             _buildInfoDetailCard(

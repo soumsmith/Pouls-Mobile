@@ -7,7 +7,12 @@ class NiveauService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   static Future<List<Niveau>> getNiveauxByEcole(String ecoleCode) async {
+    print('🔄 DÉBUT DU CHARGEMENT DES NIVEAUX...');
+    print('📂 Code de l\'école: $ecoleCode');
+    print('🌐 URL de l\'API: $baseUrl/ecoles/niveaux/$ecoleCode');
+    
     try {
+      print('📡 Envoi de la requête HTTP...');
       final response = await http.get(
         Uri.parse('$baseUrl/ecoles/niveaux/$ecoleCode'),
         headers: {
@@ -16,15 +21,34 @@ class NiveauService {
         },
       );
 
+      print('📊 Statut de la réponse: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
+        print('✅ Réponse réussie - Analyse des données...');
         final List<dynamic> jsonData = json.decode(response.body);
-        return jsonData.map((json) => Niveau.fromJson(json)).toList();
+        print('📋 Nombre de niveaux reçus: ${jsonData.length}');
+        
+        final niveaux = jsonData.map((json) => Niveau.fromJson(json)).toList();
+        print('✨ Niveaux parsés avec succès');
+        
+        // Afficher les détails des niveaux
+        for (var niveau in niveaux.take(3)) {
+          print('📚 Niveau: ${niveau.nom} | Filière: ${niveau.filiere} | Code: ${niveau.code}');
+        }
+        if (niveaux.length > 3) {
+          print('   ... et ${niveaux.length - 3} autres niveaux');
+        }
+        
+        return niveaux;
       } else {
+        print('❌ Erreur HTTP: ${response.statusCode}');
+        print('📄 Corps de la réponse: ${response.body}');
         throw Exception(
           'Erreur lors du chargement des niveaux: ${response.statusCode}',
         );
       }
     } catch (e) {
+      print('💥 Erreur de connexion: $e');
       throw Exception('Erreur de connexion: $e');
     }
   }

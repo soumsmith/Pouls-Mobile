@@ -10,6 +10,7 @@ class GroupMessage {
   final String? matricule;
   final String? idEcole;
   final String? idClasse;
+  final int? conversationId;
 
   GroupMessage({
     required this.id,
@@ -22,6 +23,7 @@ class GroupMessage {
     this.matricule,
     this.idEcole,
     this.idClasse,
+    this.conversationId,
   });
 
   factory GroupMessage.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,7 @@ class GroupMessage {
       matricule: json['matricule']?.toString(),
       idEcole: json['id_ecole']?.toString(),
       idClasse: json['id_classe']?.toString(),
+      conversationId: json['conversation_id'] != null ? int.tryParse(json['conversation_id'].toString()) : null,
     );
   }
 
@@ -64,6 +67,7 @@ class GroupMessage {
       'matricule': matricule,
       'id_ecole': idEcole,
       'id_classe': idClasse,
+      'conversation_id': conversationId,
     };
   }
 
@@ -78,6 +82,7 @@ class GroupMessage {
     String? matricule,
     String? idEcole,
     String? idClasse,
+    int? conversationId,
   }) {
     return GroupMessage(
       id: id ?? this.id,
@@ -90,6 +95,7 @@ class GroupMessage {
       matricule: matricule ?? this.matricule,
       idEcole: idEcole ?? this.idEcole,
       idClasse: idClasse ?? this.idClasse,
+      conversationId: conversationId ?? this.conversationId,
     );
   }
 

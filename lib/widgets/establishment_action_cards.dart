@@ -80,10 +80,13 @@ class EstablishmentActionSection extends StatelessWidget {
             width: cardWidth ?? 80,
             height: cardHeight ?? 100,
             //actionText: action.actionText,
+            titleMaxLines: 2,
             backgroundColor: isDark
                 ? action.color.withOpacity(0.15)
                 : action.color.withOpacity(0.1),
-            textColor: isDark ? action.color.withOpacity(0.75) : action.color,
+            textColor: isDark ? action.color.withOpacity(0.75) : Colors.black,
+            allowLineBreak: true,
+            centerTitle: true,
             onTap: action.onTap,
           ),
           const SizedBox(width: 10),
@@ -106,8 +109,11 @@ class EstablishmentActionSection extends StatelessWidget {
           width: cardWidth ?? 80,
           height: cardHeight ?? 100,
           externalTitleSpacing: 10.0,
+          titleMaxLines: 2,
           //actionText: action.actionText,
           backgroundColor: action.color.withOpacity(0.1),
+          allowLineBreak: true,
+          centerTitle: true,
           onTap: action.onTap,
         ),
       );

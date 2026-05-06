@@ -1151,7 +1151,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Action buttons (quick actions) ─────────────────────────────────────────
   Widget _buildActionButtons(bool isDark) {
     return SizedBox(
-      height: 130,
+      height: 140,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 15),

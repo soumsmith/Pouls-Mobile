@@ -1938,7 +1938,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(20, 0, 4, 0),
-                  children: _children
+                  children: _filteredChildren
                       .asMap()
                       .entries
                       .map((e) => _buildChildAvatar(e.value, e.key))
@@ -2143,13 +2143,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
                 SizedBox(
                   height:
-                      AppDimensions.getPaymentBannerCardHeight(context) + 10,
+                      AppDimensions.getPaymentBannerCardHeight(context) + 20,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: EdgeInsets.symmetric(
                       horizontal:
                           AppDimensions.getPaymentBannerCardSpacing(context) *
-                          0.8,
+                          0.9,
                     ),
                     children: [
                       _buildCard(
@@ -2267,10 +2267,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         cardKey: 'panier',
                         title: 'Mon\npanier',
                         imagePath: 'assets/images/mes-commandes.jpg',
-                        color: _kOrange,
-                        backgroundColor: const Color(0xFFFFF4EE),
-                        textColor: const Color(0xFF9A3412),
-                        actionText: 'Voir',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFFCFAFF),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
                         enableInnerBorder: false,
                         enableOuterBorder: false,
                         allowLineBreak: true,
@@ -2299,10 +2299,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         cardKey: 'commandes',
                         title: 'Mes\ncommandes',
                         imagePath: 'assets/images/mes-commandes.jpg',
-                        color: const Color(0xFF10B981),
-                        backgroundColor: const Color(0xFFECFDF5),
-                        textColor: const Color(0xFF065F46),
-                        actionText: 'Voir',
+                         color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFFCFAFF),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
                         enableInnerBorder: false,
                         enableOuterBorder: false,
                         allowLineBreak: true,
@@ -2329,11 +2329,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildCard(
                         index: 6,
                         cardKey: 'recommendation',
-                        title: 'Recommander\nune école',
+                        title: 'Recommand-\ner une école',
                         imagePath: 'assets/images/icons/note-avis.png',
-                        color: _kOrange,
-                        backgroundColor: const Color(0xFFFFF7ED),
-                        textColor: const Color(0xFF9A3412),
+                         color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFFCFAFF),
+                        textColor: const Color(0xFF333333),
                         actionText: '',
                         enableInnerBorder: false,
                         enableOuterBorder: false,

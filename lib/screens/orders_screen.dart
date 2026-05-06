@@ -129,15 +129,27 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   // ─── BODY ──────────────────────────────────────────────────────────────────
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CustomLoader(
-          message: 'Chargement de vos commandes...',
-          loaderColor: AppColors.shopGreen,
-          showBackground: false,
+    f (_isLoading) {
+    return Scaffold(
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: const Center(
+                child: CustomLoader(
+                  message: 'Chargement de vos commandes...',
+                  loaderColor: AppColors.shopGreen,
+                  showBackground: false,
+                ),
+              ),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
     if (_orders.isEmpty) return _buildEmptyState();
 
     return FadeTransition(
@@ -450,12 +462,14 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────
-  Widget _buildEmptyState() {
-    return SafeArea(
-      child: Column(
-        children: [
+ Widget _buildEmptyState() {
+  return Scaffold(
+    body: SafeArea(
+      child: CustomScrollView(
+        slivers: [
           _buildSliverAppBar(),
-          Expanded(
+          SliverFillRemaining(
+            hasScrollBody: false,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -493,8 +507,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 28, vertical: 14),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [AppColors.shopBlueLight, AppColors.shopBlue],
@@ -526,8 +540,9 @@ class _OrdersScreenState extends State<OrdersScreen>
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ─── ORDER CARD ────────────────────────────────────────────────────────────
   Widget _buildOrderCard(Order order, int index) {

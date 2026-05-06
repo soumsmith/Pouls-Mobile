@@ -279,7 +279,7 @@ class GroupMessageService {
     String matricule,
   ) async {
     final url =
-        '$baseUrl/message-groupe/update-statut/$messageId/$matricule?statut=1';
+        '$baseUrl/message-groupe/update-statut/$matricule/$messageId?statut=1';
 
     print('📝 API GroupMessageService - Début de la requête de marquage');
     print('📡 URL: $url');
@@ -365,7 +365,7 @@ class GroupMessageService {
     String matricule,
   ) async {
     final url =
-        '$baseUrl/message-groupe/update-statut/$messageId/$matricule?statut=0';
+        '$baseUrl/message-groupe/update-statut/$matricule/$messageId?statut=0';
 
     print(
       '📝 API GroupMessageService - Début de la requête de marquage (non lu)',
@@ -445,6 +445,96 @@ class GroupMessageService {
       print(
         '📝 API GroupMessageService - Fin de la requête de marquage (non lu)',
       );
+      print('─' * 80);
+    }
+  }
+
+  /// Marque une conversation comme lue (API POST)
+  static Future<bool> markConversationAsRead(
+    String numeroParent,
+    int conversationId,
+  ) async {
+    final url = '$baseUrl/messages/marquer-comme-lu';
+
+    print('📝 API GroupMessageService - Début de la requête de marquage de conversation');
+    print('📡 URL: $url');
+    print('📋 Paramètres: numero_parent=$numeroParent, conversation_id=$conversationId');
+    print('⏰ Heure: ${DateTime.now().toIso8601String()}');
+
+    try {
+      print('🚤 Envoi de la requête POST...');
+
+      final requestBody = {
+        'numero_parent': numeroParent,
+        'conversation_id': conversationId,
+      };
+
+      final stopwatch = Stopwatch()..start();
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode(requestBody),
+      );
+      stopwatch.stop();
+
+      print('📨 Réponse reçue - Status: ${response.statusCode}');
+      print('⏱️ Durée: ${stopwatch.elapsedMilliseconds}ms');
+      print('📏 Taille de la réponse: ${response.body.length} caractères');
+      print('📋 Headers de la réponse:');
+      response.headers.forEach((key, value) {
+        print('   $key: $value');
+      });
+
+      if (response.statusCode == 200) {
+        print('✅ Succès - Parsing du JSON...');
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        print('📊 Structure de la réponse:');
+        print('   success: ${data['success']}');
+        print('   message: ${data['message']}');
+
+        if (data['success'] == true || data['status'] == true) {
+          print('✅ Conversation marquée comme lue avec succès');
+          print('   Conversation ID: $conversationId');
+          print('   Numéro parent: $numeroParent');
+          return true;
+        } else {
+          print('⚠️ Échec du marquage');
+          print('   success: ${data['success']}');
+          print('   status: ${data['status']}');
+          print('   message: ${data['message'] ?? 'Aucun message'}');
+          print('   errors: ${data['errors']}');
+          return false;
+        }
+      } else {
+        print('❌ Erreur HTTP: ${response.statusCode}');
+        print('📄 Corps de la réponse:');
+        print(response.body);
+
+        // Essayer de parser l'erreur si c'est du JSON
+        try {
+          final errorData = json.decode(response.body);
+          print('📊 Détails de l\'erreur:');
+          print('   success: ${errorData['success']}');
+          print('   message: ${errorData['message']}');
+          print('   errors: ${errorData['errors']}');
+        } catch (e) {
+          print('📄 La réponse n\'est pas du JSON valide');
+        }
+
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur lors du marquage de la conversation: $e');
+      print('📍 Type d\'erreur: ${e.runtimeType}');
+      print('📄 Stack trace:');
+      print(StackTrace.current);
+      return false;
+    } finally {
+      print('📝 API GroupMessageService - Fin de la requête de marquage de conversation');
       print('─' * 80);
     }
   }

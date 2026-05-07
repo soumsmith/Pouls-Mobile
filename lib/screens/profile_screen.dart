@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_typography.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
 
@@ -81,26 +82,29 @@ class _ProfileScreenState extends State<ProfileScreen>
       value: SystemUiOverlayStyle.dark
           .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: FadeTransition(
           opacity: _fadeAnimation,
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  child: Column(
-                    children: [
-                      _buildProfileHeader(user),
-                      const SizedBox(height: 20),
-                      _buildStatsSection(),
-                      const SizedBox(height: 20),
-                      _buildPersonalInfoSection(),
-                      const SizedBox(height: 20),
-                      _buildQuickActionsSection(),
-                    ],
-                  ),
+          child: CustomScrollView(
+            slivers: [
+              CustomSliverAppBar(
+                title: 'Mon Profil',
+                actions: [
+                  _buildEditButton(),
+                ],
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildProfileHeader(user),
+                    const SizedBox(height: 20),
+                    _buildStatsSection(),
+                    const SizedBox(height: 20),
+                    _buildPersonalInfoSection(),
+                    const SizedBox(height: 20),
+                    _buildQuickActionsSection(),
+                  ]),
                 ),
               ),
             ],
@@ -110,96 +114,37 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ─── APP BAR ──────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
-    return Container(
-      color: AppColors.screenSurface,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCard,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 2)),
-                    ],
-                  ),
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      size: 16, color: AppColors.screenTextPrimary),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Title
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Mon Profil',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    Text(
-                      'Gérez vos informations',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.screenTextSecondary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Edit / Save button
-              GestureDetector(
-                onTap: () {
-                  setState(() => _isEditing = !_isEditing);
-                  if (!_isEditing) {
-                    _showSuccess('Profil mis à jour avec succès');
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _isEditing ? AppColors.screenOrange : AppColors.screenCard,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _isEditing
-                            ? AppColors.screenOrange.withOpacity(0.3)
-                            : AppColors.screenShadow,
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _isEditing ? Icons.check : Icons.edit_outlined,
-                    size: 16,
-                    color: _isEditing ? Colors.white : AppColors.screenTextPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+  // ─── EDIT BUTTON ──────────────────────────────────────────────────────────────
+  Widget _buildEditButton() {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _isEditing = !_isEditing);
+        if (!_isEditing) {
+          _showSuccess('Profil mis à jour avec succès');
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: _isEditing ? AppColors.screenOrange : AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: _isEditing
+                  ? AppColors.screenOrange.withOpacity(0.3)
+                  : AppColors.screenShadowThemed(context),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          _isEditing ? Icons.check : Icons.edit_outlined,
+          size: 16,
+          color: _isEditing ? Colors.white : AppColors.screenTextPrimaryThemed(context),
         ),
       ),
     );
@@ -223,15 +168,23 @@ class _ProfileScreenState extends State<ProfileScreen>
         width: double.infinity,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: Theme.of(context).brightness == Brightness.dark
+              ? const LinearGradient(
+                  colors: [Color(0xFF2C2C2E), Color(0xFF1C1C1E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.35),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withOpacity(0.3)
+                  : AppColors.screenOrange.withOpacity(0.35),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -246,17 +199,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                   height: 88,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.2),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withOpacity(0.15)
+                        : Colors.white.withOpacity(0.2),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.6), width: 3),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.4)
+                            : Colors.white.withOpacity(0.6), 
+                        width: 3),
                   ),
                   child: Center(
                     child: Text(
                       initials,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.9)
+                            : Colors.white,
                       ),
                     ),
                   ),
@@ -268,11 +228,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Colors.green[400],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.green.shade600
+                          : Colors.green.shade400,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withOpacity(0.8)
+                              : Colors.white, 
+                          width: 2),
                     ),
-                    child: const Icon(Icons.check,
+                    child: Icon(Icons.check,
                         color: Colors.white, size: 12),
                   ),
                 ),
@@ -281,10 +247,12 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: 14),
             Text(
               user?.fullName ?? 'Utilisateur',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withOpacity(0.9)
+                    : Colors.white,
                 letterSpacing: -0.4,
               ),
             ),
@@ -293,19 +261,26 @@ class _ProfileScreenState extends State<ProfileScreen>
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withOpacity(0.15)
+                    : Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.verified_outlined,
-                      color: Colors.white, size: 13),
-                  SizedBox(width: 5),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withOpacity(0.8)
+                          : Colors.white, 
+                      size: 13),
+                  const SizedBox(width: 5),
                   Text(
                     'Parent Vérifié',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withOpacity(0.8)
+                          : Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -364,13 +339,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.screenCard,
+                      color: AppColors.screenCardThemed(context),
                       borderRadius: BorderRadius.circular(18),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                            color: AppColors.screenShadow,
+                            color: AppColors.screenShadowThemed(context),
                             blurRadius: 12,
-                            offset: Offset(0, 4)),
+                            offset: const Offset(0, 4)),
                       ],
                     ),
                     child: Column(
@@ -389,19 +364,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                         const SizedBox(height: 10),
                         Text(
                           s['value'] as String,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.screenTextPrimary,
+                            color: AppColors.screenTextPrimaryThemed(context),
                             letterSpacing: -0.5,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           s['label'] as String,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.screenTextSecondary,
+                            color: AppColors.screenTextSecondaryThemed(context),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -430,11 +405,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-                color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
+                color: AppColors.screenShadowThemed(context), blurRadius: 12, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -456,12 +431,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                         color: AppColors.screenOrange, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Informations Personnelles',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimary,
+                      color: AppColors.screenTextPrimaryThemed(context),
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -518,41 +493,44 @@ class _ProfileScreenState extends State<ProfileScreen>
         Row(children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.screenTextSecondary,
+              color: AppColors.screenTextSecondaryThemed(context),
               letterSpacing: 0.2,
             ),
           ),
           if (!enabled)
-            const Padding(
-              padding: EdgeInsets.only(left: 6),
-              child: Icon(Icons.lock_outline, size: 11, color: AppColors.screenTextSecondary),
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Icon(Icons.lock_outline, size: 11, color: AppColors.screenTextSecondaryThemed(context)),
             ),
         ]),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           enabled: enabled,
-          style: const TextStyle(
-              fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
+          style: TextStyle(
+              fontSize: 14, color: AppColors.screenTextPrimaryThemed(context), fontWeight: FontWeight.w500),
           decoration: InputDecoration(
-            hintStyle: const TextStyle(
-                fontSize: 13, color: Color(0xFFBBBBBB)),
+            hintStyle: TextStyle(
+                fontSize: 13, color: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.grey.shade600 
+                    : const Color(0xFFBBBBBB)),
             prefixIcon: Icon(icon,
-                color: enabled ? AppColors.screenOrange : AppColors.screenTextSecondary, size: 18),
+                color: enabled ? AppColors.screenOrange : AppColors.screenTextSecondaryThemed(context), size: 18),
             filled: true,
-            fillColor: enabled ? AppColors.screenSurface : const Color(0xFFF5F5F5),
+            fillColor: enabled ? AppColors.screenSurfaceThemed(context) : 
+                Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2C2C2E) : const Color(0xFFF5F5F5),
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
+              borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
+              borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -561,7 +539,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                  color: AppColors.screenDivider.withOpacity(0.6)),
+                  color: AppColors.screenDividerThemed(context).withOpacity(0.6)),
             ),
           ),
         ),
@@ -606,11 +584,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-                color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
+                color: AppColors.screenShadowThemed(context), blurRadius: 12, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -632,12 +610,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                         color: AppColors.screenOrange, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Actions Rapides',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimary,
+                      color: AppColors.screenTextPrimaryThemed(context),
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -691,16 +669,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       fontWeight: FontWeight.w600,
                                       color: isDestructive
                                           ? Colors.red
-                                          : AppColors.screenTextPrimary,
+                                          : AppColors.screenTextPrimaryThemed(context),
                                       letterSpacing: -0.2,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     action['subtitle'] as String,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: AppColors.screenTextSecondary,
+                                      color: AppColors.screenTextSecondaryThemed(context),
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),

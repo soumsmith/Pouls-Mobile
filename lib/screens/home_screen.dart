@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -115,12 +116,15 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _adresseParentController =
       TextEditingController();
 
+  final ScrollController _scrollController = ScrollController();
+
   bool _isSearching = false;
 
   int _unreadNotificationsCount = 0;
   bool _notificationsLoading = false;
   String _activeFilter = 'Tout';
   int _selectedChildIndex = 0;
+  final ValueNotifier<int> _selectedChildIndexNotifier = ValueNotifier<int>(0);
 
   // Variables pour les notifications par enfant
   Map<String, List<GroupMessage>> _childrenNotifications = {};
@@ -133,6 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _presenceBannerLoading = false;
   PageController? _presencePageController;
   Timer? _presenceAutoScrollTimer;
+  final ValueNotifier<int> _presencePageIndex = ValueNotifier<int>(0);
 
   // Variables pour les vidéos Coulisses de l'Excellence
   List<CoulisseExcellence> _coulisseVideos = [];
@@ -201,6 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _paysParentController.dispose();
     _villeParentController.dispose();
     _adresseParentController.dispose();
+
+    _scrollController.dispose();
 
     super.dispose();
   }
@@ -1494,7 +1501,7 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.homeTopCard(context),
-              borderRadius: BorderRadius.circular(11),
+              shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
@@ -1548,17 +1555,25 @@ class _HomeScreenState extends State<HomeScreen> {
     _ensurePresencePagerReady();
     _startPresenceAutoScrollIfNeeded();
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(0, 0, 0, 14),
-      height: 54,
-      child: PageView.builder(
-        controller: _presencePageController,
-        itemCount: _presenceBannerItems.length,
-        itemBuilder: (context, index) {
-          final item = _presenceBannerItems[index];
-          return _buildPresenceBannerItem(item);
-        },
-      ),
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+          height: 54,
+          child: PageView.builder(
+            controller: _presencePageController,
+            itemCount: _presenceBannerItems.length,
+            onPageChanged: (index) {
+              _presencePageIndex.value = index;
+            },
+            itemBuilder: (context, index) {
+              final item = _presenceBannerItems[index];
+              return _buildPresenceBannerItem(item);
+            },
+          ),
+        ),
+        _buildPresenceCarouselIndicators(),
+      ],
     );
   }
 
@@ -1641,20 +1656,85 @@ class _HomeScreenState extends State<HomeScreen> {
                   _stopPresenceAutoScroll();
                 }
               },
-              child: Icon(
-                Icons.close_rounded,
-                color: AppColors.homeTextSecondary(context),
-                size: 18,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.grey[700],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.homeTextSecondary(context),
-              size: 18,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPresenceCarouselIndicators() {
+    if (_presenceBannerItems.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    return ValueListenableBuilder<int>(
+      valueListenable: _presencePageIndex,
+      builder: (context, currentIndex, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _presenceBannerItems.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              height: 6,
+              width: currentIndex == index ? 18 : 6,
+              decoration: BoxDecoration(
+                color: currentIndex == index
+                    ? AppColors.homeTextSecondary(context)
+                    : AppColors.homeTextSecondary(context).withOpacity(0.3),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildChildrenCarouselIndicators() {
+    if (_filteredChildren.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ValueListenableBuilder<int>(
+        valueListenable: _selectedChildIndexNotifier,
+        builder: (context, currentIndex, _) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _filteredChildren.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                height: 6,
+                width: currentIndex == index ? 18 : 6,
+                decoration: BoxDecoration(
+                  color: currentIndex == index
+                      ? AppColors.homeTextSecondary(context)
+                      : AppColors.homeTextSecondary(context).withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1788,7 +1868,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 12),
                 _shareButton(
                   label: 'WhatsApp',
-                  icon: Icons.chat_rounded,
+                  icon: null,
+                  imageAsset: 'assets/images/icons/whatsapp.png',
                   bg: const Color(0xFFEAF7EE),
                   iconColor: const Color(0xFF25D366),
                   onTap: () {
@@ -1829,7 +1910,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _shareButton({
     required String label,
-    required IconData icon,
+    IconData? icon,
+    String? imageAsset,
     required Color bg,
     required Color iconColor,
     required VoidCallback onTap,
@@ -1845,7 +1927,13 @@ class _HomeScreenState extends State<HomeScreen> {
               color: bg,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: iconColor, size: 26),
+            child: imageAsset != null
+                ? Image.asset(
+                    imageAsset,
+                    width: 10,
+                    height: 10,
+                  )
+                : Icon(icon, color: iconColor, size: 26),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1960,6 +2048,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+        _buildChildrenCarouselIndicators(),
         const SizedBox(height: 16),
       ],
     );
@@ -1969,7 +2058,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final isSelected = index == _selectedChildIndex;
     return GestureDetector(
       onTap: () {
-        setState(() => _selectedChildIndex = index);
+        setState(() {
+          _selectedChildIndex = index;
+          _selectedChildIndexNotifier.value = index;
+        });
         MainScreenWrapper.of(context).navigateToChildDetail(child);
       },
       child: Container(
@@ -2098,7 +2190,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Icon(
                 Icons.add,
-                color: _kDarkBorder,
+                color: const Color.fromARGB(255, 226, 226, 240),
                 size: AppDimensions.getChildImageSize(context) * 0.33,
               ),
             ),
@@ -2126,578 +2218,229 @@ class _HomeScreenState extends State<HomeScreen> {
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? const Color(0xFF14141C) 
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF14141C)
             : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       child: Stack(
         children: [
-          RefreshIndicator(
-            onRefresh: _refreshHome,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(top: 16),
-              children: [
-                SectionRow(title: 'ACTIONS RAPIDES'),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height:
-                      AppDimensions.getPaymentBannerCardHeight(context) + 20,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.symmetric(
-                      horizontal:
-                          AppDimensions.getPaymentBannerCardSpacing(context) *
-                          0.9,
+          Padding(
+            padding: const EdgeInsets.only(top: 20), // ← fixe, ne scroll pas
+            child: RefreshIndicator(
+              onRefresh: _refreshHome,
+              child: ListView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                children: [
+                  SectionRow(title: 'ACTIONS RAPIDES'),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: AppDimensions.getPaymentBannerCardHeight(context) + 20,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
+                      ),
+                      children: [
+                        _buildCard(
+                          index: 0,
+                          cardKey: 'inscription',
+                          title: 'Inscription \n en ligne',
+                          imagePath: 'assets/images/icons/inscription.png',
+                          color: AppColors.cardLightGrey,
+                          backgroundColor: const Color(0xFFF8FCFF),
+                          textColor: const Color(0xFF333333),
+                          actionText: '',
+                          allowLineBreak: true,
+                          enableInnerBorder: false,
+                          enableOuterBorder: false,
+                          innerBorderColor: const Color(0xFF93C5FD),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          width: AppDimensions.getSquareCardWidthSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(context),
+                          centerTitle: true,
+                          onTap: () => InscriptionBottomSheet.show(context),
+                        ),
+                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        _buildCard(
+                          index: 1,
+                          cardKey: 'integration',
+                          title: 'Demande\nintégration',
+                          imagePath: 'assets/images/icons/integration.png',
+                          color: AppColors.cardLightGrey,
+                          backgroundColor: const Color(0xFFF7FEFC),
+                          textColor: const Color(0xFF333333),
+                          actionText: '',
+                          enableInnerBorder: false,
+                          enableOuterBorder: false,
+                          allowLineBreak: true,
+                          innerBorderColor: const Color(0xFF6EE7B7),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          width: AppDimensions.getSquareCardWidthSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(context),
+                          centerTitle: true,
+                          onTap: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const IntegrationBottomSheet(),
+                          ),
+                        ),
+                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        _buildCard(
+                          index: 2,
+                          cardKey: 'consulter_demande',
+                          title: 'Consulter\ndemande',
+                          imagePath: 'assets/images/icons/consulter.png',
+                          color: AppColors.cardLightGrey,
+                          backgroundColor: const Color(0xFFFFFEF7),
+                          textColor: const Color(0xFF333333),
+                          actionText: '',
+                          enableInnerBorder: false,
+                          enableOuterBorder: false,
+                          allowLineBreak: true,
+                          innerBorderColor: const Color(0xFFFCD34D),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          width: AppDimensions.getSquareCardWidthSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(context),
+                          centerTitle: true,
+                          onTap: () => IntegrationRequestBottomSheet.show(context),
+                        ),
+                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        _buildCard(
+                          index: 3,
+                          cardKey: 'parrainage',
+                          title: 'Parrainer\nutilisateur',
+                          imagePath: 'assets/images/icons/parrainer.png',
+                          color: AppColors.cardLightGrey,
+                          backgroundColor: const Color(0xFFFCFAFF),
+                          textColor: const Color(0xFF333333),
+                          actionText: '',
+                          enableInnerBorder: false,
+                          allowLineBreak: true,
+                          enableOuterBorder: false,
+                          innerBorderColor: const Color(0xFFC4B5FD),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          width: AppDimensions.getSquareCardWidthSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(context),
+                          centerTitle: true,
+                          onTap: () => showSponsorshipBottomSheet(context),
+                        ),
+                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        _buildCard(
+                          index: 4,
+                          cardKey: 'panier',
+                          title: 'Mon\npanier',
+                          imagePath: 'assets/images/mes-commandes.jpg',
+                          color: AppColors.cardLightGrey,
+                          backgroundColor: const Color(0xFFFCFAFF),
+                          textColor: const Color(0xFF333333),
+                          actionText: '',
+                          enableInnerBorder: false,
+                          enableOuterBorder: false,
+                          allowLineBreak: true,
+                          innerBorderColor: const Color(0xFFFB923C),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          width: AppDimensions.getSquareCardWidthSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(context),
+                          centerTitle: true,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const CartScreen()),
+                            );
+                          },
+                        ),
+                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        _buildCard(
+                          index: 5,
+                          cardKey: 'commandes',
+                          title: 'Mes\ncommandes',
+                          imagePath: 'assets/images/mes-commandes.jpg',
+                          color: AppColors.cardLightGrey,
+                          backgroundColor: const Color(0xFFFCFAFF),
+                          textColor: const Color(0xFF333333),
+                          actionText: '',
+                          enableInnerBorder: false,
+                          enableOuterBorder: false,
+                          allowLineBreak: true,
+                          innerBorderColor: const Color(0xFF34D399),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          width: AppDimensions.getSquareCardWidthSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(context),
+                          centerTitle: true,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                            );
+                          },
+                        ),
+                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        _buildCard(
+                          index: 6,
+                          cardKey: 'recommendation',
+                          title: 'Recommand-\ner une école',
+                          imagePath: 'assets/images/icons/note-avis.png',
+                          color: AppColors.cardLightGrey,
+                          backgroundColor: const Color(0xFFFCFAFF),
+                          textColor: const Color(0xFF333333),
+                          actionText: '',
+                          enableInnerBorder: false,
+                          enableOuterBorder: false,
+                          allowLineBreak: true,
+                          innerBorderColor: const Color(0xFFFDBA74),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          width: AppDimensions.getSquareCardWidthSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(context),
+                          centerTitle: true,
+                          onTap: _showRecommendationBottomSheet,
+                        ),
+                      ],
                     ),
-                    children: [
-                      _buildCard(
-                        index: 0,
-                        cardKey: 'inscription',
-                        title: 'Inscription \n en ligne',
-                        imagePath: 'assets/images/icons/inscription.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFF8FCFF),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        allowLineBreak: true,
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        innerBorderColor: const Color(0xFF93C5FD),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () => InscriptionBottomSheet.show(context),
-                      ),
-                      SizedBox(
-                        width: AppDimensions.getPaymentBannerCardSpacing(
-                          context,
-                        ),
-                      ),
-                      _buildCard(
-                        index: 1,
-                        cardKey: 'integration',
-                        title: 'Demande\nintégration',
-                        imagePath: 'assets/images/icons/integration.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFF7FEFC),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        allowLineBreak: true,
-                        innerBorderColor: const Color(0xFF6EE7B7),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () => showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => const IntegrationBottomSheet(),
-                        ),
-                      ),
-                      SizedBox(
-                        width: AppDimensions.getPaymentBannerCardSpacing(
-                          context,
-                        ),
-                      ),
-                      _buildCard(
-                        index: 2,
-                        cardKey: 'consulter_demande',
-                        title: 'Consulter\ndemande',
-                        imagePath: 'assets/images/icons/consulter.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFFFFEF7),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        allowLineBreak: true,
-                        innerBorderColor: const Color(0xFFFCD34D),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () =>
-                            IntegrationRequestBottomSheet.show(context),
-                      ),
-                      SizedBox(
-                        width: AppDimensions.getPaymentBannerCardSpacing(
-                          context,
-                        ),
-                      ),
-                      _buildCard(
-                        index: 3,
-                        cardKey: 'parrainage',
-                        title: 'Parrainer\nutilisateur',
-                        imagePath: 'assets/images/icons/parrainer.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFFCFAFF),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        allowLineBreak: true,
-                        enableOuterBorder: false,
-                        innerBorderColor: const Color(0xFFC4B5FD),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () => showSponsorshipBottomSheet(context),
-                      ),
-                      SizedBox(
-                        width: AppDimensions.getPaymentBannerCardSpacing(
-                          context,
-                        ),
-                      ),
-                      _buildCard(
-                        index: 4,
-                        cardKey: 'panier',
-                        title: 'Mon\npanier',
-                        imagePath: 'assets/images/mes-commandes.jpg',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFFCFAFF),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        allowLineBreak: true,
-                        innerBorderColor: const Color(0xFFFB923C),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const CartScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(
-                        width: AppDimensions.getPaymentBannerCardSpacing(
-                          context,
-                        ),
-                      ),
-                      _buildCard(
-                        index: 5,
-                        cardKey: 'commandes',
-                        title: 'Mes\ncommandes',
-                        imagePath: 'assets/images/mes-commandes.jpg',
-                         color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFFCFAFF),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        allowLineBreak: true,
-                        innerBorderColor: const Color(0xFF34D399),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const OrdersScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(
-                        width: AppDimensions.getPaymentBannerCardSpacing(
-                          context,
-                        ),
-                      ),
-                      _buildCard(
-                        index: 6,
-                        cardKey: 'recommendation',
-                        title: 'Recommand-\ner une école',
-                        imagePath: 'assets/images/icons/note-avis.png',
-                         color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFFCFAFF),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        allowLineBreak: true,
-                        innerBorderColor: const Color(0xFFFDBA74),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: _showRecommendationBottomSheet,
-                      ),
-                    ],
                   ),
-                ),
 
-                // SectionRow(title: 'SCOLARITÉ'),
-                // SizedBox(
-                //   height: 140,
-                //   child: ListView(
-                //     scrollDirection: Axis.horizontal,
-                //     padding: const EdgeInsets.only(left: 16, right: 24),
-                //     children: [
-                //       _buildCard(
-                //         index: 0,
-                //         cardKey: 'bulletins',
-                //         title: 'Bulletins',
-                //         imagePath: 'assets/images/notes.jpg',
-                //         color: const Color(0xFFEF4444),
-                //         backgroundColor: const Color(0xFFFFF0F0),
-                //         textColor: const Color(0xFF991B1B),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //       _buildCard(
-                //         index: 1,
-                //         cardKey: 'agenda',
-                //         title: 'Agenda',
-                //         imagePath: 'assets/images/emploi-du-temps.jpg',
-                //         color: const Color(0xFF22C55E),
-                //         backgroundColor: const Color(0xFFE8F8F0),
-                //         textColor: const Color(0xFF166534),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //       _buildCard(
-                //         index: 2,
-                //         cardKey: 'absences',
-                //         title: 'Absences',
-                //         imagePath: 'assets/images/school-event.jpg',
-                //         color: _kOrange,
-                //         backgroundColor: const Color(0xFFFFF4EE),
-                //         textColor: const Color(0xFF9A3412),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //       _buildCard(
-                //         index: 3,
-                //         cardKey: 'notes',
-                //         title: 'Notes',
-                //         imagePath: 'assets/images/notes.jpg',
-                //         color: const Color(0xFF6366F1),
-                //         backgroundColor: const Color(0xFFEEF2FF),
-                //         textColor: const Color(0xFF4338CA),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //       _buildCard(
-                //         index: 4,
-                //         cardKey: 'emploi_temps',
-                //         title: 'Emploi\ndu temps',
-                //         imagePath: 'assets/images/emploi-du-temps.jpg',
-                //         color: const Color(0xFF10B981),
-                //         backgroundColor: const Color(0xFFECFDF5),
-                //         textColor: const Color(0xFF065F46),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //     ],
-                //   ),
-                // ),
+                  // Section Coulisses de l'Excellence
+                  if (_hasCoulisseExcellenceData) ...[
+                    const SizedBox(height: 24),
+                    SectionRow(
+                      title: 'COULISSES DE L\'EXCELLENCE',
+                      onSeeMore: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AllVideosScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCoulisteSection(),
+                  ],
 
-                // SectionRow(title: 'PAIEMENTS & FINANCE'),
-                // SizedBox(
-                //   height: 140,
-                //   child: ListView(
-                //     scrollDirection: Axis.horizontal,
-                //     padding: const EdgeInsets.only(left: 16, right: 24),
-                //     children: [
-                //       _buildCard(
-                //         index: 0,
-                //         cardKey: 'paiements',
-                //         title: 'Paiements',
-                //         imagePath: 'assets/images/icons/paiement.png',
-                //         color: Colors.grey.shade50,
-                //         backgroundColor: Colors.grey.shade50,
-                //         textColor: const Color(0xFF333333),
-                //         actionText: 'Payer',
-                //         onTap: () {
-                //           PaymentBottomSheet.show(
-                //             context: context,
-                //             childName: null,
-                //             matricule: null,
-                //             onPayment: (montant, matricule) async {
-                //               try {
-                //                 final montantInt = int.tryParse(montant);
-                //                 if (montantInt == null || montantInt <= 0) {
-                //                   if (mounted) {
-                //                     ScaffoldMessenger.of(context).showSnackBar(
-                //                       const SnackBar(
-                //                         content: Text('Montant invalide'),
-                //                         backgroundColor: AppColors.error,
-                //                       ),
-                //                     );
-                //                   }
-                //                   return;
-                //                 }
-                //                 final paiementService = PaiementService();
-                //                 final paiementResponse = await paiementService
-                //                     .initierPaiementEnLigne(
-                //                       matricule,
-                //                       montantInt,
-                //                     );
-                //                 if (paiementResponse.success &&
-                //                     paiementResponse.url.isNotEmpty) {
-                //                   final launched = await paiementService
-                //                       .lancerUrlPaiement(paiementResponse.url);
-                //                   if (!launched && mounted) {
-                //                     ScaffoldMessenger.of(context).showSnackBar(
-                //                       const SnackBar(
-                //                         content: Text(
-                //                           'Impossible d\'ouvrir la page de paiement',
-                //                         ),
-                //                         backgroundColor: AppColors.error,
-                //                       ),
-                //                     );
-                //                   }
-                //                 } else {
-                //                   if (mounted) {
-                //                     ScaffoldMessenger.of(context).showSnackBar(
-                //                       SnackBar(
-                //                         content: Text(paiementResponse.message),
-                //                         backgroundColor: AppColors.error,
-                //                       ),
-                //                     );
-                //                   }
-                //                 }
-                //               } catch (e) {
-                //                 if (mounted) {
-                //                   ScaffoldMessenger.of(context).showSnackBar(
-                //                     SnackBar(
-                //                       content: Text(
-                //                         'Erreur lors du paiement: $e',
-                //                       ),
-                //                       backgroundColor: AppColors.error,
-                //                     ),
-                //                   );
-                //                 }
-                //               }
-                //             },
-                //           );
-                //         },
-                //       ),
-                //       _buildCard(
-                //         index: 1,
-                //         cardKey: 'scolarite',
-                //         title: 'Scolarité',
-                //         imagePath: 'assets/images/icons/scolarite.png',
-                //         color: Colors.grey.shade50,
-                //         backgroundColor: Colors.grey.shade50,
-                //         textColor: const Color(0xFF333333),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //       _buildCard(
-                //         index: 2,
-                //         cardKey: 'historique',
-                //         title: 'Historique',
-                //         imagePath: 'assets/images/mes-commandes.jpg',
-                //         color: const Color(0xFF6366F1),
-                //         backgroundColor: const Color(0xFFEEF2FF),
-                //         textColor: const Color(0xFF4338CA),
-                //         actionText: 'Consulter',
-                //         onTap: () {},
-                //       ),
-                //     ],
-                //   ),
-                // ),
+                  // Section Événements et Faits Scolaires
+                  if (_hasEventsData) ...[
+                    const SizedBox(height: 24),
+                    SectionRow(
+                      title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES',
+                      onSeeMore: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AllEventsScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildEventsSection(),
+                  ],
 
-                // SectionRow(title: 'COMMUNICATION'),
-                // SizedBox(
-                //   height: 140,
-                //   child: ListView(
-                //     scrollDirection: Axis.horizontal,
-                //     padding: const EdgeInsets.only(left: 16, right: 24),
-                //     children: [
-                //       _buildCard(
-                //         index: 0,
-                //         cardKey: 'messages',
-                //         title: 'Messages',
-                //         imagePath: 'assets/images/messages.jpg',
-                //         color: const Color(0xFF6366F1),
-                //         backgroundColor: const Color(0xFFEEF2FF),
-                //         textColor: const Color(0xFF4338CA),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //       _buildCard(
-                //         index: 1,
-                //         cardKey: 'professeurs',
-                //         title: 'Professeurs',
-                //         imagePath: 'assets/images/ecole.jpg',
-                //         color: const Color(0xFF8B5CF6),
-                //         backgroundColor: const Color(0xFFF3E8FF),
-                //         textColor: const Color(0xFF6B21A8),
-                //         actionText: 'Contacter',
-                //         onTap: () {},
-                //       ),
-                //       _buildCard(
-                //         index: 2,
-                //         cardKey: 'notifications',
-                //         title: 'Alertes',
-                //         imagePath: 'assets/images/school-event.jpg',
-                //         color: _kOrange,
-                //         backgroundColor: const Color(0xFFFFF4EE),
-                //         textColor: const Color(0xFF9A3412),
-                //         actionText: 'Voir',
-                //         onTap: () {},
-                //       ),
-                //     ],
-                //   ),
-                // ),
-                // Section Couliste de l'Excellence
-                if (_hasCoulisseExcellenceData) ...[
-                  SectionRow(
-                    title: 'COULISSES DE L\'EXCELLENCE',
-                    onSeeMore: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AllVideosScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  // Section Visite guidée
+                  const SizedBox(height: 24),
+                  SectionRow(title: 'VISITE GUIDÉE'),
                   const SizedBox(height: 16),
-                  _buildCoulisteSection(),
-                  const SizedBox(height: 16),
+                  _buildVisiteGuideeSection(),
+
+                  const SizedBox(height: 125),
                 ],
-                // if (_hasCoulisseExcellenceData) ...[
-                //   // Section Coulisses de l'Excellence
-                //   SectionRow(title: 'COULISSES DE L\'EXCELLENCE'),
-                //   const SizedBox(height: 16),
-                //   _buildCoulisseExcellenceSection(),
-                //   const SizedBox(height: 16),
-                // ],
-
-                // Section Événements et Faits Scolaires
-                if (_hasEventsData) ...[
-                  //SectionRow(title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES'),
-                  SectionRow(
-                    title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES',
-                    onSeeMore: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AllEventsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEventsSection(),
-                  const SizedBox(height: 16),
-                ],
-
-                
-
-                // Section Visite guidée
-                SectionRow(title: 'VISITE GUIDÉE'),
-                const SizedBox(height: 16),
-                _buildVisiteGuideeSection(),
-                // const SizedBox(height: 16),
-
-                // SectionRow(title: 'BOUTIQUE & ACHATS'),
-                // SizedBox(
-                //   height: AppDimensions.getPaymentBannerCardHeight(context) + 50,
-                //   child: ListView(
-                //     scrollDirection: Axis.horizontal,
-                //     padding: EdgeInsets.only(
-                //       left: AppDimensions.getSectionHorizontalPadding(context),
-                //       right: AppDimensions.getSectionHorizontalPadding(context) + 8,
-                //     ),
-                //     children: [
-                //       _buildCard(
-                //         index: 0,
-                //         cardKey: 'panier',
-                //         title: 'Mon panier',
-                //         imagePath: 'assets/images/mes-commandes.jpg',
-                //         color: _kOrange,
-                //         width: AppDimensions.getHorizontalCardWidth(context),
-                //         height: AppDimensions.getHorizontalCardHeight(context)  + 50, // Ajout d'une hauteur dynamique
-                //         backgroundColor: const Color(0xFFFFF4EE),
-                //         textColor: const Color(0xFF9A3412),
-                //         actionText: 'Voir',
-                //         onTap: () {
-                //           Navigator.of(context).push(
-                //             MaterialPageRoute(
-                //               builder: (_) => const CartScreen(),
-                //             ),
-                //           );
-                //         },
-                //       ),
-                //       _buildCard(
-                //         index: 1,
-                //         cardKey: 'commandes',
-                //         title: 'Mes commandes',
-                //         imagePath: 'assets/images/mes-commandes.jpg',
-                //         color: const Color(0xFF10B981),
-                //         width: AppDimensions.getHorizontalCardWidth(context),
-                //         height: AppDimensions.getHorizontalCardHeight(context)  + 50, // Ajout d'une hauteur dynamique
-                //         backgroundColor: const Color(0xFFECFDF5),
-                //         textColor: const Color(0xFF065F46),
-                //         actionText: 'Voir',
-                //         onTap: () {
-                //           Navigator.of(context).push(
-                //             MaterialPageRoute(
-                //               builder: (_) => const OrdersScreen(),
-                //             ),
-                //           );
-                //         },
-                //       ),
-                //       _buildCard(
-                //         index: 2,
-                //         cardKey: 'boutique_libouli',
-                //         title: 'Boutique\n(Libouli)',
-                //         imagePath: 'assets/images/mes-commandes.jpg',
-                //         color: const Color(0xFF8B5CF6),
-                //         width: AppDimensions.getHorizontalCardWidth(context),
-                //         height: AppDimensions.getHorizontalCardHeight(context) + 50, // Ajout d'une hauteur dynamique
-                //         backgroundColor: const Color(0xFFF3E8FF),
-                //         textColor: const Color(0xFF6B21A8),
-                //         actionText: 'Accéder',
-                //         onTap: () {
-                //           final wrapper = MainScreenWrapper.maybeOf(context);
-                //           if (wrapper != null) {
-                //             wrapper.updateCurrentIndex(1);
-                //           } else {
-                //             Navigator.of(context).pushAndRemoveUntil(
-                //               MaterialPageRoute(
-                //                 builder: (_) =>
-                //                     const MainScreenWrapper(initialIndex: 1),
-                //               ),
-                //               (r) => false,
-                //             );
-                //           }
-                //         },
-                //       ),
-                //     ],
-                //   ),
-                // ),
-                const SizedBox(height: 125),
-              ],
+              ),
             ),
           ),
           const BottomFadeGradient(),

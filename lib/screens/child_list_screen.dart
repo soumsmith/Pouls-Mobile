@@ -333,6 +333,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<AccessControlEntry> _accessEntries = [];
   bool _isLoadingAccessControl = false;
   bool _isAccessControlBottomSheetOpen = false;
+  StateSetter? _accessControlModalSetState;
+  bool _accessControlLoaded = false;
 
   // Variables pour les messages
   List<StudentMessage> _studentMessages = [];
@@ -1236,35 +1238,53 @@ class _ChildListScreenState extends State<ChildListScreen>
   void _showAccessControlBottomSheet() {
     if (_isAccessControlBottomSheetOpen) return;
     _isAccessControlBottomSheetOpen = true;
+    _accessControlLoaded = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.fingerprint_rounded,
-              iconColor: const Color(0xFFC2185B),
-              title: 'Contrôle d\'accès',
-              description: 'Contrôlez les accès et les pointages',
-              onClose: () {
-                _isAccessControlBottomSheetOpen = false;
-                Navigator.of(context).pop();
-              },
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          _accessControlModalSetState = setModalState;
+
+          if (!_accessControlLoaded && !_isLoadingAccessControl) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!_accessControlLoaded && !_isLoadingAccessControl) {
+                _loadAccessControlData(setModalState);
+              }
+            });
+          }
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: BoxDecoration(
+              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
-            Expanded(child: _buildSimpleAccessControlTab()),
-          ],
-        ),
+            child: Column(
+              children: [
+                BottomSheetHeader(
+                  icon: Icons.fingerprint_rounded,
+                  iconColor: const Color(0xFFC2185B),
+                  title: 'Contrôle d\'accès',
+                  description: 'Contrôlez les accès et les pointages',
+                  onClose: () {
+                    _isAccessControlBottomSheetOpen = false;
+                    Navigator.of(context).pop();
+                  },
+                ),
+                Expanded(child: _buildSimpleAccessControlTab()),
+              ],
+            ),
+          );
+        },
       ),
-    ).then((_) {
+    ).whenComplete(() {
       _isAccessControlBottomSheetOpen = false;
+      _accessControlModalSetState = null;
     });
   }
 
@@ -3634,7 +3654,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             actionTextColor: const Color(0xFFC2185B),
             onTap: () {
               _showAccessControlBottomSheet();
-              if (_accessEntries.isEmpty && !_isLoadingAccessControl) {
+              if (!_accessControlLoaded && !_isLoadingAccessControl) {
                 _loadAccessControlData();
               }
             },
@@ -3691,46 +3711,58 @@ class _ChildListScreenState extends State<ChildListScreen>
               );
             },
           ),
-          // ImageMenuCard(
-          //   index: 3,
-          //   cardKey: 'homework',
-          //   title: 'Devoirs',
-          //   iconData: Icons.edit_note_rounded,
-          //   isDark: isDark,
-          //   color: const Color(0xFF7B1FA2),
-          //   backgroundColor: isDark
-          //       ? const Color(0xFF1E0A2E)
-          //       : const Color(0xFFF3E5F5),
-          //   textColor: isDark
-          //       ? const Color(0xFFCE93D8)
-          //       : const Color(0xFF4A148C),
-          //   actionText: 'Voir devoirs',
-          //   actionTextColor: const Color(0xFF7B1FA2),
-          //   onTap: () => _showStudentMenuBottomSheet(
-          //     'homework',
-          //     _getStudentMenuCardItem('homework'),
-          //   ),
-          // ),
-          // ImageMenuCard(
-          //   index: 4,
-          //   cardKey: 'difficulties',
-          //   title: 'Difficultés',
-          //   iconData: Icons.psychology_rounded,
-          //   isDark: isDark,
-          //   color: const Color(0xFF9C27B0),
-          //   backgroundColor: isDark
-          //       ? const Color(0xFF1E0A2E)
-          //       : const Color(0xFFF3E5F5),
-          //   textColor: isDark
-          //       ? const Color(0xFFCE93D8)
-          //       : const Color(0xFF6A1B9A),
-          //   actionText: 'Voir suivi',
-          //   actionTextColor: const Color(0xFF9C27B0),
-          //   onTap: () => _showStudentMenuBottomSheet(
-          //     'difficulties',
-          //     _getStudentMenuCardItem('difficulties'),
-          //   ),
-          // ),
+          ImageMenuCard(
+            index: 3,
+            cardKey: 'homework_program',
+            title: 'Programme de devoirs',
+            imagePath: null,
+            iconData: Icons.assignment_rounded,
+            isDark: isDark,
+            height: AppDimensions.getHorizontalCardHeight(context),
+            color: const Color(0xFF2E7D32),
+            backgroundColor: isDark
+                ? const Color(0xFF1B2E1B)
+                : const Color(0xFFE8F5E8),
+            textColor: isDark
+                ? const Color(0xFF81C784)
+                : const Color(0xFF1B5E20),
+            actionText: 'Voir programme',
+            width: 175,
+            actionTextColor: const Color(0xFF2E7D32),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Programme de devoirs - Fonctionnalité à venir'),
+                ),
+              );
+            },
+          ),
+          ImageMenuCard(
+            index: 4,
+            cardKey: 'progression',
+            title: 'Progression',
+            imagePath: null,
+            iconData: Icons.trending_up_rounded,
+            isDark: isDark,
+            height: AppDimensions.getHorizontalCardHeight(context),
+            color: const Color(0xFF1976D2),
+            backgroundColor: isDark
+                ? const Color(0xFF0D2847)
+                : const Color(0xFFE3F2FD),
+            textColor: isDark
+                ? const Color(0xFF64B5F6)
+                : const Color(0xFF0D47A1),
+            actionText: 'Voir progression',
+            width: 175,
+            actionTextColor: const Color(0xFF1976D2),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Progression - Fonctionnalité à venir'),
+                ),
+              );
+            },
+          ),
         ]),
 
         // ════════════════════════════════════════════════════════════════
@@ -7058,7 +7090,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Future<void> _loadAccessControlData() async {
+  Future<void> _loadAccessControlData([StateSetter? setModalState]) async {
     if (_isLoadingAccessControl) return;
 
     final matricule = widget.child.matricule ?? widget.child.id;
@@ -7080,6 +7112,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         _isLoadingAccessControl = true;
       });
     }
+    setModalState?.call(() {});
+    _accessControlModalSetState?.call(() {});
 
     try {
       print('📡 Appel du service AccessControlService...');
@@ -7099,16 +7133,22 @@ class _ChildListScreenState extends State<ChildListScreen>
         setState(() {
           _accessEntries = entries;
           _isLoadingAccessControl = false;
+          _accessControlLoaded = true;
         });
         print('📊 Mise à jour de l\'UI terminée');
       }
+      setModalState?.call(() {});
+      _accessControlModalSetState?.call(() {});
     } catch (e) {
       print('❌ Erreur lors du chargement du contrôle d\'accès: $e');
       if (mounted) {
         setState(() {
           _isLoadingAccessControl = false;
+          _accessControlLoaded = true;
         });
       }
+      setModalState?.call(() {});
+      _accessControlModalSetState?.call(() {});
     }
   }
 

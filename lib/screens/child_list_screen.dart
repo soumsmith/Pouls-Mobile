@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
 import 'package:parents_responsable/widgets/image_menu_card.dart';
@@ -423,10 +425,16 @@ class _ChildListScreenState extends State<ChildListScreen>
   String? _expandedBulletinId;
   StateSetter? _bulletinsModalSetState;
 
+  void _showSnackBarDeferred(SnackBar snackBar) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    _loadData();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -442,9 +450,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
 
     _animationController.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadData();
     _loadNotifications(); // Charger les notifications automatiquement
-    //_loadEcoles();
-    _animationController.forward();
   }
 
   @override
@@ -493,7 +505,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (!errorString.contains('404') ||
           !errorString.contains('Aucune fourniture scolaire trouvée')) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          _showSnackBarDeferred(
             SnackBar(
               content: Text('Erreur lors du chargement des fournitures: $e'),
             ),
@@ -537,7 +549,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        _showSnackBarDeferred(
           SnackBar(
             content: Text('Erreur lors du chargement des commandes: $e'),
           ),
@@ -663,9 +675,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        _showSnackBarDeferred(SnackBar(content: Text('Erreur: $e')));
       }
     }
   }
@@ -2712,6 +2722,66 @@ class _ChildListScreenState extends State<ChildListScreen>
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
+                      // QR Code d'identification - affiché en premier et centré
+                      Center(
+                        child: _buildFamilySection(
+                          title: 'QR Code d\'identification',
+                          icon: Icons.qr_code_2_rounded,
+                          iconColor: Colors.purple,
+                          children: [
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    QrImageView(
+                                      data: _generateStudentQRData(eleve),
+                                      version: QrVersions.auto,
+                                      size: 150.0,
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Matricule: ${eleve['matricule']?.toString() ?? 'N/A'}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${eleve['prenom']?.toString() ?? ''} ${eleve['nom']?.toString() ?? ''}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
                       // Informations personnelles
                       _buildFamilySection(
                         title: 'Informations personnelles',
@@ -3117,6 +3187,30 @@ class _ChildListScreenState extends State<ChildListScreen>
         });
       }
     }
+  }
+
+  /// Génère les données pour le QR code d'identification de l'élève
+  String _generateStudentQRData(Map<String, dynamic> eleve) {
+    final matricule = eleve['matricule']?.toString() ?? '';
+    final prenom = eleve['prenom']?.toString() ?? '';
+    final nom = eleve['nom']?.toString() ?? '';
+    final niveau = eleve['niveau']?.toString() ?? '';
+    final datenaissance = eleve['datenaissance']?.toString() ?? '';
+    
+    // Créer un format JSON structuré pour le QR code
+    final qrData = {
+      'type': 'student_identification',
+      'matricule': matricule,
+      'nom_complet': '$prenom $nom',
+      'prenom': prenom,
+      'nom': nom,
+      'niveau': niveau,
+      'date_naissance': datenaissance,
+      'ecole': 'École de l\'élève',
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    
+    return jsonEncode(qrData);
   }
 
   Widget _buildFamilySection({

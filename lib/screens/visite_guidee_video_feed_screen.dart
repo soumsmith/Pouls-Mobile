@@ -87,6 +87,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
 
   // Afficher les options de partage
   Future<void> _shareVideo() async {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     
     // Mettre en pause la vidéo actuelle
@@ -109,6 +111,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
 
   // Afficher les commentaires
   void _showComments() {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     
     // Mettre en pause la vidéo actuelle
@@ -126,6 +130,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
 
   // Afficher la notation
   void _showRating() {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     
     // Mettre en pause la vidéo actuelle
@@ -141,6 +147,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
   }
 
   void _toggleLike() {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     final videoId = video.typeVideo.hashCode; // Utiliser le hash du type comme ID
     setState(() {
@@ -154,6 +162,48 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
 
   @override
   Widget build(BuildContext context) {
+    // Handle empty videos list
+    if (widget.videos.isEmpty) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Visites Guidées',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.video_library_outlined,
+                size: 64,
+                color: Colors.white54,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Aucune vidéo disponible',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -253,11 +303,11 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
-                  icon: _likedVideoIds.contains(widget.videos[_currentIndex].typeVideo.hashCode)
+                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].typeVideo.hashCode)
                       ? Icons.favorite
                       : Icons.favorite_border,
                   label: 'J\'aime',
-                  onTap: _toggleLike,
+                  onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(

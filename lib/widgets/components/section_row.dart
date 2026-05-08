@@ -7,6 +7,8 @@ class SectionRow extends StatelessWidget {
   final double? titleFontSize;
   final VoidCallback? onSeeMore;
   final String? seeMoreText;
+  final Color? seeMoreBackgroundColor;
+  final Color? seeMoreTextColor;
 
   const SectionRow({
     super.key,
@@ -15,6 +17,8 @@ class SectionRow extends StatelessWidget {
     this.titleFontSize,
     this.onSeeMore,
     this.seeMoreText,
+    this.seeMoreBackgroundColor,
+    this.seeMoreTextColor,
   });
 
   @override
@@ -48,13 +52,13 @@ class SectionRow extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: effectiveTextColor.withOpacity(0.1),
+                  color: seeMoreBackgroundColor ?? effectiveTextColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   seeMoreText ?? 'Voir plus',
                   style: TextStyle(
-                    color: effectiveTextColor,
+                    color: seeMoreTextColor ?? effectiveTextColor,
                     fontSize: effectiveFontSize - 2,
                     fontWeight: FontWeight.w500,
                   ),

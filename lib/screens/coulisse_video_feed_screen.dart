@@ -134,6 +134,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
 
   // Afficher les options de partage
   Future<void> _shareVideo() async {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     
     // Mettre en pause la vidéo actuelle
@@ -151,6 +153,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   
   // Afficher les commentaires
   void _showComments() {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     
     // Mettre en pause la vidéo actuelle
@@ -168,6 +172,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
 
   // Afficher la notation
   void _showRating() {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     
     // Mettre en pause la vidéo actuelle
@@ -183,6 +189,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   }
 
   void _toggleLike() {
+    if (widget.videos.isEmpty) return;
+    
     final video = widget.videos[_currentIndex];
     setState(() {
       if (_likedVideoIds.contains(video.id)) {
@@ -195,6 +203,48 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Handle empty videos list
+    if (widget.videos.isEmpty) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Coulisses Excellence',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.video_library_outlined,
+                size: 64,
+                color: Colors.white54,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Aucune vidéo disponible',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -285,17 +335,17 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 _ActionButton(
                   icon: Icons.school,
                   label: 'École',
-                  onTap: () {
-                    _navigateToEcole(widget.videos[_currentIndex].code);
-                  },
+                  onTap: widget.videos.isNotEmpty 
+                      ? () => _navigateToEcole(widget.videos[_currentIndex].code)
+                      : () {},
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
-                  icon: _likedVideoIds.contains(widget.videos[_currentIndex].id)
+                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].id)
                       ? Icons.favorite
                       : Icons.favorite_border,
                   label: 'J\'aime',
-                  onTap: _toggleLike,
+                  onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(

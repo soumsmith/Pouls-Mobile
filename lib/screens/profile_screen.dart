@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
+import '../services/mock_api_service.dart';
+import '../models/child.dart';
 import '../config/app_colors.dart';
-import '../config/app_typography.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
@@ -21,6 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   final TextSizeService _textSizeService = TextSizeService();
+  List<Child> _children = [];
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -39,6 +41,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     final user = AuthService.instance.getCurrentUser();
     _nameController = TextEditingController(text: user?.fullName ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
+    
+    _loadChildren();
   }
 
   @override
@@ -71,6 +75,31 @@ class _ProfileScreenState extends State<ProfileScreen>
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  // Load children data
+  Future<void> _loadChildren() async {
+    try {
+      final user = AuthService.instance.getCurrentUser();
+      final parentId = user?.id ?? 'parent1';
+      final apiService = MockApiService();
+      final children = await apiService.getChildrenForParent(parentId);
+      if (!mounted) return;
+      setState(() {
+        _children = List.from(children);
+      });
+    } catch (e) {
+      if (!mounted) return;
+    }
+  }
+
+  // Get count of unique establishments
+  int _getUniqueEstablishmentsCount() {
+    final uniqueEstablishments = _children
+        .map((child) => child.establishment)
+        .where((establishment) => establishment.isNotEmpty)
+        .toSet();
+    return uniqueEstablishments.length;
   }
 
   // ─── BUILD ────────────────────────────────────────────────────────────────
@@ -296,24 +325,22 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // ─── STATS ────────────────────────────────────────────────────────────────
   Widget _buildStatsSection() {
+    // Get dynamic counts
+    final childrenCount = _children.length;
+    final establishmentsCount = _getUniqueEstablishmentsCount();
+    
     final stats = [
       {
-        'value': '3',
+        'value': childrenCount.toString(),
         'label': 'Enfants',
         'icon': Icons.child_care_outlined,
         'color': const Color(0xFF4CAF50),
       },
       {
-        'value': '12',
+        'value': establishmentsCount.toString(),
         'label': 'Établissements',
         'icon': Icons.school_outlined,
         'color': AppColors.screenOrange,
-      },
-      {
-        'value': 'A+',
-        'label': 'Note',
-        'icon': Icons.grade_outlined,
-        'color': const Color(0xFF9C27B0),
       },
     ];
 
@@ -321,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       children: stats.asMap().entries.map((entry) {
         final i = entry.key;
         final s = entry.value;
-        return Expanded(
+        return Flexible(
           child: Row(
             children: [
               if (i > 0) const SizedBox(width: 10),
@@ -550,20 +577,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ─── QUICK ACTIONS ────────────────────────────────────────────────────────
   Widget _buildQuickActionsSection() {
     final actions = [
-      {
-        'title': 'Partager mon profil',
-        'subtitle': 'Inviter d\'autres parents',
-        'icon': Icons.share_outlined,
-        'color': AppColors.screenOrange,
-        'isDestructive': false,
-      },
-      {
-        'title': 'Exporter mes données',
-        'subtitle': 'Télécharger toutes vos informations',
-        'icon': Icons.download_outlined,
-        'color': const Color(0xFFF59E0B),
-        'isDestructive': false,
-      },
       {
         'title': 'Supprimer mon compte',
         'subtitle': 'Action irréversible',

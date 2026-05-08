@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../config/app_colors.dart';
 import 'bottom_sheet_header.dart';
@@ -204,6 +205,7 @@ class _IntegrationRequestBottomSheetState
               selectedEcoleName: _selectedEcoleName,
               selectedEcoleId: _selectedEcoleId,
               matricule: widget.matricule,
+              childFullName: widget.childFullName,
               isDarkMode: isDark,
               textSizeService: _textSizeService,
               onEcoleChanged: (ecoleId, ecoleName) {
@@ -233,6 +235,7 @@ class _IntegrationRequestForm extends StatefulWidget {
   final String? selectedEcoleName;
   final int? selectedEcoleId;
   final String? matricule;
+  final String? childFullName;
   final bool isDarkMode;
   final TextSizeService textSizeService;
   final void Function(int ecoleId, String ecoleName) onEcoleChanged;
@@ -246,6 +249,7 @@ class _IntegrationRequestForm extends StatefulWidget {
     required this.selectedEcoleName,
     required this.selectedEcoleId,
     required this.matricule,
+    required this.childFullName,
     required this.isDarkMode,
     required this.textSizeService,
     required this.onEcoleChanged,
@@ -280,6 +284,24 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
 
   String get _currentMatricule {
     return widget.matricule ?? _matriculeController.text.trim();
+  }
+
+  /// Génère les données pour le QR code de l'élève
+  String _generateQRData() {
+    final matricule = _currentMatricule;
+    final fullName = widget.childFullName ?? '';
+    final ecoleName = widget.selectedEcoleName ?? '';
+    
+    // Créer un format JSON structuré pour le QR code
+    final qrData = {
+      'type': 'student_identification',
+      'matricule': matricule,
+      'nom_complet': fullName,
+      'ecole': ecoleName,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    
+    return jsonEncode(qrData);
   }
 
   @override
@@ -648,7 +670,83 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        
+        // QR Code section
+        if (_currentMatricule.isNotEmpty && widget.childFullName != null) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.screenSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.screenDivider),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.qr_code_2_rounded,
+                      color: AppColors.shopBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'QR Code d\'identification',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.screenTextPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.screenDivider),
+                  ),
+                  child: Column(
+                    children: [
+                      QrImageView(
+                        data: _generateQRData(),
+                        version: QrVersions.auto,
+                        size: 150.0,
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Matricule: $_currentMatricule',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.screenTextSecondary,
+                        ),
+                      ),
+                      if (widget.childFullName != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.childFullName!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.screenTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(

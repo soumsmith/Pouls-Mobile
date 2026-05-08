@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parents_responsable/screens/all_children_screen.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
@@ -2005,18 +2006,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-          child: Text(
-            'MES ENFANTS',
-            style: TextStyle(
-              color: _kTextSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
-          ),
+        const SizedBox(height: 8),
+        SectionRow(
+          title: 'MES ENFANTS',
+          onSeeMore: _filteredChildren.length > 4 ? () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AllChildrenScreen()),
+            );
+          } : null,
+          seeMoreText: 'Voir plus',
+          seeMoreBackgroundColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.15),
+          seeMoreTextColor: const Color.fromARGB(255, 255, 255, 255),
         ),
+        const SizedBox(height: 8),
         SizedBox(
           height: AppDimensions.getChildImageSize(context) + 48,
           child: Row(
@@ -2210,6 +2213,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
   Widget _buildBottomSheet() {

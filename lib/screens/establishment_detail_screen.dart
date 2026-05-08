@@ -306,6 +306,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   final _avisNotifier = ValueNotifier<int>(0);
   final _eventsNotifier = ValueNotifier<int>(0);
+  final _blogsNotifier = ValueNotifier<int>(0);
 
   List<Map<String, dynamic>> _blogs = [];
   List<Map<String, dynamic>> _schoolEvents = [];
@@ -318,6 +319,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   int _currentEventsPage = 1;
   int _eventsPerPage =
       4; // Valeur par défaut, sera mise à jour dans initState()
+  
+  // Variables pour les blogs (API sans pagination)
+  bool _hasMoreBlogs = false;
   bool _isInfoCardExpanded =
       false; // État pour gérer l'expansion de la carte d'infos
   double _scrollPosition = 0.0; // Position de scroll actuelle
@@ -617,6 +621,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final nom = widget.ecole.parametreNom ?? '';
     if (nom.isEmpty) return;
 
+    print('🔄 DÉBUT DU CHARGEMENT DES ÉVÉNEMENTS SCOLAIRES...');
+    print('📂 Nom de l\'établissement: $nom');
+
     setState(() {
       _isLoadingEvents = true;
       _eventsError = null;
@@ -627,12 +634,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _eventsNotifier.value++;
 
     try {
+      print('🌐 APPEL API - getEventsForUI');
+      print('📄 Page: $_currentEventsPage, PerPage: $_eventsPerPage');
+      
       final events = await _eventsService.getEventsForUI(
         nomEtablissement: nom,
         page: _currentEventsPage,
         perPage: _eventsPerPage,
       );
+      
+      print('✅ Événements récupérés avec succès: ${events.length} événements');
       if (!mounted) return;
+      
+      print('📊 Traitement des données événements:');
+      print('   - Nombre d\'événements: ${events.length}');
+      print('   - Plus de pages disponibles: ${events.length >= _eventsPerPage}');
+      
       setState(() {
         _schoolEvents = events;
         _isLoadingEvents = false;
@@ -640,8 +657,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         _hasMoreEvents = events.length >= _eventsPerPage;
       });
       _eventsNotifier.value++;
+      
+      print('✅ ÉVÉNEMENTS SCOLAIRES CHARGÉS AVEC SUCCÈS');
     } catch (e) {
       if (!mounted) return;
+      print('❌ ERREUR LORS DU CHARGEMENT DES ÉVÉNEMENTS SCOLAIRES: $e');
       setState(() {
         _eventsError = e.toString();
         _isLoadingEvents = false;
@@ -807,6 +827,55 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     }
   }
 
+  Future<void> _loadBlogsOnly() async {
+    final code = widget.ecole.parametreCode ?? '';
+    if (code.isEmpty) return;
+
+    print('🔄 DÉBUT DU CHARGEMENT DES ACTUALITÉS...');
+    print('📂 Code de l\'établissement: $code');
+
+    setState(() {
+      _isLoadingBlogs = true;
+      _blogsError = null;
+      _blogs.clear();
+      _hasMoreBlogs = false; // API sans pagination
+    });
+    _blogsNotifier.value++;
+
+    try {
+      print('🌐 APPEL API - getBlogsForUI');
+      print('📄 Taille: grand, Code: $code');
+      
+      final blogs = await _blogService.getBlogsForUI('grand', code);
+      
+      print('✅ Actualités récupérées avec succès: ${blogs.length} articles');
+      
+      print('📊 Traitement des données actualités:');
+      print('   - Nombre d\'articles: ${blogs.length}');
+      print('   - API sans pagination - tous les articles chargés');
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _blogs = blogs;
+        _isLoadingBlogs = false;
+        // API sans pagination pour les blogs
+        _hasMoreBlogs = false;
+      });
+      _blogsNotifier.value++;
+      
+      print('✅ ACTUALITÉS CHARGÉES AVEC SUCCÈS');
+    } catch (e) {
+      if (!mounted) return;
+      print('❌ ERREUR LORS DU CHARGEMENT DES ACTUALITÉS: $e');
+      setState(() {
+        _blogsError = e.toString();
+        _isLoadingBlogs = false;
+      });
+      _blogsNotifier.value++;
+    }
+  }
+
   Future<void> _loadBlogsEventsAndAvis() async {
     final nom = widget.ecole.parametreNom ?? '';
     final code = widget.ecole.parametreCode ?? '';
@@ -861,6 +930,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   void dispose() {
     _avisNotifier.dispose();
     _eventsNotifier.dispose();
+    _blogsNotifier.dispose();
     _fadeController.dispose();
     _nationaliteController.dispose();
     _adresseController.dispose();
@@ -3186,18 +3256,24 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     if (actionType == 'voir_les_avis' && !_isLoadingAvis) {
       _loadAvisOnly();
     }
-    if (actionType == 'school_events' &&
-        !_isLoadingEvents &&
-        _schoolEvents.isEmpty &&
-        _eventsError == null) {
+    if (actionType == 'communication') {
+      print('🔄 CLIC SUR "NOTRE ACTUALITÉS" - FutureBuilder gérera le chargement automatiquement');
+    }
+    if (actionType == 'school_events') {
+      print('🔄 CLIC SUR "ÉVÉNEMENTS SCOLAIRES" - Déclenchement du chargement');
       _loadEventsOnly();
     }
     if (actionType == 'scolarite') {
+      print('🔄 CLIC SUR "SCOLARITÉ" - Déclenchement du chargement');
+      print('📂 Code de l\'établissement: ${widget.ecole.parametreCode}');
+      
       setState(() {
         _scolariteFuture = ScolariteService.getScolaritesByEcole(
           widget.ecole.parametreCode ?? '',
         );
       });
+      
+      print('✅ APPEL API SCOLARITÉ - getScolaritesByEcole déclenché');
     }
 
     // Cas spécial : coulisses navigue directement vers l'écran TikTok
@@ -3633,50 +3709,56 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Communication tab ─────────────────────────────────────────────────────
   Widget _buildCommunicationTab(Color headerColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Communication et Actualités',
-          style: TextStyle(
-            fontSize: _textSizeService.getScaledFontSize(20),
-            fontWeight: FontWeight.bold,
-            color: AppColors.screenTextPrimaryThemed(context),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Dernières communications de ${widget.ecole.parametreNom}',
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.screenTextSecondaryThemed(context),
-          ),
-        ),
-        const SizedBox(height: 20),
-        if (_isLoadingBlogs)
-          const Center(
-            child: CustomLoader(
-              message: 'Chargement des communications...',
-              loaderColor: AppColors.screenOrange,
-              size: 56.0,
-              showBackground: false,
+    final ecoleCode = widget.ecole.parametreCode ?? '';
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _blogService.getBlogsForUI('grand', ecoleCode),
+      builder: (context, snapshot) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Communication et Actualités',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(20),
+                fontWeight: FontWeight.bold,
+                color: AppColors.screenTextPrimaryThemed(context),
+              ),
             ),
-          )
-        else if (_blogsError != null)
-          _buildTabError(
-            _blogsError!,
-            _loadBlogsEventsAndAvis,
-            _kActions['communication']!.color,
-          )
-        else if (_blogs.isEmpty)
-          _buildTabEmpty(
-            Icons.article_outlined,
-            'Aucune communication',
-            'Aucune communication disponible pour le moment.',
-          )
-        else
-          ..._blogs.map((blog) => _buildBlogCard(blog)).toList(),
-      ],
+            const SizedBox(height: 4),
+            Text(
+              'Dernières communications de ${widget.ecole.parametreNom}',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
+            ),
+            const SizedBox(height: 20),
+            if (snapshot.connectionState == ConnectionState.waiting)
+              const Center(
+                child: CustomLoader(
+                  message: 'Chargement des communications...',
+                  loaderColor: AppColors.screenOrange,
+                  size: 56.0,
+                  showBackground: false,
+                ),
+              )
+            else if (snapshot.hasError)
+              _buildTabError(
+                snapshot.error.toString(),
+                () => setState(() {}),
+                _kActions['communication']!.color,
+              )
+            else if (!snapshot.hasData || snapshot.data!.isEmpty)
+              _buildTabEmpty(
+                Icons.article_outlined,
+                'Aucune communication',
+                'Aucune communication disponible pour le moment.',
+              )
+            else
+              ...snapshot.data!.map((blog) => _buildBlogCard(blog)).toList(),
+          ],
+        );
+      },
     );
   }
 

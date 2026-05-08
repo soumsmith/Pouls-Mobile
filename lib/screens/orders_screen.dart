@@ -129,27 +129,27 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   // ─── BODY ──────────────────────────────────────────────────────────────────
   Widget _buildBody() {
-    f (_isLoading) {
-    return Scaffold(
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            _buildSliverAppBar(),
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: const Center(
-                child: CustomLoader(
-                  message: 'Chargement de vos commandes...',
-                  loaderColor: AppColors.shopGreen,
-                  showBackground: false,
+    if (_isLoading) {
+      return Scaffold(
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              _buildSliverAppBar(),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: const Center(
+                  child: CustomLoader(
+                    message: 'Chargement de vos commandes...',
+                    loaderColor: AppColors.shopGreen,
+                    showBackground: false,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
+    }
     if (_orders.isEmpty) return _buildEmptyState();
 
     return FadeTransition(

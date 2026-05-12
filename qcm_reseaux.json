@@ -1,0 +1,4203 @@
+{
+  "qcm_reseaux": [
+    {
+      "question_number": 1,
+      "question_text": "Parmi ces typologies de réseau, laquelle n'existe pas ?",
+      "options": [
+        {"text": "Le réseau fléché", "is_correct": true},
+        {"text": "Le réseau maillé", "is_correct": false},
+        {"text": "Le réseau en anneau", "is_correct": false},
+        {"text": "Le réseau en bus", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 2,
+      "question_text": "Quelle est la version de l'IP (Internet Protocol) la plus répandue aujourd'hui :",
+      "options": [
+        {"text": "IPv4", "is_correct": true},
+        {"text": "IPv7", "is_correct": false},
+        {"text": "IPv6", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 3,
+      "question_text": "LAN, MAN, WAN sont connus... Mais qu'est-ce qu'un PAN ?",
+      "options": [
+        {"text": "Proactive Area Network: un réseau qui autorise la connexion d'appareils sans login/mot de passe", "is_correct": false},
+        {"text": "Personal Area Network: un réseau utilisé dans le cadre d'une utilisation personnelle", "is_correct": true},
+        {"text": "Permanent Area Network: un réseau comprenant des équipements redondants pour assurer une utilisation constante", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 4,
+      "question_text": "Quel est le nom officiel de la norme Ethernet :",
+      "options": [
+        {"text": "IEEE 803.2", "is_correct": false},
+        {"text": "IEEE 802.3", "is_correct": true},
+        {"text": "IEEE 801.3", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 5,
+      "question_text": "La couche 3, couche réseau, a notamment pour rôle :",
+      "options": [
+        {"text": "L'utilisation correcte du support physique (câble, onde ...)", "is_correct": false},
+        {"text": "Le traitement syntaxique des informations", "is_correct": false},
+        {"text": "De trouver le destinataire à partir d'une adresse logique", "is_correct": true},
+        {"text": "De découper l'information en entités plus petites", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 6,
+      "question_text": "Dans lesquels de ces cas doit on utiliser un câble croisé ?",
+      "options": [
+        {"text": "Connexion d'un routeur à un autre routeur", "is_correct": false},
+        {"text": "Connexion d'un PC à un switch", "is_correct": false},
+        {"text": "Connexion d'un PC à un autre PC", "is_correct": true},
+        {"text": "Connexion d'un switch à un routeur", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 7,
+      "question_text": "Numérotez les couches du modèle OSI:",
+      "options": [
+        {"text": "Réseau", "order": 3},
+        {"text": "Session", "order": 5},
+        {"text": "Physique", "order": 1},
+        {"text": "Application", "order": 7},
+        {"text": "Transport", "order": 4},
+        {"text": "Liaison", "order": 2},
+        {"text": "Présentation", "order": 6}
+      ],
+      "type": "ordering"
+    },
+    {
+      "question_number": 8,
+      "question_text": "Dans quelle topologie peut-on utiliser un commutateur ?",
+      "options": [
+        {"text": "topologie bus", "is_correct": false},
+        {"text": "topologie étoile", "is_correct": true},
+        {"text": "topologie anneau", "is_correct": false},
+        {"text": "topologie maillée", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 9,
+      "question_text": "Parmi les câbles suivants, lesquels sont des câbles coaxiaux ?",
+      "options": [
+        {"text": "câble télévision classique", "is_correct": true},
+        {"text": "câble torsadé", "is_correct": false},
+        {"text": "fibre optique", "is_correct": false},
+        {"text": "câble ethernet fin", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 10,
+      "question_text": "À quel câble est associé le connecteur RJ45?",
+      "options": [
+        {"text": "câble télévision classique", "is_correct": false},
+        {"text": "câble torsadé", "is_correct": true},
+        {"text": "fibre optique", "is_correct": false},
+        {"text": "câble ethernet fin", "is_correct": false},
+        {"text": "10Base2", "is_correct": false},
+        {"text": "10BaseT", "is_correct": true},
+        {"text": "100BaseT", "is_correct": true},
+        {"text": "1000BaseLx", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 11,
+      "question_text": "À quoi correspond le Full-Duplex?",
+      "options": [
+        {"text": "une transmission des données dans les deux sens (Emission - Réception) simultanément", "is_correct": true},
+        {"text": "une transmission des données en mode connecté", "is_correct": false},
+        {"text": "une transmission des données sur un câble croisé", "is_correct": false},
+        {"text": "une transmission des données sur une seule paire", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 12,
+      "question_text": "Un commutateur est utilisé sur quel type de topologie?",
+      "options": [
+        {"text": "étoile", "is_correct": true},
+        {"text": "anneau", "is_correct": false},
+        {"text": "bus", "is_correct": false},
+        {"text": "bus maillé", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 13,
+      "question_text": "Un câble qui aurait l'appellation 100Base30 signifierait:",
+      "options": [
+        {"text": "100 Mhertz - bande large - 30 mètres", "is_correct": false},
+        {"text": "100 mètres - bande de base - 30 Mbits/s", "is_correct": false},
+        {"text": "10 Km - bande de base - 30 Mhertz", "is_correct": false},
+        {"text": "100 Mbits/s - bande de base - 3000 mètres", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 14,
+      "question_text": "Si j'utilise un concentrateur 8 ports et qu'un de mes ports est défectueux et envoie en continu des messages d'erreur: Quelle influence a-t-il sur les autres connexions?",
+      "options": [
+        {"text": "Aucune, les flux sont séparés", "is_correct": false},
+        {"text": "Seul le port 7 juste à côté sera perturbé", "is_correct": false},
+        {"text": "Le concentrateur sera toujours aussi performant sur les autres ports", "is_correct": false},
+        {"text": "Le concentrateur sera inondé de messages, tous les ports risquent de ne plus pouvoir communiquer entre eux", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 15,
+      "question_text": "Soient deux réseaux ethernet:\n- Le réseau A comportant des machines nommées A1, A2 ...\n- Le réseau B comportant des machines nommées B1, B2 ...\nLe matériel de connexion à l'intérieur de ces réseaux est un concentrateur.\nCes deux réseaux sont reliés au moyen d'un pont filtrant n'utilisant pas l'algorithme de SpanningTree.\nPar contre tous les matériels des deux réseaux sont référencés dans la table du pont.\nLa machine A1 communique avec la machine A2 indiquez laquelle des propositions suivantes est fausse.",
+      "options": [
+        {"text": "La machine B3 reçoit aussi les informations échangées", "is_correct": false},
+        {"text": "La machine A4 reçoit aussi les informations échangées", "is_correct": true},
+        {"text": "La machine B2 ne peut pas récupérer les informations échangées", "is_correct": false},
+        {"text": "Le pont récupère les informations mais ne les transmet pas vers le réseau B", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 16,
+      "question_text": "Les routeurs se servent notamment de l'adresse logique du destinataire contenue dans le paquet de données pour trouver le bon chemin?",
+      "options": [
+        {"text": "Vrai", "is_correct": true},
+        {"text": "Faux", "is_correct": false}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 17,
+      "question_text": "On peut mettre 5 concentrateurs à la suite?",
+      "options": [
+        {"text": "VRAI", "is_correct": false},
+        {"text": "FAUX", "is_correct": true}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 18,
+      "question_text": "Si on parle de réseau Fast Ethernet, de quel débit s'agit-il?",
+      "options": [
+        {"text": "100Mbits/s", "is_correct": true},
+        {"text": "1000Mbits/s", "is_correct": false},
+        {"text": "10Mbits/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 19,
+      "question_text": "Le paquet est l'unité de mesure de quelle couche théorique de l'OSI ?",
+      "options": [
+        {"text": "physique", "is_correct": false},
+        {"text": "liaison de données", "is_correct": false},
+        {"text": "transport", "is_correct": false},
+        {"text": "session", "is_correct": false},
+        {"text": "réseau", "is_correct": true},
+        {"text": "application", "is_correct": false},
+        {"text": "présentation", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 20,
+      "question_text": "Cette topologie est appellée ?",
+      "description": "Un matériel d'interconnexion central connecté à un serveur et deux postes de travail",
+      "options": [
+        {"text": "étoile maillée", "is_correct": false},
+        {"text": "étoile", "is_correct": true},
+        {"text": "bus", "is_correct": false},
+        {"text": "anneau étoilé", "is_correct": false},
+        {"text": "maillée", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 21,
+      "question_text": "Un câble a les caractéristiques suivantes : - bande passante de base à 130Mhertz - 2 segments mis bout à bout ont une taille maximale de 12 Kilomètres. Quel nom l'IEEE lui donne ?",
+      "options": [
+        {"text": "13 base 12", "is_correct": false},
+        {"text": "130 broad 60", "is_correct": false},
+        {"text": "12 base 130", "is_correct": false},
+        {"text": "130 base 60", "is_correct": false},
+        {"text": "13 base 6", "is_correct": false},
+        {"text": "60 base 130", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 22,
+      "question_text": "Plus l'atténuation du signal d'un câble est important... choisissez la bonne suite !",
+      "options": [
+        {"text": "plus la taille du segment sera petit", "is_correct": false},
+        {"text": "moins le débit sera important", "is_correct": true},
+        {"text": "plus le câble aura une couleur foncée", "is_correct": false},
+        {"text": "plus le signal parcourra de la distance", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 23,
+      "question_text": "J'ai un réseau local à câbler. Les contraintes sont les suivantes : - 68 postes à connecter - distance maximale entre deux postes 290 mètres - bande passante 100Mhertz Je peux utiliser un câble 10 base 2 ?",
+      "options": [
+        {"text": "oui", "is_correct": false},
+        {"text": "non", "is_correct": true}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 24,
+      "question_text": "Quel organisme est à l'origine des noms des câbles ?",
+      "options": [
+        {"text": "RFC", "is_correct": false},
+        {"text": "INRIA", "is_correct": false},
+        {"text": "ISO", "is_correct": false},
+        {"text": "IS", "is_correct": false},
+        {"text": "IEEE", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 25,
+      "question_text": "Pour relier deux postes de travail entre eux (PC-PC) avec un câble torsadé je dois :",
+      "options": [
+        {"text": "Utiliser un câble croisé", "is_correct": true},
+        {"text": "Un câble droit", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 26,
+      "question_text": "Si j'utilise un câble 100BaseTx combien de paires sont utilisées pour la transmission et la réception des signaux ?",
+      "options": [
+        {"text": "1", "is_correct": false},
+        {"text": "2", "is_correct": true},
+        {"text": "3", "is_correct": false},
+        {"text": "4", "is_correct": false},
+        {"text": "5", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 27,
+      "question_text": "La prise AUI est aussi appelée :",
+      "options": [
+        {"text": "DB15", "is_correct": true},
+        {"text": "BNC", "is_correct": false},
+        {"text": "RJ45", "is_correct": false},
+        {"text": "ST", "is_correct": false},
+        {"text": "MIC", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 28,
+      "question_text": "Je peux faire du Full-Duplex avec les câbles coaxiaux ?",
+      "options": [
+        {"text": "Bien sur", "is_correct": false},
+        {"text": "Impossible", "is_correct": true}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 29,
+      "question_text": "Une adresse Mac universelle est constituée de combien de bits ?",
+      "options": [
+        {"text": "8", "is_correct": false},
+        {"text": "16", "is_correct": false},
+        {"text": "32", "is_correct": false},
+        {"text": "48", "is_correct": true},
+        {"text": "64", "is_correct": false},
+        {"text": "128", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 30,
+      "question_text": "L'adresse logique 190.24.12.8 fait partie de quel ensemble réseau ?",
+      "options": [
+        {"text": "190.0.0.0", "is_correct": false},
+        {"text": "190.255.255.255", "is_correct": false},
+        {"text": "190.24.0.0", "is_correct": true},
+        {"text": "190.24.12.0", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 31,
+      "question_text": "Lorsque vous découpez un réseau en utilisant un masque de sous-réseau, ce découpage est invisible de l'extérieur de ce même réseau ?",
+      "options": [
+        {"text": "Vrai", "is_correct": true},
+        {"text": "Faux", "is_correct": false}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 32,
+      "question_text": "Une adresse Mac s'exprime en quelle unité ?",
+      "options": [
+        {"text": "décimale", "is_correct": false},
+        {"text": "binaire", "is_correct": false},
+        {"text": "hexadécimale", "is_correct": true},
+        {"text": "octale", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 33,
+      "question_text": "Le MTU est ?",
+      "options": [
+        {"text": "Un protocole de transport", "is_correct": false},
+        {"text": "La taille maximale d'un paquet", "is_correct": false},
+        {"text": "La taille maximale d'une trame", "is_correct": true},
+        {"text": "L'autre nom de la prise DB15", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 34,
+      "question_text": "UDP est un protocole de quel niveau ?",
+      "options": [
+        {"text": "1", "is_correct": false},
+        {"text": "2", "is_correct": false},
+        {"text": "3", "is_correct": false},
+        {"text": "4", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 35,
+      "question_text": "On retrouve l'adresse IP dans l'entête TCP ?",
+      "options": [
+        {"text": "Vrai", "is_correct": false},
+        {"text": "Faux", "is_correct": true}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 36,
+      "question_text": "Le protocole ARP permet ?",
+      "options": [
+        {"text": "d'associer une adresse logique a une adresse physique", "is_correct": true},
+        {"text": "d'associer une adresse physique à une adresse logique", "is_correct": false},
+        {"text": "de trouver le chemin des trames", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 37,
+      "question_text": "SNMP est un protocole permettant de gérer le courrier électronique ?",
+      "options": [
+        {"text": "Vrai", "is_correct": false},
+        {"text": "Faux", "is_correct": true}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 38,
+      "question_text": "Le protocole DHCP est un protocole qui permet de réaliser un adressage logique dynamique des matériels ?",
+      "options": [
+        {"text": "Vrai", "is_correct": true},
+        {"text": "Faux", "is_correct": false}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 39,
+      "question_text": "J'ai deux salles A et B contenant des matériels devant communiquer ensemble. Un poste de la salle A possède l'adresse suivante 198.200.30.40 Un poste de la salle B possède l'adresse suivante 121.13.15.90 Le masque de sous-réseau utilisé est 255.255.255.0 Pour faire communiquer les deux entités quel matériel dois-je mettre en place ?",
+      "options": [
+        {"text": "Un concentrateur", "is_correct": false},
+        {"text": "Un pont", "is_correct": false},
+        {"text": "Un routeur", "is_correct": true},
+        {"text": "Un commutateur", "is_correct": false},
+        {"text": "Une passerelle", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 40,
+      "question_text": "Si vous effectuez une modification de la configuration de votre routeur et que vous la sauvegardez dans la mémoire de travail principal, en cas de redémarrage du routeur, ces modifications seront prises en compte.",
+      "options": [
+        {"text": "Vrai", "is_correct": false},
+        {"text": "Faux", "is_correct": true}
+      ],
+      "type": "boolean"
+    },
+    {
+      "question_number": 41,
+      "question_text": "Si je me connecte sur le port console de mon routeur ...",
+      "options": [
+        {"text": "J'utilise le réseau", "is_correct": false},
+        {"text": "Je suis connecté en direct", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 42,
+      "question_text": "Quelle possibilité offre en plus un firewall par rapport à un simple routeur ?",
+      "options": [
+        {"text": "La mise en place d'ACL", "is_correct": false},
+        {"text": "Le filtrage sur des ports de communication", "is_correct": false},
+        {"text": "Le filtrage sur des groupes d'adresses", "is_correct": false},
+        {"text": "La mise en place de règles de filtrage de manière dynamique", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 43,
+      "question_text": "Est-ce qu'internet est un réseau informatique ?",
+      "options": [
+        {"text": "Oui", "is_correct": true},
+        {"text": "Non", "is_correct": false},
+        {"text": "Partiellement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 44,
+      "question_text": "Quel est le nom des connecteurs réseau ?",
+      "options": [
+        {"text": "RJ11", "is_correct": false},
+        {"text": "RJ45", "is_correct": true},
+        {"text": "RJ21", "is_correct": false},
+        {"text": "VGA", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 45,
+      "question_text": "Combien de fils peuvent être câblés dans un câble réseau?",
+      "options": [
+        {"text": "4", "is_correct": false},
+        {"text": "6", "is_correct": false},
+        {"text": "8", "is_correct": true},
+        {"text": "10", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 46,
+      "question_text": "Et combien sont nécessaires pour un débit de 100Mb/s?",
+      "options": [
+        {"text": "2", "is_correct": true},
+        {"text": "4", "is_correct": false},
+        {"text": "6", "is_correct": false},
+        {"text": "8", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 47,
+      "question_text": "Dans un câble croisé, quelles sont les paires qui croisent?",
+      "options": [
+        {"text": "1-2 et 3-6", "is_correct": false},
+        {"text": "1-3 et 2-6", "is_correct": true},
+        {"text": "2-4 et 1-3", "is_correct": false},
+        {"text": "4-6 et 2-3", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 48,
+      "question_text": "Qu'est-ce qu'un commutateur ?",
+      "options": [
+        {"text": "Un Hub", "is_correct": false},
+        {"text": "Un Switch", "is_correct": true},
+        {"text": "Un Routeur", "is_correct": false},
+        {"text": "Un Modem", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 49,
+      "question_text": "Pour faire communiquer 2 PC avec les IP 192.168.0.1 et 172.10.0.23, je dois utiliser",
+      "options": [
+        {"text": "Un modem", "is_correct": false},
+        {"text": "Un routeur", "is_correct": true},
+        {"text": "Un switch", "is_correct": false},
+        {"text": "Internet", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 50,
+      "question_text": "Pour relier 2 PC en passant par un switch, j'utilise",
+      "options": [
+        {"text": "Des câbles droits", "is_correct": true},
+        {"text": "Des câbles croisés", "is_correct": false},
+        {"text": "Des câbles électriques", "is_correct": false},
+        {"text": "Des câbles VGA", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 51,
+      "question_text": "Qu'est-ce qu'une adresse MAC ?",
+      "options": [
+        {"text": "Un identifiant attribué lors de la connexion au réseau", "is_correct": false},
+        {"text": "Un identifiant attribué lors de la fabrication d'une carte réseau", "is_correct": true},
+        {"text": "Une adresse IP compatible avec Mac OS", "is_correct": false},
+        {"text": "Un protocole réseau", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 52,
+      "question_text": "Quels types d'adresses sont réservées aux réseaux locaux ?",
+      "options": [
+        {"text": "88.xxx.xxx.xxx", "is_correct": false},
+        {"text": "127.0.0.1", "is_correct": false},
+        {"text": "192.168.xxx.xxx", "is_correct": true},
+        {"text": "255.255.xxx.xxx", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 53,
+      "question_text": "Comment s'appelle le service qui permet de faire le lien entre une IP et un nom de domaine ?",
+      "options": [
+        {"text": "L'arp", "is_correct": false},
+        {"text": "Le http", "is_correct": false},
+        {"text": "Le dns", "is_correct": true},
+        {"text": "Internet", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 54,
+      "question_text": "Laquelle de ces propositions est basée sur un réseau de stockage très haut débit en Fiber Channel ou SCSI ?",
+      "options": [
+        {"text": "NAS", "is_correct": false},
+        {"text": "SAN", "is_correct": true},
+        {"text": "RAID 6", "is_correct": false},
+        {"text": "SAS", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 55,
+      "question_text": "Quelle méthode d'accès n'est pas une méthode d'accès réseau utilisée par les réseaux mobiles ?",
+      "options": [
+        {"text": "TDMA", "is_correct": false},
+        {"text": "CDMA", "is_correct": false},
+        {"text": "FDMA", "is_correct": false},
+        {"text": "CSMA", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 56,
+      "question_text": "Quelle technologie ethernet permet de faire passer une tension de 48 V jusqu'à 12 Watt avec des données à 100 Mbit/s ou 1 Gbit/s ?",
+      "options": [
+        {"text": "IEEE 802.3 ab", "is_correct": false},
+        {"text": "IEEE 802.3 ae", "is_correct": false},
+        {"text": "IEEE 802.3 af", "is_correct": true},
+        {"text": "IEEE 1394", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 57,
+      "question_text": "Quelle catégorie de câbles en paires torsadés fournit une vitesse de transmission maximale de 10 Mbps ?",
+      "options": [
+        {"text": "CAT 3", "is_correct": true},
+        {"text": "CAT 5", "is_correct": false},
+        {"text": "CAT 5e", "is_correct": false},
+        {"text": "CAT 6", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 58,
+      "question_text": "Quel est le nom d'un groupe d'ordinateurs qui ont été compromis et sont contrôlés par un tiers ?",
+      "options": [
+        {"text": "Botnet", "is_correct": true},
+        {"text": "Rootkit", "is_correct": false},
+        {"text": "Hoax", "is_correct": false},
+        {"text": "Netiquette", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 59,
+      "question_text": "Quel protocole de cryptage est utilisé pour sécuriser les communications sans fil ?",
+      "options": [
+        {"text": "WEP", "is_correct": false},
+        {"text": "WPA2", "is_correct": true},
+        {"text": "SSL", "is_correct": false},
+        {"text": "TLS", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 60,
+      "question_text": "Quelle est la fonction principale d'un pare-feu dans un réseau ?",
+      "options": [
+        {"text": "Améliorer la vitesse du réseau", "is_correct": false},
+        {"text": "Filtrer le trafic réseau", "is_correct": true},
+        {"text": "Assigner des adresses IP", "is_correct": false},
+        {"text": "Convertir les noms de domaine en adresses IP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 61,
+      "question_text": "Quel est le port par défaut pour le service HTTP ?",
+      "options": [
+        {"text": "21", "is_correct": false},
+        {"text": "22", "is_correct": false},
+        {"text": "80", "is_correct": true},
+        {"text": "443", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 62,
+      "question_text": "Quelle technologie permet de connecter plusieurs réseaux locaux distants ?",
+      "options": [
+        {"text": "VLAN", "is_correct": false},
+        {"text": "VPN", "is_correct": true},
+        {"text": "NAT", "is_correct": false},
+        {"text": "DHCP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 63,
+      "question_text": "Quel est le débit théorique maximal de l'Ethernet Gigabit ?",
+      "options": [
+        {"text": "100 Mbps", "is_correct": false},
+        {"text": "1 Gbps", "is_correct": true},
+        {"text": "10 Gbps", "is_correct": false},
+        {"text": "100 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 64,
+      "question_text": "Quel énoncé est faux concernant la méthode CSMA/CD ?",
+      "options": [
+        {"text": "Quand le support est libre, elle émet le message.", "is_correct": false},
+        {"text": "Si le support est occupé, elle attend pendant un temps aléatoire et réécoute.", "is_correct": false},
+        {"text": "La station qui veut émettre écoute le support de transmission pour voir s'il est disponible.", "is_correct": false},
+        {"text": "Une seule station parle à la fois.", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 65,
+      "question_text": "Quand un paquet IPv4 traverse un routeur, quelles sont les tâches que le routeur doit effectuer ?",
+      "options": [
+        {"text": "Décrémenter la valeur de TTL de 1 et recalculer le checksum IP.", "is_correct": true},
+        {"text": "Incrémenter la valeur de TTL de 1 et recalculer le checksum IP.", "is_correct": false},
+        {"text": "Décrémenter la valeur de TTL de 1 et fragmenter le paquet.", "is_correct": false},
+        {"text": "Décrémenter la valeur de TTL de 1 et laisser inchangé le checksum IP.", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 66,
+      "question_text": "Lesquels des énoncés suivants sont qualifiés comme des mesures organisationnelles dans le cadre d'une stratégie de sécurité ?",
+      "options": [
+        {"text": "Chiffrement des supports de stockage.", "is_correct": false},
+        {"text": "Mesures biométriques.", "is_correct": false},
+        {"text": "Sauvegarde systématique et quotidienne des données.", "is_correct": true},
+        {"text": "Gestion des incidents.", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 67,
+      "question_text": "Quel protocole de routage ne supporte pas les masques à longueurs variables ?",
+      "options": [
+        {"text": "IS-IS", "is_correct": false},
+        {"text": "IGRP", "is_correct": true},
+        {"text": "OSPF", "is_correct": false},
+        {"text": "EIGRP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 68,
+      "question_text": "Lequel des éléments suivants ne se rapporte pas à la virtualisation ?",
+      "options": [
+        {"text": "VMware", "is_correct": false},
+        {"text": "VirtualBox", "is_correct": false},
+        {"text": "Hyper-V", "is_correct": false},
+        {"text": "Wireshark", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 69,
+      "question_text": "Quel est le rôle principal d'un proxy dans un réseau d'entreprise ?",
+      "options": [
+        {"text": "Assigner des adresses IP automatiquement", "is_correct": false},
+        {"text": "Filtrer et mettre en cache les requêtes web", "is_correct": true},
+        {"text": "Convertir les noms de domaine en adresses IP", "is_correct": false},
+        {"text": "Router les paquets entre différents réseaux", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 70,
+      "question_text": "Quelle est la différence principale entre TCP et UDP ?",
+      "options": [
+        {"text": "TCP est plus rapide que UDP", "is_correct": false},
+        {"text": "TCP est fiable et orienté connexion, UDP est rapide et sans connexion", "is_correct": true},
+        {"text": "UDP utilise des ports, TCP n'en utilise pas", "is_correct": false},
+        {"text": "TCP fonctionne sur la couche 2, UDP sur la couche 3", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 71,
+      "question_text": "Quel est le masque de sous-réseau par défaut pour une adresse de classe B ?",
+      "options": [
+        {"text": "255.0.0.0", "is_correct": false},
+        {"text": "255.255.0.0", "is_correct": true},
+        {"text": "255.255.255.0", "is_correct": false},
+        {"text": "255.255.255.255", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 72,
+      "question_text": "Quelle technologie permet de séparer logiquement un réseau physique en plusieurs réseaux virtuels ?",
+      "options": [
+        {"text": "VPN", "is_correct": false},
+        {"text": "NAT", "is_correct": false},
+        {"text": "VLAN", "is_correct": true},
+        {"text": "DHCP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 73,
+      "question_text": "Quel est le protocole utilisé pour la résolution de noms de domaines ?",
+      "options": [
+        {"text": "HTTP", "is_correct": false},
+        {"text": "FTP", "is_correct": false},
+        {"text": "DNS", "is_correct": true},
+        {"text": "SMTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 74,
+      "question_text": "Quelle est la longueur d'une adresse MAC ?",
+      "options": [
+        {"text": "32 bits", "is_correct": false},
+        {"text": "48 bits", "is_correct": true},
+        {"text": "64 bits", "is_correct": false},
+        {"text": "128 bits", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 75,
+      "question_text": "Quel protocole est utilisé pour la configuration automatique des adresses IP ?",
+      "options": [
+        {"text": "DNS", "is_correct": false},
+        {"text": "DHCP", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "LDAP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 76,
+      "question_text": "Quelle couche du modèle OSI gère le routage des paquets ?",
+      "options": [
+        {"text": "Couche 2 (Liaison de données)", "is_correct": false},
+        {"text": "Couche 3 (Réseau)", "is_correct": true},
+        {"text": "Couche 4 (Transport)", "is_correct": false},
+        {"text": "Couche 7 (Application)", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 77,
+      "question_text": "Quel est le port par défaut pour le service HTTPS ?",
+      "options": [
+        {"text": "80", "is_correct": false},
+        {"text": "143", "is_correct": false},
+        {"text": "443", "is_correct": true},
+        {"text": "993", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 78,
+      "question_text": "Quelle technologie permet de partager une connexion Internet sur un réseau local ?",
+      "options": [
+        {"text": "NAT", "is_correct": true},
+        {"text": "VLAN", "is_correct": false},
+        {"text": "VPN", "is_correct": false},
+        {"text": "DMZ", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 79,
+      "question_text": "Quel type de câble est recommandé pour l'Ethernet Gigabit ?",
+      "options": [
+        {"text": "Catégorie 3", "is_correct": false},
+        {"text": "Catégorie 5", "is_correct": false},
+        {"text": "Catégorie 5e", "is_correct": true},
+        {"text": "Catégorie 6", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 80,
+      "question_text": "Quelle est la fonction principale du protocole ARP ?",
+      "options": [
+        {"text": "Convertir les noms de domaine en adresses IP", "is_correct": false},
+        {"text": "Associer une adresse IP à une adresse MAC", "is_correct": true},
+        {"text": "Router les paquets entre réseaux", "is_correct": false},
+        {"text": "Configurer automatiquement les adresses IP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 81,
+      "question_text": "Quel est le débit maximal du standard WiFi 802.11n ?",
+      "options": [
+        {"text": "11 Mbps", "is_correct": false},
+        {"text": "54 Mbps", "is_correct": false},
+        {"text": "150 Mbps", "is_correct": false},
+        {"text": "600 Mbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 82,
+      "question_text": "Quelle est la différence entre un hub et un switch ?",
+      "options": [
+        {"text": "Un hub est plus rapide qu'un switch", "is_correct": false},
+        {"text": "Un switch envoie les données uniquement au destinataire, un hub à tous", "is_correct": true},
+        {"text": "Un hub utilise des adresses MAC, un switch non", "is_correct": false},
+        {"text": "Il n'y a pas de différence", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 83,
+      "question_text": "Quel protocole est utilisé pour l'administration réseau à distance sécurisée ?",
+      "options": [
+        {"text": "Telnet", "is_correct": false},
+        {"text": "SSH", "is_correct": true},
+        {"text": "FTP", "is_correct": false},
+        {"text": "HTTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 84,
+      "question_text": "Quelle est la plage d'adresses IP privées de classe C ?",
+      "options": [
+        {"text": "10.0.0.0 - 10.255.255.255", "is_correct": false},
+        {"text": "172.16.0.0 - 172.31.255.255", "is_correct": false},
+        {"text": "192.168.0.0 - 192.168.255.255", "is_correct": true},
+        {"text": "169.254.0.0 - 169.254.255.255", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 85,
+      "question_text": "Quel est le rôle de la passerelle par défaut (default gateway) ?",
+      "options": [
+        {"text": "Assigner des adresses IP", "is_correct": false},
+        {"text": "Résoudre les noms de domaine", "is_correct": false},
+        {"text": "Router le trafic vers d'autres réseaux", "is_correct": true},
+        {"text": "Filtrer les paquets", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 86,
+      "question_text": "Quelle technologie de cryptage est considérée comme obsolète pour les réseaux WiFi ?",
+      "options": [
+        {"text": "WEP", "is_correct": true},
+        {"text": "WPA", "is_correct": false},
+        {"text": "WPA2", "is_correct": false},
+        {"text": "WPA3", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 87,
+      "question_text": "Quel est le protocole utilisé pour la synchronisation du temps sur les réseaux ?",
+      "options": [
+        {"text": "NTP", "is_correct": true},
+        {"text": "SNTP", "is_correct": false},
+        {"text": "SMTP", "is_correct": false},
+        {"text": "POP3", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 88,
+      "question_text": "Quelle est la caractéristique principale de la topologie en étoile ?",
+      "options": [
+        {"text": "Tous les équipements sont connectés les uns aux autres", "is_correct": false},
+        {"text": "Les équipements sont connectés à un point central", "is_correct": true},
+        {"text": "Les équipements forment une boucle fermée", "is_correct": false},
+        {"text": "Les équipements partagent un câble commun", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 89,
+      "question_text": "Quel est le protocole de transport utilisé pour les streaming vidéo en temps réel ?",
+      "options": [
+        {"text": "TCP", "is_correct": false},
+        {"text": "UDP", "is_correct": true},
+        {"text": "HTTP", "is_correct": false},
+        {"text": "FTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 90,
+      "question_text": "Quelle est la fonction principale du protocole ICMP ?",
+      "options": [
+        {"text": "Transférer des fichiers", "is_correct": false},
+        {"text": "Envoyer des messages de diagnostic et d'erreur", "is_correct": true},
+        {"text": "Configurer des adresses IP", "is_correct": false},
+        {"text": "Sécuriser les communications", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 91,
+      "question_text": "Deux salles A, B contenant des matériels devant communiquer ensemble. Un poste de la salle A possède l'adresse suivante 198.200.30.40. Un poste de la salle B possède l'adresse suivante 121.13.15.90. Pour faire communiquer les deux entités quel matériel dois-je mettre en place ?",
+      "options": [
+        {"text": "Un concentrateur", "is_correct": false},
+        {"text": "Un pont", "is_correct": false},
+        {"text": "Un routeur", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 92,
+      "question_text": "Qu'est-ce que le chipset de la carte mère ?",
+      "options": [
+        {"text": "Un jeu de composants permettant les échanges entre les divers éléments d'un PC", "is_correct": true},
+        {"text": "Un processeur graphique intégré", "is_correct": false},
+        {"text": "Une mémoire cache rapide", "is_correct": false},
+        {"text": "Un contrôleur de disque dur", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 93,
+      "question_text": "Qu'est qu'un URL ?",
+      "options": [
+        {"text": "Désigne une chaine de caractère utilisée pour adresser les ressources du World Wide Web : Adresse Web ou adresse internet.", "is_correct": true},
+        {"text": "Un protocole de transfert de fichiers", "is_correct": false},
+        {"text": "Une adresse IP unique", "is_correct": false},
+        {"text": "Un nom de domaine", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 94,
+      "question_text": "Quel câble faut-il pour relier directement 2 postes en réseau (avec une carte réseau classique - Ethernet Base-T) ?",
+      "options": [
+        {"text": "Câble croisé", "is_correct": true},
+        {"text": "Câble droit", "is_correct": false},
+        {"text": "Câble coaxial", "is_correct": false},
+        {"text": "Fibre optique", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 95,
+      "question_text": "Parmi toutes ces adresse MAC, laquelle vous semble la plus plausible ?",
+      "options": [
+        {"text": "08:00:11:03:4c:A9", "is_correct": true},
+        {"text": "09:00:11:03:gg:W9", "is_correct": false},
+        {"text": "45.:00:11:03:2c:A7", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 96,
+      "question_text": "A quelle classe appartient ce subnet mask: 255.0.0.0?",
+      "options": [
+        {"text": "Classe F", "is_correct": false},
+        {"text": "Classe A", "is_correct": true},
+        {"text": "Classe C", "is_correct": false},
+        {"text": "Classe B", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 97,
+      "question_text": "Certains services sont assignés à des ports, quelle est l'erreur : HTTP sur le port 80 || NNTP sur le port 9 || FTP sur le port 21",
+      "options": [
+        {"text": "HTTP sur le port 80", "is_correct": false},
+        {"text": "NNTP sur le port 9", "is_correct": true},
+        {"text": "FTP sur le port 21", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 98,
+      "question_text": "Quel est l'ancêtre d'internet?",
+      "options": [
+        {"text": "Arpanet", "is_correct": true},
+        {"text": "Militarnet", "is_correct": false},
+        {"text": "Universinet", "is_correct": false},
+        {"text": "Reseaunet", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 99,
+      "question_text": "Lequel des organismes suivants a joué le plus grand rôle dans l'établissement des normes relatives aux médias de reseautage?",
+      "options": [
+        {"text": "IEEE", "is_correct": true},
+        {"text": "ISO", "is_correct": false},
+        {"text": "ANSI", "is_correct": false},
+        {"text": "EIA", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 100,
+      "question_text": "Qu'est-ce que les CGI ? (Common gateway interfaces)",
+      "options": [
+        {"text": "Une interface permet de faire communiquer un programme avec un serveur web", "is_correct": true},
+        {"text": "Un langage de programmation web", "is_correct": false},
+        {"text": "Un protocole de transfert", "is_correct": false},
+        {"text": "Une base de données", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 101,
+      "question_text": "Quelle technologie WAN peut servir de réseau sous-jacent pour transporter plusieurs types de trafic réseau tels qu'IP, ATM, Ethernet et DSL ?",
+      "options": [
+        {"text": "MPLS", "is_correct": true},
+        {"text": "Frame Relay", "is_correct": false},
+        {"text": "X.25", "is_correct": false},
+        {"text": "ATM", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 102,
+      "question_text": "Quel est l'avantage de la fonctionnalité NAT64?",
+      "options": [
+        {"text": "permet de connecter des hôtes Ipv6 a un réseau Ipv4 en traduisant les adresses. (6 to 4).", "is_correct": true},
+        {"text": "Améliore la vitesse de connexion", "is_correct": false},
+        {"text": "Réduit la latence", "is_correct": false},
+        {"text": "Augmente la bande passante", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 103,
+      "question_text": "Quel information est collecté par NetFlow?",
+      "options": [
+        {"text": "Les statistiques de trafic", "is_correct": true},
+        {"text": "Les adresses MAC", "is_correct": false},
+        {"text": "Les mots de passe", "is_correct": false},
+        {"text": "Les certificats SSL", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 104,
+      "question_text": "Quels énoncés vrais à propos d'une connexion PPP entre 2 routeurs Cisco ?",
+      "options": [
+        {"text": "Le protocole LCP gère la compression de la liaison. Le protocole LCP teste la qualité de la liaison.", "is_correct": true},
+        {"text": "Le protocole NCP configure les adresses IP", "is_correct": false},
+        {"text": "Le protocole CHAP authentifie les utilisateurs", "is_correct": false},
+        {"text": "Le protocole PAP crypte les mots de passe", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 105,
+      "question_text": "Quel est l'intérêt du hachage des messages dans les connexion VPN ?",
+      "options": [
+        {"text": "Il garantit que les données n'ont pas été modifiées lors du transit", "is_correct": true},
+        {"text": "Il accélère la transmission", "is_correct": false},
+        {"text": "Il réduit la taille des paquets", "is_correct": false},
+        {"text": "Il améliore la qualité audio", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 106,
+      "question_text": "Quelle technologie haut débit conviendrait le mieux a un petit bureau pour connexions ascendantes rapides?",
+      "options": [
+        {"text": "Fiber-To-The-Home", "is_correct": true},
+        {"text": "ADSL", "is_correct": false},
+        {"text": "Câble coaxial", "is_correct": false},
+        {"text": "Satellite", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 107,
+      "question_text": "Quelle norme IEEE définit la technologie WIMAX?",
+      "options": [
+        {"text": "802.16", "is_correct": true},
+        {"text": "802.11", "is_correct": false},
+        {"text": "802.3", "is_correct": false},
+        {"text": "802.15", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 108,
+      "question_text": "Quels sont les deux outils de dépannage capable de surveiller la quantitié de trafic traversant un commutateur?",
+      "options": [
+        {"text": "NAM", "is_correct": true},
+        {"text": "Un analyseur réseau portable", "is_correct": true},
+        {"text": "Un routeur", "is_correct": false},
+        {"text": "Un hub", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 109,
+      "question_text": "Quel type de VPN est généralement transparent pour l'utilisateur final ?",
+      "options": [
+        {"text": "Site à Site", "is_correct": true},
+        {"text": "Client à Site", "is_correct": false},
+        {"text": "Peer to Peer", "is_correct": false},
+        {"text": "Mobile VPN", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 110,
+      "question_text": "Quel sont les deux caractéristiques qui décrivent le mutilplexage temporel?",
+      "options": [
+        {"text": "Un bande passante est allouée au trafic sur un seul câble, sur la base de tranches de temps attribuées au préalable.", "is_correct": true},
+        {"text": "La capacité de données sur une seule liaison augmente a mesure que les bits de plusieurs sources sont transmis a", "is_correct": true},
+        {"text": "Chaque signal utilise une fréquence différente", "is_correct": false},
+        {"text": "Les données sont transmises simultanément", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 111,
+      "question_text": "Quel est le rôle du protocole STP dans un réseau commuté?",
+      "options": [
+        {"text": "Empêcher les boucles de commutation", "is_correct": true},
+        {"text": "Augmenter la vitesse de transmission", "is_correct": false},
+        {"text": "Compresser les paquets", "is_correct": false},
+        {"text": "Crypter les communications", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 112,
+      "question_text": "Quelle couche du modèle OSI gère le chiffrement des données?",
+      "options": [
+        {"text": "Couche présentation", "is_correct": true},
+        {"text": "Couche application", "is_correct": false},
+        {"text": "Couche session", "is_correct": false},
+        {"text": "Couche transport", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 113,
+      "question_text": "Quel est le débit maximal du standard Ethernet 10GBASE-T?",
+      "options": [
+        {"text": "10 Gbps", "is_correct": true},
+        {"text": "1 Gbps", "is_correct": false},
+        {"text": "100 Mbps", "is_correct": false},
+        {"text": "40 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 114,
+      "question_text": "Quelle technologie permet la communication sans fil à courte portée?",
+      "options": [
+        {"text": "Bluetooth", "is_correct": true},
+        {"text": "WiFi", "is_correct": false},
+        {"text": "4G", "is_correct": false},
+        {"text": "GPS", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 115,
+      "question_text": "Quel est le rôle principal d'un serveur DHCP?",
+      "options": [
+        {"text": "Attribuer des adresses IP dynamiquement", "is_correct": true},
+        {"text": "Résoudre les noms de domaine", "is_correct": false},
+        {"text": "Filtrer le trafic", "is_correct": false},
+        {"text": "Compresser les données", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 116,
+      "question_text": "Quelle est la différence entre un routeur et un switch?",
+      "options": [
+        {"text": "Un routeur fonctionne au niveau 3, un switch au niveau 2", "is_correct": true},
+        {"text": "Un routeur est plus rapide qu'un switch", "is_correct": false},
+        {"text": "Un switch utilise des adresses IP", "is_correct": false},
+        {"text": "Un routeur ne peut que connecter des réseaux locaux", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 117,
+      "question_text": "Quel protocole est utilisé pour la gestion de réseau?",
+      "options": [
+        {"text": "SNMP", "is_correct": true},
+        {"text": "HTTP", "is_correct": false},
+        {"text": "FTP", "is_correct": false},
+        {"text": "SMTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 118,
+      "question_text": "Quelle est la caractéristique principale de la fibre optique?",
+      "options": [
+        {"text": "Immunité aux interférences électromagnétiques", "is_correct": true},
+        {"text": "Faible coût", "is_correct": false},
+        {"text": "Installation facile", "is_correct": false},
+        {"text": "Compatibilité avec tous les appareils", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 119,
+      "question_text": "Quel est le port par défaut pour le service SSH?",
+      "options": [
+        {"text": "22", "is_correct": true},
+        {"text": "23", "is_correct": false},
+        {"text": "80", "is_correct": false},
+        {"text": "443", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 120,
+      "question_text": "Quelle technologie permet de connecter plusieurs VLAN entre eux?",
+      "options": [
+        {"text": "Router", "is_correct": true},
+        {"text": "Hub", "is_correct": false},
+        {"text": "Bridge", "is_correct": false},
+        {"text": "Switch", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 121,
+      "question_text": "Quel est l'avantage principal du protocole IPv6 par rapport à IPv4?",
+      "options": [
+        {"text": "Plus grand espace d'adressage", "is_correct": true},
+        {"text": "Vitesse plus rapide", "is_correct": false},
+        {"text": "Meilleure sécurité", "is_correct": false},
+        {"text": "Moins cher", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 122,
+      "question_text": "Quelle est la fonction du protocole ARP?",
+      "options": [
+        {"text": "Résoudre les adresses IP en adresses MAC", "is_correct": true},
+        {"text": "Compresser les données", "is_correct": false},
+        {"text": "Crypter les communications", "is_correct": false},
+        {"text": "Gérer les connexions", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 123,
+      "question_text": "Quel type de câble est le plus résistant aux interférences?",
+      "options": [
+        {"text": "Fibre optique", "is_correct": true},
+        {"text": "Câble coaxial", "is_correct": false},
+        {"text": "Câble torsadé", "is_correct": false},
+        {"text": "Câble plat", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 124,
+      "question_text": "Quelle est la vitesse maximale du standard USB 3.0?",
+      "options": [
+        {"text": "5 Gbps", "is_correct": true},
+        {"text": "480 Mbps", "is_correct": false},
+        {"text": "12 Mbps", "is_correct": false},
+        {"text": "10 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 125,
+      "question_text": "Quel protocole est utilisé pour l'envoi d'emails?",
+      "options": [
+        {"text": "SMTP", "is_correct": true},
+        {"text": "POP3", "is_correct": false},
+        {"text": "IMAP", "is_correct": false},
+        {"text": "HTTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 126,
+      "question_text": "Quelle est la caractéristique principale du cloud computing?",
+      "options": [
+        {"text": "Ressources accessibles via Internet", "is_correct": true},
+        {"text": "Installation locale obligatoire", "is_correct": false},
+        {"text": "Coût élevé", "is_correct": false},
+        {"text": "Maintenance complexe", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 127,
+      "question_text": "Quel est le rôle d'un pare-feu?",
+      "options": [
+        {"text": "Filtrer le trafic réseau", "is_correct": true},
+        {"text": "Accélérer les connexions", "is_correct": false},
+        {"text": "Compresser les données", "is_correct": false},
+        {"text": "Résoudre les noms de domaine", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 128,
+      "question_text": "Quelle technologie permet la virtualisation des serveurs?",
+      "options": [
+        {"text": "VMware", "is_correct": true},
+        {"text": "Docker", "is_correct": false},
+        {"text": "Kubernetes", "is_correct": false},
+        {"text": "Ansible", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 129,
+      "question_text": "Quel est le protocole pour la synchronisation de temps?",
+      "options": [
+        {"text": "NTP", "is_correct": true},
+        {"text": "FTP", "is_correct": false},
+        {"text": "HTTP", "is_correct": false},
+        {"text": "SMTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 130,
+      "question_text": "Quelle est la fonction principale de la couche transport?",
+      "options": [
+        {"text": "Assurer la livraison fiable des données", "is_correct": true},
+        {"text": "Gérer les adresses IP", "is_correct": false},
+        {"text": "Crypter les communications", "is_correct": false},
+        {"text": "Compresser les fichiers", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 131,
+      "question_text": "Comment le routeur MAIN apprend-il dynamiquement une route vers le sous-réseau 10.16.10.48/28 dans le schéma ?",
+      "options": [
+        {"text": "Avec un protocole de routage.", "is_correct": true},
+        {"text": "Avec une table statique", "is_correct": false},
+        {"text": "Avec un switch", "is_correct": false},
+        {"text": "Avec un hub", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 132,
+      "question_text": "Combien de domaines de broadcast et de collision y a-t-il dans le schéma ?",
+      "options": [
+        {"text": "3 Domaines Broadcast et 7 Domaines de Collision.", "is_correct": true},
+        {"text": "7 Domaines Broadcast et 3 Domaines de Collision.", "is_correct": false},
+        {"text": "5 Domaines Broadcast et 5 Domaines de Collision.", "is_correct": false},
+        {"text": "1 Domaine Broadcast et 1 Domaine de Collision.", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 133,
+      "question_text": "Laquelle des couches OSI suivantes offre des services de communication fiables et orientés connexion ?",
+      "options": [
+        {"text": "Transport", "is_correct": true},
+        {"text": "Réseau", "is_correct": false},
+        {"text": "Liaison", "is_correct": false},
+        {"text": "Physique", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 134,
+      "question_text": "Que vérifie la commande ping 127.0.0.1 ?",
+      "options": [
+        {"text": "La configuration TCP/IP du réseau, et cette adresse s'appelle le test de bouclage interne", "is_correct": true},
+        {"text": "La connexion Internet", "is_correct": false},
+        {"text": "La vitesse du réseau", "is_correct": false},
+        {"text": "La configuration du DNS", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 135,
+      "question_text": "Quel type de câble est requis pour connecter un port console de routeur à un port COM de PC ?",
+      "options": [
+        {"text": "Câble à paires inversées", "is_correct": true},
+        {"text": "Câble droit", "is_correct": false},
+        {"text": "Câble croisé", "is_correct": false},
+        {"text": "Fibre optique", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 136,
+      "question_text": "Quel schéma de câblage affiche l'extrémité des broches pour un câble croisé utilisé avec les équipements Cisco ?",
+      "options": [
+        {"text": "Câble C", "is_correct": true},
+        {"text": "Câble A", "is_correct": false},
+        {"text": "Câble B", "is_correct": false},
+        {"text": "Câble D", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 137,
+      "question_text": "Parmi les propositions suivantes, laquelle décrit le protocole de routage RIP version 1 ?",
+      "options": [
+        {"text": "Protocole de routage (vecteur à distance) utilise le nbre de sauts comme seule métrique.", "is_correct": true},
+        {"text": "Protocole de routage à état de lien", "is_correct": false},
+        {"text": "Protocole de routage hybride", "is_correct": false},
+        {"text": "Protocole de routage par vecteur de chemin", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 138,
+      "question_text": "Quel protocole de routage est considéré comme un protocole à vecteur de distance ?",
+      "options": [
+        {"text": "RIP", "is_correct": true},
+        {"text": "OSPF", "is_correct": false},
+        {"text": "EIGRP", "is_correct": false},
+        {"text": "BGP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 139,
+      "question_text": "Quelle est la valeur par défaut de la métrique OSPF sur une liaison Fast Ethernet ?",
+      "options": [
+        {"text": "1", "is_correct": true},
+        {"text": "10", "is_correct": false},
+        {"text": "100", "is_correct": false},
+        {"text": "1000", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 140,
+      "question_text": "Quel type de câble est recommandé pour les réseaux Gigabit Ethernet ?",
+      "options": [
+        {"text": "Catégorie 5e ou supérieure", "is_correct": true},
+        {"text": "Catégorie 3", "is_correct": false},
+        {"text": "Câble coaxial", "is_correct": false},
+        {"text": "Fibre optique monomode", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 141,
+      "question_text": "Quelle est la fonction principale du protocole STP ?",
+      "options": [
+        {"text": "Prévenir les boucles de réseau dans les topologies redondantes", "is_correct": true},
+        {"text": "Augmenter la vitesse de transmission", "is_correct": false},
+        {"text": "Compresser les paquets", "is_correct": false},
+        {"text": "Crypter les communications", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 142,
+      "question_text": "Quel est le port par défaut pour le protocole HTTPS ?",
+      "options": [
+        {"text": "443", "is_correct": true},
+        {"text": "80", "is_correct": false},
+        {"text": "8080", "is_correct": false},
+        {"text": "3000", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 143,
+      "question_text": "Quelle technologie permet la communication entre des réseaux IPv6 et IPv4 ?",
+      "options": [
+        {"text": "NAT64", "is_correct": true},
+        {"text": "NAT44", "is_correct": false},
+        {"text": "PAT", "is_correct": false},
+        {"text": "VPN", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 144,
+      "question_text": "Quel est le rôle principal d'un proxy inverse ?",
+      "options": [
+        {"text": "Distribuer les requêtes entrantes vers plusieurs serveurs", "is_correct": true},
+        {"text": "Filtrer les sorties", "is_correct": false},
+        {"text": "Compresser les images", "is_correct": false},
+        {"text": "Accélérer les bases de données", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 145,
+      "question_text": "Quelle norme WiFi utilise la bande de fréquence 5 GHz ?",
+      "options": [
+        {"text": "802.11a", "is_correct": true},
+        {"text": "802.11b", "is_correct": false},
+        {"text": "802.11g", "is_correct": false},
+        {"text": "802.11n", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 146,
+      "question_text": "Quel est le débit maximal du standard 4G LTE ?",
+      "options": [
+        {"text": "100 Mbps", "is_correct": true},
+        {"text": "1 Gbps", "is_correct": false},
+        {"text": "10 Mbps", "is_correct": false},
+        {"text": "500 Mbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 147,
+      "question_text": "Quelle technologie permet le partage de charge entre plusieurs serveurs ?",
+      "options": [
+        {"text": "Load Balancing", "is_correct": true},
+        {"text": "Failover", "is_correct": false},
+        {"text": "Clustering", "is_correct": false},
+        {"text": "Mirroring", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 148,
+      "question_text": "Quel est le rôle du protocole ICMP ?",
+      "options": [
+        {"text": "Gérer les messages d'erreur et de diagnostic", "is_correct": true},
+        {"text": "Transférer des fichiers", "is_correct": false},
+        {"text": "Envoyer des emails", "is_correct": false},
+        {"text": "Naviguer sur le web", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 149,
+      "question_text": "Quelle est la caractéristique principale du protocole UDP ?",
+      "options": [
+        {"text": "Sans connexion et rapide", "is_correct": true},
+        {"text": "Fiable et lent", "is_correct": false},
+        {"text": "Sécurisé et crypté", "is_correct": false},
+        {"text": "Compressé et optimisé", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 150,
+      "question_text": "Quel type d'attaque réseau exploite la confiance entre les systèmes ?",
+      "options": [
+        {"text": "Spoofing", "is_correct": true},
+        {"text": "DDoS", "is_correct": false},
+        {"text": "Phishing", "is_correct": false},
+        {"text": "Malware", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 151,
+      "question_text": "Quelle technologie permet la sauvegarde des données sur plusieurs sites ?",
+      "options": [
+        {"text": "RAID distribué", "is_correct": true},
+        {"text": "RAID local", "is_correct": false},
+        {"text": "Backup sur bande", "is_correct": false},
+        {"text": "Cloud storage", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 152,
+      "question_text": "Quel est le rôle principal d'un système de détection d'intrusion (IDS) ?",
+      "options": [
+        {"text": "Détecter les activités suspectes sur le réseau", "is_correct": true},
+        {"text": "Bloquer les attaques", "is_correct": false},
+        {"text": "Compresser les données", "is_correct": false},
+        {"text": "Accélérer les connexions", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 153,
+      "question_text": "Quelle norme définit la sécurité des réseaux sans fil ?",
+      "options": [
+        {"text": "802.11i", "is_correct": true},
+        {"text": "802.11n", "is_correct": false},
+        {"text": "802.11ac", "is_correct": false},
+        {"text": "802.11ax", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 154,
+      "question_text": "Quel est le débit théorique maximum de l'Ethernet 10 Gbps ?",
+      "options": [
+        {"text": "10 000 Mbps", "is_correct": true},
+        {"text": "1000 Mbps", "is_correct": false},
+        {"text": "100 000 Mbps", "is_correct": false},
+        {"text": "100 Mbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 155,
+      "question_text": "Quelle technologie permet la compression des données en transit ?",
+      "options": [
+        {"text": "WAN Acceleration", "is_correct": true},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Firewall", "is_correct": false},
+        {"text": "VPN", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 156,
+      "question_text": "Quel est le rôle du protocole BGP ?",
+      "options": [
+        {"text": "Échanger des informations de routage entre systèmes autonomes", "is_correct": true},
+        {"text": "Résoudre les noms de domaine", "is_correct": false},
+        {"text": "Transférer des fichiers", "is_correct": false},
+        {"text": "Compresser les données", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 157,
+      "question_text": "Quelle technologie permet la virtualisation des réseaux ?",
+      "options": [
+        {"text": "SDN", "is_correct": true},
+        {"text": "VLAN", "is_correct": false},
+        {"text": "VPN", "is_correct": false},
+        {"text": "NAT", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 158,
+      "question_text": "Quel est le port par défaut pour le protocole FTP ?",
+      "options": [
+        {"text": "21", "is_correct": true},
+        {"text": "22", "is_correct": false},
+        {"text": "23", "is_correct": false},
+        {"text": "25", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 159,
+      "question_text": "Quelle technologie permet la redondance des liens réseau ?",
+      "options": [
+        {"text": "LACP", "is_correct": true},
+        {"text": "STP", "is_correct": false},
+        {"text": "VLAN", "is_correct": false},
+        {"text": "NAT", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 160,
+      "question_text": "Quel est le rôle principal d'un firewall de nouvelle génération ?",
+      "options": [
+        {"text": "Inspecter le contenu des paquets au niveau applicatif", "is_correct": true},
+        {"text": "Bloquer les adresses IP", "is_correct": false},
+        {"text": "Compresser les paquets", "is_correct": false},
+        {"text": "Accélérer les connexions", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 161,
+      "question_text": "Quelle technologie permet la segmentation des réseaux ?",
+      "options": [
+        {"text": "Micro-segmentation", "is_correct": true},
+        {"text": "Macro-segmentation", "is_correct": false},
+        {"text": "Mini-segmentation", "is_correct": false},
+        {"text": "Mega-segmentation", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 162,
+      "question_text": "Quel est le débit maximal du standard WiFi 6 (802.11ax) ?",
+      "options": [
+        {"text": "9.6 Gbps", "is_correct": true},
+        {"text": "3.5 Gbps", "is_correct": false},
+        {"text": "1.3 Gbps", "is_correct": false},
+        {"text": "600 Mbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 163,
+      "question_text": "Quelle technologie permet l'automatisation de la configuration réseau ?",
+      "options": [
+        {"text": "Zero Touch Provisioning", "is_correct": true},
+        {"text": "Manual Configuration", "is_correct": false},
+        {"text": "Script-based Setup", "is_correct": false},
+        {"text": "Template Deployment", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 164,
+      "question_text": "Quel est le rôle du protocole LDAP ?",
+      "options": [
+        {"text": "Gérer les annuaires d'entreprise", "is_correct": true},
+        {"text": "Transférer des fichiers", "is_correct": false},
+        {"text": "Naviguer sur le web", "is_correct": false},
+        {"text": "Envoyer des emails", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 165,
+      "question_text": "Quelle technologie permet la surveillance proactive des réseaux ?",
+      "options": [
+        {"text": "Telemetry", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "Syslog", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 166,
+      "question_text": "Quel est le port par défaut pour le protocole RDP ?",
+      "options": [
+        {"text": "3389", "is_correct": true},
+        {"text": "22", "is_correct": false},
+        {"text": "80", "is_correct": false},
+        {"text": "443", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 167,
+      "question_text": "Quelle technologie permet la sécurisation des communications VPN ?",
+      "options": [
+        {"text": "IPsec", "is_correct": true},
+        {"text": "HTTP", "is_correct": false},
+        {"text": "FTP", "is_correct": false},
+        {"text": "SMTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 168,
+      "question_text": "Quel est le rôle principal d'un serveur NTP ?",
+      "options": [
+        {"text": "Synchroniser l'heure des systèmes réseau", "is_correct": true},
+        {"text": "Résoudre les noms de domaine", "is_correct": false},
+        {"text": "Transférer des fichiers", "is_correct": false},
+        {"text": "Filtrer le trafic", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 169,
+      "question_text": "Quelle technologie permet l'orchestration des conteneurs ?",
+      "options": [
+        {"text": "Kubernetes", "is_correct": true},
+        {"text": "Docker", "is_correct": false},
+        {"text": "VMware", "is_correct": false},
+        {"text": "Ansible", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 170,
+      "question_text": "Quel est le débit maximal du standard 5G ?",
+      "options": [
+        {"text": "20 Gbps", "is_correct": true},
+        {"text": "1 Gbps", "is_correct": false},
+        {"text": "100 Mbps", "is_correct": false},
+        {"text": "10 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 171,
+      "question_text": "Quel est le rôle principal d'un serveur proxy ?",
+      "options": [
+        {"text": "Filtrer et mettre en cache les requêtes web", "is_correct": true},
+        {"text": "Transférer des fichiers", "is_correct": false},
+        {"text": "Résoudre les noms de domaine", "is_correct": false},
+        {"text": "Compresser les images", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 172,
+      "question_text": "Quelle technologie permet la connexion sécurisée à distance ?",
+      "options": [
+        {"text": "VPN", "is_correct": true},
+        {"text": "HTTP", "is_correct": false},
+        {"text": "FTP", "is_correct": false},
+        {"text": "Telnet", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 173,
+      "question_text": "Quel est le port par défaut pour le protocole SMTP ?",
+      "options": [
+        {"text": "25", "is_correct": true},
+        {"text": "110", "is_correct": false},
+        {"text": "143", "is_correct": false},
+        {"text": "993", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 174,
+      "question_text": "Quelle technologie permet la redondance des serveurs ?",
+      "options": [
+        {"text": "Clustering", "is_correct": true},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false},
+        {"text": "Compression", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 175,
+      "question_text": "Quel est le rôle du protocole SNMP ?",
+      "options": [
+        {"text": "Surveiller et gérer les équipements réseau", "is_correct": true},
+        {"text": "Compresser les données", "is_correct": false},
+        {"text": "Crypter les communications", "is_correct": false},
+        {"text": "Accélérer les transferts", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 176,
+      "question_text": "Quelle technologie permet la compression des données ?",
+      "options": [
+        {"text": "LZ77", "is_correct": true},
+        {"text": "AES", "is_correct": false},
+        {"text": "RSA", "is_correct": false},
+        {"text": "SHA-256", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 177,
+      "question_text": "Quel est le débit maximal du standard Bluetooth 5.0 ?",
+      "options": [
+        {"text": "2 Mbps", "is_correct": true},
+        {"text": "1 Mbps", "is_correct": false},
+        {"text": "5 Mbps", "is_correct": false},
+        {"text": "10 Mbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 178,
+      "question_text": "Quelle technologie permet la virtualisation des applications ?",
+      "options": [
+        {"text": "Containers", "is_correct": true},
+        {"text": "VMs", "is_correct": false},
+        {"text": "Bare Metal", "is_correct": false},
+        {"text": "Cloud Native", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 179,
+      "question_text": "Quel est le port par défaut pour le protocole POP3 ?",
+      "options": [
+        {"text": "110", "is_correct": true},
+        {"text": "25", "is_correct": false},
+        {"text": "143", "is_correct": false},
+        {"text": "995", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 180,
+      "question_text": "Quelle technologie permet la sauvegarde incrémentielle ?",
+      "options": [
+        {"text": "Rsync", "is_correct": true},
+        {"text": "FTP", "is_correct": false},
+        {"text": "SCP", "is_correct": false},
+        {"text": "HTTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 181,
+      "question_text": "Quel est le rôle du protocole RTP ?",
+      "options": [
+        {"text": "Transmettre les données audio et vidéo en temps réel", "is_correct": true},
+        {"text": "Compresser les fichiers", "is_correct": false},
+        {"text": "Crypter les emails", "is_correct": false},
+        {"text": "Naviguer sur le web", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 182,
+      "question_text": "Quelle technologie permet la segmentation des réseaux IoT ?",
+      "options": [
+        {"text": "IoT Segmentation", "is_correct": true},
+        {"text": "VLAN", "is_correct": false},
+        {"text": "VPN", "is_correct": false},
+        {"text": "NAT", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 183,
+      "question_text": "Quel est le débit maximal du standard WiFi 5 (802.11ac) ?",
+      "options": [
+        {"text": "3.5 Gbps", "is_correct": true},
+        {"text": "1.3 Gbps", "is_correct": false},
+        {"text": "600 Mbps", "is_correct": false},
+        {"text": "150 Mbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 184,
+      "question_text": "Quelle technologie permet la synchronisation des bases de données ?",
+      "options": [
+        {"text": "Database Replication", "is_correct": true},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false},
+        {"text": "Compression", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 185,
+      "question_text": "Quel est le port par défaut pour le protocole IMAP ?",
+      "options": [
+        {"text": "143", "is_correct": true},
+        {"text": "110", "is_correct": false},
+        {"text": "25", "is_correct": false},
+        {"text": "993", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 186,
+      "question_text": "Quelle technologie permet la mise en cache des contenus web ?",
+      "options": [
+        {"text": "CDN", "is_correct": true},
+        {"text": "VPN", "is_correct": false},
+        {"text": "FTP", "is_correct": false},
+        {"text": "SMTP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 187,
+      "question_text": "Quel est le rôle du protocole SCTP ?",
+      "options": [
+        {"text": "Transport fiable multi-flux", "is_correct": true},
+        {"text": "Transport sans connexion", "is_correct": false},
+        {"text": "Transport compressé", "is_correct": false},
+        {"text": "Transport crypté", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 188,
+      "question_text": "Quelle technologie permet la surveillance des performances réseau ?",
+      "options": [
+        {"text": "NetFlow", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "Syslog", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 189,
+      "question_text": "Quel est le débit maximal du standard Thunderbolt 3 ?",
+      "options": [
+        {"text": "40 Gbps", "is_correct": true},
+        {"text": "20 Gbps", "is_correct": false},
+        {"text": "10 Gbps", "is_correct": false},
+        {"text": "5 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 190,
+      "question_text": "Quelle technologie permet la gestion centralisée des identités ?",
+      "options": [
+        {"text": "SSO", "is_correct": true},
+        {"text": "LDAP", "is_correct": false},
+        {"text": "RADIUS", "is_correct": false},
+        {"text": "Kerberos", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 191,
+      "question_text": "Quel est le port par défaut pour le protocole LDAP ?",
+      "options": [
+        {"text": "389", "is_correct": true},
+        {"text": "636", "is_correct": false},
+        {"text": "3268", "is_correct": false},
+        {"text": "3269", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 192,
+      "question_text": "Quelle technologie permet la compression des images ?",
+      "options": [
+        {"text": "JPEG", "is_correct": true},
+        {"text": "PNG", "is_correct": false},
+        {"text": "BMP", "is_correct": false},
+        {"text": "TIFF", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 193,
+      "question_text": "Quel est le rôle du protocole DCCP ?",
+      "options": [
+        {"text": "Transport avec contrôle de congestion", "is_correct": true},
+        {"text": "Transport fiable", "is_correct": false},
+        {"text": "Transport compressé", "is_correct": false},
+        {"text": "Transport crypté", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 194,
+      "question_text": "Quelle technologie permet la surveillance des logs ?",
+      "options": [
+        {"text": "SIEM", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 195,
+      "question_text": "Quel est le débit maximal du standard USB 4.0 ?",
+      "options": [
+        {"text": "40 Gbps", "is_correct": true},
+        {"text": "20 Gbps", "is_correct": false},
+        {"text": "10 Gbps", "is_correct": false},
+        {"text": "5 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 196,
+      "question_text": "Quelle technologie permet la gestion des configurations réseau ?",
+      "options": [
+        {"text": "Configuration Management", "is_correct": true},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false},
+        {"text": "Compression", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 197,
+      "question_text": "Quel est le port par défaut pour le protocole MySQL ?",
+      "options": [
+        {"text": "3306", "is_correct": true},
+        {"text": "5432", "is_correct": false},
+        {"text": "1433", "is_correct": false},
+        {"text": "1521", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 198,
+      "question_text": "Quelle technologie permet la compression des vidéos ?",
+      "options": [
+        {"text": "H.264", "is_correct": true},
+        {"text": "JPEG", "is_correct": false},
+        {"text": "MP3", "is_correct": false},
+        {"text": "PNG", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 199,
+      "question_text": "Quel est le rôle du protocole QUIC ?",
+      "options": [
+        {"text": "Transport rapide et sécurisé sur UDP", "is_correct": true},
+        {"text": "Transport lent et non sécurisé", "is_correct": false},
+        {"text": "Transport compressé uniquement", "is_correct": false},
+        {"text": "Transport crypté uniquement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 200,
+      "question_text": "Quelle technologie permet la surveillance des applications ?",
+      "options": [
+        {"text": "APM", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 201,
+      "question_text": "Quel est le débit maximal du standard PCIe 4.0 ?",
+      "options": [
+        {"text": "16 GT/s", "is_correct": true},
+        {"text": "8 GT/s", "is_correct": false},
+        {"text": "32 GT/s", "is_correct": false},
+        {"text": "4 GT/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 202,
+      "question_text": "Quelle technologie permet la gestion des correctifs logiciels ?",
+      "options": [
+        {"text": "Patch Management", "is_correct": true},
+        {"text": "Configuration Management", "is_correct": false},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 203,
+      "question_text": "Quel est le port par défaut pour le protocole PostgreSQL ?",
+      "options": [
+        {"text": "5432", "is_correct": true},
+        {"text": "3306", "is_correct": false},
+        {"text": "1433", "is_correct": false},
+        {"text": "1521", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 204,
+      "question_text": "Quelle technologie permet la compression des fichiers ?",
+      "options": [
+        {"text": "ZIP", "is_correct": true},
+        {"text": "JPEG", "is_correct": false},
+        {"text": "MP3", "is_correct": false},
+        {"text": "PNG", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 205,
+      "question_text": "Quel est le rôle du protocole TLS ?",
+      "options": [
+        {"text": "Sécuriser les communications web", "is_correct": true},
+        {"text": "Compresser les données", "is_correct": false},
+        {"text": "Accélérer les transferts", "is_correct": false},
+        {"text": "Gérer les adresses IP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 206,
+      "question_text": "Quelle technologie permet la surveillance de la sécurité ?",
+      "options": [
+        {"text": "Security Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 207,
+      "question_text": "Quel est le débit maximal du standard NVMe ?",
+      "options": [
+        {"text": "32 Gbps", "is_correct": true},
+        {"text": "16 Gbps", "is_correct": false},
+        {"text": "8 Gbps", "is_correct": false},
+        {"text": "4 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 208,
+      "question_text": "Quelle technologie permet la gestion des vulnérabilités ?",
+      "options": [
+        {"text": "Vulnerability Management", "is_correct": true},
+        {"text": "Configuration Management", "is_correct": false},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 209,
+      "question_text": "Quel est le port par défaut pour le protocole Redis ?",
+      "options": [
+        {"text": "6379", "is_correct": true},
+        {"text": "3306", "is_correct": false},
+        {"text": "5432", "is_correct": false},
+        {"text": "1433", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 210,
+      "question_text": "Quelle technologie permet la compression audio ?",
+      "options": [
+        {"text": "MP3", "is_correct": true},
+        {"text": "JPEG", "is_correct": false},
+        {"text": "PNG", "is_correct": false},
+        {"text": "ZIP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 211,
+      "question_text": "Quel est le rôle du protocole WebSocket ?",
+      "options": [
+        {"text": "Communication bidirectionnelle en temps réel", "is_correct": true},
+        {"text": "Communication unidirectionnelle", "is_correct": false},
+        {"text": "Communication différée", "is_correct": false},
+        {"text": "Communication compressée uniquement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 212,
+      "question_text": "Quelle technologie permet la surveillance des infrastructures ?",
+      "options": [
+        {"text": "Infrastructure Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 213,
+      "question_text": "Quel est le débit maximal du standard SATA 3.0 ?",
+      "options": [
+        {"text": "6 Gbps", "is_correct": true},
+        {"text": "3 Gbps", "is_correct": false},
+        {"text": "1.5 Gbps", "is_correct": false},
+        {"text": "12 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 214,
+      "question_text": "Quelle technologie permet la gestion des actifs informatiques ?",
+      "options": [
+        {"text": "Asset Management", "is_correct": true},
+        {"text": "Configuration Management", "is_correct": false},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 215,
+      "question_text": "Quel est le port par défaut pour le protocole MongoDB ?",
+      "options": [
+        {"text": "27017", "is_correct": true},
+        {"text": "3306", "is_correct": false},
+        {"text": "5432", "is_correct": false},
+        {"text": "1433", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 216,
+      "question_text": "Quelle technologie permet le chiffrement des données ?",
+      "options": [
+        {"text": "AES", "is_correct": true},
+        {"text": "ZIP", "is_correct": false},
+        {"text": "JPEG", "is_correct": false},
+        {"text": "MP3", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 217,
+      "question_text": "Quel est le rôle du protocole gRPC ?",
+      "options": [
+        {"text": "Communication RPC moderne et efficace", "is_correct": true},
+        {"text": "Communication lente et obsolète", "is_correct": false},
+        {"text": "Communication compressée uniquement", "is_correct": false},
+        {"text": "Communication cryptée uniquement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 218,
+      "question_text": "Quelle technologie permet la surveillance du cloud ?",
+      "options": [
+        {"text": "Cloud Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 219,
+      "question_text": "Quel est le débit maximal du standard DDR4 ?",
+      "options": [
+        {"text": "25.6 GB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 220,
+      "question_text": "Quelle technologie permet la gestion des identités numériques ?",
+      "options": [
+        {"text": "Digital Identity Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 221,
+      "question_text": "Quel est le port par défaut pour le protocole Elasticsearch ?",
+      "options": [
+        {"text": "9200", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 222,
+      "question_text": "Quelle technologie permet le hachage des données ?",
+      "options": [
+        {"text": "SHA-256", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 223,
+      "question_text": "Quel est le rôle du protocole MQTT ?",
+      "options": [
+        {"text": "Messagerie légère pour IoT", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 224,
+      "question_text": "Quelle technologie permet la surveillance des conteneurs ?",
+      "options": [
+        {"text": "Container Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 225,
+      "question_text": "Quel est le débit maximal du standard HDMI 2.1 ?",
+      "options": [
+        {"text": "48 Gbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 226,
+      "question_text": "Quelle technologie permet la gestion des clés cryptographiques ?",
+      "options": [
+        {"text": "Key Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 227,
+      "question_text": "Quel est le port par défaut pour le protocole RabbitMQ ?",
+      "options": [
+        {"text": "5672", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 228,
+      "question_text": "Quelle technologie permet la signature numérique ?",
+      "options": [
+        {"text": "Digital Signature", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 229,
+      "question_text": "Quel est le rôle du protocole CoAP ?",
+      "options": [
+        {"text": "Protocole web contraint pour IoT", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 230,
+      "question_text": "Quelle technologie permet la surveillance des microservices ?",
+      "options": [
+        {"text": "Microservices Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 231,
+      "question_text": "Quel est le débit maximal du standard DisplayPort 2.0 ?",
+      "options": [
+        {"text": "77.37 Gbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 232,
+      "question_text": "Quelle technologie permet la gestion des certificats ?",
+      "options": [
+        {"text": "Certificate Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 233,
+      "question_text": "Quel est le port par défaut pour le protocole Kafka ?",
+      "options": [
+        {"text": "9092", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 234,
+      "question_text": "Quelle technologie permet l'authentification biométrique ?",
+      "options": [
+        {"text": "Biometric Authentication", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 235,
+      "question_text": "Quel est le rôle du protocole AMQP ?",
+      "options": [
+        {"text": "Messagerie d'entreprise", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 236,
+      "question_text": "Quelle technologie permet la surveillance des API ?",
+      "options": [
+        {"text": "API Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 237,
+      "question_text": "Quel est le débit maximal du standard DDR5 ?",
+      "options": [
+        {"text": "51.2 GB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 238,
+      "question_text": "Quelle technologie permet la gestion des secrets ?",
+      "options": [
+        {"text": "Secret Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 239,
+      "question_text": "Quel est le port par défaut pour le protocole ZooKeeper ?",
+      "options": [
+        {"text": "2181", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 240,
+      "question_text": "Quelle technologie permet l'authentification multi-facteurs ?",
+      "options": [
+        {"text": "MFA", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 241,
+      "question_text": "Quel est le rôle principal d'un serveur RADIUS ?",
+      "options": [
+        {"text": "Authentification, autorisation et comptabilité (AAA)", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 242,
+      "question_text": "Quelle technologie permet la segmentation des réseaux sans fil ?",
+      "options": [
+        {"text": "WLAN Segmentation", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 243,
+      "question_text": "Quel est le débit maximal du standard WiFi 6E ?",
+      "options": [
+        {"text": "9.6 Gbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 244,
+      "question_text": "Quelle technologie permet la gestion des politiques réseau ?",
+      "options": [
+        {"text": "Policy Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 245,
+      "question_text": "Quel est le port par défaut pour le protocole VNC ?",
+      "options": [
+        {"text": "5900", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 246,
+      "question_text": "Quelle technologie permet la compression des flux vidéo ?",
+      "options": [
+        {"text": "H.265", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 247,
+      "question_text": "Quel est le rôle du protocole RTCP ?",
+      "options": [
+        {"text": "Contrôler la qualité des transmissions RTP", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 248,
+      "question_text": "Quelle technologie permet la surveillance des réseaux SDN ?",
+      "options": [
+        {"text": "SDN Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 249,
+      "question_text": "Quel est le débit maximal du standard PCIe 5.0 ?",
+      "options": [
+        {"text": "32 GT/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 250,
+      "question_text": "Quelle technologie permet la gestion des flux de travail ?",
+      "options": [
+        {"text": "Workflow Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 251,
+      "question_text": "Quel est le port par défaut pour le protocole Cassandra ?",
+      "options": [
+        {"text": "9042", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 252,
+      "question_text": "Quelle technologie permet le chiffrement homomorphe ?",
+      "options": [
+        {"text": "Homomorphic Encryption", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 253,
+      "question_text": "Quel est le rôle du protocole LoRaWAN ?",
+      "options": [
+        {"text": "Communication longue portée pour IoT", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 254,
+      "question_text": "Quelle technologie permet la surveillance des réseaux edge ?",
+      "options": [
+        {"text": "Edge Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 255,
+      "question_text": "Quel est le débit maximal du standard USB 3.2 ?",
+      "options": [
+        {"text": "20 Gbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 256,
+      "question_text": "Quelle technologie permet la gestion des conteneurs serverless ?",
+      "options": [
+        {"text": "Serverless Container Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 257,
+      "question_text": "Quel est le port par défaut pour le protocole Consul ?",
+      "options": [
+        {"text": "8500", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 258,
+      "question_text": "Quelle technologie permet la quantification résistante aux attaques ?",
+      "options": [
+        {"text": "Post-Quantum Cryptography", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 259,
+      "question_text": "Quel est le rôle du protocole Zigbee ?",
+      "options": [
+        {"text": "Réseau maillé pour IoT", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 260,
+      "question_text": "Quelle technologie permet la surveillance des réseaux 5G ?",
+      "options": [
+        {"text": "5G Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 261,
+      "question_text": "Quel est le débit maximal du standard DDR6 ?",
+      "options": [
+        {"text": "102.4 GB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 262,
+      "question_text": "Quelle technologie permet la gestion des services mesh ?",
+      "options": [
+        {"text": "Service Mesh Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 263,
+      "question_text": "Quel est le port par défaut pour le protocole etcd ?",
+      "options": [
+        {"text": "2379", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 264,
+      "question_text": "Quelle technologie permet l'analyse comportementale ?",
+      "options": [
+        {"text": "Behavioral Analytics", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 265,
+      "question_text": "Quel est le rôle du protocole Thread ?",
+      "options": [
+        {"text": "Réseau maillé à faible consommation pour IoT", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 266,
+      "question_text": "Quelle technologie permet la surveillance des réseaux blockchain ?",
+      "options": [
+        {"text": "Blockchain Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 267,
+      "question_text": "Quel est le débit maximal du standard Thunderbolt 4 ?",
+      "options": [
+        {"text": "40 Gbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 268,
+      "question_text": "Quelle technologie permet la gestion des architectures sans serveur ?",
+      "options": [
+        {"text": "Serverless Architecture Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 269,
+      "question_text": "Quel est le port par défaut pour le protocole Nomad ?",
+      "options": [
+        {"text": "4646", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 270,
+      "question_text": "Quelle technologie permet l'intelligence artificielle pour la sécurité ?",
+      "options": [
+        {"text": "AI Security", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 271,
+      "question_text": "Quel est le rôle du protocole NB-IoT ?",
+      "options": [
+        {"text": "Communication IoT à large bande étroite", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 272,
+      "question_text": "Quelle technologie permet la surveillance des réseaux hybrides ?",
+      "options": [
+        {"text": "Hybrid Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 273,
+      "question_text": "Quel est le débit maximal du standard M.2 NVMe ?",
+      "options": [
+        {"text": "64 Gbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 274,
+      "question_text": "Quelle technologie permet la gestion des environnements multi-cloud ?",
+      "options": [
+        {"text": "Multi-Cloud Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 275,
+      "question_text": "Quel est le port par défaut pour le protocole Vault ?",
+      "options": [
+        {"text": "8200", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 276,
+      "question_text": "Quelle technologie permet le calcul confidentiel ?",
+      "options": [
+        {"text": "Confidential Computing", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 277,
+      "question_text": "Quel est le rôle du protocole Sigfox ?",
+      "options": [
+        {"text": "Communication IoT ultra basse consommation", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 278,
+      "question_text": "Quelle technologie permet la surveillance des réseaux fog ?",
+      "options": [
+        {"text": "Fog Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 279,
+      "question_text": "Quel est le débit maximal du standard UFS 3.1 ?",
+      "options": [
+        {"text": "2.9 GB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 280,
+      "question_text": "Quelle technologie permet la gestion des infrastructures composites ?",
+      "options": [
+        {"text": "Composite Infrastructure Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 281,
+      "question_text": "Quel est le port par défaut pour le protocole Pulsar ?",
+      "options": [
+        {"text": "6650", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 282,
+      "question_text": "Quelle technologie permet la détection zero-day ?",
+      "options": [
+        {"text": "Zero-Day Detection", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 283,
+      "question_text": "Quel est le rôle du protocole Z-Wave ?",
+      "options": [
+        {"text": "Domotique et IoT", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 284,
+      "question_text": "Quelle technologie permet la surveillance des réseaux quantiques ?",
+      "options": [
+        {"text": "Quantum Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 285,
+      "question_text": "Quel est le débit maximal du standard CXL ?",
+      "options": [
+        {"text": "64 GT/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 286,
+      "question_text": "Quelle technologie permet la gestion des environnements serverless ?",
+      "options": [
+        {"text": "Serverless Environment Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 287,
+      "question_text": "Quel est le port par défaut pour le protocole NATS ?",
+      "options": [
+        {"text": "4222", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 288,
+      "question_text": "Quelle technologie permet l'apprentissage automatique pour les réseaux ?",
+      "options": [
+        {"text": "Machine Learning for Networks", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 289,
+      "question_text": "Quel est le rôle du protocole Matter ?",
+      "options": [
+        {"text": "Interopérabilité IoT", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 290,
+      "question_text": "Quelle technologie permet la surveillance des réseaux neuronaux ?",
+      "options": [
+        {"text": "Neural Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 291,
+      "question_text": "Quel est le débit maximal du standard HBM3 ?",
+      "options": [
+        {"text": "819 GB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 292,
+      "question_text": "Quelle technologie permet la gestion des architectures cloud-natives ?",
+      "options": [
+        {"text": "Cloud-Native Architecture Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 293,
+      "question_text": "Quel est le port par défaut pour le protocole Dapr ?",
+      "options": [
+        {"text": "3500", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 294,
+      "question_text": "Quelle technologie permet l'orchestration automatisée ?",
+      "options": [
+        {"text": "Automated Orchestration", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 295,
+      "question_text": "Quel est le rôle du protocole Wi-Fi 7 ?",
+      "options": [
+        {"text": "Ultra haute vitesse et latence ultra faible", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 296,
+      "question_text": "Quelle technologie permet la surveillance des réseaux distribués ?",
+      "options": [
+        {"text": "Distributed Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 297,
+      "question_text": "Quel est le débit maximal du standard LPDDR5X ?",
+      "options": [
+        {"text": "85.3 GB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 298,
+      "question_text": "Quelle technologie permet la gestion des microservices avancés ?",
+      "options": [
+        {"text": "Advanced Microservices Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 299,
+      "question_text": "Quel est le port par défaut pour le protocole Knative ?",
+      "options": [
+        {"text": "8080", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 300,
+      "question_text": "Quelle technologie permet l'intégration continue des réseaux ?",
+      "options": [
+        {"text": "Network CI/CD", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 301,
+      "question_text": "Quel est le rôle principal d'un contrôleur SDN ?",
+      "options": [
+        {"text": "Centraliser la gestion du réseau", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 302,
+      "question_text": "Quelle technologie permet la virtualisation des fonctions réseau ?",
+      "options": [
+        {"text": "NFV", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 303,
+      "question_text": "Quel est le débit maximal du standard 5G Advanced ?",
+      "options": [
+        {"text": "10 Gbps", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 304,
+      "question_text": "Quelle technologie permet la segmentation zero-trust ?",
+      "options": [
+        {"text": "Zero-Trust Segmentation", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 305,
+      "question_text": "Quel est le port par défaut pour le protocole gNMI ?",
+      "options": [
+        {"text": "9339", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 306,
+      "question_text": "Quelle technologie permet l'analyse prédictive des réseaux ?",
+      "options": [
+        {"text": "Predictive Network Analytics", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 307,
+      "question_text": "Quel est le rôle du protocole Wi-Fi HaLow ?",
+      "options": [
+        {"text": "WiFi à longue portée et faible consommation", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 308,
+      "question_text": "Quelle technologie permet la surveillance des réseaux AI ?",
+      "options": [
+        {"text": "AI Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 309,
+      "question_text": "Quel est le débit maximal du standard GDDR6X ?",
+      "options": [
+        {"text": "84 GB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 310,
+      "question_text": "Quelle technologie permet la gestion des environnements hybrides multi-cloud ?",
+      "options": [
+        {"text": "Hybrid Multi-Cloud Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 311,
+      "question_text": "Quel est le port par défaut pour le protocole OpenTelemetry ?",
+      "options": [
+        {"text": "4317", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 312,
+      "question_text": "Quelle technologie permet l'automatisation intelligente des réseaux ?",
+      "options": [
+        {"text": "Intelligent Network Automation", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 313,
+      "question_text": "Quel est le rôle du protocole Li-Fi ?",
+      "options": [
+        {"text": "Communication par lumière visible", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 314,
+      "question_text": "Quelle technologie permet la surveillance des réseaux quantiques-hybrides ?",
+      "options": [
+        {"text": "Quantum-Hybrid Network Monitoring", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 315,
+      "question_text": "Quel est le débit maximal du standard HBM3E ?",
+      "options": [
+        {"text": "1.2 TB/s", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 316,
+      "question_text": "Quelle technologie permet la gestion des architectures serverless-edge ?",
+      "options": [
+        {"text": "Serverless-Edge Architecture Management", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 317,
+      "question_text": "Quel est le port par défaut pour le protocole Prometheus ?",
+      "options": [
+        {"text": "9090", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 318,
+      "question_text": "Quelle technologie permet l'optimisation autonome des réseaux ?",
+      "options": [
+        {"text": "Autonomous Network Optimization", "is_correct": true}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 319,
+      "question_text": "Quel est le rôle du protocole 6G ?",
+      "options": [
+        {"text": "Réseaux intelligents et holographiques", "is_correct": true},
+        {"text": "Réseaux lents et basiques", "is_correct": false},
+        {"text": "Réseaux uniquement vocaux", "is_correct": false},
+        {"text": "Réseaux compressés uniquement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 320,
+      "question_text": "Quelle technologie permet la surveillance des réseaux neuronaux-quantiques ?",
+      "options": [
+        {"text": "Neural-Quantum Network Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 321,
+      "question_text": "Quel est le débit maximal du standard CXL 3.0 ?",
+      "options": [
+        {"text": "128 GT/s", "is_correct": true},
+        {"text": "64 GT/s", "is_correct": false},
+        {"text": "32 GT/s", "is_correct": false},
+        {"text": "16 GT/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 322,
+      "question_text": "Quelle technologie permet la gestion des environnements fog-edge-cloud ?",
+      "options": [
+        {"text": "Fog-Edge-Cloud Environment Management", "is_correct": true},
+        {"text": "Cloud Management Only", "is_correct": false},
+        {"text": "Edge Management Only", "is_correct": false},
+        {"text": "Fog Management Only", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 323,
+      "question_text": "Quel est le port par défaut pour le protocole Grafana ?",
+      "options": [
+        {"text": "3000", "is_correct": true},
+        {"text": "8080", "is_correct": false},
+        {"text": "9090", "is_correct": false},
+        {"text": "443", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 324,
+      "question_text": "Quelle technologie permet la résilience auto-guérissante des réseaux ?",
+      "options": [
+        {"text": "Self-Healing Network Resilience", "is_correct": true},
+        {"text": "Manual Network Recovery", "is_correct": false},
+        {"text": "Static Network Configuration", "is_correct": false},
+        {"text": "Passive Network Monitoring", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 325,
+      "question_text": "Quel est le rôle du protocole Terahertz ?",
+      "options": [
+        {"text": "Communications ultra-rapides", "is_correct": true},
+        {"text": "Communications lentes", "is_correct": false},
+        {"text": "Communications compressées uniquement", "is_correct": false},
+        {"text": "Communications cryptées uniquement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 326,
+      "question_text": "Quelle technologie permet la surveillance des réseaux bio-inspirés ?",
+      "options": [
+        {"text": "Bio-Inspired Network Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 327,
+      "question_text": "Quel est le débit maximal du standard HBM4 ?",
+      "options": [
+        {"text": "2 TB/s", "is_correct": true},
+        {"text": "1 TB/s", "is_correct": false},
+        {"text": "512 GB/s", "is_correct": false},
+        {"text": "256 GB/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 328,
+      "question_text": "Quelle technologie permet la gestion des architectures quantiques-classiques ?",
+      "options": [
+        {"text": "Quantum-Classical Architecture Management", "is_correct": true},
+        {"text": "Classical Only Management", "is_correct": false},
+        {"text": "Quantum Only Management", "is_correct": false},
+        {"text": "Hybrid Basic Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 329,
+      "question_text": "Quel est le port par défaut pour le protocole Jaeger ?",
+      "options": [
+        {"text": "14268", "is_correct": true},
+        {"text": "16686", "is_correct": false},
+        {"text": "5778", "is_correct": false},
+        {"text": "6831", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 330,
+      "question_text": "Quelle technologie permet l'évolution autonome des réseaux ?",
+      "options": [
+        {"text": "Autonomous Network Evolution", "is_correct": true},
+        {"text": "Manual Network Evolution", "is_correct": false},
+        {"text": "Static Network Configuration", "is_correct": false},
+        {"text": "Passive Network Monitoring", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 331,
+      "question_text": "Quel est le rôle principal d'un serveur RADIUS ?",
+      "options": [
+        {"text": "Authentification, autorisation et comptabilité (AAA)", "is_correct": true},
+        {"text": "Résolution de noms de domaine", "is_correct": false},
+        {"text": "Transfert de fichiers", "is_correct": false},
+        {"text": "Compression de données", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 332,
+      "question_text": "Quelle technologie permet la segmentation des réseaux sans fil ?",
+      "options": [
+        {"text": "WLAN Segmentation", "is_correct": true},
+        {"text": "VLAN", "is_correct": false},
+        {"text": "VPN", "is_correct": false},
+        {"text": "NAT", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 333,
+      "question_text": "Quel est le débit maximal du standard WiFi 6E ?",
+      "options": [
+        {"text": "9.6 Gbps", "is_correct": true},
+        {"text": "3.5 Gbps", "is_correct": false},
+        {"text": "1.3 Gbps", "is_correct": false},
+        {"text": "600 Mbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 334,
+      "question_text": "Quelle technologie permet la gestion des politiques réseau ?",
+      "options": [
+        {"text": "Policy Management", "is_correct": true},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false},
+        {"text": "Compression", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 335,
+      "question_text": "Quel est le port par défaut pour le protocole VNC ?",
+      "options": [
+        {"text": "5900", "is_correct": true},
+        {"text": "22", "is_correct": false},
+        {"text": "80", "is_correct": false},
+        {"text": "443", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 336,
+      "question_text": "Quelle technologie permet la compression des flux vidéo ?",
+      "options": [
+        {"text": "H.265", "is_correct": true},
+        {"text": "JPEG", "is_correct": false},
+        {"text": "MP3", "is_correct": false},
+        {"text": "PNG", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 337,
+      "question_text": "Quel est le rôle du protocole RTCP ?",
+      "options": [
+        {"text": "Contrôler la qualité des transmissions RTP", "is_correct": true},
+        {"text": "Compresser les vidéos", "is_correct": false},
+        {"text": "Crypter les communications", "is_correct": false},
+        {"text": "Accélérer les transferts", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 338,
+      "question_text": "Quelle technologie permet la surveillance des réseaux SDN ?",
+      "options": [
+        {"text": "SDN Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 339,
+      "question_text": "Quel est le débit maximal du standard PCIe 5.0 ?",
+      "options": [
+        {"text": "32 GT/s", "is_correct": true},
+        {"text": "16 GT/s", "is_correct": false},
+        {"text": "8 GT/s", "is_correct": false},
+        {"text": "4 GT/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 340,
+      "question_text": "Quelle technologie permet la gestion des flux de travail ?",
+      "options": [
+        {"text": "Workflow Management", "is_correct": true},
+        {"text": "Configuration Management", "is_correct": false},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 341,
+      "question_text": "Quel est le port par défaut pour le protocole Cassandra ?",
+      "options": [
+        {"text": "9042", "is_correct": true},
+        {"text": "3306", "is_correct": false},
+        {"text": "5432", "is_correct": false},
+        {"text": "1433", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 342,
+      "question_text": "Quelle technologie permet le chiffrement homomorphe ?",
+      "options": [
+        {"text": "Homomorphic Encryption", "is_correct": true},
+        {"text": "AES", "is_correct": false},
+        {"text": "RSA", "is_correct": false},
+        {"text": "SHA-256", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 343,
+      "question_text": "Quel est le rôle du protocole LoRaWAN ?",
+      "options": [
+        {"text": "Communication longue portée pour IoT", "is_correct": true},
+        {"text": "Communication courte portée", "is_correct": false},
+        {"text": "Communication haute vitesse", "is_correct": false},
+        {"text": "Communication cryptée uniquement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 344,
+      "question_text": "Quelle technologie permet la surveillance des réseaux edge ?",
+      "options": [
+        {"text": "Edge Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 345,
+      "question_text": "Quel est le débit maximal du standard USB 3.2 ?",
+      "options": [
+        {"text": "20 Gbps", "is_correct": true},
+        {"text": "10 Gbps", "is_correct": false},
+        {"text": "5 Gbps", "is_correct": false},
+        {"text": "40 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 346,
+      "question_text": "Quelle technologie permet la gestion des conteneurs serverless ?",
+      "options": [
+        {"text": "Serverless Container Management", "is_correct": true},
+        {"text": "VM Management", "is_correct": false},
+        {"text": "Bare Metal Management", "is_correct": false},
+        {"text": "Cloud Native Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 347,
+      "question_text": "Quel est le port par défaut pour le protocole Consul ?",
+      "options": [
+        {"text": "8500", "is_correct": true},
+        {"text": "9090", "is_correct": false},
+        {"text": "3000", "is_correct": false},
+        {"text": "8080", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 348,
+      "question_text": "Quelle technologie permet la cryptographie résistante aux attaques quantiques ?",
+      "options": [
+        {"text": "Post-Quantum Cryptography", "is_correct": true},
+        {"text": "AES", "is_correct": false},
+        {"text": "RSA", "is_correct": false},
+        {"text": "SHA-256", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 349,
+      "question_text": "Quel est le rôle du protocole Zigbee ?",
+      "options": [
+        {"text": "Réseau maillé pour IoT", "is_correct": true},
+        {"text": "Réseau point à point", "is_correct": false},
+        {"text": "Réseau en étoile", "is_correct": false},
+        {"text": "Réseau en bus", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 350,
+      "question_text": "Quelle technologie permet la surveillance des réseaux 5G ?",
+      "options": [
+        {"text": "5G Network Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 351,
+      "question_text": "Quel est le débit maximal du standard DDR6 ?",
+      "options": [
+        {"text": "102.4 GB/s", "is_correct": true},
+        {"text": "51.2 GB/s", "is_correct": false},
+        {"text": "25.6 GB/s", "is_correct": false},
+        {"text": "204.8 GB/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 352,
+      "question_text": "Quelle technologie permet la gestion des services mesh ?",
+      "options": [
+        {"text": "Service Mesh Management", "is_correct": true},
+        {"text": "Load Balancing", "is_correct": false},
+        {"text": "Caching", "is_correct": false},
+        {"text": "Compression", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 353,
+      "question_text": "Quel est le port par défaut pour le protocole etcd ?",
+      "options": [
+        {"text": "2379", "is_correct": true},
+        {"text": "2380", "is_correct": false},
+        {"text": "4001", "is_correct": false},
+        {"text": "8500", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 354,
+      "question_text": "Quelle technologie permet l'analyse comportementale ?",
+      "options": [
+        {"text": "Behavioral Analytics", "is_correct": true},
+        {"text": "Statistical Analysis", "is_correct": false},
+        {"text": "Data Mining", "is_correct": false},
+        {"text": "Machine Learning", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 355,
+      "question_text": "Quel est le rôle du protocole Thread ?",
+      "options": [
+        {"text": "Réseau maillé à faible consommation pour IoT", "is_correct": true},
+        {"text": "Réseau haute consommation", "is_correct": false},
+        {"text": "Réseau point à point", "is_correct": false},
+        {"text": "Réseau en étoile", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 356,
+      "question_text": "Quelle technologie permet la surveillance des réseaux blockchain ?",
+      "options": [
+        {"text": "Blockchain Network Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 357,
+      "question_text": "Quel est le débit maximal du standard Thunderbolt 4 ?",
+      "options": [
+        {"text": "40 Gbps", "is_correct": true},
+        {"text": "20 Gbps", "is_correct": false},
+        {"text": "10 Gbps", "is_correct": false},
+        {"text": "80 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 358,
+      "question_text": "Quelle technologie permet la gestion des architectures sans serveur ?",
+      "options": [
+        {"text": "Serverless Architecture Management", "is_correct": true},
+        {"text": "VM Management", "is_correct": false},
+        {"text": "Bare Metal Management", "is_correct": false},
+        {"text": "Container Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 359,
+      "question_text": "Quel est le port par défaut pour le protocole Nomad ?",
+      "options": [
+        {"text": "4646", "is_correct": true},
+        {"text": "8500", "is_correct": false},
+        {"text": "9090", "is_correct": false},
+        {"text": "3000", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 360,
+      "question_text": "Quelle technologie permet l'intelligence artificielle pour la sécurité ?",
+      "options": [
+        {"text": "AI Security", "is_correct": true},
+        {"text": "Traditional Security", "is_correct": false},
+        {"text": "Basic Firewall", "is_correct": false},
+        {"text": "Simple Antivirus", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 361,
+      "question_text": "Quel est le rôle du protocole NB-IoT ?",
+      "options": [
+        {"text": "Communication IoT à large bande étroite", "is_correct": true},
+        {"text": "Communication IoT large bande", "is_correct": false},
+        {"text": "Communication IoT haute vitesse", "is_correct": false},
+        {"text": "Communication IoT courte portée", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 362,
+      "question_text": "Quelle technologie permet la surveillance des réseaux hybrides ?",
+      "options": [
+        {"text": "Hybrid Network Monitoring", "is_correct": true},
+        {"text": "Cloud Only Monitoring", "is_correct": false},
+        {"text": "On-Premise Only Monitoring", "is_correct": false},
+        {"text": "Edge Only Monitoring", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 363,
+      "question_text": "Quel est le débit maximal du standard M.2 NVMe ?",
+      "options": [
+        {"text": "64 Gbps", "is_correct": true},
+        {"text": "32 Gbps", "is_correct": false},
+        {"text": "16 Gbps", "is_correct": false},
+        {"text": "128 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 364,
+      "question_text": "Quelle technologie permet la gestion des environnements multi-cloud ?",
+      "options": [
+        {"text": "Multi-Cloud Management", "is_correct": true},
+        {"text": "Single Cloud Management", "is_correct": false},
+        {"text": "On-Premise Management", "is_correct": false},
+        {"text": "Edge Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 365,
+      "question_text": "Quel est le port par défaut pour le protocole Vault ?",
+      "options": [
+        {"text": "8200", "is_correct": true},
+        {"text": "8500", "is_correct": false},
+        {"text": "9090", "is_correct": false},
+        {"text": "3000", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 366,
+      "question_text": "Quelle technologie permet le calcul confidentiel ?",
+      "options": [
+        {"text": "Confidential Computing", "is_correct": true},
+        {"text": "Cloud Computing", "is_correct": false},
+        {"text": "Edge Computing", "is_correct": false},
+        {"text": "Fog Computing", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 367,
+      "question_text": "Quel est le rôle du protocole Sigfox ?",
+      "options": [
+        {"text": "Communication IoT ultra basse consommation", "is_correct": true},
+        {"text": "Communication IoT haute consommation", "is_correct": false},
+        {"text": "Communication IoT haute vitesse", "is_correct": false},
+        {"text": "Communication IoT courte portée", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 368,
+      "question_text": "Quelle technologie permet la surveillance des réseaux fog ?",
+      "options": [
+        {"text": "Fog Network Monitoring", "is_correct": true},
+        {"text": "Cloud Monitoring", "is_correct": false},
+        {"text": "Edge Monitoring", "is_correct": false},
+        {"text": "SNMP", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 369,
+      "question_text": "Quel est le débit maximal du standard UFS 3.1 ?",
+      "options": [
+        {"text": "2.9 GB/s", "is_correct": true},
+        {"text": "1.45 GB/s", "is_correct": false},
+        {"text": "5.8 GB/s", "is_correct": false},
+        {"text": "1.16 GB/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 370,
+      "question_text": "Quelle technologie permet la gestion des infrastructures composites ?",
+      "options": [
+        {"text": "Composite Infrastructure Management", "is_correct": true},
+        {"text": "Simple Infrastructure", "is_correct": false},
+        {"text": "Basic Management", "is_correct": false},
+        {"text": "Traditional Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 371,
+      "question_text": "Quel est le port par défaut pour le protocole Pulsar ?",
+      "options": [
+        {"text": "6650", "is_correct": true},
+        {"text": "8080", "is_correct": false},
+        {"text": "9090", "is_correct": false},
+        {"text": "3000", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 372,
+      "question_text": "Quelle technologie permet la détection des menaces zero-day ?",
+      "options": [
+        {"text": "Zero-Day Detection", "is_correct": true},
+        {"text": "Signature-based Detection", "is_correct": false},
+        {"text": "Basic Firewall", "is_correct": false},
+        {"text": "Simple Antivirus", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 373,
+      "question_text": "Quel est le rôle du protocole Z-Wave ?",
+      "options": [
+        {"text": "Réseau maillé pour domotique", "is_correct": true},
+        {"text": "Réseau point à point", "is_correct": false},
+        {"text": "Réseau en étoile", "is_correct": false},
+        {"text": "Réseau en bus", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 374,
+      "question_text": "Quelle technologie permet la surveillance des réseaux quantiques ?",
+      "options": [
+        {"text": "Quantum Network Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 375,
+      "question_text": "Quel est le débit maximal du standard CXL ?",
+      "options": [
+        {"text": "32 GT/s", "is_correct": true},
+        {"text": "16 GT/s", "is_correct": false},
+        {"text": "8 GT/s", "is_correct": false},
+        {"text": "64 GT/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 376,
+      "question_text": "Quelle technologie permet la gestion des environnements serverless ?",
+      "options": [
+        {"text": "Serverless Environment Management", "is_correct": true},
+        {"text": "VM Management", "is_correct": false},
+        {"text": "Bare Metal Management", "is_correct": false},
+        {"text": "Container Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 377,
+      "question_text": "Quel est le port par défaut pour le protocole NATS ?",
+      "options": [
+        {"text": "4222", "is_correct": true},
+        {"text": "6222", "is_correct": false},
+        {"text": "8222", "is_correct": false},
+        {"text": "10222", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 378,
+      "question_text": "Quelle technologie permet l'apprentissage automatique pour les réseaux ?",
+      "options": [
+        {"text": "Machine Learning for Networks", "is_correct": true},
+        {"text": "Traditional Networking", "is_correct": false},
+        {"text": "Basic Routing", "is_correct": false},
+        {"text": "Simple Switching", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 379,
+      "question_text": "Quel est le rôle du protocole Matter ?",
+      "options": [
+        {"text": "Standard unifié pour IoT", "is_correct": true},
+        {"text": "Standard propriétaire", "is_correct": false},
+        {"text": "Standard obsolète", "is_correct": false},
+        {"text": "Standard expérimental", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 380,
+      "question_text": "Quelle technologie permet la surveillance des réseaux neuronaux ?",
+      "options": [
+        {"text": "Neural Network Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 381,
+      "question_text": "Quel est le débit maximal du standard HBM3 ?",
+      "options": [
+        {"text": "819 GB/s", "is_correct": true},
+        {"text": "409.6 GB/s", "is_correct": false},
+        {"text": "1638 GB/s", "is_correct": false},
+        {"text": "204.8 GB/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 382,
+      "question_text": "Quelle technologie permet la gestion des microservices avancés ?",
+      "options": [
+        {"text": "Advanced Microservices Management", "is_correct": true},
+        {"text": "Basic Microservices", "is_correct": false},
+        {"text": "Monolithic Management", "is_correct": false},
+        {"text": "Traditional Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 383,
+      "question_text": "Quel est le port par défaut pour le protocole Knative ?",
+      "options": [
+        {"text": "8080", "is_correct": true},
+        {"text": "9090", "is_correct": false},
+        {"text": "3000", "is_correct": false},
+        {"text": "8500", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 384,
+      "question_text": "Quelle technologie permet le CI/CD pour les réseaux ?",
+      "options": [
+        {"text": "Network CI/CD", "is_correct": true},
+        {"text": "Manual Network Configuration", "is_correct": false},
+        {"text": "Static Network Setup", "is_correct": false},
+        {"text": "Traditional Network Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 385,
+      "question_text": "Quel est le rôle du contrôleur SDN ?",
+      "options": [
+        {"text": "Centraliser la gestion du réseau", "is_correct": true},
+        {"text": "Distribuer la charge", "is_correct": false},
+        {"text": "Compresser les paquets", "is_correct": false},
+        {"text": "Crypter les communications", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 386,
+      "question_text": "Quelle technologie permet la virtualisation des fonctions réseau ?",
+      "options": [
+        {"text": "NFV", "is_correct": true},
+        {"text": "SDN", "is_correct": false},
+        {"text": "VPN", "is_correct": false},
+        {"text": "VLAN", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 387,
+      "question_text": "Quel est le débit maximal du standard 5G Advanced ?",
+      "options": [
+        {"text": "10 Gbps", "is_correct": true},
+        {"text": "5 Gbps", "is_correct": false},
+        {"text": "20 Gbps", "is_correct": false},
+        {"text": "1 Gbps", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 388,
+      "question_text": "Quelle technologie permet la segmentation zero-trust ?",
+      "options": [
+        {"text": "Zero-Trust Segmentation", "is_correct": true},
+        {"text": "Traditional Segmentation", "is_correct": false},
+        {"text": "Basic Firewall", "is_correct": false},
+        {"text": "Simple VLAN", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 389,
+      "question_text": "Quel est le port par défaut pour le protocole gNMI ?",
+      "options": [
+        {"text": "9339", "is_correct": true},
+        {"text": "9340", "is_correct": false},
+        {"text": "9341", "is_correct": false},
+        {"text": "9342", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 390,
+      "question_text": "Quelle technologie permet l'analyse prédictive des réseaux ?",
+      "options": [
+        {"text": "Predictive Network Analytics", "is_correct": true},
+        {"text": "Basic Monitoring", "is_correct": false},
+        {"text": "Simple Logging", "is_correct": false},
+        {"text": "Traditional Analysis", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 391,
+      "question_text": "Quel est le rôle du protocole Wi-Fi HaLow ?",
+      "options": [
+        {"text": "WiFi à longue portée et faible consommation", "is_correct": true},
+        {"text": "WiFi courte portée", "is_correct": false},
+        {"text": "WiFi haute consommation", "is_correct": false},
+        {"text": "WiFi haute vitesse uniquement", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 392,
+      "question_text": "Quelle technologie permet la surveillance IA des réseaux ?",
+      "options": [
+        {"text": "AI Network Monitoring", "is_correct": true},
+        {"text": "SNMP", "is_correct": false},
+        {"text": "NetFlow", "is_correct": false},
+        {"text": "Ping", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 393,
+      "question_text": "Quel est le débit maximal du standard GDDR6X ?",
+      "options": [
+        {"text": "84 GB/s", "is_correct": true},
+        {"text": "42 GB/s", "is_correct": false},
+        {"text": "168 GB/s", "is_correct": false},
+        {"text": "21 GB/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 394,
+      "question_text": "Quelle technologie permet la gestion multi-cloud hybride ?",
+      "options": [
+        {"text": "Hybrid Multi-Cloud Management", "is_correct": true},
+        {"text": "Single Cloud Management", "is_correct": false},
+        {"text": "On-Premise Only", "is_correct": false},
+        {"text": "Edge Only", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 395,
+      "question_text": "Quel est le port par défaut pour le protocole OpenTelemetry ?",
+      "options": [
+        {"text": "4317", "is_correct": true},
+        {"text": "4318", "is_correct": false},
+        {"text": "4319", "is_correct": false},
+        {"text": "4320", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 396,
+      "question_text": "Quelle technologie permet l'automatisation intelligente des réseaux ?",
+      "options": [
+        {"text": "Intelligent Network Automation", "is_correct": true},
+        {"text": "Manual Configuration", "is_correct": false},
+        {"text": "Static Setup", "is_correct": false},
+        {"text": "Basic Scripting", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 397,
+      "question_text": "Quel est le rôle du protocole Li-Fi ?",
+      "options": [
+        {"text": "Communication par lumière visible", "is_correct": true},
+        {"text": "Communication par ondes radio", "is_correct": false},
+        {"text": "Communication par infrarouge", "is_correct": false},
+        {"text": "Communication par satellite", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 398,
+      "question_text": "Quelle technologie permet la surveillance hybride quantique ?",
+      "options": [
+        {"text": "Quantum-Hybrid Network Monitoring", "is_correct": true},
+        {"text": "Traditional Monitoring", "is_correct": false},
+        {"text": "Basic SNMP", "is_correct": false},
+        {"text": "Simple NetFlow", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 399,
+      "question_text": "Quel est le débit maximal du standard HBM3E ?",
+      "options": [
+        {"text": "1.2 TB/s", "is_correct": true},
+        {"text": "819 GB/s", "is_correct": false},
+        {"text": "2.4 TB/s", "is_correct": false},
+        {"text": "409.6 GB/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 400,
+      "question_text": "Quelle technologie permet la gestion serverless-edge ?",
+      "options": [
+        {"text": "Serverless-Edge Architecture Management", "is_correct": true},
+        {"text": "Cloud Only Management", "is_correct": false},
+        {"text": "Edge Only Management", "is_correct": false},
+        {"text": "Traditional Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 401,
+      "question_text": "Quel est le port par défaut pour le protocole Prometheus ?",
+      "options": [
+        {"text": "9090", "is_correct": true},
+        {"text": "8080", "is_correct": false},
+        {"text": "3000", "is_correct": false},
+        {"text": "8500", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 402,
+      "question_text": "Quelle technologie permet l'optimisation autonome des réseaux ?",
+      "options": [
+        {"text": "Autonomous Network Optimization", "is_correct": true},
+        {"text": "Manual Optimization", "is_correct": false},
+        {"text": "Static Configuration", "is_correct": false},
+        {"text": "Basic Tuning", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 403,
+      "question_text": "Quel est le rôle du protocole 6G ?",
+      "options": [
+        {"text": "Réseaux intelligents et holographiques", "is_correct": true},
+        {"text": "Réseaux basiques", "is_correct": false},
+        {"text": "Réseaux lents", "is_correct": false},
+        {"text": "Réseaux obsolètes", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 404,
+      "question_text": "Quelle technologie permet la surveillance bio-inspirée ?",
+      "options": [
+        {"text": "Bio-Inspired Network Monitoring", "is_correct": true},
+        {"text": "Traditional Monitoring", "is_correct": false},
+        {"text": "Basic SNMP", "is_correct": false},
+        {"text": "Simple NetFlow", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 405,
+      "question_text": "Quel est le débit maximal du standard HBM4 ?",
+      "options": [
+        {"text": "2 TB/s", "is_correct": true},
+        {"text": "1 TB/s", "is_correct": false},
+        {"text": "4 TB/s", "is_correct": false},
+        {"text": "512 GB/s", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 406,
+      "question_text": "Quelle technologie permet la gestion quantique-classique ?",
+      "options": [
+        {"text": "Quantum-Classical Architecture Management", "is_correct": true},
+        {"text": "Classical Only Management", "is_correct": false},
+        {"text": "Quantum Only Management", "is_correct": false},
+        {"text": "Traditional Management", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 407,
+      "question_text": "Quel est le port par défaut pour le protocole Jaeger ?",
+      "options": [
+        {"text": "14268", "is_correct": true},
+        {"text": "16686", "is_correct": false},
+        {"text": "5778", "is_correct": false},
+        {"text": "6831", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 408,
+      "question_text": "Quelle technologie permet l'évolution autonome des réseaux ?",
+      "options": [
+        {"text": "Autonomous Network Evolution", "is_correct": true},
+        {"text": "Manual Evolution", "is_correct": false},
+        {"text": "Static Configuration", "is_correct": false},
+        {"text": "Basic Updates", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 409,
+      "question_text": "Quel est le rôle du protocole Terahertz ?",
+      "options": [
+        {"text": "Communications ultra-rapides", "is_correct": true},
+        {"text": "Communications lentes", "is_correct": false},
+        {"text": "Communications basiques", "is_correct": false},
+        {"text": "Communications obsolètes", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "question_number": 410,
+      "question_text": "Quelle technologie permet la monitoring neural-quantique ?",
+      "options": [
+        {"text": "Neural-Quantum Network Monitoring", "is_correct": true},
+        {"text": "Traditional Monitoring", "is_correct": false},
+        {"text": "Basic SNMP", "is_correct": false},
+        {"text": "Simple NetFlow", "is_correct": false}
+      ],
+      "type": "multiple_choice"
+    }
+  ]
+}

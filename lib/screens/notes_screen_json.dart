@@ -45,14 +45,19 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  
+
   // Variables pour le carrousel auto-play
   late PageController _pageController;
   Timer? _autoPlayTimer;
   int _currentPage = 0;
-  
+
   // Variable pour l'état d'extension du filtre
   bool _isFilterExpanded = false;
+
+  // FocusNode et ScrollController pour gérer le clavier
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _subjectFocusNode = FocusNode();
+  final FocusNode _trimesterFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -65,14 +70,34 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-    
+
     // Initialiser le PageController pour le carrousel
     _pageController = PageController(viewportFraction: 1.0);
-    
+
     _studentMatricule = widget.matricule;
     _anneeId = widget.anneeId;
     _classeId = widget.classeId;
     _selectedYear = widget.anneeLibelle;
+
+    // Écouter les changements de focus pour scroller automatiquement
+    _subjectFocusNode.addListener(_onFocusChange);
+    _trimesterFocusNode.addListener(_onFocusChange);
+  }
+
+  /// Scrolle vers les filtres quand un champ reçoit le focus,
+  /// afin que le clavier ne les cache pas.
+  void _onFocusChange() {
+    if (_subjectFocusNode.hasFocus || _trimesterFocusNode.hasFocus) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -86,6 +111,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     _fadeController.dispose();
     _pageController.dispose();
     _autoPlayTimer?.cancel();
+    _scrollController.dispose();
+    _subjectFocusNode.removeListener(_onFocusChange);
+    _trimesterFocusNode.removeListener(_onFocusChange);
+    _subjectFocusNode.dispose();
+    _trimesterFocusNode.dispose();
     super.dispose();
   }
 
@@ -126,7 +156,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           _isLoading = false;
         });
         _fadeController.forward(from: 0);
-        
+
         // Démarrer l'auto-play du carrousel
         _startAutoPlay();
 
@@ -242,11 +272,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   List<String> get _availableTrimesters => [
-    'Tous',
-    'Premier Trimestre',
-    'Deuxième Trimestre',
-    'Troisième Trimestre',
-  ];
+        'Tous',
+        'Premier Trimestre',
+        'Deuxième Trimestre',
+        'Troisième Trimestre',
+      ];
 
   void _onSubjectChanged(String value) =>
       setState(() => _selectedSubject = value == 'Toutes' ? null : value);
@@ -254,6 +284,39 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   void _onTrimesterChanged(String value) {
     setState(() => _selectedTrimester = value == 'Tous' ? null : value);
     _loadApiData();
+  }
+
+  // ─── OUVERTURE DU DROPDOWN AVEC BOTTOM SHEET ──────────────────────────────
+  /// Ouvre le dropdown dans une BottomSheet qui remonte au-dessus du clavier.
+  /// Appeler cette méthode depuis le SearchableDropdown si vous avez accès
+  /// à son callback `onOpen`, sinon passer `showSearchableDropdownSheet` comme
+  /// builder au widget.
+  void _showDropdownSheet({
+    required String label,
+    required String currentValue,
+    required List<String> items,
+    required ValueChanged<String> onChanged,
+  }) {
+    // Fermer le clavier avant d'ouvrir la sheet
+    FocusScope.of(context).unfocus();
+
+    showModalBottomSheet(
+      context: context,
+      // ← CLÉ : la sheet s'étend pour laisser de la place au clavier
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _DropdownBottomSheet(
+          label: label,
+          currentValue: currentValue,
+          items: items,
+          onChanged: (value) {
+            Navigator.of(ctx).pop();
+            onChanged(value);
+          },
+        );
+      },
+    );
   }
 
   // ─── BUILD ────────────────────────────────────────────────────────────────
@@ -264,8 +327,17 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
+        // ← CLÉ 1 : permet au Scaffold de se redimensionner quand le clavier
+        //           apparaît, évitant que le clavier recouvre le contenu.
+        resizeToAvoidBottomInset: true,
         backgroundColor: AppColors.screenBg(context),
         body: CustomScrollView(
+          // ← CLÉ 2 : utiliser notre propre ScrollController pour pouvoir
+          //           scroller programmatiquement vers les filtres.
+          controller: _scrollController,
+          // ← CLÉ 3 : keyboardDismissBehavior permet de fermer le clavier
+          //           en faisant défiler la liste vers le bas.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             CustomSliverAppBar(
               title: 'Mes Notes',
@@ -282,7 +354,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   child: Container(
                     width: 40,
                     height: 40,
-                    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     decoration: BoxDecoration(
                       color: AppColors.screenCardThemed(context),
                       borderRadius: BorderRadius.circular(12),
@@ -407,7 +480,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: AppColors.isDarkMode(context) 
+                    color: AppColors.isDarkMode(context)
                         ? const Color(0xFF8B4513)
                         : AppColors.screenOrangeLight,
                     shape: BoxShape.circle,
@@ -461,9 +534,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           opacity: _fadeAnimation,
           child: Column(
             children: [
-              // Student info banner
-              //_buildStudentBanner(),
-              // Average cards
+              // Average cards / carrousel
               _buildAverageCards(),
               // Content
               Padding(
@@ -499,7 +570,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFFFF7A3C), 
+            const Color(0xFFFF7A3C),
             AppColors.screenOrange,
           ],
           begin: Alignment.topLeft,
@@ -585,7 +656,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     if (_bulletinData == null) return const SizedBox.shrink();
 
     return Container(
-      height: 245, // Increased height for combined slide
+      height: 245,
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         children: [
@@ -596,7 +667,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 setState(() {
                   _currentPage = index;
                 });
-                // Redémarrer l'auto-play quand l'utilisateur change manuellement
                 _stopAutoPlay();
                 Future.delayed(const Duration(seconds: 5), () {
                   if (mounted) {
@@ -628,9 +698,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _currentPage == i
-                  ? AppColors.primary
-                  : AppColors.grey300,
+              color: _currentPage == i ? AppColors.primary : AppColors.grey300,
             ),
           ),
       ],
@@ -650,7 +718,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Carte d'informations de l'élève
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -698,7 +765,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     Expanded(
                       child: Text(
                         '$prenoms $nom',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -710,11 +777,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(
-                      Icons.badge,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                    const Icon(Icons.badge, color: Colors.white, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       'Matricule: $matricule',
@@ -729,11 +792,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                    const Icon(Icons.calendar_today,
+                        color: Colors.white, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       anneeLibelle,
@@ -746,13 +806,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Séparateur
                 Container(
                   height: 1,
                   color: Colors.white.withOpacity(0.3),
                 ),
                 const SizedBox(height: 16),
-                // Section des moyennes
                 Row(
                   children: [
                     Expanded(
@@ -810,16 +868,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 12,
-                ),
+                child: Icon(icon, color: Colors.white, size: 12),
               ),
               const SizedBox(width: 8),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
@@ -854,7 +908,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   Widget _buildChartPage() {
     final details = _bulletinData!['details'] as List<dynamic>? ?? [];
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.all(16),
@@ -892,11 +946,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.bar_chart,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                child: const Icon(Icons.bar_chart, color: Colors.white, size: 16),
               ),
               const SizedBox(width: 12),
               Text(
@@ -929,26 +979,26 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   Widget _buildNotesChart(List<dynamic> details) {
-    // Trier les matières par moyenne pour un meilleur affichage
     final sortedDetails = List<Map<String, dynamic>>.from(
-      details.map((item) => item as Map<String, dynamic>)
-    )..sort((a, b) => (b['moyenne'] as double).compareTo(a['moyenne'] as double));
+        details.map((item) => item as Map<String, dynamic>))
+      ..sort((a, b) =>
+          (b['moyenne'] as double).compareTo(a['moyenne'] as double));
 
-    // Prendre TOUTES les matières pour un affichage complet
     final allSubjects = sortedDetails;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Container(
-        width: (allSubjects.length * 35.0).clamp(300.0, double.infinity), // Largeur dynamique ajustée
+      child: SizedBox(
+        width: (allSubjects.length * 35.0).clamp(300.0, double.infinity),
         height: 180,
         child: BarChart(
           BarChartData(
-            alignment: BarChartAlignment.spaceBetween, // Alignement plus serré
+            alignment: BarChartAlignment.spaceBetween,
             maxY: 20,
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
-                getTooltipColor: (_) => Theme.of(context).scaffoldBackgroundColor,
+                getTooltipColor: (_) =>
+                    Theme.of(context).scaffoldBackgroundColor,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final subject = allSubjects[group.x.toInt()];
                   return BarTooltipItem(
@@ -960,9 +1010,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     ),
                     children: [
                       TextSpan(
-                        text: '${subject['moyenne'].toStringAsFixed(2)}/20',
+                        text:
+                            '${subject['moyenne'].toStringAsFixed(2)}/20',
                         style: TextStyle(
-                          color: AppColors.screenTextSecondaryThemed(context),
+                          color:
+                              AppColors.screenTextSecondaryThemed(context),
                           fontSize: 11,
                         ),
                       ),
@@ -977,13 +1029,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < allSubjects.length) {
+                    if (value.toInt() >= 0 &&
+                        value.toInt() < allSubjects.length) {
                       final subject = allSubjects[value.toInt()];
                       final name = subject['matiereLibelle'] as String;
-                      // Abréger les noms longs
-                      final displayName = name.length > 6 
-                          ? '${name.substring(0, 4)}...' 
-                          : name;
+                      final displayName =
+                          name.length > 6 ? '${name.substring(0, 4)}...' : name;
                       return Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: RotatedBox(
@@ -991,7 +1042,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           child: Text(
                             displayName,
                             style: TextStyle(
-                              color: AppColors.screenTextSecondaryThemed(context),
+                              color: AppColors.screenTextSecondaryThemed(
+                                  context),
                               fontSize: 8,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1012,7 +1064,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     return Text(
                       value.toInt().toString(),
                       style: TextStyle(
-                        color: AppColors.screenTextSecondaryThemed(context),
+                        color:
+                            AppColors.screenTextSecondaryThemed(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1020,16 +1073,17 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   },
                 ),
               ),
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             barGroups: allSubjects.asMap().entries.map((entry) {
               final index = entry.key;
               final subject = entry.value;
               final average = (subject['moyenne'] as double);
-              
-              // Déterminer la couleur selon la moyenne
+
               Color barColor;
               if (average >= 16) {
                 barColor = Colors.green;
@@ -1049,7 +1103,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   BarChartRodData(
                     toY: average,
                     color: barColor,
-                    width: 15, // Largeur augmentée pour réduire l'espacement
+                    width: 15,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(4),
                     ),
@@ -1072,26 +1126,16 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     bool isLast = false,
   }) {
     return Container(
-      width: 160, // Increased width for better content fit
-      margin: EdgeInsets.only(
-        left: isFirst ? 0 : 0,
-        right: isLast ? 0 : 0,
-      ),
+      width: 160,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.1),
-            color.withOpacity(0.05),
-          ],
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16), // Simplified border radius
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.1),
@@ -1113,15 +1157,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   color: color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 16,
-                ),
+                child: Icon(icon, color: color, size: 16),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
@@ -1137,17 +1178,17 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               ),
             ],
           ),
-          const SizedBox(height: 12), // Increased spacing
+          const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
-              fontSize: 22, // Slightly smaller font
+              fontSize: 22,
               fontWeight: FontWeight.w800,
               color: color,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4), // Increased spacing
+          const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
@@ -1175,17 +1216,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
-          // boxShadow: const [
-          //   BoxShadow(
-          //     color: AppColors.screenShadow,
-          //     blurRadius: 12,
-          //     offset: Offset(0, 4),
-          //   ),
-          // ],
         ),
         child: Column(
           children: [
-            // Header avec design amélioré
+            // Header
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1197,11 +1231,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
-                  // Icône animée avec fond circulaire
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     width: 40,
@@ -1231,7 +1265,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Texte avec style amélioré
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1247,18 +1280,20 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _isFilterExpanded ? 'Réduire' : 'Étendre pour filtrer',
+                          _isFilterExpanded
+                              ? 'Réduire'
+                              : 'Étendre pour filtrer',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.screenTextSecondaryThemed(context),
+                            color:
+                                AppColors.screenTextSecondaryThemed(context),
                             letterSpacing: 0.1,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Icône flèche animée
                   AnimatedRotation(
                     turns: _isFilterExpanded ? 0.5 : 0.0,
                     duration: const Duration(milliseconds: 300),
@@ -1286,98 +1321,173 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 ],
               ),
             ),
-          // Contenu du filtre avec animation
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            height: _isFilterExpanded ? null : 0,
-            child: _isFilterExpanded 
-                ? Container(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Divider(color: AppColors.screenDividerThemed(context), height: 1),
-                        const SizedBox(height: 14),
 
-          // Année scolaire (read-only)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Année scolaire',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.screenTextSecondaryThemed(context),
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.screenSurfaceThemed(context),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.screenDividerThemed(context)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      color: AppColors.screenOrange,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      _selectedYear ?? 'Chargement...',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.screenTextPrimaryThemed(context),
-                        fontWeight: FontWeight.w500,
+            // Contenu du filtre avec animation
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              height: _isFilterExpanded ? null : 0,
+              child: _isFilterExpanded
+                  ? Container(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Divider(
+                              color: AppColors.screenDividerThemed(context),
+                              height: 1),
+                          const SizedBox(height: 14),
+
+                          // Année scolaire (read-only)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Année scolaire',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.screenTextSecondaryThemed(
+                                      context),
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.screenSurfaceThemed(context),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: AppColors.screenDividerThemed(
+                                          context)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.calendar_today_outlined,
+                                      color: AppColors.screenOrange,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      _selectedYear ?? 'Chargement...',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color:
+                                            AppColors.screenTextPrimaryThemed(
+                                                context),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // ── Matière + Trimestre ──────────────────────────
+                          // Chaque dropdown utilise un GestureDetector qui
+                          // ouvre une BottomSheet (isScrollControlled: true)
+                          // → le clavier ne cache plus le formulaire.
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDropdownTrigger(
+                                  label: 'Matière',
+                                  value: _selectedSubject ?? 'Toutes',
+                                  onTap: () => _showDropdownSheet(
+                                    label: 'Matière',
+                                    currentValue:
+                                        _selectedSubject ?? 'Toutes',
+                                    items: _availableSubjects,
+                                    onChanged: _onSubjectChanged,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildDropdownTrigger(
+                                  label: 'Trimestre',
+                                  value: _selectedTrimester ?? 'Tous',
+                                  onTap: () => _showDropdownSheet(
+                                    label: 'Trimestre',
+                                    currentValue:
+                                        _selectedTrimester ?? 'Tous',
+                                    items: _availableTrimesters,
+                                    onChanged: _onTrimesterChanged,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Matière + Trimestre
-          Row(
-            children: [
-              Expanded(
-                child: SearchableDropdown(
-                  label: 'Matière',
-                  value: _selectedSubject ?? 'Toutes',
-                  items: _availableSubjects,
-                  onChanged: _onSubjectChanged,
-                  isDarkMode: false,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SearchableDropdown(
-                  label: 'Trimestre',
-                  value: _selectedTrimester ?? 'Tous',
-                  items: _availableTrimesters,
-                  onChanged: _onTrimesterChanged,
-                  isDarkMode: false,
-                ),
-              ),
-            ],
+  /// Bouton déclencheur du dropdown (remplace SearchableDropdown inline).
+  /// Il ouvre la BottomSheet searchable au tap pour éviter le problème clavier.
+  Widget _buildDropdownTrigger({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextSecondaryThemed(context),
+              letterSpacing: 0.2,
+            ),
           ),
-                      ],
+          const SizedBox(height: 6),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.screenSurfaceThemed(context),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.screenDividerThemed(context),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                      fontWeight: FontWeight.w500,
                     ),
-                  )
-                : null,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: AppColors.screenOrange,
+                  size: 18,
+                ),
+              ],
+            ),
           ),
         ],
-      ),
       ),
     );
   }
@@ -1387,11 +1497,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header de section
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
               colors: [
                 AppColors.customLightBlue,
                 AppColors.customLightBlueDark,
@@ -1399,7 +1508,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Row(
             children: [
@@ -1429,9 +1539,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
+                    horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -1448,19 +1556,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             ],
           ),
         ),
-
-        // Cards matières
         Container(
           decoration: BoxDecoration(
             color: AppColors.screenCardThemed(context),
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-            // boxShadow: [
-            //   BoxShadow(
-            //     color: AppColors.screenShadow,
-            //     blurRadius: 12,
-            //     offset: Offset(0, 4),
-            //   ),
-            // ],
+            borderRadius:
+                const BorderRadius.vertical(bottom: Radius.circular(20)),
           ),
           child: Column(
             children: matieres.asMap().entries.map((entry) {
@@ -1470,8 +1570,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   _buildSubjectCard(entry.value, entry.key),
                   if (!isLast)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Divider(color: AppColors.screenDividerThemed(context), height: 1),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                      child: Divider(
+                          color: AppColors.screenDividerThemed(context),
+                          height: 1),
                     ),
                 ],
               );
@@ -1516,10 +1619,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header de la matière
                 Row(
                   children: [
-                    // Icône matière
                     Container(
                       width: 44,
                       height: 44,
@@ -1534,7 +1635,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Nom + nb évaluations
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1544,7 +1644,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.screenTextPrimaryThemed(context),
+                              color: AppColors.screenTextPrimaryThemed(
+                                  context),
                               letterSpacing: -0.2,
                             ),
                           ),
@@ -1553,19 +1654,17 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             '${notes.length} évaluation${notes.length > 1 ? 's' : ''}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.screenTextSecondaryThemed(context),
+                              color: AppColors.screenTextSecondaryThemed(
+                                  context),
                               fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    // Badge moyenne
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -1586,14 +1685,13 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       duration: const Duration(milliseconds: 250),
                       child: Icon(
                         Icons.keyboard_arrow_down,
-                        color: AppColors.screenTextSecondaryThemed(context),
+                        color:
+                            AppColors.screenTextSecondaryThemed(context),
                         size: 20,
                       ),
                     ),
                   ],
                 ),
-
-                // Expanded detail
                 AnimatedCrossFade(
                   duration: const Duration(milliseconds: 250),
                   crossFadeState: isExpanded
@@ -1604,10 +1702,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 14),
-                      Divider(color: AppColors.screenDividerThemed(context), height: 1),
+                      Divider(
+                          color: AppColors.screenDividerThemed(context),
+                          height: 1),
                       const SizedBox(height: 14),
-
-                      // Titre détail
                       Row(
                         children: [
                           Container(
@@ -1632,7 +1730,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       ),
                       const SizedBox(height: 10),
                       _buildNotesList(notes),
-
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -1684,38 +1781,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 14),
-                      // Bouton marquer consulté
-                      // GestureDetector(
-                      //   onTap: () {},
-                      //   child: Container(
-                      //     padding: const EdgeInsets.symmetric(
-                      //         horizontal: 12, vertical: 8),
-                      //     decoration: BoxDecoration(
-                      //       color: AppColors.screenOrangeLight,
-                      //       borderRadius: BorderRadius.circular(10),
-                      //       border: Border.all(
-                      //           color: AppColors.screenOrange.withOpacity(0.2)),
-                      //     ),
-                      //     child: const Row(
-                      //       mainAxisSize: MainAxisSize.min,
-                      //       children: [
-                      //         Icon(Icons.visibility_outlined,
-                      //             color: AppColors.screenOrange, size: 15),
-                      //         SizedBox(width: 6),
-                      //         Text(
-                      //           'Marquer consulté',
-                      //           style: TextStyle(
-                      //             color: AppColors.screenOrange,
-                      //             fontSize: 12,
-                      //             fontWeight: FontWeight.w600,
-                      //           ),
-                      //         ),
-                      //       ],
-                      //     ),
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),
@@ -1735,17 +1801,20 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       children: notes.asMap().entries.map((entry) {
         final i = entry.key;
         final note = entry.value;
-        final val = double.tryParse(note['note']?.toString() ?? '0') ?? 0.0;
+        final val =
+            double.tryParse(note['note']?.toString() ?? '0') ?? 0.0;
         final sur =
             double.tryParse(note['noteSur']?.toString() ?? '20') ?? 20.0;
         final color = _getAverageColor((val / sur) * 20);
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.screenCardThemed(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.screenDividerThemed(context)),
+            border:
+                Border.all(color: AppColors.screenDividerThemed(context)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1760,7 +1829,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               ),
               const SizedBox(height: 2),
               Text(
-                '${val.toStringAsFixed(1)}',
+                val.toStringAsFixed(1),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -1822,13 +1891,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       decoration: BoxDecoration(
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
-        // boxShadow: const [
-        //   BoxShadow(
-        //     color: AppColors.screenShadow,
-        //     blurRadius: 12,
-        //     offset: Offset(0, 4),
-        //   ),
-        // ],
       ),
       child: Column(
         children: [
@@ -1911,6 +1973,167 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── BOTTOM SHEET SEARCHABLE DROPDOWN ─────────────────────────────────────────
+/// Widget autonome qui s'affiche dans une BottomSheet avec champ de recherche.
+/// Utilise `isScrollControlled: true` + `viewInsets` pour que le clavier
+/// ne cache jamais le champ de saisie.
+class _DropdownBottomSheet extends StatefulWidget {
+  final String label;
+  final String currentValue;
+  final List<String> items;
+  final ValueChanged<String> onChanged;
+
+  const _DropdownBottomSheet({
+    required this.label,
+    required this.currentValue,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  State<_DropdownBottomSheet> createState() => _DropdownBottomSheetState();
+}
+
+class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
+  late TextEditingController _searchController;
+  late List<String> _filteredItems;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _filteredItems = widget.items;
+
+    _searchController.addListener(() {
+      final query = _searchController.text.toLowerCase();
+      setState(() {
+        _filteredItems = widget.items
+            .where((item) => item.toLowerCase().contains(query))
+            .toList();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ← CLÉ : padding bottom = hauteur du clavier, la sheet remonte avec lui.
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      // Hauteur max = 70 % de l'écran + espace clavier
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.70,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      // Padding bottom dynamique → la sheet monte quand le clavier apparaît
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Titre
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Text(
+                  widget.label,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Champ de recherche
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Rechercher...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                      color: AppColors.screenOrange, width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Liste scrollable
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _filteredItems.length,
+              itemBuilder: (ctx, index) {
+                final item = _filteredItems[index];
+                final isSelected = item == widget.currentValue;
+                return ListTile(
+                  title: Text(
+                    item,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w400,
+                      color: isSelected
+                          ? AppColors.screenOrange
+                          : null,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check,
+                          color: AppColors.screenOrange, size: 18)
+                      : null,
+                  onTap: () => widget.onChanged(item),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }

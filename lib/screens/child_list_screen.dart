@@ -3805,59 +3805,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               );
             },
           ),
-          ImageMenuCard(
-            index: 3,
-            cardKey: 'homework_program',
-            title: 'Programme de devoirs',
-            imagePath: null,
-            iconData: Icons.assignment_rounded,
-            isDark: isDark,
-            height: AppDimensions.getHorizontalCardHeight(context),
-            color: const Color(0xFF2E7D32),
-            backgroundColor: isDark
-                ? const Color(0xFF1B2E1B)
-                : const Color(0xFFE8F5E8),
-            textColor: isDark
-                ? const Color(0xFF81C784)
-                : const Color(0xFF1B5E20),
-            actionText: 'Voir programme',
-            width: 175,
-            actionTextColor: const Color(0xFF2E7D32),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Programme de devoirs - Fonctionnalité à venir'),
-                ),
-              );
-            },
-          ),
-          ImageMenuCard(
-            index: 4,
-            cardKey: 'progression',
-            title: 'Progression',
-            imagePath: null,
-            iconData: Icons.trending_up_rounded,
-            isDark: isDark,
-            height: AppDimensions.getHorizontalCardHeight(context),
-            color: const Color(0xFF1976D2),
-            backgroundColor: isDark
-                ? const Color(0xFF0D2847)
-                : const Color(0xFFE3F2FD),
-            textColor: isDark
-                ? const Color(0xFF64B5F6)
-                : const Color(0xFF0D47A1),
-            actionText: 'Voir progression',
-            width: 175,
-            actionTextColor: const Color(0xFF1976D2),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Progression - Fonctionnalité à venir'),
-                ),
-              );
-            },
-          ),
-        ]),
+                  ]),
 
         // ════════════════════════════════════════════════════════════════
         // SECTION 3 : Vie scolaire
@@ -3944,6 +3892,24 @@ class _ChildListScreenState extends State<ChildListScreen>
                       'buttonText': 'Voir difficultés',
                       'key': 'difficulties',
                     },
+                    {
+                      'title': 'Programme de devoirs',
+                      'subtitle': 'Planning des devoirs',
+                      'imagePath': null,
+                      'iconData': Icons.assignment_rounded,
+                      'color': const Color(0xFF2E7D32),
+                      'buttonText': 'Voir programme',
+                      'key': 'homework_program',
+                    },
+                    {
+                      'title': 'Progression',
+                      'subtitle': 'Suivi de la progression',
+                      'imagePath': null,
+                      'iconData': Icons.trending_up_rounded,
+                      'color': const Color(0xFF1976D2),
+                      'buttonText': 'Voir progression',
+                      'key': 'progression',
+                    },
                   ];
 
                   Widget buildCard(Map<String, Object?> item) {
@@ -4005,6 +3971,20 @@ class _ChildListScreenState extends State<ChildListScreen>
                               break;
                             case 'difficulties':
                               _showDifficultiesBottomSheet();
+                              break;
+                            case 'homework_program':
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Programme de devoirs - Fonctionnalité à venir'),
+                                ),
+                              );
+                              break;
+                            case 'progression':
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Progression - Fonctionnalité à venir'),
+                                ),
+                              );
                               break;
                             case 'supplies':
                               _showSuppliesBottomSheet();
@@ -9843,7 +9823,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildAbsencesTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -9868,7 +9848,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
     
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[800] : Colors.white,
@@ -10209,7 +10189,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         
         // Bouton pour charger les données de présence
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -10242,14 +10222,14 @@ class _ChildListScreenState extends State<ChildListScreen>
           const SizedBox(height: 16),
           ...List.generate(_filteredPresenceEntries.length, (index) {
             final entry = _filteredPresenceEntries[index];
-            final isPresent = (entry.profpresent ?? 0) == 1;
+            final isPresent = (entry.presence ?? 0) == 1;
             final debutDate = _tryParseApiDate(entry.debut);
             final timeStr = debutDate != null
                 ? '${debutDate.day.toString().padLeft(2, '0')}/${debutDate.month.toString().padLeft(2, '0')} ${debutDate.hour.toString().padLeft(2, '0')}:${debutDate.minute.toString().padLeft(2, '0')}'
                 : entry.debut ?? '';
             
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -10454,7 +10434,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     _filteredPresenceEntries = _presenceEntries.where((entry) {
       // Filtre par type
       if (_filterType != null) {
-        final isPresent = (entry.profpresent ?? 0) == 1;
+        final isPresent = (entry.presence ?? 0) == 1;
         if (_filterType == 0 && isPresent) return false; // Filtre absent seulement
         if (_filterType == 1 && !isPresent) return false; // Filtre présent seulement
       }

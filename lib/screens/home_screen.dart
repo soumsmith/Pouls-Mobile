@@ -257,12 +257,12 @@ class _HomeScreenState extends State<HomeScreen> {
         print('📊 ${entries.length} entrée(s) reçue(s) pour ${child.fullName}');
 
         final signaled = entries
-            .where((e) => e.status == 0)
+            .where((e) => e.presence != null)
             .cast<GestionPresenceEleveEntry?>()
             .toList();
 
         if (signaled.isEmpty) {
-          print('ℹ️ Aucune entrée signalée (status==0) pour ${child.fullName}');
+          print('ℹ️ Aucune entrée de présence trouvée pour ${child.fullName}');
           return null;
         }
 
@@ -273,13 +273,13 @@ class _HomeScreenState extends State<HomeScreen> {
           return da.compareTo(db);
         });
 
-        // Créer un item par matière avec status=0 (absent)
+        // Créer un item par matière avec presence=1 (présent), sinon absent
         final items = signaled
             .map((entry) {
               if (entry == null) return null;
-              final isPresence = (entry.profpresent ?? 0) == 1;
+              final isPresence = (entry.presence ?? 0) == 1;
               final key =
-                  '${child.id}::${entry.debut ?? ''}::${entry.fin ?? ''}::${entry.matiere ?? ''}::${entry.status ?? ''}';
+                  '${child.id}::${entry.debut ?? ''}::${entry.fin ?? ''}::${entry.matiere ?? ''}::${entry.presence ?? ''}';
               print(
                 '✅ Signalisation pour ${child.fullName}: ${isPresence ? 'Présence' : 'Absence'} - ${entry.matiere} (${entry.debut})',
               );

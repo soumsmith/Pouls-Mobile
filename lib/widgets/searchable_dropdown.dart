@@ -24,7 +24,7 @@ class SearchableDropdown extends StatefulWidget {
   State<SearchableDropdown> createState() => _SearchableDropdownState();
 }
 
-class _SearchableDropdownState extends State<SearchableDropdown> {
+class _SearchableDropdownState extends State<SearchableDropdown> with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final TextSizeService _textSizeService = TextSizeService();
@@ -37,6 +37,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   void initState() {
     super.initState();
     _filteredItems = widget.items;
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -44,9 +45,11 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     _removeOverlay();
     _searchController.dispose();
     _searchFocusNode.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
+  
   void _toggleDropdown() {
     if (_isOpen) {
       _removeOverlay();
@@ -62,10 +65,8 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
       _isOpen = true;
     });
     
-    // Focus sur le champ de recherche
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _searchFocusNode.requestFocus();
-    });
+    // Ne pas automatiquement demander le focus pour permettre le scrolling
+    // L'utilisateur pourra cliquer sur le champ de recherche si nécessaire
   }
 
   void _removeOverlay() {
@@ -81,25 +82,45 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   OverlayEntry _createOverlayEntry() {
     RenderBox renderBox = context.findRenderObject() as RenderBox;
     var size = renderBox.size;
+    final renderObject = context.findRenderObject();
+    final translation = renderObject?.getTransformTo(null).getTranslation();
+    final globalOffset = translation != null ? Offset(translation.x, translation.y) : Offset.zero;
+    
+    // Récupérer la taille de l'écran et la hauteur du clavier
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final availableHeight = screenHeight - keyboardHeight;
+    
+    // Calculer la position du dropdown
+    final dropdownTop = globalOffset.dy + size.height + 5.0;
+    final dropdownHeight = 300.0; // Hauteur maximale du dropdown
+    
+    // Déterminer si le dropdown doit apparaître au-dessus ou en-dessous
+    final showAbove = dropdownTop + dropdownHeight > availableHeight;
+    final offset = showAbove 
+        ? Offset(0.0, -dropdownHeight - 5.0)  // Afficher au-dessus
+        : Offset(0.0, size.height + 5.0);     // Afficher en-dessous
 
     return OverlayEntry(
       builder: (context) => GestureDetector(
         onTap: _removeOverlay,
-        child: Stack(
-          children: [
-            // Zone transparente pour capturer les clics extérieurs
-            Positioned.fill(
-              child: Container(color: Colors.transparent),
-            ),
-            // Dropdown content
-            Positioned(
-              width: size.width,
-              child: CompositedTransformFollower(
-                link: _layerLink,
-                showWhenUnlinked: false,
-                offset: Offset(0.0, size.height + 5.0),
-                child: GestureDetector(
-                  onTap: () {}, // Empêcher la propagation du clic pour ne pas fermer le dropdown quand on clique à l'intérieur
+        child: FocusScope(
+          canRequestFocus: false, // Empêcher l'overlay de capturer le focus principal
+          child: Stack(
+            children: [
+              // Zone transparente pour capturer les clics extérieurs
+              Positioned.fill(
+                child: Container(color: Colors.transparent),
+              ),
+              // Dropdown content
+              Positioned(
+                width: size.width,
+                child: CompositedTransformFollower(
+                  link: _layerLink,
+                  showWhenUnlinked: false,
+                  offset: offset,
+                  child: GestureDetector(
+                    onTap: () {}, // Empêcher la propagation du clic pour ne pas fermer le dropdown quand on clique à l'intérieur
                   child: AnimatedBuilder(
                     animation: _textSizeService,
                     builder: (context, child) {
@@ -129,50 +150,60 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
                                     ),
                                   ),
                                 ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  focusNode: _searchFocusNode,
-                                  decoration: InputDecoration(
-                                    hintText: 'Rechercher...',
-                                    hintStyle: TextStyle(
-                                      color: AppColors.getTextColor(widget.isDarkMode, type: TextType.secondary),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    // Ne demander le focus que si l'utilisateur clique explicitement
+                                    _searchFocusNode.requestFocus();
+                                  },
+                                  child: TextField(
+                                    controller: _searchController,
+                                    focusNode: _searchFocusNode,
+                                    onTap: () {
+                                      // Permettre le focus quand on clique sur le champ
+                                      _searchFocusNode.requestFocus();
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: 'Rechercher...',
+                                      hintStyle: TextStyle(
+                                        color: AppColors.getTextColor(widget.isDarkMode, type: TextType.secondary),
+                                        fontSize: _textSizeService.getScaledFontSize(12),
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: AppColors.getTextColor(widget.isDarkMode, type: TextType.secondary),
+                                        size: 18,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: AppColors.getBorderColor(widget.isDarkMode),
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: AppColors.getBorderColor(widget.isDarkMode),
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: AppColors.primary,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      isDense: true,
+                                    ),
+                                    style: TextStyle(
+                                      color: AppColors.getTextColor(widget.isDarkMode),
                                       fontSize: _textSizeService.getScaledFontSize(12),
                                     ),
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: AppColors.getTextColor(widget.isDarkMode, type: TextType.secondary),
-                                      size: 18,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: AppColors.getBorderColor(widget.isDarkMode),
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: AppColors.getBorderColor(widget.isDarkMode),
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: AppColors.primary,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                    isDense: true,
+                                    onChanged: _filterItems,
                                   ),
-                                  style: TextStyle(
-                                    color: AppColors.getTextColor(widget.isDarkMode),
-                                    fontSize: _textSizeService.getScaledFontSize(12),
-                                  ),
-                                  onChanged: _filterItems,
                                 ),
                               ),
                               // Liste des éléments
@@ -256,8 +287,8 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
                   ),
                 ),
               ),
-            ),
-          ],
+            )],
+          ),
         ),
       ),
     );

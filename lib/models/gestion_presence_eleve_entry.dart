@@ -4,6 +4,7 @@ class GestionPresenceEleveEntry {
   final String? matiere;
   final int? profpresent;
   final int? status;
+  final int? presence;
   final String? appelDate;
   final String? nomProf;
   final String? prenomProf;
@@ -20,6 +21,7 @@ class GestionPresenceEleveEntry {
     this.matiere,
     this.profpresent,
     this.status,
+    this.presence,
     this.appelDate,
     this.nomProf,
     this.prenomProf,
@@ -38,6 +40,7 @@ class GestionPresenceEleveEntry {
       matiere: json['matiere'] as String?,
       profpresent: (json['profpresent'] as num?)?.toInt(),
       status: (json['status'] as num?)?.toInt(),
+      presence: (json['presence'] as num?)?.toInt(),
       appelDate: json['appel_date'] as String?,
       nomProf: json['nomProf'] as String?,
       prenomProf: json['prenomProf'] as String?,

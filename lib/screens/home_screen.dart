@@ -50,6 +50,10 @@ import '../models/event.dart';
 import 'event_detail_screen.dart';
 import 'all_events_screen.dart';
 import 'all_videos_screen.dart';
+import '../services/blog_service.dart';
+import '../models/blog.dart';
+import 'all_blogs_screen.dart';
+import 'blog_detail_screen.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -158,6 +162,14 @@ class _HomeScreenState extends State<HomeScreen> {
   bool get _hasEventsData =>
       !_eventsLoading && _eventsError == null && _events.isNotEmpty;
 
+  // Variables pour les blogs/actualités
+  List<Blog> _blogs = [];
+  bool _blogsLoading = true;
+  String? _blogsError;
+
+  bool get _hasBlogsData =>
+      !_blogsLoading && _blogsError == null && _blogs.isNotEmpty;
+
   final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
   @override
@@ -171,6 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
     _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
     _loadEvents(); // Charger les événements
+    _loadBlogs(); // Charger les blogs/actualités
     _startPresenceAutoScrollIfNeeded();
   }
 
@@ -180,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadUnreadNotificationsCount(),
       _loadCoulisseVideos(),
       _loadEvents(),
+      _loadBlogs(),
     ]);
     await _loadChildrenNotifications();
     await _loadChildrenPresenceSignals();
@@ -693,6 +707,33 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Charger les blogs/actualités depuis l'API
+  Future<void> _loadBlogs() async {
+    if (mounted) {
+      setState(() {
+        _blogsLoading = true;
+        _blogsError = null;
+      });
+    }
+    try {
+      final blogs = await BlogService.getBlogsList();
+      if (mounted) {
+        setState(() {
+          _blogs = blogs;
+          _blogsLoading = false;
+          _blogsError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _blogsLoading = false;
+          _blogsError = e.toString();
+        });
+      }
+    }
+  }
+
   // Construire la section Coulisses de l'Excellence
   // Widget _buildCoulisseExcellenceSection() {
   //   if (!_hasCoulisseExcellenceData) {
@@ -986,7 +1027,159 @@ class _HomeScreenState extends State<HomeScreen> {
     ).push(MaterialPageRoute(builder: (_) => const AllEventsScreen()));
   }
 
-  
+  // Construire la section Actualités/Blogs
+  Widget _buildBlogsSection() {
+    return Container(
+      height: 160,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _blogs.length > 5
+            ? 6
+            : _blogs.length + 1, // 5 blogs + bouton Voir+
+        itemBuilder: (context, index) {
+          if (index < _blogs.length && index < 5) {
+            // Afficher les 5 premiers blogs
+            return _buildBlogCard(_blogs[index]);
+          } else if (index == 5 ||
+              (index == _blogs.length && _blogs.length <= 5)) {
+            // Afficher le bouton Voir+
+            return _buildSeeMoreBlogsCard();
+          } else {
+            return const SizedBox.shrink();
+          }
+        },
+      ),
+    );
+  }
+
+  // Construire une carte de blog
+  Widget _buildBlogCard(Blog blog) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final uiData = blog.toUiMap();
+
+    return GestureDetector(
+      onTap: () {
+        // Action pour voir les détails du blog
+        _handleBlogAction(blog);
+      },
+      child: Container(
+        width: 120,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: isDarkMode ? AppColors.grey800 : Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image du blog
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: Container(
+                height: 65,
+                width: 280,
+                color: Colors.grey[200],
+                child: blog.image != null && blog.image!.isNotEmpty
+                    ? Image.network(
+                        blog.image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Icon(
+                              Icons.article,
+                              color: Colors.grey[600],
+                              size: 40,
+                            ),
+                          );
+                        },
+                      )
+                    : Icon(Icons.article, color: Colors.grey[600], size: 40),
+              ),
+            ),
+            // Informations du blog
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    blog.title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Color(0xFF1A1A2A),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    blog.nomecole,
+                    style: TextStyle(fontSize: 11, color: isDarkMode ? Colors.grey[300] : Colors.grey[600]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    uiData['date'] as String,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: uiData['color'] as Color,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Construire la carte "Voir+" pour les blogs
+  Widget _buildSeeMoreBlogsCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return SeeMoreCard(
+      cardColor: isDarkMode ? AppColors.grey800 : const Color(0xFFF3F4F6),
+      borderColor: const Color(0xFF8B5CF6),
+      iconColor: Colors.white,
+      textColor: const Color(0xFF8B5CF6),
+      subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+      title: 'Voir+',
+      subtitle: 'd\'actualités',
+      onTap: _handleSeeMoreBlogs,
+      icon: Icons.add,
+      width: 120,
+      height: 80,
+    );
+  }
+
+  // Gérer l'action sur un blog
+  void _handleBlogAction(Blog blog) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => BlogDetailScreen(blog: blog)),
+    );
+  }
+
+  // Gérer l'action "Voir+" pour les blogs
+  void _handleSeeMoreBlogs() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AllBlogsScreen()),
+    );
+  }
+
   // Gérer l'action "Voir+" pour les vidéos
   void _handleSeeMoreVideos() {
     Navigator.of(
@@ -2435,6 +2628,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     _buildEventsSection(),
                   ],
+
+                  // Section Actualités
+                  if (_hasBlogsData)
+                    Column(
+                      children: [
+                        const SizedBox(height: 24),
+                        SectionRow(title: 'ACTUALITÉS'),
+                        const SizedBox(height: 16),
+                        _buildBlogsSection(),
+                      ],
+                    ),
 
                   // Section Visite guidée
                   const SizedBox(height: 24),

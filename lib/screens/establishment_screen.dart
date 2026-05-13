@@ -574,7 +574,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             ),
           ],
         ),
-        child: Icon(icon, size: 20, color: AppColors.screenTextPrimaryThemed(context)),
+        child: Icon(
+          icon,
+          size: 20,
+          color: AppColors.screenTextPrimaryThemed(context),
+        ),
       ),
     );
   }
@@ -818,8 +822,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppColors.isDarkMode(context) 
-                    ? const Color(0xFF4A1A1A) 
+                color: AppColors.isDarkMode(context)
+                    ? const Color(0xFF4A1A1A)
                     : const Color(0xFFFFECEC),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -843,7 +847,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               _error!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13, 
+                fontSize: 13,
                 color: AppColors.screenTextSecondaryThemed(context),
               ),
             ),
@@ -1003,7 +1007,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
               // ── Results header ─────────────────────────────
 
-
               // ── Empty state ────────────────────────────────
               if (items.isEmpty)
                 SliverFillRemaining(
@@ -1124,6 +1127,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         location: items[i].adresse,
                         tag: items[i].typePrincipal,
                         titleMaxLines: 2,
+                        allowLineBreak: true,
                         externalTitleSpacing: 8,
                         height: AppDimensions.getEcoleCardHeight(context),
                         //imageFlex: AppDimensions.getProductCardImageFlex(context),
@@ -1163,10 +1167,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             actionText: 'Inscrire',
             imagePath: 'assets/images/icons/integration.png',
             color: const Color(0xFF10B981),
-                      backgroundColor: isDark
-                          ? const Color(0xFFF7FEFC).withOpacity(0.15)
-                          : const Color(0xFFF7FEFC),
-                      textColor: AppColors.screenTextPrimaryThemed(context),
+            backgroundColor: isDark
+                ? const Color(0xFFF7FEFC).withOpacity(0.15)
+                : const Color(0xFFF7FEFC),
+            textColor: AppColors.screenTextPrimaryThemed(context),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => _showActionBottomSheet(
@@ -1180,11 +1184,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             title: 'Donner un \n avis',
             actionText: 'Évaluer',
             imagePath: 'assets/images/avis-2.jpg',
-             color: const Color(0xFFF59E0B),
-                      backgroundColor: isDark
-                          ? const Color(0xFFFFFEF7).withOpacity(0.15)
-                          : const Color(0xFFFFFEF7),
-                      textColor: AppColors.screenTextPrimaryThemed(context),
+            color: const Color(0xFFF59E0B),
+            backgroundColor: isDark
+                ? const Color(0xFFFFFEF7).withOpacity(0.15)
+                : const Color(0xFFFFFEF7),
+            textColor: AppColors.screenTextPrimaryThemed(context),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => _showActionBottomSheet('rating', _kActions['rating']!),
@@ -1212,11 +1216,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             actionText: 'Voir',
             imagePath: 'assets/images/school-event.jpg',
             color: const Color(0xFF8B5CF6),
-                      backgroundColor: isDark
-                          ? const Color(0xFFFCFAFF).withOpacity(0.15)
-                          : const Color(0xFFFCFAFF),
-                      textColor: AppColors.screenTextPrimaryThemed(context),
-            
+            backgroundColor: isDark
+                ? const Color(0xFFFCFAFF).withOpacity(0.15)
+                : const Color(0xFFFCFAFF),
+            textColor: AppColors.screenTextPrimaryThemed(context),
+
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => Navigator.of(
@@ -1248,7 +1252,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         cardKey: cardKey,
         title: title,
         width: 85,
-        height: 120, // Augmentation de la hauteur pour accommoder les retours à la ligne
+        height:
+            120, // Augmentation de la hauteur pour accommoder les retours à la ligne
         imageFlex: 2,
         imagePath: imagePath,
         isDark: isDark,
@@ -1307,9 +1312,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 etablissement: _etablissementController.text,
                 pays: _paysRecommendController.text,
                 ville: _villeRecommendController.text,
-                ordre: _ordreController.text.isEmpty ? '1' : _ordreController.text,
-                adresseEtablissement: _adresseEtablissementController
-                        .text.isEmpty
+                ordre: _ordreController.text.isEmpty
+                    ? '1'
+                    : _ordreController.text,
+                adresseEtablissement:
+                    _adresseEtablissementController.text.isEmpty
                     ? 'Non spécifiée'
                     : _adresseEtablissementController.text,
                 nomParent: _parentNomController.text,
@@ -2368,15 +2375,16 @@ class _FeaturedSchoolCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (isVideo) {
-          final queue = _buildQueue(schools)
-              .where((v) => v.videoYoutube.trim().isNotEmpty)
-              .toList();
+          final queue = _buildQueue(
+            schools,
+          ).where((v) => v.videoYoutube.trim().isNotEmpty).toList();
           if (queue.isEmpty) return;
 
-          final initialIndex = schools
-              .take(index + 1)
-              .where((m) => (m['video'] ?? '').trim().isNotEmpty)
-              .length -
+          final initialIndex =
+              schools
+                  .take(index + 1)
+                  .where((m) => (m['video'] ?? '').trim().isNotEmpty)
+                  .length -
               1;
 
           Navigator.of(context).push(

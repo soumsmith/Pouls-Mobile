@@ -110,4 +110,36 @@ class BlogService {
       return (blog['type'] as String).toLowerCase() == category.toLowerCase();
     }).toList();
   }
+
+  /// Récupère la liste des blogs depuis l'API (sans filtres)
+  static Future<BlogsResponse> getBlogs() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/ecoles/blogs-list'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return BlogsResponse.fromJson(data);
+      } else {
+        throw Exception('Erreur HTTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des blogs: $e');
+    }
+  }
+
+  /// Récupère la liste des blogs (méthode simplifiée)
+  static Future<List<Blog>> getBlogsList() async {
+    try {
+      final response = await getBlogs();
+      return response.data;
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération de la liste des blogs: $e');
+    }
+  }
 }

@@ -192,7 +192,7 @@ class _LibraryScreenState extends State<LibraryScreen>
       _isLoadingCategories = true;
       _categoryError = null;
     });
-    
+
     try {
       final categories = await CategoryApiService.getCategories();
       if (mounted) {
@@ -218,7 +218,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         .map((category) => category.nom)
         .toSet() // Éviter les doublons
         .toList();
-    
+
     setState(() {
       _filters = ['Tous', ...categoryNames];
     });
@@ -391,8 +391,9 @@ class _LibraryScreenState extends State<LibraryScreen>
     return [
       _buildCustomActionButton(
         icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
-        color:
-            _isSearching ? AppColors.shopBlue : AppColors.screenTextPrimaryThemed(context),
+        color: _isSearching
+            ? AppColors.shopBlue
+            : AppColors.screenTextPrimaryThemed(context),
         bgColor: _isSearching
             ? AppColors.shopBlueSurface
             : AppColors.screenCardThemed(context),
@@ -468,7 +469,9 @@ class _LibraryScreenState extends State<LibraryScreen>
             margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.getSmallCardBorderRadius(context),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.screenShadowThemed(context),
@@ -484,11 +487,12 @@ class _LibraryScreenState extends State<LibraryScreen>
               top: 0,
               right: 0,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: badgeColor ?? AppColors.shopGreen,
-                  borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.getSmallCardBorderRadius(context),
+                  ),
                   border: Border.all(
                     color: AppColors.screenSurfaceThemed(context),
                     width: 1.5,
@@ -554,8 +558,9 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _buildAdvancedSearchBottomSheet() {
     return IntrinsicHeight(
       child: Container(
-        constraints:
-            BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
         decoration: BoxDecoration(
           color: AppColors.screenSurfaceThemed(context),
           borderRadius: const BorderRadius.only(
@@ -579,8 +584,11 @@ class _LibraryScreenState extends State<LibraryScreen>
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  const Icon(Icons.tune_rounded,
-                      size: 20, color: AppColors.shopBlue),
+                  const Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: AppColors.shopBlue,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     'Recherche avancée',
@@ -597,7 +605,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                     onTap: _clearAdvancedSearch,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.shopBlueSurface,
                         borderRadius: BorderRadius.circular(8),
@@ -736,8 +746,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                   ),
                   child: const Text(
                     'Appliquer les filtres',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -764,8 +773,7 @@ class _LibraryScreenState extends State<LibraryScreen>
           if (_selectedFilter != 'Tous') ...[
             const SizedBox(width: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: AppColors.shopGreenSurface,
                 borderRadius: BorderRadius.circular(8),
@@ -789,8 +797,11 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _applyFilters();
                       });
                     },
-                    child: const Icon(Icons.close_rounded,
-                        size: 12, color: AppColors.shopGreen),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 12,
+                      color: AppColors.shopGreen,
+                    ),
                   ),
                 ],
               ),
@@ -828,16 +839,22 @@ class _LibraryScreenState extends State<LibraryScreen>
                   // image + texte externe pour éviter tout overflow.
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
-                    childAspectRatio: AppDimensions.getProductsGridChildAspectRatio(context, imageFlex: AppDimensions.getGridImageFlex(context)),
+                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
+                      context,
+                    ),
+                    childAspectRatio:
+                        AppDimensions.getProductsGridChildAspectRatio(
+                          context,
+                          imageFlex: AppDimensions.getGridImageFlex(context),
+                        ),
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      if (index == _filteredProducts.length && _hasMoreProducts) {
+                      if (index == _filteredProducts.length &&
+                          _hasMoreProducts) {
                         return SeeMoreCard(
                           cardColor: AppColors.screenCard,
-                          borderColor:
-                              AppColors.shopGreen.withOpacity(0.3),
+                          borderColor: AppColors.shopGreen.withOpacity(0.3),
                           iconColor: AppColors.shopGreen,
                           textColor: AppColors.shopGreen,
                           subtitleColor: const Color(0xFF999999),
@@ -847,11 +864,10 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.add,
                         );
                       }
-                      return _buildProductCard(
-                          _filteredProducts[index], index);
+                      return _buildProductCard(_filteredProducts[index], index);
                     },
-                    childCount: _filteredProducts.length +
-                        (_hasMoreProducts ? 1 : 0),
+                    childCount:
+                        _filteredProducts.length + (_hasMoreProducts ? 1 : 0),
                   ),
                 ),
               ),
@@ -878,8 +894,11 @@ class _LibraryScreenState extends State<LibraryScreen>
               color: AppColors.shopBlueSurface,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.search_off_rounded,
-                size: 44, color: AppColors.shopBlue),
+            child: const Icon(
+              Icons.search_off_rounded,
+              size: 44,
+              color: AppColors.shopBlue,
+            ),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -910,8 +929,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               });
             },
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [AppColors.shopBlueLight, AppColors.shopBlue],
@@ -957,8 +975,11 @@ class _LibraryScreenState extends State<LibraryScreen>
                 color: const Color(0xFFFFECEC),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.error_outline_rounded,
-                  size: 36, color: Color(0xFFEF4444)),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                size: 36,
+                color: Color(0xFFEF4444),
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -974,14 +995,18 @@ class _LibraryScreenState extends State<LibraryScreen>
               _error ?? 'Une erreur est survenue',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontSize: 13, color: AppColors.screenTextSecondary),
+                fontSize: 13,
+                color: AppColors.screenTextSecondary,
+              ),
             ),
             const SizedBox(height: 24),
             GestureDetector(
               onTap: _loadProducts,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
+                  horizontal: 24,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.shopBlueLight, AppColors.shopBlue],
@@ -1042,6 +1067,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         //imageFlex: AppDimensions.getProductCardImageFlex(context), // Adaptatif selon taille de l'appareil
         externalTitleSpacing: 4,
         titleMaxLines: 2,
+        allowLineBreak: true,
         //buttonText: 'Ajouter',
         buttonColor: AppColors.shopGreen,
         buttonTextColor: Colors.white,
@@ -1051,14 +1077,13 @@ class _LibraryScreenState extends State<LibraryScreen>
         actionText: product.price > 0
             ? '${product.price.toStringAsFixed(0)} F'
             : 'Gratuit',
-        actionTextColor:
-            product.price > 0 ? AppColors.shopGreen : Colors.green,
+        actionTextColor: product.price > 0 ? AppColors.shopGreen : Colors.green,
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(
-                  product: product, produitUid: product.id),
+              builder: (_) =>
+                  ProductDetailScreen(product: product, produitUid: product.id),
             ),
           ).then((_) => _updateCartItemCount());
         },

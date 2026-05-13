@@ -179,16 +179,19 @@ class MessageService {
       request.fields['body'] = content;
       request.fields['subject'] = subject;
       // Selon la documentation: conversation_id doit être null s'il n'y a pas encore de conversation
-      request.fields['conversation_id'] = conversationId?.toString() ?? '';
+      if (conversationId != null) {
+        request.fields['conversation_id'] = conversationId.toString();
+      }
       request.fields['code_ecole'] = codeEcole;
       request.fields['matricule'] = matricule;
       request.fields['sender_type'] = 'parent';
 
+      final extension = imageFile.path.split('.').last.toLowerCase();
       final imageBytes = await imageFile.readAsBytes();
       final multipartFile = http.MultipartFile.fromBytes(
         'attachments[0]',
         imageBytes,
-        filename: 'image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        filename: 'image_${DateTime.now().millisecondsSinceEpoch}.$extension',
       );
       request.files.add(multipartFile);
 
@@ -265,7 +268,9 @@ class MessageService {
       request.fields['body'] = content;
       request.fields['subject'] = subject;
       // Selon la documentation: conversation_id doit être null s'il n'y a pas encore de conversation
-      request.fields['conversation_id'] = conversationId?.toString() ?? '';
+      if (conversationId != null) {
+        request.fields['conversation_id'] = conversationId.toString();
+      }
       request.fields['code_ecole'] = codeEcole;
       request.fields['matricule'] = matricule;
       request.fields['sender_type'] = 'parent';
@@ -274,7 +279,7 @@ class MessageService {
       final multipartFile = http.MultipartFile.fromBytes(
         'attachments[0]',
         audioBytes,
-        filename: 'voice_${DateTime.now().millisecondsSinceEpoch}.webm',
+        filename: 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
       );
       request.files.add(multipartFile);
 
@@ -316,6 +321,95 @@ class MessageService {
       }
     } catch (e) {
       print('💥 Exception dans sendVoiceMessage: $e');
+      return {'success': false, 'message': 'Erreur de connexion: $e'};
+    }
+  }
+
+  /// Envoie un message avec un fichier générique (PDF, document, etc.)
+  Future<Map<String, dynamic>> sendFileMessage({
+    required String userPhoneNumber,
+    required String content,
+    required String subject,
+    required String codeEcole,
+    required String matricule,
+    required File file,
+    int? conversationId,
+  }) async {
+    print('📤 MessageService.sendFileMessage appelé');
+
+    // Si conversationId n'est pas fourni, le déterminer selon la documentation
+    if (conversationId == null) {
+      conversationId = await _determineConversationId(
+        userPhoneNumber: userPhoneNumber,
+        matricule: matricule,
+      );
+    }
+
+    final url = Uri.parse(
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/envoyer/$userPhoneNumber',
+    );
+
+    try {
+      final request = http.MultipartRequest('POST', url);
+
+      request.fields['content'] = content;
+      request.fields['body'] = content;
+      request.fields['subject'] = subject;
+      // Selon la documentation: conversation_id doit être null s'il n'y a pas encore de conversation
+      if (conversationId != null) {
+        request.fields['conversation_id'] = conversationId.toString();
+      }
+      request.fields['code_ecole'] = codeEcole;
+      request.fields['matricule'] = matricule;
+      request.fields['sender_type'] = 'parent';
+
+      final extension = file.path.split('.').last.toLowerCase();
+      final fileBytes = await file.readAsBytes();
+      final multipartFile = http.MultipartFile.fromBytes(
+        'attachments[0]',
+        fileBytes,
+        filename: 'document_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
+      request.files.add(multipartFile);
+
+      print('🌐 URL: $url');
+      print('📦 Champs: ${request.fields}');
+      print('📡 Envoi de la requête multipart avec fichier...');
+
+      final streamedResponse =
+          await request.send().timeout(AppConfig.API_TIMEOUT);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 Réponse reçue - Status: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Si c'est une nouvelle conversation, extraire et stocker le conversation_id
+        if (conversationId == null) {
+          final responseData = json.decode(response.body);
+          if (responseData['data'] != null && responseData['data']['conversation_id'] != null) {
+            _currentConversationId = responseData['data']['conversation_id'] as int?;
+            print('🆕 Nouvelle conversation créée avec ID: $_currentConversationId');
+          }
+        }
+        
+        print('✅ Fichier envoyé avec succès');
+        return {
+          'success': true,
+          'message': 'Fichier envoyé avec succès',
+          'data': json.decode(response.body),
+        };
+      } else {
+        print('❌ Erreur HTTP - Status: ${response.statusCode}');
+        return {
+          'success': false,
+          'message':
+              'Erreur lors de l\'envoi du message: ${response.statusCode}',
+          'error': response.body,
+        };
+      }
+    } catch (e) {
+      print('💥 Exception dans sendFileMessage: $e');
       return {'success': false, 'message': 'Erreur de connexion: $e'};
     }
   }

@@ -162,6 +162,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> with WidgetsBin
                                       // Permettre le focus quand on clique sur le champ
                                       _searchFocusNode.requestFocus();
                                     },
+                                    enableInteractiveSelection: false,
                                     decoration: InputDecoration(
                                       hintText: 'Rechercher...',
                                       hintStyle: TextStyle(

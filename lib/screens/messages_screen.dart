@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
 import '../services/message_api_service.dart';
@@ -16,7 +18,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
 
 // ─── ENUM : types de pièce jointe ────────────────────────────────────────────
-enum AttachmentType { none, image, audio }
+enum AttachmentType { none, image, audio, document }
 
 // ─── Modèle local pour les messages affichés ────────────────────────────────
 class _LocalMessage {
@@ -25,6 +27,7 @@ class _LocalMessage {
   final DateTime time;
   final AttachmentType attachmentType;
   final bool isPending; // true = envoi optimiste, pas encore confirmé
+  final String? attachmentUrl;
 
   const _LocalMessage({
     required this.body,
@@ -32,6 +35,7 @@ class _LocalMessage {
     required this.time,
     this.attachmentType = AttachmentType.none,
     this.isPending = false,
+    this.attachmentUrl,
   });
 }
 
@@ -74,7 +78,8 @@ class _MessagesScreenState extends State<MessagesScreen>
   bool _isLoading = true;
   final TextSizeService _textSizeService = TextSizeService();
   final MessageApiService _messageApiService = MessageApiService();
-  final MessageService _messageService = MessageService(); // Ajout du service de messagerie
+  final MessageService _messageService =
+      MessageService(); // Ajout du service de messagerie
   final ScrollController _scrollController = ScrollController();
 
   // ─── Formulaire d'envoi ─────────────────────────────────────────────────
@@ -95,6 +100,8 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+
+  Timer? _refreshTimer;
 
   // ════════════════════════════════════════════════════════════════════════════
   //  GETTERS de contexte élève
@@ -119,11 +126,14 @@ class _MessagesScreenState extends State<MessagesScreen>
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-    
+
     // Réinitialiser le conversation_id lors du chargement d'un nouvel élève
     _messageService.resetConversationId();
-    
+
     _loadConversations();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) _loadConversations(silent: true);
+    });
     _messageController.addListener(() {
       final has =
           _messageController.text.trim().isNotEmpty ||
@@ -141,13 +151,13 @@ class _MessagesScreenState extends State<MessagesScreen>
     _scrollController.dispose();
     _recordTimer?.cancel();
     _audioRecorder?.dispose();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
   // ════════════════════════════════════════════════════════════════════════════
   //  DATA
   // ════════════════════════════════════════════════════════════════════════════
-
 
   Future<void> _loadConversations({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
@@ -167,7 +177,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       // Extraire les données de la nouvelle structure
       final messagesData = result['messages'] as List<dynamic>;
       final conversationId = result['conversationId'] as int?;
-      
+
       // Marquer les messages comme lus si une conversation existe
       if (conversationId != null) {
         await _messageApiService.markMessagesAsRead(
@@ -178,18 +188,39 @@ class _MessagesScreenState extends State<MessagesScreen>
 
       // Convertir les messages en _LocalMessage
       final localMessages = messagesData.map((msg) {
-        final isMe = currentUser.phone.isNotEmpty &&
-            (msg['sender_pseudo']?.toString().toLowerCase().contains(currentUser.phone.toLowerCase()) ?? false);
-        
+        final isMe = msg['sender_type'] == 'parent';
+
+        // Extraire l'URL de la première pièce jointe si elle existe
+        String? attachmentUrl;
+        AttachmentType attachmentType = AttachmentType.none;
+        final attachments = msg['attachments'] as List<dynamic>? ?? [];
+        if (attachments.isNotEmpty) {
+          attachmentUrl = attachments[0]['file_path']?.toString();
+          final mime = attachments[0]['mime_type']?.toString() ?? '';
+          final fileName = attachments[0]['file_name']?.toString().toLowerCase() ?? '';
+          if (mime.startsWith('audio') || mime.contains('octet-stream') ||
+              fileName.endsWith('.m4a') || fileName.endsWith('.webm') || fileName.endsWith('.mp3')) {
+            attachmentType = AttachmentType.audio;
+          } else if (mime.startsWith('image')) {
+            attachmentType = AttachmentType.image;
+          } else if (mime.startsWith('application/pdf') || fileName.endsWith('.pdf')) {
+            attachmentType = AttachmentType.document;
+          }
+        }
+
         return _LocalMessage(
           body: msg['body']?.toString() ?? '',
           isMe: isMe,
-          time: DateTime.tryParse(msg['created_at']?.toString() ?? '') ?? DateTime.now(),
+          time:
+              DateTime.tryParse(msg['created_at']?.toString() ?? '') ??
+              DateTime.now(),
+          attachmentType: attachmentType,
+          attachmentUrl: attachmentUrl,
         );
       }).toList();
 
       setState(() {
-        _localMessages = localMessages;
+        _localMessages = localMessages.reversed.toList();
         _isLoading = false;
       });
 
@@ -363,6 +394,7 @@ class _MessagesScreenState extends State<MessagesScreen>
             time: _formatTime(m.time),
             isPending: m.isPending,
             attachmentType: m.attachmentType,
+            attachmentUrl: m.attachmentUrl,
           );
         },
       ),
@@ -419,6 +451,7 @@ class _MessagesScreenState extends State<MessagesScreen>
     required String time,
     bool isPending = false,
     AttachmentType attachmentType = AttachmentType.none,
+    String? attachmentUrl,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -477,15 +510,50 @@ class _MessagesScreenState extends State<MessagesScreen>
                       ? CrossAxisAlignment.end
                       : CrossAxisAlignment.start,
                   children: [
-                    // Icône si pièce jointe
-                    if (attachmentType != AttachmentType.none) ...[
+                    // Lecteur audio si pièce jointe audio
+                    if (attachmentType == AttachmentType.audio && attachmentUrl != null) ...[
+                      _AudioBubble(url: attachmentUrl, isMe: isMe),
+                      const SizedBox(height: 6),
+                    ] else if (attachmentType == AttachmentType.document && attachmentUrl != null) ...[
+                      GestureDetector(
+                        onTap: () async {
+                          final uri = Uri.parse(attachmentUrl);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.picture_as_pdf,
+                              size: 14,
+                              color: isMe
+                                  ? Colors.white.withOpacity(0.85)
+                                  : const Color(0xFF0288D1),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Ouvrir le PDF',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isMe
+                                    ? Colors.white.withOpacity(0.85)
+                                    : const Color(0xFF0288D1),
+                                fontStyle: FontStyle.italic,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ] else if (attachmentType == AttachmentType.image) ...[
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            attachmentType == AttachmentType.audio
-                                ? Icons.mic
-                                : Icons.image_outlined,
+                            Icons.image_outlined,
                             size: 14,
                             color: isMe
                                 ? Colors.white.withOpacity(0.85)
@@ -493,9 +561,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            attachmentType == AttachmentType.audio
-                                ? 'Note vocale'
-                                : 'Image',
+                            'Image',
                             style: TextStyle(
                               fontSize: 12,
                               color: isMe
@@ -683,10 +749,12 @@ class _MessagesScreenState extends State<MessagesScreen>
                       onLongPressStart: _enableAudioRecording
                           ? (_) => _startRecording()
                           : null,
-                      onLongPressEnd:
-                          _enableAudioRecording ? (_) => _stopRecording() : null,
-                      onLongPressCancel:
-                          _enableAudioRecording ? _cancelRecording : null,
+                      onLongPressEnd: _enableAudioRecording
+                          ? (_) => _stopRecording()
+                          : null,
+                      onLongPressCancel: _enableAudioRecording
+                          ? _cancelRecording
+                          : null,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         width: 44,
@@ -1019,8 +1087,9 @@ class _MessagesScreenState extends State<MessagesScreen>
         _attachmentType == AttachmentType.audio && _attachedFile != null;
     final bool hasImage =
         _attachmentType == AttachmentType.image && _attachedFile != null;
+    final bool hasFile = _attachedFile != null;
 
-    if (message.isEmpty && !hasAudio && !hasImage) {
+    if (message.isEmpty && !hasFile) {
       _showError('Écrivez un message ou joignez un fichier');
       return;
     }
@@ -1028,7 +1097,7 @@ class _MessagesScreenState extends State<MessagesScreen>
     // ── 1. Ajout optimiste immédiat ──────────────────────────────────────────
     final optimisticBody = message.isNotEmpty
         ? message
-        : (hasAudio ? 'Note vocale' : 'Image');
+        : (hasAudio ? 'Note vocale' : hasImage ? 'Image' : 'Document');
 
     final optimisticMsg = _LocalMessage(
       body: optimisticBody,
@@ -1041,6 +1110,9 @@ class _MessagesScreenState extends State<MessagesScreen>
           : AttachmentType.none,
       isPending: true,
     );
+
+    // Capturer le fichier avant le setState qui le réinitialise
+    final File? fileToSend = _attachedFile;
 
     setState(() {
       _localMessages = [..._localMessages, optimisticMsg];
@@ -1068,7 +1140,7 @@ class _MessagesScreenState extends State<MessagesScreen>
           subject: 'Message de la part de votre enfant',
           codeEcole: _args!.ecoleCode,
           matricule: _args!.studentMatricule,
-          audioFile: _attachedFile!, // déjà capturé avant le setState
+          audioFile: fileToSend!,
         );
       } else if (hasImage) {
         result = await messageService.sendImageMessage(
@@ -1077,7 +1149,16 @@ class _MessagesScreenState extends State<MessagesScreen>
           subject: 'Message de la part de votre enfant',
           codeEcole: _args!.ecoleCode,
           matricule: _args!.studentMatricule,
-          imageFile: _attachedFile!,
+          imageFile: fileToSend!,
+        );
+      } else if (hasFile) {
+        result = await messageService.sendFileMessage(
+          userPhoneNumber: currentUser.phone,
+          content: optimisticBody,
+          subject: 'Message de la part de votre enfant',
+          codeEcole: _args!.ecoleCode,
+          matricule: _args!.studentMatricule,
+          file: fileToSend!,
         );
       } else {
         result = await messageService.sendTextMessage(
@@ -1127,5 +1208,194 @@ class _MessagesScreenState extends State<MessagesScreen>
     if (diff.inDays == 1) return 'Hier';
     if (diff.inDays < 7) return 'Il y a ${diff.inDays}j';
     return '${date.day}/${date.month}/${date.year}';
+  }
+}
+
+// ─── WIDGET LECTEUR AUDIO AVEC AUDIOPLAYERS ─────────────────────────────────
+class _AudioBubble extends StatefulWidget {
+  final String url;
+  final bool isMe;
+
+  const _AudioBubble({required this.url, required this.isMe});
+
+  @override
+  State<_AudioBubble> createState() => _AudioBubbleState();
+}
+
+class _AudioBubbleState extends State<_AudioBubble> {
+  late AudioPlayer _player;
+  bool _isPlaying = false;
+  Duration _position = Duration.zero;
+  Duration _total = Duration.zero;
+  bool _isLoading = true;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    try {
+      _player = AudioPlayer();
+      
+      // Écouter les changements de durée
+      _player.onDurationChanged.listen((duration) {
+        if (mounted) {
+          setState(() {
+            _total = duration;
+          });
+        }
+      });
+      
+      // Écouter la position
+      _player.onPositionChanged.listen((position) {
+        if (mounted) {
+          setState(() {
+            _position = position;
+          });
+        }
+      });
+      
+      // Écouter l'état du player
+      _player.onPlayerStateChanged.listen((state) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = state == PlayerState.playing;
+          });
+        }
+      });
+      
+      // Écouter la fin de la lecture
+      _player.onComplete.listen((event) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+            _position = Duration.zero;
+          });
+        }
+      });
+      
+      // Charger l'audio
+      await _player.setSourceUrl(widget.url);
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('Erreur lors du chargement audio: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePlayback() async {
+    if (!_isInitialized) return;
+    
+    try {
+      if (_isPlaying) {
+        await _player.pause();
+      } else {
+        // Si on est à la fin, revenir au début
+        if (_position >= _total && _total > Duration.zero) {
+          await _player.seek(Duration.zero);
+        }
+        await _player.resume();
+      }
+    } catch (e) {
+      print('Erreur contrôle audio: $e');
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.isMe ? Colors.white : const Color(0xFF0288D1);
+    final trackColor = widget.isMe
+        ? Colors.white.withOpacity(0.3)
+        : const Color(0xFF0288D1).withOpacity(0.2);
+    
+    double progress = 0.0;
+    if (_total.inMilliseconds > 0 && _position.inMilliseconds > 0) {
+      progress = _position.inMilliseconds / _total.inMilliseconds;
+      progress = progress.clamp(0.0, 1.0);
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _isLoading ? null : _togglePlayback,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: _isLoading
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: color,
+                    ),
+                  )
+                : Icon(
+                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: color,
+                    size: 20,
+                  ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 120,
+              height: 3,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: trackColor,
+                  color: color,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${_formatDuration(_position)} / ${_formatDuration(_total)}',
+              style: TextStyle(
+                fontSize: 10,
+                color: color.withOpacity(0.75),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

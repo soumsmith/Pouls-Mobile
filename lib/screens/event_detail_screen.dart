@@ -14,10 +14,7 @@ import '../widgets/components/section_row.dart';
 class EventDetailScreen extends StatefulWidget {
   final Event event;
 
-  const EventDetailScreen({
-    super.key,
-    required this.event,
-  });
+  const EventDetailScreen({super.key, required this.event});
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
@@ -51,10 +48,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
 
     try {
-      final events = await EventService.getEventsBySchool(widget.event.codeecole);
+      final events = await EventService.getEventsBySchool(
+        widget.event.codeecole,
+      );
       if (mounted) {
         setState(() {
-          _schoolEvents = events.where((e) => e.slug != widget.event.slug).toList();
+          _schoolEvents = events
+              .where((e) => e.slug != widget.event.slug)
+              .toList();
           _schoolEventsLoading = false;
           _schoolEventsError = null;
         });
@@ -191,7 +192,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: (uiData['color'] as Color).withOpacity(0.9),
                             borderRadius: BorderRadius.circular(20),
@@ -261,7 +265,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: (uiData['color'] as Color).withOpacity(0.1),
+                                color: (uiData['color'] as Color).withOpacity(
+                                  0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -325,7 +331,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF6366F1),
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -345,8 +353,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                 onPressed: _contactSchool,
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: const Color(0xFF6366F1),
-                                  side: const BorderSide(color: Color(0xFF6366F1)),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  side: const BorderSide(
+                                    color: Color(0xFF6366F1),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -391,15 +403,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   // Section de notation et commentaires
                   SectionRow(title: 'AVIS ET COMMENTAIRES'),
                   const SizedBox(height: 16),
-                  
+
                   // Résumé des notations
                   if (_ratingSummary != null) _buildRatingSummary(),
-                  
+
                   // Bouton pour ajouter un commentaire
                   _buildAddCommentButton(),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Liste des commentaires
                   if (_comments.isNotEmpty) ...[
                     ListView.builder(
@@ -432,7 +444,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       ),
                     ),
                   ],
-                  
+
                   const SizedBox(height: 32),
 
                   // Autres événements de l'école
@@ -463,14 +475,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   Widget _buildSchoolEventCard(Event event) {
     final uiData = event.toUiMap();
-    
+
     return GestureDetector(
       onTap: () {
         // Naviguer vers le détail de cet événement
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => EventDetailScreen(event: event),
-          ),
+          MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)),
         );
       },
       child: Container(
@@ -493,7 +503,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           children: [
             // Image
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: Container(
                 height: 80,
                 width: 160,
@@ -513,11 +525,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           );
                         },
                       )
-                    : Icon(
-                        Icons.event,
-                        color: Colors.grey[600],
-                        size: 30,
-                      ),
+                    : Icon(Icons.event, color: Colors.grey[600], size: 30),
               ),
             ),
             // Informations
@@ -581,7 +589,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Titre
             const Text(
               'Partager l\'événement',
@@ -594,14 +602,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             const SizedBox(height: 8),
             Text(
               'Partagez "${widget.event.title}" avec vos amis',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
+
             // Options de partage
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -659,11 +664,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
+            child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(height: 8),
           Text(
@@ -682,7 +683,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   void _shareToWhatsApp() async {
     final shareText = _getShareText();
     final whatsappUrl = 'https://wa.me/?text=${Uri.encodeComponent(shareText)}';
-    
+
     if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
       await launchUrl(Uri.parse(whatsappUrl));
     } else {
@@ -692,8 +693,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   void _shareToFacebook() async {
     final shareText = _getShareText();
-    final facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent('https://example.com')}&quote=${Uri.encodeComponent(shareText)}';
-    
+    final facebookUrl =
+        'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent('https://example.com')}&quote=${Uri.encodeComponent(shareText)}';
+
     if (await canLaunchUrl(Uri.parse(facebookUrl))) {
       await launchUrl(Uri.parse(facebookUrl));
     } else {
@@ -706,7 +708,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final subject = Uri.encodeComponent(widget.event.title);
     final body = Uri.encodeComponent(shareText);
     final emailUrl = 'mailto:?subject=$subject&body=$body';
-    
+
     if (await canLaunchUrl(Uri.parse(emailUrl))) {
       await launchUrl(Uri.parse(emailUrl));
     } else {
@@ -734,10 +736,7 @@ Découvrez plus d'événements sur notre application! 📱
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -781,10 +780,7 @@ Découvrez plus d'événements sur notre application! 📱
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -792,7 +788,7 @@ Découvrez plus d'événements sur notre application! 📱
   // Construire le résumé des notations
   Widget _buildRatingSummary() {
     if (_ratingSummary == null) return const SizedBox.shrink();
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -820,11 +816,11 @@ Découvrez plus d'événements sur notre application! 📱
                     mainAxisSize: MainAxisSize.min,
                     children: _ratingSummary!.averageRatingStars.map((star) {
                       return Icon(
-                        star == 'filled' 
-                            ? Icons.star 
-                            : star == 'half' 
-                                ? Icons.star_half 
-                                : Icons.star_border,
+                        star == 'filled'
+                            ? Icons.star
+                            : star == 'half'
+                            ? Icons.star_half
+                            : Icons.star_border,
                         color: const Color(0xFFFFB800),
                         size: 20,
                       );
@@ -832,10 +828,7 @@ Découvrez plus d'événements sur notre application! 📱
                   ),
                   Text(
                     '${_ratingSummary!.totalRatings} avis',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -846,9 +839,10 @@ Découvrez plus d'événements sur notre application! 📱
                   children: List.generate(5, (index) {
                     final starCount = 5 - index;
                     final percentage = _ratingSummary!.totalRatings > 0
-                        ? (_ratingSummary!.ratingDistribution[starCount] ?? 0) / _ratingSummary!.totalRatings
+                        ? (_ratingSummary!.ratingDistribution[starCount] ?? 0) /
+                              _ratingSummary!.totalRatings
                         : 0.0;
-                    
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Row(
@@ -905,13 +899,15 @@ Découvrez plus d'événements sur notre application! 📱
   Widget _buildAddCommentButton() {
     final currentUser = AuthService.instance.getCurrentUser();
     final hasCommented = _userComment != null;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ElevatedButton(
         onPressed: currentUser != null ? _showAddCommentDialog : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: hasCommented ? Colors.grey[400] : const Color(0xFF6366F1),
+          backgroundColor: hasCommented
+              ? Colors.grey[400]
+              : const Color(0xFF6366F1),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -920,10 +916,7 @@ Découvrez plus d'événements sur notre application! 📱
         ),
         child: Text(
           hasCommented ? 'Vous avez déjà donné votre avis' : 'Donner mon avis',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -960,11 +953,7 @@ Découvrez plus d'événements sur notre application! 📱
                     ? NetworkImage(comment.userAvatar)
                     : null,
                 child: comment.userAvatar.isEmpty
-                    ? Icon(
-                        Icons.person,
-                        color: Colors.grey[600],
-                        size: 24,
-                      )
+                    ? Icon(Icons.person, color: Colors.grey[600], size: 24)
                     : null,
               ),
               const SizedBox(width: 12),
@@ -983,10 +972,7 @@ Découvrez plus d'événements sur notre application! 📱
                     ),
                     Text(
                       comment.formattedDate,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -1025,19 +1011,26 @@ Découvrez plus d'événements sur notre application! 📱
     if (currentUser == null) return;
 
     int rating = _userComment?.rating ?? 5;
-    final commentController = TextEditingController(text: _userComment?.comment ?? '');
+    final commentController = TextEditingController(
+      text: _userComment?.comment ?? '',
+    );
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_userComment != null ? 'Modifier votre avis' : 'Donner votre avis'),
+        title: Text(
+          _userComment != null ? 'Modifier votre avis' : 'Donner votre avis',
+        ),
         content: StatefulBuilder(
           builder: (context, setState) {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Sélection de la note
-                const Text('Note', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Note',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1061,7 +1054,10 @@ Découvrez plus d'événements sur notre application! 📱
                 ),
                 const SizedBox(height: 16),
                 // Champ de commentaire
-                const Text('Commentaire', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Commentaire',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: commentController,
@@ -1095,7 +1091,7 @@ Découvrez plus d'événements sur notre application! 📱
               }
 
               Navigator.pop(context);
-              
+
               try {
                 if (_userComment != null) {
                   // Modifier le commentaire existant
@@ -1109,7 +1105,8 @@ Découvrez plus d'événements sur notre application! 📱
                   await EventRatingService.addComment(
                     eventSlug: widget.event.slug,
                     userId: currentUser.id,
-                    userName: '${currentUser.firstName} ${currentUser.lastName}'.trim(),
+                    userName: '${currentUser.firstName} ${currentUser.lastName}'
+                        .trim(),
                     userAvatar: '', // TODO: Ajouter l'avatar de l'utilisateur
                     rating: rating,
                     comment: commentController.text.trim(),
@@ -1118,10 +1115,14 @@ Découvrez plus d'événements sur notre application! 📱
 
                 // Recharger les commentaires
                 await _loadCommentsAndRatings();
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(_userComment != null ? 'Avis modifié avec succès' : 'Avis ajouté avec succès'),
+                    content: Text(
+                      _userComment != null
+                          ? 'Avis modifié avec succès'
+                          : 'Avis ajouté avec succès',
+                    ),
                     backgroundColor: Colors.green,
                   ),
                 );

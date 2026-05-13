@@ -319,7 +319,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   int _currentEventsPage = 1;
   int _eventsPerPage =
       4; // Valeur par défaut, sera mise à jour dans initState()
-  
+
   // Variables pour les blogs (API sans pagination)
   bool _hasMoreBlogs = false;
   bool _isInfoCardExpanded =
@@ -636,20 +636,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     try {
       print('🌐 APPEL API - getEventsForUI');
       print('📄 Page: $_currentEventsPage, PerPage: $_eventsPerPage');
-      
+
       final events = await _eventsService.getEventsForUI(
         nomEtablissement: nom,
         page: _currentEventsPage,
         perPage: _eventsPerPage,
       );
-      
+
       print('✅ Événements récupérés avec succès: ${events.length} événements');
       if (!mounted) return;
-      
+
       print('📊 Traitement des données événements:');
       print('   - Nombre d\'événements: ${events.length}');
-      print('   - Plus de pages disponibles: ${events.length >= _eventsPerPage}');
-      
+      print(
+        '   - Plus de pages disponibles: ${events.length >= _eventsPerPage}',
+      );
+
       setState(() {
         _schoolEvents = events;
         _isLoadingEvents = false;
@@ -657,7 +659,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         _hasMoreEvents = events.length >= _eventsPerPage;
       });
       _eventsNotifier.value++;
-      
+
       print('✅ ÉVÉNEMENTS SCOLAIRES CHARGÉS AVEC SUCCÈS');
     } catch (e) {
       if (!mounted) return;
@@ -845,17 +847,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     try {
       print('🌐 APPEL API - getBlogsForUI');
       print('📄 Taille: grand, Code: $code');
-      
+
       final blogs = await _blogService.getBlogsForUI('grand', code);
-      
+
       print('✅ Actualités récupérées avec succès: ${blogs.length} articles');
-      
+
       print('📊 Traitement des données actualités:');
       print('   - Nombre d\'articles: ${blogs.length}');
       print('   - API sans pagination - tous les articles chargés');
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _blogs = blogs;
         _isLoadingBlogs = false;
@@ -863,7 +865,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         _hasMoreBlogs = false;
       });
       _blogsNotifier.value++;
-      
+
       print('✅ ACTUALITÉS CHARGÉES AVEC SUCCÈS');
     } catch (e) {
       if (!mounted) return;
@@ -3257,7 +3259,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       _loadAvisOnly();
     }
     if (actionType == 'communication') {
-      print('🔄 CLIC SUR "NOTRE ACTUALITÉS" - FutureBuilder gérera le chargement automatiquement');
+      print(
+        '🔄 CLIC SUR "NOTRE ACTUALITÉS" - FutureBuilder gérera le chargement automatiquement',
+      );
     }
     if (actionType == 'school_events') {
       print('🔄 CLIC SUR "ÉVÉNEMENTS SCOLAIRES" - Déclenchement du chargement');
@@ -3266,13 +3270,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     if (actionType == 'scolarite') {
       print('🔄 CLIC SUR "SCOLARITÉ" - Déclenchement du chargement');
       print('📂 Code de l\'établissement: ${widget.ecole.parametreCode}');
-      
+
       setState(() {
         _scolariteFuture = ScolariteService.getScolaritesByEcole(
           widget.ecole.parametreCode ?? '',
         );
       });
-      
+
       print('✅ APPEL API SCOLARITÉ - getScolaritesByEcole déclenché');
     }
 
@@ -6347,7 +6351,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'Code DREN',
+                  'Code Établissement',
                   _ecoleDetail?.data.codedren ??
                       widget.ecole.codedren ??
                       'Non spécifié',
@@ -6356,6 +6360,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 ),
               ),
               const SizedBox(width: 12),
+
               Expanded(
                 child: GestureDetector(
                   onTap: () {
@@ -6379,6 +6384,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     Icons.location_on_rounded,
                     Colors.red,
                   ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Numéro d’autorisation',
+                  _ecoleDetail?.data.numautorisation?.isNotEmpty == true
+                      ? _ecoleDetail!.data.numautorisation
+                      : 'Non renseigné',
+                  Icons.confirmation_num_rounded,
+                  AppColors.screenOrange,
                 ),
               ),
             ],

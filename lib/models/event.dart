@@ -27,15 +27,16 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      slug: json['slug'] as String,
-      codeecole: json['codeecole'] as String,
-      nomecole: json['nomecole'] as String,
+      slug: json['slug'] as String? ?? 'unknown',
+      codeecole: json['codeecole'] as String? ?? 'unknown',
+      nomecole: json['nomecole'] as String? ?? 'unknown',
       categories: List<String>.from((json['categories'] as List?) ?? []),
       targets: List<String>.from((json['targets'] as List?) ?? []),
-      title: json['title'] as String,
-      content: json['content'] as String,
+      title: json['title'] as String? ?? 'Sans titre',
+      content: json['content'] as String? ?? 'Contenu non disponible',
       statutevent: json['statutevent'] as String? ?? 'en cours',
-      publishedAt: json['published_at'] as String,
+      publishedAt:
+          json['published_at'] as String? ?? DateTime.now().toIso8601String(),
       image: json['image'] as String?,
     );
   }
@@ -59,18 +60,27 @@ class Event {
   Map<String, dynamic> toUiMap() {
     // Déterminer si l'événement est disponible
     bool isAvailable = statutevent != 'terminé';
-    
+
     // Extraire la date de publishedAt
     String date = _formatDate(publishedAt);
-    
+
     // Déterminer une couleur en fonction de la catégorie
-    Color color = _getCategoryColor(categories.isNotEmpty ? categories.first : 'Education');
-    
+    Color color = _getCategoryColor(
+      categories.isNotEmpty ? categories.first : 'Education',
+    );
+
     // Déterminer une icône en fonction de la catégorie
-    IconData icon = _getCategoryIcon(categories.isNotEmpty ? categories.first : 'Education');
-    
+    IconData icon = _getCategoryIcon(
+      categories.isNotEmpty ? categories.first : 'Education',
+    );
+
     return {
       'id': slug,
+      'slug': slug,
+      'codeecole': codeecole,
+      'nomecole': nomecole,
+      'categories': categories,
+      'targets': targets,
       'title': title,
       'subtitle': nomecole,
       'date': date,
@@ -84,7 +94,7 @@ class Event {
       'icon': icon,
       'content': content,
       'statutevent': statutevent,
-      'targets': targets,
+      'published_at': publishedAt,
     };
   }
 
@@ -92,8 +102,18 @@ class Event {
     try {
       final dateTime = DateTime.parse(dateString);
       final months = [
-        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        'Janvier',
+        'Février',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juillet',
+        'Août',
+        'Septembre',
+        'Octobre',
+        'Novembre',
+        'Décembre',
       ];
       return '${dateTime.day} ${months[dateTime.month - 1]}';
     } catch (e) {

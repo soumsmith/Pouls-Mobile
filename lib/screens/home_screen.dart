@@ -3,7 +3,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parents_responsable/models/video.dart';
 import 'package:parents_responsable/screens/all_children_screen.dart';
+import 'package:parents_responsable/services/video_service.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
@@ -45,11 +47,14 @@ import '../widgets/see_more_card.dart';
 import '../services/coulisse_excellence_service.dart';
 import '../models/coulisse_excellence.dart';
 import 'coulisse_video_feed_screen.dart';
+import 'visite_guidee_video_feed_screen.dart';
+import '../models/visite_guidee_video.dart';
 import '../services/event_service.dart';
 import '../models/event.dart';
 import 'event_detail_screen.dart';
 import 'all_events_screen.dart';
 import 'all_videos_screen.dart';
+import 'all_visite_guidee_videos_screen.dart';
 import '../services/blog_service.dart';
 import '../models/blog.dart';
 import 'all_blogs_screen.dart';
@@ -172,6 +177,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
+  // Variables pour les vidéos de visite guidée
+  List<Video> _visiteGuideeVideos = [];
+  bool _visiteGuideeVideosLoading = true;
+  String? _visiteGuideeVideosError;
+
+  bool get _hasVisiteGuideeData =>
+      !_visiteGuideeVideosLoading &&
+      _visiteGuideeVideosError == null &&
+      _visiteGuideeVideos.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -184,6 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
     _loadEvents(); // Charger les événements
     _loadBlogs(); // Charger les blogs/actualités
+    _loadVisiteGuideeVideos(); // Ajouter cette ligne
     _startPresenceAutoScrollIfNeeded();
   }
 
@@ -193,6 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadUnreadNotificationsCount(),
       _loadCoulisseVideos(),
       _loadEvents(),
+      _loadVisiteGuideeVideos(), // Ajouter cette ligne
       _loadBlogs(),
     ]);
     await _loadChildrenNotifications();
@@ -507,6 +524,80 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Gérer l'action sur une vidéo de visite guidée
+  void _handleVisiteGuideeAction(Video video) {
+    // Convertir Video en VisiteGuideeVideo
+    final visiteVideo = VisiteGuideeVideo(
+      typeVideo: video.typevideo,
+      youtubeUrl: video.youtubeUrl,
+    );
+
+    // Trouver l'index de la vidéo dans la liste
+    final videoIndex = _visiteGuideeVideos.indexWhere(
+      (v) => v.youtubeVideoId == video.youtubeVideoId,
+    );
+
+    // Convertir toutes les vidéos en VisiteGuideeVideo
+    final visiteVideos = _visiteGuideeVideos
+        .map(
+          (v) => VisiteGuideeVideo(
+            typeVideo: v.typevideo,
+            youtubeUrl: v.youtubeUrl,
+          ),
+        )
+        .toList();
+
+    // Naviguer vers l'écran de visualisation des vidéos
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VisiteGuideeVideoFeedScreen(
+          videos: visiteVideos,
+          initialIndex: videoIndex >= 0 ? videoIndex : 0,
+        ),
+      ),
+    );
+  }
+
+  // Gérer l'action "Voir+" pour les vidéos de visite guidée
+  void _handleSeeMoreVisiteGuidee() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos),
+      ),
+    );
+  }
+
+  // Méthode utilitaire pour lancer une URL
+  Future<void> _launchURL(Uri url) async {
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  // Formater la date
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr.replaceFirst(' ', 'T'));
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        return "Aujourd'hui";
+      } else if (difference.inDays == 1) {
+        return 'Hier';
+      } else if (difference.inDays < 7) {
+        return 'Il y a ${difference.inDays} jours';
+      } else {
+        return '${date.day}/${date.month}/${date.year}';
+      }
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
   // Charger les notifications pour tous les enfants
   Future<void> _loadChildrenNotifications() async {
     print(
@@ -675,6 +766,33 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _coulisseVideosLoading = false;
           _coulisseVideosError = e.toString();
+        });
+      }
+    }
+  }
+
+  // Charger les vidéos de visite guidée
+  Future<void> _loadVisiteGuideeVideos() async {
+    if (mounted) {
+      setState(() {
+        _visiteGuideeVideosLoading = true;
+        _visiteGuideeVideosError = null;
+      });
+    }
+    try {
+      final videos = await VideoService.getVideosByType('visiteguide');
+      if (mounted) {
+        setState(() {
+          _visiteGuideeVideos = videos;
+          _visiteGuideeVideosLoading = false;
+          _visiteGuideeVideosError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _visiteGuideeVideosLoading = false;
+          _visiteGuideeVideosError = e.toString();
         });
       }
     }
@@ -973,7 +1091,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 2),
                   Text(
                     event.nomecole,
-                    style: TextStyle(fontSize: 11, color: isDarkMode ? Colors.grey[300] : Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1126,7 +1247,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 2),
                   Text(
                     blog.nomecole,
-                    style: TextStyle(fontSize: 11, color: isDarkMode ? Colors.grey[300] : Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1168,16 +1292,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Gérer l'action sur un blog
   void _handleBlogAction(Blog blog) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => BlogDetailScreen(blog: blog)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => BlogDetailScreen(blog: blog)));
   }
 
   // Gérer l'action "Voir+" pour les blogs
   void _handleSeeMoreBlogs() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AllBlogsScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AllBlogsScreen()));
   }
 
   // Gérer l'action "Voir+" pour les vidéos
@@ -1222,9 +1346,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildVideoCard(CoulisseExcellence video) {
     // Créer des données d'école d'exemple à partir des données vidéo
     final schoolData = _createSchoolDataFromVideo(video);
-    
+
     return Padding(
-      padding: const EdgeInsets.only(right: 10), // Espacement horizontal augmenté
+      padding: const EdgeInsets.only(
+        right: 10,
+      ), // Espacement horizontal augmenté
       child: ImageMenuCardExternalTitle(
         index: 0,
         cardKey: 'school_${video.id}',
@@ -1254,18 +1380,26 @@ class _HomeScreenState extends State<HomeScreen> {
   // Créer des données d'école à partir des données vidéo
   Map<String, dynamic> _createSchoolDataFromVideo(CoulisseExcellence video) {
     // Classe optionnelle : afficher seulement si la classe est disponible et selon une logique
-    final shouldShowClass = video.classe.isNotEmpty && (video.id % 2) == 0; // 1 chance sur 2 d'afficher la classe si disponible
-    final shouldShowLocation = (video.id % 3) == 0; // 1 chance sur 3 d'afficher la localisation
-    
+    final shouldShowClass =
+        video.classe.isNotEmpty &&
+        (video.id % 2) ==
+            0; // 1 chance sur 2 d'afficher la classe si disponible
+    final shouldShowLocation =
+        (video.id % 3) == 0; // 1 chance sur 3 d'afficher la localisation
+
     return {
       'title': video.titre.isNotEmpty ? video.titre : 'École Excellence',
-      'subtitle': video.description.isNotEmpty ? video.description : 'Établissement scolaire',
-      'imagePath': video.videoYoutube.isNotEmpty 
+      'subtitle': video.description.isNotEmpty
+          ? video.description
+          : 'Établissement scolaire',
+      'imagePath': video.videoYoutube.isNotEmpty
           ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
           : null,
       'color': _getRandomSchoolColor(video.id.hashCode),
       'location': shouldShowLocation ? 'Paris, France' : null,
-      'tag': shouldShowClass ? video.classe : null, // Utiliser la classe réelle de l'élève
+      'tag': shouldShowClass
+          ? video.classe
+          : null, // Utiliser la classe réelle de l'élève
     };
   }
 
@@ -1285,9 +1419,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // Gérer l'action sur une école (lire la vidéo)
   void _handleSchoolAction(Map<String, dynamic> schoolData) {
     // Trouver la vidéo correspondante dans la liste
-    final videoIndex = _coulisseVideos.indexWhere((video) => 
-        video.titre == schoolData['title'] as String);
-    
+    final videoIndex = _coulisseVideos.indexWhere(
+      (video) => video.titre == schoolData['title'] as String,
+    );
+
     if (videoIndex != -1) {
       // Naviguer vers l'écran de lecture vidéo
       Navigator.of(context).push(
@@ -1313,9 +1448,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSeeMoreVideosCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(right: 16), // Espacement horizontal cohérent
+      padding: const EdgeInsets.only(
+        right: 16,
+      ), // Espacement horizontal cohérent
       child: SeeMoreCard(
-        cardColor: isDarkMode ? const Color.fromARGB(255, 0, 0, 0) : const Color(0xFFF3F4F6),
+        cardColor: isDarkMode
+            ? const Color.fromARGB(255, 0, 0, 0)
+            : const Color(0xFFF3F4F6),
         borderColor: const Color(0xFF10B981),
         iconColor: Colors.white,
         textColor: const Color(0xFF10B981),
@@ -1331,165 +1470,78 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Construire la section Visite guidée
+  // Construire la section Visite guidée
   Widget _buildVisiteGuideeSection() {
+    if (!_hasVisiteGuideeData) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
-      height: 120,
+      height: 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: 3, // Nombre de cartes pour la visite guidée
+        itemCount: _visiteGuideeVideos.length > 5
+            ? 6
+            : _visiteGuideeVideos.length + 1,
         itemBuilder: (context, index) {
-          return _buildVisiteGuideeCard(index);
+          if (index < _visiteGuideeVideos.length && index < 5) {
+            return _buildVisiteGuideeCard(_visiteGuideeVideos[index], index);
+          } else if (index == 5 ||
+              (index == _visiteGuideeVideos.length &&
+                  _visiteGuideeVideos.length <= 5)) {
+            return _buildSeeMoreVisiteGuideeCard();
+          } else {
+            return const SizedBox.shrink();
+          }
         },
       ),
     );
   }
 
-  // Construire une carte pour la visite guidée
-  Widget _buildVisiteGuideeCard(int index) {
+  // Construire la carte "Voir+" pour la visite guidée
+  Widget _buildSeeMoreVisiteGuideeCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final visiteData = [
-      {
-        'title': 'Visite virtuelle',
-        'subtitle': 'Découvrez nos installations',
-        'image': 'assets/images/ecole.jpg',
-        'color': const Color(0xFF3B82F6),
-        'backgroundColor': isDarkMode ? AppColors.grey800 : const Color(0xFFEFF6FF),
-      },
-      {
-        'title': 'Présentation',
-        'subtitle': 'Notre projet pédagogique',
-        'image': 'assets/images/icons/inscription.png',
-        'color': const Color(0xFF10B981),
-        'backgroundColor': isDarkMode ? AppColors.grey800 : const Color(0xFFECFDF5),
-      },
-      {
-        'title': 'Contact',
-        'subtitle': 'Prenez rendez-vous',
-        'image': 'assets/images/icons/consulter.png',
-        'color': const Color(0xFFF59E0B),
-        'backgroundColor': isDarkMode ? AppColors.grey800 : const Color(0xFFFFF7ED),
-      },
-    ];
-
-    final data = visiteData[index];
-
-    return GestureDetector(
-      onTap: () {
-        // Action à définir selon le type de visite
-        _handleVisiteGuideeAction(index);
-      },
-      child: Container(
-        width: 300,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: data['backgroundColor'] as Color,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Icône ou image
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: (data['color'] as Color).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _getVisiteIcon(index),
-                  color: data['color'] as Color,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Texte
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      data['title'] as String,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: data['color'] as Color,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      data['subtitle'] as String,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-              // Flèche
-              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
-            ],
-          ),
-        ),
-      ),
+    return SeeMoreCard(
+      cardColor: isDarkMode ? AppColors.grey800 : const Color(0xFFF3F4F6),
+      borderColor: const Color(0xFF3B82F6),
+      iconColor: Colors.white,
+      textColor: const Color(0xFF3B82F6),
+      subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+      title: 'Voir+',
+      subtitle: 'de visites',
+      onTap: _handleSeeMoreVisiteGuidee,
+      icon: Icons.play_circle_outline,
+      width: 120,
+      height: 80,
     );
   }
 
-  // Obtenir l'icône appropriée pour chaque type de visite
-  IconData _getVisiteIcon(int index) {
-    switch (index) {
-      case 0:
-        return Icons.explore;
-      case 1:
-        return Icons.school;
-      case 2:
-        return Icons.calendar_today;
-      default:
-        return Icons.info;
-    }
-  }
-
-  // Gérer les actions de la visite guidée
-  void _handleVisiteGuideeAction(int index) {
-    switch (index) {
-      case 0:
-        // Visite virtuelle - ouvrir une page ou une vidéo
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Visite virtuelle bientôt disponible'),
-            backgroundColor: _kOrange,
-          ),
-        );
-        break;
-      case 1:
-        // Présentation - ouvrir une page de présentation
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Présentation du projet pédagogique bientôt disponible',
-            ),
-            backgroundColor: _kOrange,
-          ),
-        );
-        break;
-      case 2:
-        // Contact - ouvrir une page de contact ou prendre rendez-vous
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Formulaire de contact bientôt disponible'),
-            backgroundColor: _kOrange,
-          ),
-        );
-        break;
-    }
+  // Construire une carte pour la visite guidée
+  Widget _buildVisiteGuideeCard(Video video, int index) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: 'visite_${video.youtubeVideoId}',
+        title: video.title,
+        subtitle: _formatDate(video.createdAt),
+        imagePath:
+            'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg',
+        iconData: Icons.play_circle_outline,
+        color: const Color(0xFF3B82F6),
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        height: 140,
+        width: 120,
+        allowLineBreak: true,
+        centerTitle: false,
+        showPlayIcon: true,
+        onTap: () {
+          _handleVisiteGuideeAction(video);
+        },
+      ),
+    );
   }
 
   Future<void> _updatePhotosInBackground(List<Child> children) async {
@@ -1857,11 +1909,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.grey[700],
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.close_rounded,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                child: Icon(Icons.close_rounded, color: Colors.white, size: 16),
               ),
             ),
           ],
@@ -2122,11 +2170,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: imageAsset != null
-                ? Image.asset(
-                    imageAsset,
-                    width: 10,
-                    height: 10,
-                  )
+                ? Image.asset(imageAsset, width: 10, height: 10)
                 : Icon(icon, color: iconColor, size: 26),
           ),
           const SizedBox(height: 6),
@@ -2202,14 +2246,23 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 8),
         SectionRow(
           title: 'MES ENFANTS',
-          onSeeMore: _filteredChildren.length > 4 ? () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AllChildrenScreen()),
-            );
-          } : null,
+          onSeeMore: _filteredChildren.length > 4
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AllChildrenScreen(),
+                    ),
+                  );
+                }
+              : null,
           seeMoreText: 'Voir plus',
-          seeMoreBackgroundColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.15),
+          seeMoreBackgroundColor: const Color.fromARGB(
+            255,
+            255,
+            255,
+            255,
+          ).withOpacity(0.15),
           seeMoreTextColor: const Color.fromARGB(255, 255, 255, 255),
         ),
         const SizedBox(height: 8),
@@ -2406,7 +2459,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
   Widget _buildBottomSheet() {
@@ -2434,11 +2486,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   SectionRow(title: 'ACTIONS RAPIDES'),
                   const SizedBox(height: 16),
                   SizedBox(
-                    height: AppDimensions.getPaymentBannerCardHeight(context) + 20,
+                    height:
+                        AppDimensions.getPaymentBannerCardHeight(context) + 20,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
+                        horizontal:
+                            AppDimensions.getPaymentBannerCardSpacing(context) *
+                            0.9,
                       ),
                       children: [
                         _buildCard(
@@ -2454,13 +2509,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           enableInnerBorder: false,
                           enableOuterBorder: false,
                           innerBorderColor: const Color(0xFF93C5FD),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                           width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(
+                            context,
+                          ),
                           centerTitle: true,
                           onTap: () => InscriptionBottomSheet.show(context),
                         ),
-                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getPaymentBannerCardSpacing(
+                            context,
+                          ),
+                        ),
                         _buildCard(
                           index: 1,
                           cardKey: 'integration',
@@ -2474,9 +2537,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           enableOuterBorder: false,
                           allowLineBreak: true,
                           innerBorderColor: const Color(0xFF6EE7B7),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                           width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(
+                            context,
+                          ),
                           centerTitle: true,
                           onTap: () => showModalBottomSheet(
                             context: context,
@@ -2485,7 +2552,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (_) => const IntegrationBottomSheet(),
                           ),
                         ),
-                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getPaymentBannerCardSpacing(
+                            context,
+                          ),
+                        ),
                         _buildCard(
                           index: 2,
                           cardKey: 'consulter_demande',
@@ -2499,13 +2570,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           enableOuterBorder: false,
                           allowLineBreak: true,
                           innerBorderColor: const Color(0xFFFCD34D),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                           width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(
+                            context,
+                          ),
                           centerTitle: true,
-                          onTap: () => IntegrationRequestBottomSheet.show(context),
+                          onTap: () =>
+                              IntegrationRequestBottomSheet.show(context),
                         ),
-                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getPaymentBannerCardSpacing(
+                            context,
+                          ),
+                        ),
                         _buildCard(
                           index: 3,
                           cardKey: 'parrainage',
@@ -2519,13 +2599,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           allowLineBreak: true,
                           enableOuterBorder: false,
                           innerBorderColor: const Color(0xFFC4B5FD),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                           width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(
+                            context,
+                          ),
                           centerTitle: true,
                           onTap: () => showSponsorshipBottomSheet(context),
                         ),
-                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getPaymentBannerCardSpacing(
+                            context,
+                          ),
+                        ),
                         _buildCard(
                           index: 4,
                           cardKey: 'panier',
@@ -2539,17 +2627,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           enableOuterBorder: false,
                           allowLineBreak: true,
                           innerBorderColor: const Color(0xFFFB923C),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                           width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(
+                            context,
+                          ),
                           centerTitle: true,
                           onTap: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const CartScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const CartScreen(),
+                              ),
                             );
                           },
                         ),
-                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getPaymentBannerCardSpacing(
+                            context,
+                          ),
+                        ),
                         _buildCard(
                           index: 5,
                           cardKey: 'commandes',
@@ -2563,17 +2661,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           enableOuterBorder: false,
                           allowLineBreak: true,
                           innerBorderColor: const Color(0xFF34D399),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                           width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(
+                            context,
+                          ),
                           centerTitle: true,
                           onTap: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const OrdersScreen(),
+                              ),
                             );
                           },
                         ),
-                        SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+                        SizedBox(
+                          width: AppDimensions.getPaymentBannerCardSpacing(
+                            context,
+                          ),
+                        ),
                         _buildCard(
                           index: 6,
                           cardKey: 'recommendation',
@@ -2587,9 +2695,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           enableOuterBorder: false,
                           allowLineBreak: true,
                           innerBorderColor: const Color(0xFFFDBA74),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                           width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(context),
+                          height: AppDimensions.getSquareCardHeightSize(
+                            context,
+                          ),
                           centerTitle: true,
                           onTap: _showRecommendationBottomSheet,
                         ),
@@ -2605,7 +2717,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       onSeeMore: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => AllVideosScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => AllVideosScreen(),
+                          ),
                         );
                       },
                     ),
@@ -2621,7 +2735,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       onSeeMore: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => AllEventsScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => AllEventsScreen(),
+                          ),
                         );
                       },
                     ),
@@ -2792,23 +2908,41 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── DATE AND GREETING METHODS ─────────────────────────────────────────────
   String _getFormattedDate() {
     final now = DateTime.now();
-    final days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-    final months = [
-      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+    final days = [
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+      'Dimanche',
     ];
-    
+    final months = [
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
+    ];
+
     final dayName = days[now.weekday - 1];
     final dayNumber = now.day;
     final monthName = months[now.month - 1];
-    
+
     return '$dayName $dayNumber $monthName';
   }
 
   String _getGreeting() {
     final now = DateTime.now();
     final hour = now.hour;
-    
+
     if (hour >= 6 && hour < 12) {
       return 'Bonjour';
     } else if (hour >= 12 && hour < 18) {

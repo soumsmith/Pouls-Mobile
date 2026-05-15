@@ -380,6 +380,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<GroupMessage> _notifications = [];
   bool _isLoadingNotifications = false;
   bool _notificationsLoaded = false; // ✅ AJOUT ICI
+  Set<String> _expandedNotificationIds = <String>{}; // IDs des notifications étendues
 
   // Variables pour les notifications d'échéance
   EcheanceNotification? _echeanceNotification;
@@ -446,8 +447,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -700,7 +704,10 @@ class _ChildListScreenState extends State<ChildListScreen>
     print('DÉMARRAGE AUTOMATIQUE DES APIS DE NOTIFICATION...');
 
     // Charger les messages de groupe
+    final groupMessageUrl =
+        '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/liste-messages-groupe/$matricule?per_page=20&page=1';
     print('=== APPEL API MESSAGES DE GROUPE (AUTOMATIQUE) ===');
+    print('URL requête messages de groupe: $groupMessageUrl');
     try {
       print(
         'Début du chargement automatique des messages de groupe pour: $matricule',
@@ -736,8 +743,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
     }
 
+    final echeanceUrl =
+        '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/echeance-notification/$matricule';
     // Charger les notifications d'échéance
     print('=== APPEL API ÉCHÉANCES (AUTOMATIQUE) ===');
+    print('URL requête échéance: $echeanceUrl');
     try {
       print(
         'Début du chargement automatique des notifications d\'échéance pour: $matricule',
@@ -1098,8 +1108,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Expanded(
                   child: Builder(
                     builder: (context) {
-                      print('🔍 DEBUG Builder: _isLoadingBulletins=$_isLoadingBulletins, _bulletins=${_bulletins?.length}');
-                      
+                      print(
+                        '🔍 DEBUG Builder: _isLoadingBulletins=$_isLoadingBulletins, _bulletins=${_bulletins?.length}',
+                      );
+
                       if (_isLoadingBulletins) {
                         return _buildBulletinsLoadingState();
                       } else if (_bulletins == null || _bulletins!.isEmpty) {
@@ -1706,6 +1718,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                 // Charger les messages de groupe
                 if (!_notificationsLoaded && !_isLoadingNotifications) {
                   _isLoadingNotifications = true;
+                  final messagesUrl =
+                      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/liste-messages-groupe/$matricule?per_page=20&page=1';
+                  print(
+                    'URL requête messages de groupe (affichage notifications): $messagesUrl',
+                  );
                   GroupMessageService.getGroupMessages(matricule)
                       .then((notifications) {
                         if (mounted) {
@@ -1915,11 +1932,24 @@ class _ChildListScreenState extends State<ChildListScreen>
   ) {
     final isDark = _themeService.isDarkMode;
     final unreadBlue = const Color(0xFF378ADD);
+    final isExpanded = _expandedNotificationIds.contains(notification.id);
 
     return GestureDetector(
       onTap: () {
+        // Toggle expansion
+        if (isExpanded) {
+          _expandedNotificationIds.remove(notification.id);
+        } else {
+          _expandedNotificationIds.add(notification.id);
+        }
+
+        // Update both modal and main widget state
+        setModalState(() {});
+        setState(() {});
+
+        // Mark as read if not already read
         if (!notification.estLu) {
-          _markNotificationAsRead(notification.id, setModalState);
+          _markNotificationAsReadWithAPI(notification, setModalState);
         }
       },
       child: ClipRRect(
@@ -2046,9 +2076,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                               : const Color(0xFF555555),
                           height: 1.5,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: isExpanded ? null : 2,
+                        overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
                       ),
+
+                      if (notification.hasAttachment) ...[
+                        const SizedBox(height: 10),
+                        _buildNotificationAttachmentWidget(notification),
+                      ],
 
                       // Action "Marquer comme lu" / "Lu"
                       const SizedBox(height: 8),
@@ -2090,7 +2125,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 Text(
                                   'Marquer comme lu',
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(11),
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(11),
                                     color: const Color(0xFF1976D2),
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -2115,14 +2151,20 @@ class _ChildListScreenState extends State<ChildListScreen>
                               Icon(
                                 Icons.check_circle,
                                 size: 12,
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 'Lu',
                                 style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(11),
-                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    11,
+                                  ),
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -2136,6 +2178,152 @@ class _ChildListScreenState extends State<ChildListScreen>
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationAttachmentWidget(GroupMessage notification) {
+    final attachmentUrl = notification.attachmentUrl;
+    if (attachmentUrl == null || attachmentUrl.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = _themeService.isDarkMode;
+    final isImage =
+        notification.attachmentKind == GroupMessageAttachmentType.image;
+    final isAudio =
+        notification.attachmentKind == GroupMessageAttachmentType.audio;
+    final isDocument =
+        notification.attachmentKind == GroupMessageAttachmentType.document;
+    final displayName =
+        notification.attachmentName ?? attachmentUrl.split('/').last;
+
+    if (isImage) {
+      return GestureDetector(
+        onTap: () async {
+          final uri = Uri.parse(attachmentUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            attachmentUrl,
+            width: double.infinity,
+            height: 140,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return Container(
+                width: double.infinity,
+                height: 140,
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : const Color(0xFFF5F5F5),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    value: progress.expectedTotalBytes != null
+                        ? progress.cumulativeBytesLoaded /
+                              (progress.expectedTotalBytes ?? 1)
+                        : null,
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: double.infinity,
+                height: 140,
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : const Color(0xFFF5F5F5),
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image,
+                    size: 32,
+                    color: isDark ? Colors.white38 : const Color(0xFF999999),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    final icon = isAudio
+        ? Icons.audiotrack_outlined
+        : (isDocument
+              ? Icons.picture_as_pdf_outlined
+              : Icons.attach_file_outlined);
+    final label = isAudio
+        ? 'Pièce jointe audio'
+        : (isDocument ? 'Pièce jointe document' : 'Pièce jointe');
+
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(attachmentUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0x10FFFFFF) : const Color(0xFFF2F6FF),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? const Color(0x22FFFFFF) : const Color(0x1F1976D2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isAudio
+                  ? const Color(0xFF1976D2)
+                  : (isDocument
+                        ? const Color(0xFF8A2BE2)
+                        : const Color(0xFF1976D2)),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF111111),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    displayName,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(11),
+                      color: isDark ? Colors.white54 : const Color(0xFF555555),
+                      height: 1.3,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.open_in_new,
+              size: 18,
+              color: isDark ? Colors.white54 : const Color(0xFF1976D2),
+            ),
+          ],
         ),
       ),
     );
@@ -2180,6 +2368,13 @@ class _ChildListScreenState extends State<ChildListScreen>
         }
 
         print('✅ Message marqué comme lu avec succès');
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Notification',
+          message: 'marquée comme lue',
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
+        );
       } else {
         print('❌ Échec du marquage du message comme lu');
       }
@@ -2195,10 +2390,14 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (notification.conversationId != null) {
       // Utiliser la nouvelle API POST si conversation_id est disponible
       final currentUser = AuthService.instance.getCurrentUser();
-      final numeroParent = currentUser?.phone ?? '0707074647'; // Valeur par défaut si non disponible
+      final numeroParent =
+          currentUser?.phone ??
+          '0707074647'; // Valeur par défaut si non disponible
 
       try {
-        print('📝 Marquage de la conversation ${notification.conversationId} comme lue...');
+        print(
+          '📝 Marquage de la conversation ${notification.conversationId} comme lue...',
+        );
         print('📞 Numéro parent utilisé: $numeroParent');
         final messageApiService = MessageApiService();
         final success = await messageApiService.markMessagesAsRead(
@@ -2209,16 +2408,22 @@ class _ChildListScreenState extends State<ChildListScreen>
         if (success) {
           // Mettre à jour l'état local
           setModalState(() {
-            final index = _notifications.indexWhere((n) => n.id == notification.id);
+            final index = _notifications.indexWhere(
+              (n) => n.id == notification.id,
+            );
             if (index != -1) {
-              _notifications[index] = _notifications[index].copyWith(estLu: true);
+              _notifications[index] = _notifications[index].copyWith(
+                estLu: true,
+              );
             }
           });
 
           // Mettre à jour l'état du widget
           if (mounted) {
             setState(() {
-              final index = _notifications.indexWhere((n) => n.id == notification.id);
+              final index = _notifications.indexWhere(
+                (n) => n.id == notification.id,
+              );
               if (index != -1) {
                 _notifications[index] = _notifications[index].copyWith(
                   estLu: true,
@@ -2228,6 +2433,13 @@ class _ChildListScreenState extends State<ChildListScreen>
           }
 
           print('✅ Conversation marquée comme lue avec succès');
+          CartSnackBar.show(
+            context,
+            productName: 'Notification',
+            message: 'marquée comme lue',
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+          );
         } else {
           print('❌ Échec du marquage de la conversation comme lue');
         }
@@ -2242,16 +2454,22 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _markEcheanceAsRead(EcheanceNotification echeance) async {
     if (echeance.conversationId == null) {
-      print('❌ conversation_id non disponible pour marquer l\'échéance comme lue');
+      print(
+        '❌ conversation_id non disponible pour marquer l\'échéance comme lue',
+      );
       return;
     }
 
     // Récupérer le numéro du parent connecté
     final currentUser = AuthService.instance.getCurrentUser();
-    final numeroParent = currentUser?.phone ?? '0707074647'; // Valeur par défaut si non disponible
+    final numeroParent =
+        currentUser?.phone ??
+        '0707074647'; // Valeur par défaut si non disponible
 
     try {
-      print('📝 Marquage de l\'échéance conversation ${echeance.conversationId} comme lue...');
+      print(
+        '📝 Marquage de l\'échéance conversation ${echeance.conversationId} comme lue...',
+      );
       print('📞 Numéro parent utilisé: $numeroParent');
       final messageApiService = MessageApiService();
       final success = await messageApiService.markMessagesAsRead(
@@ -2287,7 +2505,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       title: widget.child.fullName,
       isDark: isDarkMode,
       expandedHeight: 70,
-      actions: [_buildNotificationButton(), _buildMoreButton()],
+      actions: [_buildNotificationButton()], //, _buildMoreButton()
       titleTextStyle: TextStyle(
         fontSize: _textSizeService.getScaledFontSize(16),
         fontWeight: FontWeight.w700,
@@ -2304,14 +2522,17 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
 
     return GestureDetector(
-      onTap: () => _showNotificationsBottomSheet(),
+      onTap: () async {
+        await _refreshNotificationData();
+        _showNotificationsBottomSheet();
+      },
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
             width: 40,
             height: 40,
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
             decoration: BoxDecoration(
               color: isDarkMode
                   ? const Color(0xFF2A2A2A)
@@ -2735,7 +2956,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.05),
@@ -3014,10 +3237,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 children: [
                   const Text(
                     'Êtes-vous sûr de vouloir retirer cet enfant de votre liste ?',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -3051,7 +3271,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : Colors.black87,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -3059,7 +3281,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 widget.child.grade,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                                 ),
                               ),
                             ],
@@ -3071,10 +3295,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   const SizedBox(height: 16),
                   const Text(
                     'Toutes les données associées à cet enfant seront définitivement supprimées.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -3095,7 +3316,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         side: BorderSide(
-                          color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!,
+                          color: isDarkMode
+                              ? Colors.grey[600]!
+                              : Colors.grey[400]!,
                         ),
                       ),
                       child: Text(
@@ -3103,7 +3326,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+                          color: isDarkMode
+                              ? Colors.grey[400]!
+                              : Colors.grey[600]!,
                         ),
                       ),
                     ),
@@ -3112,8 +3337,12 @@ class _ChildListScreenState extends State<ChildListScreen>
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pop(); // Fermer le bottom sheet de confirmation
-                        Navigator.of(context).pop(); // Fermer le bottom sheet d'informations
+                        Navigator.of(
+                          context,
+                        ).pop(); // Fermer le bottom sheet de confirmation
+                        Navigator.of(
+                          context,
+                        ).pop(); // Fermer le bottom sheet d'informations
                         _removeChild();
                       },
                       style: ElevatedButton.styleFrom(
@@ -3171,7 +3400,6 @@ class _ChildListScreenState extends State<ChildListScreen>
         // Forcer le rafraîchissement de l'écran d'accueil
         MainScreenWrapper.of(context).refreshCurrentUser();
       }
-
     } catch (e) {
       // Afficher un message d'erreur
       if (mounted) {
@@ -3196,7 +3424,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final nom = eleve['nom']?.toString() ?? '';
     final niveau = eleve['niveau']?.toString() ?? '';
     final datenaissance = eleve['datenaissance']?.toString() ?? '';
-    
+
     // Créer un format JSON structuré pour le QR code
     final qrData = {
       'type': 'student_identification',
@@ -3209,7 +3437,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       'ecole': 'École de l\'élève',
       'timestamp': DateTime.now().toIso8601String(),
     };
-    
+
     return jsonEncode(qrData);
   }
 
@@ -3260,10 +3488,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       decoration: BoxDecoration(
         color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.red.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3312,7 +3537,10 @@ class _ChildListScreenState extends State<ChildListScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -3530,197 +3758,210 @@ class _ChildListScreenState extends State<ChildListScreen>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              _buildCard(
-                index: 0,
-                cardKey: 'paiement',
-                title: 'Paiement\nen ligne',
-                imagePath: 'assets/images/icons/paiement.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFF8FCFF),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                innerBorderColor: const Color(0xFF93C5FD),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                allowLineBreak: true,
-                onTap: _showPaiementBottomSheet,
-              ),
-              SizedBox(
-                width: AppDimensions.getPaymentBannerCardSpacing(context),
-              ),
-              _buildCard(
-                index: 1,
-                cardKey: 'historique_paiements',
-                title: 'Historique \n paiement',
-                imagePath: 'assets/images/icons/historique.png',
-                backgroundColor: const Color.fromARGB(255, 253, 253, 253),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                allowLineBreak: true,
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                color: AppColors.cardLightGrey,
-                innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: _showHistoriquePaiementsBottomSheet,
-              ),
-              SizedBox(
-                width: AppDimensions.getPaymentBannerCardSpacing(context),
-              ),
-              _buildCard(
-                index: 2,
-                cardKey: 'inscription',
-                title: 'Inscription \n en ligne',
-                imagePath: 'assets/images/icons/inscription.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFF7FEFC),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                allowLineBreak: true,
-                innerBorderColor: const Color(0xFF6EE7B7),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: () {
-                  print('=== NAVIGATION INSCRIPTION ===');
-                  print('Élève: ${widget.child.fullName}');
-                  print('UID de l\'élève: ${_eleveDetail?["uid"]}');
-                  print(
-                    'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
-                  );
-                  print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
-
-                  // Mettre à jour l'objet Child avec le ecoleCode si disponible
-                  final updatedChild =
-                      _ecoleCode != null && _ecoleCode!.isNotEmpty
-                      ? widget.child.copyWith(ecoleCode: _ecoleCode)
-                      : widget.child;
-
-                  print(
-                    'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
-                  );
-                  print('=== FIN NAVIGATION INSCRIPTION ===');
-
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => inscription.InscriptionWizardScreen(
-                        child: updatedChild,
-                        uid: _eleveDetail?['uid'],
-                        eleveDetail: _eleveDetail,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              SizedBox(
-                width: AppDimensions.getPaymentBannerCardSpacing(context),
-              ),
-              _buildCard(
-                index: 3,
-                cardKey: 'reservations',
-                title: 'Réservations',
-                imagePath: 'assets/images/icons/reservation.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFE8F5E9),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                innerBorderColor: const Color(0xFF81C784),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: () async {
-                  if (_reservations.isEmpty && !_isLoadingReservations) {
-                    await _loadReservationsData();
-                  }
-                  if (mounted) {
-                    _showReservationsBottomSheet();
-                  }
-                },
-              ),
-              SizedBox(
-                width: AppDimensions.getPaymentBannerCardSpacing(context),
-              ),
-              _buildCard(
-                index: 4,
-                cardKey: 'scolarite',
-                title: 'Scolarité \n élève',
-                imagePath: 'assets/images/icons/scolarite.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFFFFEF7),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                allowLineBreak: true,
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: () async {
-                  if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
-                    await _loadScolariteData();
-                  }
-                  if (mounted) {
-                    showEnhancedScolariteBottomSheet(
-                      context,
-                      childName: widget.child.fullName,
-                      childMatricule: widget.child.matricule,
-                      scolariteEntries: _scolariteEntries,
-                      isLoading: _isLoadingScolarite,
-                      onRefresh: _loadScolariteData,
-                      title: 'Scolarité',
-                      description: 'Consultez les informations de scolarité',
-                      primaryColor: const Color(0xFFF59E0B),
-                      backgroundColor: const Color(0xFFFFFEF7),
-                      iconColor: const Color(0xFFD97706),
-                      iconData: Icons.school_rounded,
-                    );
-                  }
-                },
-              ),
-              SizedBox(
-                width: AppDimensions.getPaymentBannerCardSpacing(context),
-              ),
-              _buildCard(
-                index: 5,
-                cardKey: 'integration_requests',
-                title: 'Demandes\n intégration',
-                imagePath: 'assets/images/icons/consulter.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFFCFAFF),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                allowLineBreak: true,
-                innerBorderColor: const Color(0xFFC4B5FD),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: () => IntegrationRequestBottomSheet.show(
-                  context,
-                  matricule: widget.child.matricule,
-                  childFullName: widget.child.fullName,
+                _buildCard(
+                  index: 0,
+                  cardKey: 'paiement',
+                  title: 'Paiement\nen ligne',
+                  imagePath: 'assets/images/icons/paiement.png',
+                  color: AppColors.cardLightGrey,
+                  backgroundColor: const Color(0xFFF8FCFF),
+                  textColor: const Color(0xFF333333),
+                  actionText: '',
+                  enableInnerBorder: false,
+                  enableOuterBorder: false,
+                  innerBorderColor: const Color(0xFF93C5FD),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                  width: AppDimensions.getSquareCardWidthSize(context),
+                  height: AppDimensions.getSquareCardHeightSize(context),
+                  centerTitle: true,
+                  allowLineBreak: true,
+                  onTap: _showPaiementBottomSheet,
                 ),
-              ),
-            ],
+                SizedBox(
+                  width: AppDimensions.getPaymentBannerCardSpacing(context),
+                ),
+                _buildCard(
+                  index: 1,
+                  cardKey: 'historique_paiements',
+                  title: 'Historique \n paiement',
+                  imagePath: 'assets/images/icons/historique.png',
+                  backgroundColor: const Color.fromARGB(255, 253, 253, 253),
+                  textColor: const Color(0xFF333333),
+                  actionText: '',
+                  allowLineBreak: true,
+                  enableInnerBorder: false,
+                  enableOuterBorder: false,
+                  color: AppColors.cardLightGrey,
+                  innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                  width: AppDimensions.getSquareCardWidthSize(context),
+                  height: AppDimensions.getSquareCardHeightSize(context),
+                  centerTitle: true,
+                  onTap: _showHistoriquePaiementsBottomSheet,
+                ),
+                SizedBox(
+                  width: AppDimensions.getPaymentBannerCardSpacing(context),
+                ),
+                _buildCard(
+                  index: 2,
+                  cardKey: 'inscription',
+                  title: 'Inscription \n en ligne',
+                  imagePath: 'assets/images/icons/inscription.png',
+                  color: AppColors.cardLightGrey,
+                  backgroundColor: const Color(0xFFF7FEFC),
+                  textColor: const Color(0xFF333333),
+                  actionText: '',
+                  enableInnerBorder: false,
+                  enableOuterBorder: false,
+                  allowLineBreak: true,
+                  innerBorderColor: const Color(0xFF6EE7B7),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                  width: AppDimensions.getSquareCardWidthSize(context),
+                  height: AppDimensions.getSquareCardHeightSize(context),
+                  centerTitle: true,
+                  onTap: () {
+                    print('=== NAVIGATION INSCRIPTION ===');
+                    print('Élève: ${widget.child.fullName}');
+                    print('UID de l\'élève: ${_eleveDetail?["uid"]}');
+                    print(
+                      'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
+                    );
+                    print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
+
+                    // Mettre à jour l'objet Child avec le ecoleCode si disponible
+                    final updatedChild =
+                        _ecoleCode != null && _ecoleCode!.isNotEmpty
+                        ? widget.child.copyWith(ecoleCode: _ecoleCode)
+                        : widget.child;
+
+                    print(
+                      'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
+                    );
+                    print('=== FIN NAVIGATION INSCRIPTION ===');
+
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            inscription.InscriptionWizardScreen(
+                              child: updatedChild,
+                              uid: _eleveDetail?['uid'],
+                              eleveDetail: _eleveDetail,
+                            ),
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(
+                  width: AppDimensions.getPaymentBannerCardSpacing(context),
+                ),
+                _buildCard(
+                  index: 3,
+                  cardKey: 'reservations',
+                  title: 'Réservations',
+                  imagePath: 'assets/images/icons/reservation.png',
+                  color: AppColors.cardLightGrey,
+                  backgroundColor: const Color(0xFFE8F5E9),
+                  textColor: const Color(0xFF333333),
+                  actionText: '',
+                  enableInnerBorder: false,
+                  enableOuterBorder: false,
+                  innerBorderColor: const Color(0xFF81C784),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                  width: AppDimensions.getSquareCardWidthSize(context),
+                  height: AppDimensions.getSquareCardHeightSize(context),
+                  centerTitle: true,
+                  onTap: () async {
+                    if (_reservations.isEmpty && !_isLoadingReservations) {
+                      await _loadReservationsData();
+                    }
+                    if (mounted) {
+                      _showReservationsBottomSheet();
+                    }
+                  },
+                ),
+                SizedBox(
+                  width: AppDimensions.getPaymentBannerCardSpacing(context),
+                ),
+                _buildCard(
+                  index: 4,
+                  cardKey: 'scolarite',
+                  title: 'Scolarité \n élève',
+                  imagePath: 'assets/images/icons/scolarite.png',
+                  color: AppColors.cardLightGrey,
+                  backgroundColor: const Color(0xFFFFFEF7),
+                  textColor: const Color(0xFF333333),
+                  actionText: '',
+                  allowLineBreak: true,
+                  enableInnerBorder: false,
+                  enableOuterBorder: false,
+                  innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                  width: AppDimensions.getSquareCardWidthSize(context),
+                  height: AppDimensions.getSquareCardHeightSize(context),
+                  centerTitle: true,
+                  onTap: () async {
+                    if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
+                      await _loadScolariteData();
+                    }
+                    if (mounted) {
+                      showEnhancedScolariteBottomSheet(
+                        context,
+                        childName: widget.child.fullName,
+                        childMatricule: widget.child.matricule,
+                        scolariteEntries: _scolariteEntries,
+                        isLoading: _isLoadingScolarite,
+                        onRefresh: _loadScolariteData,
+                        title: 'Scolarité',
+                        description: 'Consultez les informations de scolarité',
+                        primaryColor: const Color(0xFFF59E0B),
+                        backgroundColor: const Color(0xFFFFFEF7),
+                        iconColor: const Color(0xFFD97706),
+                        iconData: Icons.school_rounded,
+                      );
+                    }
+                  },
+                ),
+                SizedBox(
+                  width: AppDimensions.getPaymentBannerCardSpacing(context),
+                ),
+                _buildCard(
+                  index: 5,
+                  cardKey: 'integration_requests',
+                  title: 'Demandes\n intégration',
+                  imagePath: 'assets/images/icons/consulter.png',
+                  color: AppColors.cardLightGrey,
+                  backgroundColor: const Color(0xFFFCFAFF),
+                  textColor: const Color(0xFF333333),
+                  actionText: '',
+                  enableInnerBorder: false,
+                  enableOuterBorder: false,
+                  allowLineBreak: true,
+                  innerBorderColor: const Color(0xFFC4B5FD),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                  width: AppDimensions.getSquareCardWidthSize(context),
+                  height: AppDimensions.getSquareCardHeightSize(context),
+                  centerTitle: true,
+                  onTap: () => IntegrationRequestBottomSheet.show(
+                    context,
+                    matricule: widget.child.matricule,
+                    childFullName: widget.child.fullName,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         ),
 
         // ════════════════════════════════════════════════════════════════
@@ -3805,7 +4046,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               );
             },
           ),
-                  ]),
+        ]),
 
         // ════════════════════════════════════════════════════════════════
         // SECTION 3 : Vie scolaire
@@ -3975,14 +4216,18 @@ class _ChildListScreenState extends State<ChildListScreen>
                             case 'homework_program':
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Programme de devoirs - Fonctionnalité à venir'),
+                                  content: Text(
+                                    'Programme de devoirs - Fonctionnalité à venir',
+                                  ),
                                 ),
                               );
                               break;
                             case 'progression':
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Progression - Fonctionnalité à venir'),
+                                  content: Text(
+                                    'Progression - Fonctionnalité à venir',
+                                  ),
                                 ),
                               );
                               break;
@@ -4668,9 +4913,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildDynamicTimetable(),
-        ],
+        children: [_buildDynamicTimetable()],
       ),
     );
   }
@@ -5857,16 +6100,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatCircle(
-                stats.totalPresent,
-                'Présences',
-                Colors.green,
-              ),
-              _buildStatCircle(
-                stats.totalAbsent,
-                'Absences',
-                Colors.red,
-              ),
+              _buildStatCircle(stats.totalPresent, 'Présences', Colors.green),
+              _buildStatCircle(stats.totalAbsent, 'Absences', Colors.red),
               _buildStatCircle(
                 '${stats.tauxPresence.toStringAsFixed(1)}%',
                 'Taux',
@@ -7582,8 +7817,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Future<void> _loadNotificationsData() async {
-    if (_isLoadingNotifications) return;
+  Future<void> _loadNotificationsData({bool force = false}) async {
+    if (_isLoadingNotifications && !force) return;
 
     final matricule = _matricule ?? widget.child.matricule;
     if (matricule == null || matricule.isEmpty) {
@@ -7618,6 +7853,64 @@ class _ChildListScreenState extends State<ChildListScreen>
         });
       }
     }
+  }
+
+  Future<void> _loadEcheanceData({bool force = false}) async {
+    if (_isLoadingEcheance && !force) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) {
+      print('❌ Matricule non disponible pour charger l\'échéance');
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingEcheance = true;
+      });
+    }
+
+    try {
+      final echeanceNotification =
+          await EcheanceService.getEcheanceNotification(matricule);
+      if (mounted) {
+        setState(() {
+          _echeanceNotification = echeanceNotification;
+          _isLoadingEcheance = false;
+          _echeanceLoaded = true;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement de l\'échéance: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingEcheance = false;
+          _echeanceLoaded = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshNotificationData() async {
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) {
+      print('❌ Matricule non disponible pour actualiser les notifications');
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingNotifications = true;
+        _isLoadingEcheance = true;
+        _notificationsLoaded = false;
+        _echeanceLoaded = false;
+      });
+    }
+
+    print('🔄 Actualisation des notifications suite au clic sur le bouton');
+
+    await _loadNotificationsData(force: true);
+    await _loadEcheanceData(force: true);
   }
 
   Color _getSubjectColor(String subject) {
@@ -7826,7 +8119,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     final effectiveModalSetState = setModalState ?? _bulletinsModalSetState;
 
     void updateState(VoidCallback fn) {
-      print('🔧 DEBUG: updateState appelé - setModalState: ${effectiveModalSetState != null}, mounted: $mounted');
+      print(
+        '🔧 DEBUG: updateState appelé - setModalState: ${effectiveModalSetState != null}, mounted: $mounted',
+      );
       if (effectiveModalSetState != null) {
         print('🔧 DEBUG: Appel de setModalState');
         effectiveModalSetState(fn);
@@ -7850,14 +8145,15 @@ class _ChildListScreenState extends State<ChildListScreen>
         _bulletins = bulletins;
         _isLoadingBulletins = false;
       });
-      print('🔧 DEBUG: État mis à jour - _isLoadingBulletins: $_isLoadingBulletins, _bulletins: ${_bulletins?.length}');
+      print(
+        '🔧 DEBUG: État mis à jour - _isLoadingBulletins: $_isLoadingBulletins, _bulletins: ${_bulletins?.length}',
+      );
     } catch (e) {
       updateState(() => _isLoadingBulletins = false);
       print('❌ Erreur lors du chargement des bulletins: $e');
     }
   }
 
-  
   Widget _buildBulletinsTab() {
     // Les bulletins sont maintenant chargés directement dans _showBulletinsBottomSheet()
 
@@ -8089,7 +8385,10 @@ class _ChildListScreenState extends State<ChildListScreen>
             children: [
               // Main card content
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -8110,8 +8409,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color:
-                                  isDarkMode ? Colors.white : Colors.black87,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -8179,60 +8477,60 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
               ),
 
-          // Expanded section with action buttons
-          if (isExpanded)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? const Color(0xFF2A2A2A)
-                    : const Color(0xFFF8F9FA),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Divider(height: 1),
-                    const SizedBox(height: 16),
-                    Row(
+              // Expanded section with action buttons
+              if (isExpanded)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFFF8F9FA),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: _buildActionButton(
-                            'Consulter',
-                            Icons.visibility_outlined,
-                            const Color(0xFFFF7A3C),
-                            () => _viewBulletin(bulletinData),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildActionButton(
-                            'Télécharger',
-                            Icons.download_outlined,
-                            const Color(0xFF10B981),
-                            () => _downloadBulletin(bulletinData),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildActionButton(
-                            'Partager',
-                            Icons.share_outlined,
-                            const Color(0xFF3B82F6),
-                            () => _shareBulletin(bulletinData),
-                          ),
+                        const Divider(height: 1),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildActionButton(
+                                'Consulter',
+                                Icons.visibility_outlined,
+                                const Color(0xFFFF7A3C),
+                                () => _viewBulletin(bulletinData),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildActionButton(
+                                'Télécharger',
+                                Icons.download_outlined,
+                                const Color(0xFF10B981),
+                                () => _downloadBulletin(bulletinData),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildActionButton(
+                                'Partager',
+                                Icons.share_outlined,
+                                const Color(0xFF3B82F6),
+                                () => _shareBulletin(bulletinData),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
             ],
           ),
         ),
@@ -9846,7 +10144,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       padding: const EdgeInsets.all(20),
@@ -9885,200 +10183,214 @@ class _ChildListScreenState extends State<ChildListScreen>
               ],
             )
           : _statistiquesPresence != null
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Statistiques de présence',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(18),
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode ? Colors.white70 : Color(0xFF1F2937),
-                      ),
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Statistiques de présence',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(18),
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white70 : Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Carte principale avec taux de présence
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _statistiquesPresence!.tauxPresence >= 95
+                          ? [Colors.green.shade400, Colors.green.shade600]
+                          : _statistiquesPresence!.tauxPresence >= 90
+                          ? [Colors.orange.shade400, Colors.orange.shade600]
+                          : [Colors.red.shade400, Colors.red.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(height: 20),
-                    
-                    // Carte principale avec taux de présence
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: _statistiquesPresence!.tauxPresence >= 95
-                              ? [Colors.green.shade400, Colors.green.shade600]
-                              : _statistiquesPresence!.tauxPresence >= 90
-                                  ? [Colors.orange.shade400, Colors.orange.shade600]
-                                  : [Colors.red.shade400, Colors.red.shade600],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Icon(
+                            _statistiquesPresence!.tauxPresence >= 95
+                                ? Icons.check_circle
+                                : _statistiquesPresence!.tauxPresence >= 90
+                                ? Icons.warning
+                                : Icons.error,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                _statistiquesPresence!.tauxPresence >= 95
-                                    ? Icons.check_circle
-                                    : _statistiquesPresence!.tauxPresence >= 90
-                                        ? Icons.warning
-                                        : Icons.error,
-                                color: Colors.white,
-                                size: 32,
+                              Text(
+                                'Taux de présence',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    14,
+                                  ),
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Taux de présence',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(14),
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                              Text(
+                                '${_statistiquesPresence!.tauxPresence.toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    24,
                                   ),
-                                  Text(
-                                    '${_statistiquesPresence!.tauxPresence.toStringAsFixed(1)}%',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(24),
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
                         ],
                       ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Statistiques détaillées
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDetailedStatCard(
-                            'Présences',
-                            _statistiquesPresence!.totalPresent,
-                            Icons.check_circle,
-                            Colors.green,
-                            isDarkMode,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildDetailedStatCard(
-                            'Absences',
-                            _statistiquesPresence!.totalAbsent,
-                            Icons.cancel,
-                            Colors.red,
-                            isDarkMode,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Information totale
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.grey[700] : Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDarkMode ? Colors.grey[600]! : Colors.grey[200]!,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Color(0xFF1565C0).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.calendar_today,
-                              color: Color(0xFF1565C0),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Total des séances',
-                                  style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(12),
-                                    color: isDarkMode ? Colors.white70 : Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${_statistiquesPresence!.totalSeances} séances cette année',
-                                  style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(14),
-                                    color: isDarkMode ? Colors.white : Colors.grey[800],
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Statistiques détaillées
+                Row(
                   children: [
-                    Text(
-                      'Statistiques de présence',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(18),
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode ? Colors.white70 : Color(0xFF1F2937),
+                    Expanded(
+                      child: _buildDetailedStatCard(
+                        'Présences',
+                        _statistiquesPresence!.totalPresent,
+                        Icons.check_circle,
+                        Colors.green,
+                        isDarkMode,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Impossible de charger les statistiques',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(14),
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ElevatedButton(
-                            onPressed: () => _loadStatistiquesPresence(_presenceStatsModalSetState),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1565C0),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Réessayer'),
-                          ),
-                        ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDetailedStatCard(
+                        'Absences',
+                        _statistiquesPresence!.totalAbsent,
+                        Icons.cancel,
+                        Colors.red,
+                        isDarkMode,
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Information totale
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.grey[700] : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDarkMode ? Colors.grey[600]! : Colors.grey[200]!,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Color(0xFF1565C0).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.calendar_today,
+                          color: Color(0xFF1565C0),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Total des séances',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  12,
+                                ),
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_statistiquesPresence!.totalSeances} séances cette année',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  14,
+                                ),
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.grey[800],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Statistiques de présence',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(18),
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white70 : Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Impossible de charger les statistiques',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: () => _loadStatistiquesPresence(
+                          _presenceStatsModalSetState,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1565C0),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
     );
   }
@@ -10095,10 +10407,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[700] : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -10172,7 +10481,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   StatistiquesPresence? _statistiquesPresence;
   bool _isLoadingStatistiques = false;
   StateSetter? _presenceStatsModalSetState;
-  
+
   // Filtres pour la liste des absences
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
@@ -10181,12 +10490,12 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildAbsencesList() {
     // Appliquer les filtres
     _applyPresenceFilters();
-    
+
     return Column(
       children: [
         // Section des filtres
         _buildPresenceFilters(),
-        
+
         // Bouton pour charger les données de présence
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
@@ -10194,7 +10503,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _loadPresenceData(),
-              icon: _isLoadingPresence 
+              icon: _isLoadingPresence
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -10208,7 +10517,10 @@ class _ChildListScreenState extends State<ChildListScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1F2937),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -10216,7 +10528,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
           ),
         ),
-        
+
         // Liste des entrées de présence
         if (_filteredPresenceEntries.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -10227,14 +10539,18 @@ class _ChildListScreenState extends State<ChildListScreen>
             final timeStr = debutDate != null
                 ? '${debutDate.day.toString().padLeft(2, '0')}/${debutDate.month.toString().padLeft(2, '0')} ${debutDate.hour.toString().padLeft(2, '0')}:${debutDate.minute.toString().padLeft(2, '0')}'
                 : entry.debut ?? '';
-            
+
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isPresent ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3)),
+                border: Border.all(
+                  color: isPresent
+                      ? Colors.green.withOpacity(0.3)
+                      : Colors.red.withOpacity(0.3),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -10280,7 +10596,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 16, color: Color(0xFF6B7280)),
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: Color(0xFF6B7280),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         timeStr,
@@ -10290,7 +10610,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (entry.nomProf != null && entry.prenomProf != null) ...[
+                      if (entry.nomProf != null &&
+                          entry.prenomProf != null) ...[
                         Expanded(
                           child: Text(
                             'Prof: ${entry.prenomProf} ${entry.nomProf}',
@@ -10311,7 +10632,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             );
           }),
         ],
-        
+
         // Message si aucune donnée
         if (!_isLoadingPresence && _presenceEntries.isEmpty)
           Container(
@@ -10324,11 +10645,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 48,
-                  color: Colors.grey[600],
-                ),
+                Icon(Icons.info_outline, size: 48, color: Colors.grey[600]),
                 const SizedBox(height: 12),
                 const Text(
                   'Aucune donnée de présence disponible',
@@ -10369,19 +10686,21 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     updateState(() => _isLoadingPresence = true);
-    
+
     try {
-      print('📡 Chargement présence/absence: matricule=$_matricule, ecole=$_ecoleCode');
+      print(
+        '📡 Chargement présence/absence: matricule=$_matricule, ecole=$_ecoleCode',
+      );
       final entries = await GestionPresenceEleveService.getGestionPresenceEleve(
         _matricule!,
         _ecoleCode!,
       );
-      
+
       updateState(() {
         _presenceEntries = entries;
         _isLoadingPresence = false;
       });
-      
+
       print('✅ ${entries.length} entrée(s) de présence/absence chargée(s)');
     } catch (e) {
       print('❌ Erreur lors du chargement des données de présence: $e');
@@ -10391,7 +10710,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadStatistiquesPresence([StateSetter? setModalState]) async {
     if (_matricule == null || _ecoleCode == null) {
-      print('⚠️ Informations manquantes pour charger les statistiques de présence');
+      print(
+        '⚠️ Informations manquantes pour charger les statistiques de présence',
+      );
       return;
     }
 
@@ -10407,20 +10728,23 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     updateState(() => _isLoadingStatistiques = true);
-    
+
     try {
-      final statistiques = await StatistiquesPresenceService.getStatistiquesPresence(
-        _matricule!,
-        _ecoleCode!,
-      );
-      
+      final statistiques =
+          await StatistiquesPresenceService.getStatistiquesPresence(
+            _matricule!,
+            _ecoleCode!,
+          );
+
       updateState(() {
         _statistiquesPresence = statistiques;
         _isLoadingStatistiques = false;
       });
-      
+
       if (statistiques != null) {
-        print('✅ Statistiques présence: ${statistiques!.tauxPresence}% présence, ${statistiques!.totalAbsent} absences');
+        print(
+          '✅ Statistiques présence: ${statistiques!.tauxPresence}% présence, ${statistiques!.totalAbsent} absences',
+        );
       }
     } catch (e) {
       print('❌ Erreur lors du chargement des statistiques de présence: $e');
@@ -10435,10 +10759,12 @@ class _ChildListScreenState extends State<ChildListScreen>
       // Filtre par type
       if (_filterType != null) {
         final isPresent = (entry.presence ?? 0) == 1;
-        if (_filterType == 0 && isPresent) return false; // Filtre absent seulement
-        if (_filterType == 1 && !isPresent) return false; // Filtre présent seulement
+        if (_filterType == 0 && isPresent)
+          return false; // Filtre absent seulement
+        if (_filterType == 1 && !isPresent)
+          return false; // Filtre présent seulement
       }
-      
+
       // Filtre par date
       if (_filterStartDate != null) {
         final entryDate = DateTime.tryParse(entry.debut ?? '');
@@ -10446,21 +10772,21 @@ class _ChildListScreenState extends State<ChildListScreen>
           return false;
         }
       }
-      
+
       if (_filterEndDate != null) {
         final entryDate = DateTime.tryParse(entry.debut ?? '');
         if (entryDate != null && entryDate.isAfter(_filterEndDate!)) {
           return false;
         }
       }
-      
+
       return true;
     }).toList();
   }
 
   Widget _buildPresenceFilters() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     return Container(
       margin: const EdgeInsets.all(12), // Réduit de 16 à 12
       padding: const EdgeInsets.all(12), // Réduit de 16 à 12
@@ -10483,7 +10809,6 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
           ),
           const SizedBox(height: 8), // Réduit de 12 à 8
-          
           // Filtre par type
           Text(
             'Type',
@@ -10502,9 +10827,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               _buildFilterChip('Présences', 1),
             ],
           ),
-          
+
           const SizedBox(height: 12), // Réduit de 16 à 12
-          
           // Filtre par date
           Text(
             'Période (facultatif)',
@@ -10521,22 +10845,31 @@ class _ChildListScreenState extends State<ChildListScreen>
                 child: GestureDetector(
                   onTap: () => _selectDate(context, true),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Réduit padding
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ), // Réduit padding
                     decoration: BoxDecoration(
                       color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 6), // Réduit de 8 à 6
                         Text(
-                          _filterStartDate != null 
+                          _filterStartDate != null
                               ? '${_filterStartDate!.day}/${_filterStartDate!.month}/${_filterStartDate!.year}'
                               : 'Date début',
                           style: TextStyle(
                             fontSize: _textSizeService.getScaledFontSize(12),
-                            color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                            color: isDarkMode
+                                ? Colors.white70
+                                : Colors.grey[600],
                           ),
                         ),
                       ],
@@ -10551,22 +10884,31 @@ class _ChildListScreenState extends State<ChildListScreen>
                 child: GestureDetector(
                   onTap: () => _selectDate(context, false),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Réduit padding
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ), // Réduit padding
                     decoration: BoxDecoration(
                       color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 6), // Réduit de 8 à 6
                         Text(
-                          _filterEndDate != null 
+                          _filterEndDate != null
                               ? '${_filterEndDate!.day}/${_filterEndDate!.month}/${_filterEndDate!.year}'
                               : 'Date fin',
                           style: TextStyle(
                             fontSize: _textSizeService.getScaledFontSize(12),
-                            color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                            color: isDarkMode
+                                ? Colors.white70
+                                : Colors.grey[600],
                           ),
                         ),
                       ],
@@ -10576,9 +10918,11 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8), // Réduit de 12 à 8
-          if (_filterStartDate != null || _filterEndDate != null || _filterType != null)
+          if (_filterStartDate != null ||
+              _filterEndDate != null ||
+              _filterType != null)
             Row(
               children: [
                 Expanded(
@@ -10611,7 +10955,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildFilterChip(String label, int? value) {
     final isDarkMode = _themeService.isDarkMode;
     final isSelected = _filterType == value;
-    
+
     return GestureDetector(
       onTap: () {
         final effectiveModalSetState = _presenceModalSetState;
@@ -10624,7 +10968,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? (isDarkMode ? Colors.blue[300] : Colors.blue[600])
               : (isDarkMode ? Colors.grey[700] : Colors.grey[200]),
           borderRadius: BorderRadius.circular(16),
@@ -10634,8 +10978,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           style: TextStyle(
             fontSize: _textSizeService.getScaledFontSize(12),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected 
-                ? Colors.white 
+            color: isSelected
+                ? Colors.white
                 : (isDarkMode ? Colors.white70 : Colors.grey[600]),
           ),
         ),
@@ -10646,7 +10990,9 @@ class _ChildListScreenState extends State<ChildListScreen>
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStartDate ? _filterStartDate ?? DateTime.now() : _filterEndDate ?? DateTime.now(),
+      initialDate: isStartDate
+          ? _filterStartDate ?? DateTime.now()
+          : _filterEndDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
@@ -10971,7 +11317,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       echeance.formattedMessage,
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(13),
-                        color: isDark ? Colors.grey[300] : const Color(0xFF4A4A4A),
+                        color: isDark
+                            ? Colors.grey[300]
+                            : const Color(0xFF4A4A4A),
                         height: 1.5,
                         fontWeight: FontWeight.w400,
                       ),
@@ -11012,7 +11360,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                               Text(
                                 'Marquer comme lu',
                                 style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    11,
+                                  ),
                                   color: const Color(0xFF1976D2),
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -11039,14 +11389,20 @@ class _ChildListScreenState extends State<ChildListScreen>
                             Icon(
                               Icons.check_circle,
                               size: 14,
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              color: isDark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
                             ),
                             const SizedBox(width: 6),
                             Text(
                               'Lu',
                               style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(11),
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  11,
+                                ),
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

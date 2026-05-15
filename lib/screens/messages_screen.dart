@@ -7,6 +7,10 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:http/http.dart' as http;
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
 import '../services/message_api_service.dart';
@@ -197,13 +201,18 @@ class _MessagesScreenState extends State<MessagesScreen>
         if (attachments.isNotEmpty) {
           attachmentUrl = attachments[0]['file_path']?.toString();
           final mime = attachments[0]['mime_type']?.toString() ?? '';
-          final fileName = attachments[0]['file_name']?.toString().toLowerCase() ?? '';
-          if (mime.startsWith('audio') || mime.contains('octet-stream') ||
-              fileName.endsWith('.m4a') || fileName.endsWith('.webm') || fileName.endsWith('.mp3')) {
+          final fileName =
+              attachments[0]['file_name']?.toString().toLowerCase() ?? '';
+          if (mime.startsWith('audio') ||
+              mime.contains('octet-stream') ||
+              fileName.endsWith('.m4a') ||
+              fileName.endsWith('.webm') ||
+              fileName.endsWith('.mp3')) {
             attachmentType = AttachmentType.audio;
           } else if (mime.startsWith('image')) {
             attachmentType = AttachmentType.image;
-          } else if (mime.startsWith('application/pdf') || fileName.endsWith('.pdf')) {
+          } else if (mime.startsWith('application/pdf') ||
+              fileName.endsWith('.pdf')) {
             attachmentType = AttachmentType.document;
           }
         }
@@ -292,6 +301,14 @@ class _MessagesScreenState extends State<MessagesScreen>
       message: '',
       backgroundColor: Colors.green[500],
       duration: const Duration(seconds: 2),
+    );
+  }
+
+  void _openImageViewer(String imageUrl) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _ImageViewerScreen(imageUrl: imageUrl),
+      ),
     );
   }
 
@@ -511,15 +528,20 @@ class _MessagesScreenState extends State<MessagesScreen>
                       : CrossAxisAlignment.start,
                   children: [
                     // Lecteur audio si pièce jointe audio
-                    if (attachmentType == AttachmentType.audio && attachmentUrl != null) ...[
+                    if (attachmentType == AttachmentType.audio &&
+                        attachmentUrl != null) ...[
                       _AudioBubble(url: attachmentUrl, isMe: isMe),
                       const SizedBox(height: 6),
-                    ] else if (attachmentType == AttachmentType.document && attachmentUrl != null) ...[
+                    ] else if (attachmentType == AttachmentType.document &&
+                        attachmentUrl != null) ...[
                       GestureDetector(
                         onTap: () async {
                           final uri = Uri.parse(attachmentUrl);
                           if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
                           }
                         },
                         child: Row(
@@ -548,31 +570,54 @@ class _MessagesScreenState extends State<MessagesScreen>
                         ),
                       ),
                       const SizedBox(height: 4),
-                    ] else if (attachmentType == AttachmentType.image) ...[
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.image_outlined,
-                            size: 14,
-                            color: isMe
-                                ? Colors.white.withOpacity(0.85)
-                                : const Color(0xFF0288D1),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Image',
-                            style: TextStyle(
-                              fontSize: 12,
+                    ] else if (attachmentType == AttachmentType.image &&
+                        attachmentUrl != null) ...[
+                      GestureDetector(
+                        onTap: () => _openImageViewer(attachmentUrl),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: attachmentUrl,
+                            width: 200,
+                            height: 150,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              width: 200,
+                              height: 150,
                               color: isMe
-                                  ? Colors.white.withOpacity(0.85)
-                                  : const Color(0xFF0288D1),
-                              fontStyle: FontStyle.italic,
+                                  ? Colors.white.withOpacity(0.2)
+                                  : const Color(0xFFF5F5F5),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    isMe
+                                        ? Colors.white
+                                        : const Color(0xFF0288D1),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              width: 200,
+                              height: 150,
+                              color: isMe
+                                  ? Colors.white.withOpacity(0.2)
+                                  : const Color(0xFFF5F5F5),
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 32,
+                                  color: isMe
+                                      ? Colors.white.withOpacity(0.6)
+                                      : const Color(0xFF0288D1),
+                                ),
+                              ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                     ],
                     Text(
                       body,
@@ -1097,7 +1142,11 @@ class _MessagesScreenState extends State<MessagesScreen>
     // ── 1. Ajout optimiste immédiat ──────────────────────────────────────────
     final optimisticBody = message.isNotEmpty
         ? message
-        : (hasAudio ? 'Note vocale' : hasImage ? 'Image' : 'Document');
+        : (hasAudio
+              ? 'Note vocale'
+              : hasImage
+              ? 'Image'
+              : 'Document');
 
     final optimisticMsg = _LocalMessage(
       body: optimisticBody,
@@ -1211,6 +1260,44 @@ class _MessagesScreenState extends State<MessagesScreen>
   }
 }
 
+// ─── ÉCRAN DE VISUALISATION D'IMAGE EN PLEIN ÉCRAN ─────────────────────────────
+class _ImageViewerScreen extends StatelessWidget {
+  final String imageUrl;
+
+  const _ImageViewerScreen({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.contain,
+            placeholder: (context, url) => const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            errorWidget: (context, url, error) => const Center(
+              child: Icon(Icons.broken_image, size: 64, color: Colors.white54),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── WIDGET LECTEUR AUDIO AVEC AUDIOPLAYERS ─────────────────────────────────
 class _AudioBubble extends StatefulWidget {
   final String url;
@@ -1229,6 +1316,8 @@ class _AudioBubbleState extends State<_AudioBubble> {
   Duration _total = Duration.zero;
   bool _isLoading = true;
   bool _isInitialized = false;
+  bool _isConverting = false;
+  String? _convertedFilePath;
 
   @override
   void initState() {
@@ -1236,10 +1325,60 @@ class _AudioBubbleState extends State<_AudioBubble> {
     _initializePlayer();
   }
 
+  bool _isUnsupportedFormat() {
+    final fileName = widget.url.split('?').first.toLowerCase();
+    // Formats non supportés sur iOS/macOS par AVPlayer
+    return fileName.endsWith('.webm') || fileName.endsWith('.vorbis');
+  }
+
+  Future<String?> _convertWebMToMp3(String webmUrl) async {
+    try {
+      setState(() => _isConverting = true);
+      print('🔄 Conversion WebM → MP3 en cours...');
+
+      // Télécharger le fichier WebM
+      final client = http.Client();
+      final response = await client.get(Uri.parse(webmUrl));
+      
+      if (response.statusCode != 200) {
+        print('❌ Erreur téléchargement WebM: ${response.statusCode}');
+        return null;
+      }
+
+      // Sauvegarder temporairement le fichier WebM
+      final tempDir = await getTemporaryDirectory();
+      final webmFile = File('${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.webm');
+      await webmFile.writeAsBytes(response.bodyBytes);
+      print('💾 Fichier WebM téléchargé: ${webmFile.path}');
+
+      // Convertir WebM → MP3 avec FFmpeg
+      final mp3File = File('${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.mp3');
+      final command = '-i "${webmFile.path}" -q:a 0 -map a "${mp3File.path}"';
+      
+      print('⚙️ Exécution FFmpeg: $command');
+      await FFmpegKit.execute(command);
+
+      // Vérifier si la conversion a réussi
+      if (await mp3File.exists()) {
+        print('✅ Conversion réussie: ${mp3File.path}');
+        await webmFile.delete();
+        return mp3File.path;
+      } else {
+        print('❌ Conversion échouée');
+        return null;
+      }
+    } catch (e) {
+      print('💥 Erreur conversion: $e');
+      return null;
+    } finally {
+      if (mounted) setState(() => _isConverting = false);
+    }
+  }
+
   Future<void> _initializePlayer() async {
     try {
       _player = AudioPlayer();
-      
+
       // Écouter les changements de durée
       _player.onDurationChanged.listen((duration) {
         if (mounted) {
@@ -1248,7 +1387,7 @@ class _AudioBubbleState extends State<_AudioBubble> {
           });
         }
       });
-      
+
       // Écouter la position
       _player.onPositionChanged.listen((position) {
         if (mounted) {
@@ -1257,7 +1396,7 @@ class _AudioBubbleState extends State<_AudioBubble> {
           });
         }
       });
-      
+
       // Écouter l'état du player
       _player.onPlayerStateChanged.listen((state) {
         if (mounted) {
@@ -1266,9 +1405,9 @@ class _AudioBubbleState extends State<_AudioBubble> {
           });
         }
       });
-      
+
       // Écouter la fin de la lecture
-      _player.onComplete.listen((event) {
+      _player.onPlayerComplete.listen((event) {
         if (mounted) {
           setState(() {
             _isPlaying = false;
@@ -1276,10 +1415,70 @@ class _AudioBubbleState extends State<_AudioBubble> {
           });
         }
       });
-      
-      // Charger l'audio
-      await _player.setSourceUrl(widget.url);
-      
+
+      // Valider l'URL avant de charger l'audio
+      if (widget.url.isEmpty) {
+        print('⚠️ URL audio vide');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Vérifier si le format est supporté (iOS/macOS limitation)
+      if (_isUnsupportedFormat()) {
+        print('⚠️ Format WebM détecté - conversion en MP3 en cours...');
+        final mp3Path = await _convertWebMToMp3(widget.url);
+        if (mp3Path != null) {
+          _convertedFilePath = mp3Path;
+          // Continuer avec le fichier MP3 converti
+          print('✅ Fichier converti, chargement en cours...');
+        } else {
+          print('❌ Conversion échouée - format non supporté');
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
+      print('📻 Chargement audio: ${widget.url}');
+
+      // Utiliser le fichier converti s'il existe, sinon l'URL originale
+      final sourceUrl = _convertedFilePath ?? widget.url;
+
+      // Essayer différentes méthodes de chargement selon le type d'URL
+      try {
+        if (sourceUrl.startsWith('http://') ||
+            sourceUrl.startsWith('https://')) {
+          // URL réseau - utiliser setSourceUrl
+          await _player.setSourceUrl(sourceUrl);
+        } else {
+          // URL locale - utiliser DeviceFileSource (fichier MP3 converti)
+          await _player.setSource(DeviceFileSource(sourceUrl));
+        }
+        print('✅ Audio source chargée avec succès');
+      } catch (e) {
+        print('⚠️ Erreur lors du chargement: $e');
+        // Réessayer avec UrlSource si la première échoue
+        try {
+          await _player.setSource(UrlSource(sourceUrl));
+          print('✅ Audio chargé avec UrlSource (fallback)');
+        } catch (e2) {
+          print('❌ Erreur fallback: $e2');
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -1287,7 +1486,7 @@ class _AudioBubbleState extends State<_AudioBubble> {
         });
       }
     } catch (e) {
-      print('Erreur lors du chargement audio: $e');
+      print('❌ Erreur initiale: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -1299,12 +1498,20 @@ class _AudioBubbleState extends State<_AudioBubble> {
   @override
   void dispose() {
     _player.dispose();
+    // Nettoyer le fichier MP3 converti
+    if (_convertedFilePath != null) {
+      try {
+        File(_convertedFilePath!).deleteSync();
+      } catch (e) {
+        print('⚠️ Erreur suppression fichier temporaire: $e');
+      }
+    }
     super.dispose();
   }
 
   Future<void> _togglePlayback() async {
     if (!_isInitialized) return;
-    
+
     try {
       if (_isPlaying) {
         await _player.pause();
@@ -1333,7 +1540,67 @@ class _AudioBubbleState extends State<_AudioBubble> {
     final trackColor = widget.isMe
         ? Colors.white.withOpacity(0.3)
         : const Color(0xFF0288D1).withOpacity(0.2);
-    
+
+    // Afficher un message si en cours de conversion
+    if (_isConverting) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: const Color(0xFF0288D1),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Conversion...',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Afficher un message d'erreur si le format n'est pas supporté ET conversion échouée
+    if (!_isLoading && !_isInitialized && _isUnsupportedFormat() && _convertedFilePath == null) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline_rounded,
+              color: Colors.red,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: '❌ Erreur lors de la conversion WebM→MP3',
+            child: Text(
+              'Erreur conversion',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.red.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     double progress = 0.0;
     if (_total.inMilliseconds > 0 && _position.inMilliseconds > 0) {
       progress = _position.inMilliseconds / _total.inMilliseconds;
@@ -1388,10 +1655,7 @@ class _AudioBubbleState extends State<_AudioBubble> {
             const SizedBox(height: 4),
             Text(
               '${_formatDuration(_position)} / ${_formatDuration(_total)}',
-              style: TextStyle(
-                fontSize: 10,
-                color: color.withOpacity(0.75),
-              ),
+              style: TextStyle(fontSize: 10, color: color.withOpacity(0.75)),
             ),
           ],
         ),

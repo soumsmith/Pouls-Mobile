@@ -320,13 +320,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   void _addVideosToSlider() {
     final List<Map<String, String>> videoItems = _videos.map((video) {
       return {
-        'name': _getVideoDisplayName(video.typeVideo),
+        'name': _getVideoDisplayName(video.typevideo),
         'type': 'Vidéo',
         'location': 'Abidjan',
         'video': video.youtubeUrl,
         'rating': '4.9',
-        'description': _getVideoDescription(video.typeVideo),
-        'videoType': video.typeVideo,
+        'description': _getVideoDescription(video.typevideo),
+        'videoType': video.typevideo,
       };
     }).toList();
 

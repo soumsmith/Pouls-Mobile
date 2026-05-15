@@ -134,6 +134,8 @@ class GroupMessageService {
     print('📋 Paramètres: matricule=$matricule, page=$page, per_page=$perPage');
     print('⏰ Heure: ${DateTime.now().toIso8601String()}');
 
+    print('URL requête messages de groupe: $url');
+
     try {
       print('🚤 Envoi de la requête GET...');
 
@@ -187,6 +189,13 @@ class GroupMessageService {
               rethrow;
             }
           }).toList();
+
+          messages.sort((a, b) {
+            if (a.estLu != b.estLu) {
+              return a.estLu ? 1 : -1;
+            }
+            return b.dateEnvoi.compareTo(a.dateEnvoi);
+          });
 
           print('✅ ${messages.length} messages récupérés avec succès');
           print('📊 Répartition des messages:');
@@ -311,24 +320,48 @@ class GroupMessageService {
 
       if (response.statusCode == 200) {
         print('✅ Succès - Parsing du JSON...');
+
+        if (response.body.isEmpty) {
+          print('✅ Corps vide reçu, on considère le marquage comme réussi.');
+          return true;
+        }
+
         final Map<String, dynamic> data = json.decode(response.body);
 
         print('📊 Structure de la réponse:');
         print('   success: ${data['success']}');
+        print('   status: ${data['status']}');
         print('   message: ${data['message']}');
 
-        if (data['success'] == true) {
+        final bool success =
+            data['success'] == true ||
+            data['status'] == true ||
+            data['status']?.toString().toLowerCase() == 'success' ||
+            data['status']?.toString() == '1';
+
+        if (success) {
           print('✅ Message marqué comme lu avec succès');
           print('   Message ID: $messageId');
           print('   Matricule: $matricule');
           return true;
-        } else {
-          print('⚠️ Échec du marquage');
-          print('   success: ${data['success']}');
-          print('   message: ${data['message'] ?? 'Aucun message'}');
-          print('   errors: ${data['errors']}');
-          return false;
         }
+
+        print('⚠️ Échec du marquage');
+        print('   success: ${data['success']}');
+        print('   status: ${data['status']}');
+        print('   message: ${data['message'] ?? 'Aucun message'}');
+        print('   errors: ${data['errors']}');
+
+        // Si l'API ne renvoie pas de succès explicite mais la requête a réussi,
+        // on considère parfois le résultat comme valide pour éviter un blocage inutile.
+        if (data['success'] == null && data['status'] == null) {
+          print(
+            '⚠️ Aucun indicateur explicite de succès, retour true par défaut.',
+          );
+          return true;
+        }
+
+        return false;
       } else {
         print('❌ Erreur HTTP: ${response.statusCode}');
         print('📄 Corps de la réponse:');
@@ -399,24 +432,46 @@ class GroupMessageService {
 
       if (response.statusCode == 200) {
         print('✅ Succès - Parsing du JSON...');
+
+        if (response.body.isEmpty) {
+          print('✅ Corps vide reçu, on considère le marquage comme réussi.');
+          return true;
+        }
+
         final Map<String, dynamic> data = json.decode(response.body);
 
         print('📊 Structure de la réponse:');
         print('   success: ${data['success']}');
+        print('   status: ${data['status']}');
         print('   message: ${data['message']}');
 
-        if (data['success'] == true) {
+        final bool success =
+            data['success'] == true ||
+            data['status'] == true ||
+            data['status']?.toString().toLowerCase() == 'success' ||
+            data['status']?.toString() == '1';
+
+        if (success) {
           print('✅ Message marqué comme non lu avec succès');
           print('   Message ID: $messageId');
           print('   Matricule: $matricule');
           return true;
-        } else {
-          print('⚠️ Échec du marquage');
-          print('   success: ${data['success']}');
-          print('   message: ${data['message'] ?? 'Aucun message'}');
-          print('   errors: ${data['errors']}');
-          return false;
         }
+
+        print('⚠️ Échec du marquage');
+        print('   success: ${data['success']}');
+        print('   status: ${data['status']}');
+        print('   message: ${data['message'] ?? 'Aucun message'}');
+        print('   errors: ${data['errors']}');
+
+        if (data['success'] == null && data['status'] == null) {
+          print(
+            '⚠️ Aucun indicateur explicite de succès, retour true par défaut.',
+          );
+          return true;
+        }
+
+        return false;
       } else {
         print('❌ Erreur HTTP: ${response.statusCode}');
         print('📄 Corps de la réponse:');
@@ -456,9 +511,13 @@ class GroupMessageService {
   ) async {
     final url = '$baseUrl/messages/marquer-comme-lu';
 
-    print('📝 API GroupMessageService - Début de la requête de marquage de conversation');
+    print(
+      '📝 API GroupMessageService - Début de la requête de marquage de conversation',
+    );
     print('📡 URL: $url');
-    print('📋 Paramètres: numero_parent=$numeroParent, conversation_id=$conversationId');
+    print(
+      '📋 Paramètres: numero_parent=$numeroParent, conversation_id=$conversationId',
+    );
     print('⏰ Heure: ${DateTime.now().toIso8601String()}');
 
     try {
@@ -534,7 +593,9 @@ class GroupMessageService {
       print(StackTrace.current);
       return false;
     } finally {
-      print('📝 API GroupMessageService - Fin de la requête de marquage de conversation');
+      print(
+        '📝 API GroupMessageService - Fin de la requête de marquage de conversation',
+      );
       print('─' * 80);
     }
   }

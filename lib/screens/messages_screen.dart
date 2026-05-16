@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
@@ -8,14 +9,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:http/http.dart' as http;
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
 import '../services/message_api_service.dart';
-import '../models/ecole.dart';
+import '../services/mock_api_service.dart';
 import '../models/conversation.dart';
+import '../models/child.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
@@ -30,7 +30,7 @@ class _LocalMessage {
   final bool isMe;
   final DateTime time;
   final AttachmentType attachmentType;
-  final bool isPending; // true = envoi optimiste, pas encore confirmé
+  final bool isPending;
   final String? attachmentUrl;
 
   const _LocalMessage({
@@ -60,7 +60,6 @@ class StudentMessageArgs {
 
 /// Écran de messagerie contextuel — style WhatsApp, pré-lié à un élève
 class MessagesScreen extends StatefulWidget {
-  /// Arguments optionnels. Si null → mode liste générale (non utilisé ici).
   final StudentMessageArgs? studentArgs;
 
   const MessagesScreen({super.key, this.studentArgs});
@@ -75,15 +74,14 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   // ─── Conversations ──────────────────────────────────────────────────────
   List<Conversation> _conversations = [];
-
-  /// Liste locale de messages fusionnés (API + optimistes)
   List<_LocalMessage> _localMessages = [];
+  List<Child> _children = [];
 
   bool _isLoading = true;
+  bool _isLoadingChildren = true;
   final TextSizeService _textSizeService = TextSizeService();
   final MessageApiService _messageApiService = MessageApiService();
-  final MessageService _messageService =
-      MessageService(); // Ajout du service de messagerie
+  final MessageService _messageService = MessageService();
   final ScrollController _scrollController = ScrollController();
 
   // ─── Formulaire d'envoi ─────────────────────────────────────────────────
@@ -108,7 +106,7 @@ class _MessagesScreenState extends State<MessagesScreen>
   Timer? _refreshTimer;
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  GETTERS de contexte élève
+  //  GETTERS
   // ════════════════════════════════════════════════════════════════════════════
 
   StudentMessageArgs? get _args => widget.studentArgs;
@@ -131,20 +129,26 @@ class _MessagesScreenState extends State<MessagesScreen>
       curve: Curves.easeOut,
     );
 
-    // Réinitialiser le conversation_id lors du chargement d'un nouvel élève
     _messageService.resetConversationId();
 
-    _loadConversations();
+    if (!_hasStudentContext) {
+      _loadChildren();
+    } else {
+      _loadConversations();
+    }
+
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (mounted) _loadConversations(silent: true);
     });
+
     _messageController.addListener(() {
       final has =
           _messageController.text.trim().isNotEmpty ||
-          _attachedFile != null ||
-          _recordedPath != null;
+              _attachedFile != null ||
+              _recordedPath != null;
       if (has != _hasContent) setState(() => _hasContent = has);
     });
+
     _textSizeService.addListener(() => setState(() {}));
   }
 
@@ -163,13 +167,57 @@ class _MessagesScreenState extends State<MessagesScreen>
   //  DATA
   // ════════════════════════════════════════════════════════════════════════════
 
+  Future<void> _loadChildren() async {
+    setState(() => _isLoadingChildren = true);
+    try {
+      final user = AuthService.instance.getCurrentUser();
+      if (user == null) throw Exception('Aucun utilisateur connecté');
+
+      final parentId = user.id ?? 'parent1';
+      print('📱 MessagesScreen - Chargement des enfants pour parentId: $parentId');
+
+      final apiService = MockApiService();
+      final children = await apiService.getChildrenForParent(parentId);
+
+      print('📱 MessagesScreen - ${children.length} enfants trouvés');
+
+      // ── DEBUG : afficher les champs de chaque enfant ──────────────────────
+      for (final child in children) {
+        print('─────────────────────────────────────');
+        print('  fullName    : ${child.fullName}');
+        print('  matricule   : ${child.matricule}');
+        print('  ecoleCode   : ${child.ecoleCode}');
+        print('  paramEcole  : ${child.paramEcole}');
+        print('  establishment: ${child.establishment}');
+        print('  grade       : ${child.grade}');
+      }
+      print('─────────────────────────────────────');
+
+      if (!mounted) return;
+
+      setState(() {
+        _children = List.from(children);
+        _isLoadingChildren = false;
+        _isLoading = false;
+      });
+
+      _fadeController.forward(from: 0);
+    } catch (e) {
+      print('❌ MessagesScreen - Erreur chargement enfants: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoadingChildren = false;
+        _isLoading = false;
+      });
+      _showError('Erreur chargement enfants: $e');
+    }
+  }
+
   Future<void> _loadConversations({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
     try {
       final currentUser = AuthService.instance.getCurrentUser();
-      if (currentUser == null) {
-        throw Exception('Aucun utilisateur connecté');
-      }
+      if (currentUser == null) throw Exception('Aucun utilisateur connecté');
 
       final result = await _messageApiService.getMessagesForStudent(
         currentUser.phone,
@@ -178,11 +226,9 @@ class _MessagesScreenState extends State<MessagesScreen>
 
       if (!mounted) return;
 
-      // Extraire les données de la nouvelle structure
       final messagesData = result['messages'] as List<dynamic>;
       final conversationId = result['conversationId'] as int?;
 
-      // Marquer les messages comme lus si une conversation existe
       if (conversationId != null) {
         await _messageApiService.markMessagesAsRead(
           numeroParent: currentUser.phone,
@@ -190,11 +236,9 @@ class _MessagesScreenState extends State<MessagesScreen>
         );
       }
 
-      // Convertir les messages en _LocalMessage
       final localMessages = messagesData.map((msg) {
         final isMe = msg['sender_type'] == 'parent';
 
-        // Extraire l'URL de la première pièce jointe si elle existe
         String? attachmentUrl;
         AttachmentType attachmentType = AttachmentType.none;
         final attachments = msg['attachments'] as List<dynamic>? ?? [];
@@ -221,7 +265,7 @@ class _MessagesScreenState extends State<MessagesScreen>
           body: msg['body']?.toString() ?? '',
           isMe: isMe,
           time:
-              DateTime.tryParse(msg['created_at']?.toString() ?? '') ??
+          DateTime.tryParse(msg['created_at']?.toString() ?? '') ??
               DateTime.now(),
           attachmentType: attachmentType,
           attachmentUrl: attachmentUrl,
@@ -233,17 +277,13 @@ class _MessagesScreenState extends State<MessagesScreen>
         _isLoading = false;
       });
 
-      if (!silent) {
-        _fadeController.forward(from: 0);
-      }
+      if (!silent) _fadeController.forward(from: 0);
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
 
-      // Vérifier si l'erreur est un 404 (élève non trouvé)
       if (e.toString().contains('404') ||
           e.toString().contains('Élève non trouvé')) {
-        // Afficher une notification snackbar pour l'erreur 404
         CartSnackBar.show(
           context,
           productName: 'Élève non trouvé',
@@ -252,7 +292,7 @@ class _MessagesScreenState extends State<MessagesScreen>
           duration: const Duration(seconds: 3),
         );
         setState(() => _isLoading = false);
-        return; // Ne pas afficher la grosse notification d'erreur
+        return;
       }
 
       setState(() => _isLoading = false);
@@ -331,7 +371,7 @@ class _MessagesScreenState extends State<MessagesScreen>
               child: Column(
                 children: [
                   Expanded(child: _buildConversationBody()),
-                  _buildComposeBar(),
+                  if (_hasStudentContext) _buildComposeBar(),
                 ],
               ),
             ),
@@ -358,7 +398,6 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
-  // ─── ACTIONS PERSONNALISÉES ────────────────────────────────────────────────
   List<Widget> _buildMessageActions() {
     return [
       GestureDetector(
@@ -384,6 +423,19 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   // ─── CORPS CONVERSATION ───────────────────────────────────────────────────
   Widget _buildConversationBody() {
+    if (!_hasStudentContext) {
+      if (_isLoadingChildren) {
+        return const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF0288D1),
+            strokeWidth: 2.5,
+          ),
+        );
+      }
+      if (_children.isEmpty) return _buildEmptyChildrenList();
+      return _buildChildrenList();
+    }
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -393,9 +445,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       );
     }
 
-    if (_localMessages.isEmpty) {
-      return _buildEmptyConversation();
-    }
+    if (_localMessages.isEmpty) return _buildEmptyConversation();
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -461,6 +511,214 @@ class _MessagesScreenState extends State<MessagesScreen>
     );
   }
 
+  // ─── LISTE DES ENFANTS ────────────────────────────────────────────────────
+  Widget _buildChildrenList() {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: _children.length,
+        separatorBuilder: (context, index) => const Divider(
+          height: 1,
+          indent: 72,
+          endIndent: 16,
+          color: Color(0xFFE0E0E0),
+        ),
+        itemBuilder: (context, index) {
+          final child = _children[index];
+          return _buildChildListItem(child);
+        },
+      ),
+    );
+  }
+
+  Widget _buildChildListItem(Child child) {
+    // ── Résolution du matricule : plusieurs noms de champs possibles ─────────
+    final matricule = _resolveMatricule(child);
+    final hasMatricule = matricule.isNotEmpty;
+
+    return ListTile(
+      onTap: () => _navigateToConversation(child),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: CircleAvatar(
+        radius: 28,
+        backgroundColor: const Color(0xFF0288D1).withOpacity(0.1),
+        backgroundImage: child.photoUrl != null
+            ? CachedNetworkImageProvider(child.photoUrl!)
+            : null,
+        child: child.photoUrl == null
+            ? Text(
+          child.firstName[0].toUpperCase(),
+          style: const TextStyle(
+            color: Color(0xFF0288D1),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        )
+            : null,
+      ),
+      title: Text(
+        child.fullName,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.screenTextPrimary,
+        ),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text(
+            child.establishment,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
+          ),
+          Text(
+            'Classe: ${child.grade}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF757575),
+            ),
+          ),
+          // ── Indicateur matricule manquant ──────────────────────────────────
+          if (!hasMatricule)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.3),
+                  width: 0.5,
+                ),
+              ),
+              child: const Text(
+                '⚠️ Matricule manquant',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: Color(0xFFBDBDBD),
+      ),
+    );
+  }
+
+  Widget _buildEmptyChildrenList() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0288D1).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.child_care,
+              size: 36,
+              color: Color(0xFF0288D1),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Aucun enfant',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.screenTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Ajoutez un enfant pour commencer à envoyer des messages',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  FIX MATRICULE : résolution avec fallbacks
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Tente de résoudre le matricule en essayant plusieurs champs du modèle Child.
+  /// Adaptez les noms de champs selon votre modèle réel.
+  String _resolveMatricule(Child child) {
+    // Priorité : matricule → puis autres champs potentiels
+    final candidates = [
+      child.matricule,
+      // Si Child expose un champ 'immatriculation' ou 'numero', ajoutez-les ici :
+      // child.immatriculation,
+      // child.numero,
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate != null && candidate.trim().isNotEmpty) {
+        return candidate.trim();
+      }
+    }
+    return '';
+  }
+
+  // ─── NAVIGATION VERS CONVERSATION ────────────────────────────────────────
+  void _navigateToConversation(Child child) {
+    // ── DEBUG logs ────────────────────────────────────────────────────────────
+    print('🧒 Child sélectionné pour messagerie:');
+    print('   fullName     : ${child.fullName}');
+    print('   matricule    : ${child.matricule}');
+    print('   ecoleCode    : ${child.ecoleCode}');
+    print('   paramEcole   : ${child.paramEcole}');
+    print('   establishment: ${child.establishment}');
+    print('   grade        : ${child.grade}');
+
+    final matricule = _resolveMatricule(child);
+    final ecoleCode = child.ecoleCode ?? child.paramEcole ?? '';
+
+    print('   ✅ matricule résolu: "$matricule"');
+    print('   ✅ ecoleCode résolu: "$ecoleCode"');
+
+    // ── Garde : matricule obligatoire ─────────────────────────────────────────
+    if (matricule.isEmpty) {
+      print('   ❌ Matricule vide — navigation annulée');
+      _showError(
+        'Matricule de ${child.fullName} introuvable. '
+            'Vérifiez les données de l\'enfant.',
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => MessagesScreen(
+          studentArgs: StudentMessageArgs(
+            studentName: child.fullName,
+            studentMatricule: matricule,
+            ecoleName: child.establishment,
+            ecoleCode: ecoleCode,
+          ),
+        ),
+      ),
+    );
+  }
+
   // ─── BULLE DE MESSAGE ─────────────────────────────────────────────────────
   Widget _buildBubble({
     required String body,
@@ -473,9 +731,8 @@ class _MessagesScreenState extends State<MessagesScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
-        mainAxisAlignment: isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -496,7 +753,6 @@ class _MessagesScreenState extends State<MessagesScreen>
           ],
           Flexible(
             child: Opacity(
-              // Messages en attente légèrement transparents
               opacity: isPending ? 0.65 : 1.0,
               child: Container(
                 constraints: BoxConstraints(
@@ -523,11 +779,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment: isMe
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                   children: [
-                    // Lecteur audio si pièce jointe audio
                     if (attachmentType == AttachmentType.audio &&
                         attachmentUrl != null) ...[
                       _AudioBubble(url: attachmentUrl, isMe: isMe),
@@ -642,7 +896,6 @@ class _MessagesScreenState extends State<MessagesScreen>
                                 : AppColors.screenTextSecondary,
                           ),
                         ),
-                        // Indicateur d'envoi en cours
                         if (isPending && isMe) ...[
                           const SizedBox(width: 4),
                           SizedBox(
@@ -684,15 +937,12 @@ class _MessagesScreenState extends State<MessagesScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Aperçu pièce jointe
           if (_attachedFile != null || _recordedPath != null)
             _buildAttachmentPreview(),
-          // Indicateur enregistrement
           if (_isRecording) _buildRecordingIndicator(),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Bouton pièce jointe
               GestureDetector(
                 onTap: _showAttachmentMenu,
                 child: Container(
@@ -705,8 +955,8 @@ class _MessagesScreenState extends State<MessagesScreen>
                   child: Icon(
                     _attachedFile != null
                         ? (_attachmentType == AttachmentType.image
-                              ? Icons.image
-                              : Icons.attach_file)
+                        ? Icons.image
+                        : Icons.attach_file)
                         : Icons.attach_file_outlined,
                     size: 20,
                     color: _attachedFile != null
@@ -716,7 +966,6 @@ class _MessagesScreenState extends State<MessagesScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              // Champ de texte
               Expanded(
                 child: Container(
                   constraints: const BoxConstraints(
@@ -755,80 +1004,77 @@ class _MessagesScreenState extends State<MessagesScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              // Envoyer OU Micro
               _hasContent
                   ? GestureDetector(
-                      onTap: _isSending ? null : _sendMessage,
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0288D1),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0288D1).withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: _isSending
-                            ? const Padding(
-                                padding: EdgeInsets.all(12),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Icon(
-                                Icons.send_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                onTap: _isSending ? null : _sendMessage,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0288D1),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0288D1).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
-                    )
-                  : GestureDetector(
-                      onLongPressStart: _enableAudioRecording
-                          ? (_) => _startRecording()
-                          : null,
-                      onLongPressEnd: _enableAudioRecording
-                          ? (_) => _stopRecording()
-                          : null,
-                      onLongPressCancel: _enableAudioRecording
-                          ? _cancelRecording
-                          : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: _isRecording
-                              ? const Color(0xFFEF4444)
-                              : const Color(0xFF0288D1),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  (_isRecording
-                                          ? const Color(0xFFEF4444)
-                                          : const Color(0xFF0288D1))
-                                      .withOpacity(0.35),
-                              blurRadius: _isRecording ? 12 : 8,
-                              spreadRadius: _isRecording ? 2 : 0,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _isRecording ? Icons.stop_rounded : Icons.mic,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                    ],
+                  ),
+                  child: _isSending
+                      ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.white,
                       ),
                     ),
+                  )
+                      : const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              )
+                  : GestureDetector(
+                onLongPressStart: _enableAudioRecording
+                    ? (_) => _startRecording()
+                    : null,
+                onLongPressEnd: _enableAudioRecording
+                    ? (_) => _stopRecording()
+                    : null,
+                onLongPressCancel:
+                _enableAudioRecording ? _cancelRecording : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _isRecording
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF0288D1),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_isRecording
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFF0288D1))
+                            .withOpacity(0.35),
+                        blurRadius: _isRecording ? 12 : 8,
+                        spreadRadius: _isRecording ? 2 : 0,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _isRecording ? Icons.stop_rounded : Icons.mic,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -1113,7 +1359,7 @@ class _MessagesScreenState extends State<MessagesScreen>
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  ENVOI DU MESSAGE — avec ajout optimiste immédiat
+  //  ENVOI DU MESSAGE
   // ════════════════════════════════════════════════════════════════════════════
 
   Future<void> _sendMessage() async {
@@ -1139,14 +1385,13 @@ class _MessagesScreenState extends State<MessagesScreen>
       return;
     }
 
-    // ── 1. Ajout optimiste immédiat ──────────────────────────────────────────
     final optimisticBody = message.isNotEmpty
         ? message
         : (hasAudio
-              ? 'Note vocale'
-              : hasImage
-              ? 'Image'
-              : 'Document');
+        ? 'Note vocale'
+        : hasImage
+        ? 'Image'
+        : 'Document');
 
     final optimisticMsg = _LocalMessage(
       body: optimisticBody,
@@ -1160,13 +1405,11 @@ class _MessagesScreenState extends State<MessagesScreen>
       isPending: true,
     );
 
-    // Capturer le fichier avant le setState qui le réinitialise
     final File? fileToSend = _attachedFile;
 
     setState(() {
       _localMessages = [..._localMessages, optimisticMsg];
       _isSending = true;
-      // Réinitialiser la barre de composition immédiatement
       _messageController.clear();
       _attachedFile = null;
       _attachmentType = AttachmentType.none;
@@ -1177,7 +1420,6 @@ class _MessagesScreenState extends State<MessagesScreen>
 
     _scrollToBottom();
 
-    // ── 2. Envoi API ─────────────────────────────────────────────────────────
     try {
       final messageService = MessageService();
       Map<String, dynamic> result;
@@ -1219,14 +1461,11 @@ class _MessagesScreenState extends State<MessagesScreen>
         );
       }
 
-      // ── 3a. Succès : rechargement silencieux ─────────────────────────────
       if (result['success'] == true) {
-        // Légère pause pour que l'API indexe le message avant rechargement
         await Future.delayed(const Duration(milliseconds: 600));
         await _loadConversations(silent: true);
         _showSuccess(result['message'] ?? 'Message envoyé !');
       } else {
-        // ── 3b. Échec : retirer le message optimiste et afficher l'erreur ──
         setState(() {
           _localMessages = _localMessages
               .where((m) => !identical(m, optimisticMsg))
@@ -1235,7 +1474,6 @@ class _MessagesScreenState extends State<MessagesScreen>
         _showError(result['message'] ?? 'Erreur lors de l\'envoi');
       }
     } catch (e) {
-      // ── 3c. Exception : retirer le message optimiste ─────────────────────
       setState(() {
         _localMessages = _localMessages
             .where((m) => !identical(m, optimisticMsg))
@@ -1260,7 +1498,7 @@ class _MessagesScreenState extends State<MessagesScreen>
   }
 }
 
-// ─── ÉCRAN DE VISUALISATION D'IMAGE EN PLEIN ÉCRAN ─────────────────────────────
+// ─── ÉCRAN VISUALISATION IMAGE ────────────────────────────────────────────────
 class _ImageViewerScreen extends StatelessWidget {
   final String imageUrl;
 
@@ -1298,7 +1536,7 @@ class _ImageViewerScreen extends StatelessWidget {
   }
 }
 
-// ─── WIDGET LECTEUR AUDIO AVEC AUDIOPLAYERS ─────────────────────────────────
+// ─── WIDGET LECTEUR AUDIO ────────────────────────────────────────────────────
 class _AudioBubble extends StatefulWidget {
   final String url;
   final bool isMe;
@@ -1327,7 +1565,6 @@ class _AudioBubbleState extends State<_AudioBubble> {
 
   bool _isUnsupportedFormat() {
     final fileName = widget.url.split('?').first.toLowerCase();
-    // Formats non supportés sur iOS/macOS par AVPlayer
     return fileName.endsWith('.webm') || fileName.endsWith('.vorbis');
   }
 
@@ -1336,29 +1573,29 @@ class _AudioBubbleState extends State<_AudioBubble> {
       setState(() => _isConverting = true);
       print('🔄 Conversion WebM → MP3 en cours...');
 
-      // Télécharger le fichier WebM
       final client = http.Client();
       final response = await client.get(Uri.parse(webmUrl));
-      
+
       if (response.statusCode != 200) {
         print('❌ Erreur téléchargement WebM: ${response.statusCode}');
         return null;
       }
 
-      // Sauvegarder temporairement le fichier WebM
       final tempDir = await getTemporaryDirectory();
-      final webmFile = File('${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.webm');
+      final webmFile = File(
+        '${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.webm',
+      );
       await webmFile.writeAsBytes(response.bodyBytes);
       print('💾 Fichier WebM téléchargé: ${webmFile.path}');
 
-      // Convertir WebM → MP3 avec FFmpeg
-      final mp3File = File('${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.mp3');
+      final mp3File = File(
+        '${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.mp3',
+      );
       final command = '-i "${webmFile.path}" -q:a 0 -map a "${mp3File.path}"';
-      
+
       print('⚙️ Exécution FFmpeg: $command');
       await FFmpegKit.execute(command);
 
-      // Vérifier si la conversion a réussi
       if (await mp3File.exists()) {
         print('✅ Conversion réussie: ${mp3File.path}');
         await webmFile.delete();
@@ -1379,34 +1616,18 @@ class _AudioBubbleState extends State<_AudioBubble> {
     try {
       _player = AudioPlayer();
 
-      // Écouter les changements de durée
       _player.onDurationChanged.listen((duration) {
-        if (mounted) {
-          setState(() {
-            _total = duration;
-          });
-        }
+        if (mounted) setState(() => _total = duration);
       });
 
-      // Écouter la position
       _player.onPositionChanged.listen((position) {
-        if (mounted) {
-          setState(() {
-            _position = position;
-          });
-        }
+        if (mounted) setState(() => _position = position);
       });
 
-      // Écouter l'état du player
       _player.onPlayerStateChanged.listen((state) {
-        if (mounted) {
-          setState(() {
-            _isPlaying = state == PlayerState.playing;
-          });
-        }
+        if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
       });
 
-      // Écouter la fin de la lecture
       _player.onPlayerComplete.listen((event) {
         if (mounted) {
           setState(() {
@@ -1416,65 +1637,44 @@ class _AudioBubbleState extends State<_AudioBubble> {
         }
       });
 
-      // Valider l'URL avant de charger l'audio
       if (widget.url.isEmpty) {
         print('⚠️ URL audio vide');
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // Vérifier si le format est supporté (iOS/macOS limitation)
       if (_isUnsupportedFormat()) {
         print('⚠️ Format WebM détecté - conversion en MP3 en cours...');
         final mp3Path = await _convertWebMToMp3(widget.url);
         if (mp3Path != null) {
           _convertedFilePath = mp3Path;
-          // Continuer avec le fichier MP3 converti
           print('✅ Fichier converti, chargement en cours...');
         } else {
           print('❌ Conversion échouée - format non supporté');
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
+          if (mounted) setState(() => _isLoading = false);
           return;
         }
       }
 
       print('📻 Chargement audio: ${widget.url}');
-
-      // Utiliser le fichier converti s'il existe, sinon l'URL originale
       final sourceUrl = _convertedFilePath ?? widget.url;
 
-      // Essayer différentes méthodes de chargement selon le type d'URL
       try {
         if (sourceUrl.startsWith('http://') ||
             sourceUrl.startsWith('https://')) {
-          // URL réseau - utiliser setSourceUrl
           await _player.setSourceUrl(sourceUrl);
         } else {
-          // URL locale - utiliser DeviceFileSource (fichier MP3 converti)
           await _player.setSource(DeviceFileSource(sourceUrl));
         }
         print('✅ Audio source chargée avec succès');
       } catch (e) {
         print('⚠️ Erreur lors du chargement: $e');
-        // Réessayer avec UrlSource si la première échoue
         try {
           await _player.setSource(UrlSource(sourceUrl));
           print('✅ Audio chargé avec UrlSource (fallback)');
         } catch (e2) {
           print('❌ Erreur fallback: $e2');
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
+          if (mounted) setState(() => _isLoading = false);
           return;
         }
       }
@@ -1487,18 +1687,13 @@ class _AudioBubbleState extends State<_AudioBubble> {
       }
     } catch (e) {
       print('❌ Erreur initiale: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   void dispose() {
     _player.dispose();
-    // Nettoyer le fichier MP3 converti
     if (_convertedFilePath != null) {
       try {
         File(_convertedFilePath!).deleteSync();
@@ -1511,12 +1706,10 @@ class _AudioBubbleState extends State<_AudioBubble> {
 
   Future<void> _togglePlayback() async {
     if (!_isInitialized) return;
-
     try {
       if (_isPlaying) {
         await _player.pause();
       } else {
-        // Si on est à la fin, revenir au début
         if (_position >= _total && _total > Duration.zero) {
           await _player.seek(Duration.zero);
         }
@@ -1541,7 +1734,6 @@ class _AudioBubbleState extends State<_AudioBubble> {
         ? Colors.white.withOpacity(0.3)
         : const Color(0xFF0288D1).withOpacity(0.2);
 
-    // Afficher un message si en cours de conversion
     if (_isConverting) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -1567,8 +1759,10 @@ class _AudioBubbleState extends State<_AudioBubble> {
       );
     }
 
-    // Afficher un message d'erreur si le format n'est pas supporté ET conversion échouée
-    if (!_isLoading && !_isInitialized && _isUnsupportedFormat() && _convertedFilePath == null) {
+    if (!_isLoading &&
+        !_isInitialized &&
+        _isUnsupportedFormat() &&
+        _convertedFilePath == null) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1579,22 +1773,19 @@ class _AudioBubbleState extends State<_AudioBubble> {
               color: Colors.red.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.error_outline_rounded,
               color: Colors.red,
               size: 20,
             ),
           ),
           const SizedBox(width: 8),
-          Tooltip(
-            message: '❌ Erreur lors de la conversion WebM→MP3',
-            child: Text(
-              'Erreur conversion',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.red.withOpacity(0.7),
-                fontStyle: FontStyle.italic,
-              ),
+          Text(
+            'Erreur conversion',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.red.withOpacity(0.7),
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
@@ -1603,8 +1794,8 @@ class _AudioBubbleState extends State<_AudioBubble> {
 
     double progress = 0.0;
     if (_total.inMilliseconds > 0 && _position.inMilliseconds > 0) {
-      progress = _position.inMilliseconds / _total.inMilliseconds;
-      progress = progress.clamp(0.0, 1.0);
+      progress = (_position.inMilliseconds / _total.inMilliseconds)
+          .clamp(0.0, 1.0);
     }
 
     return Row(
@@ -1621,18 +1812,18 @@ class _AudioBubbleState extends State<_AudioBubble> {
             ),
             child: _isLoading
                 ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: color,
-                    ),
-                  )
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: color,
+              ),
+            )
                 : Icon(
-                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: color,
-                    size: 20,
-                  ),
+              _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: color,
+              size: 20,
+            ),
           ),
         ),
         const SizedBox(width: 8),

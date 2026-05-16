@@ -11,7 +11,7 @@ import '../services/text_size_service.dart';
 import '../services/ecole_api_service.dart';
 import '../services/recommendation_service.dart';
 import '../services/integration_service.dart';
-import '../services/video_api_service.dart';
+import '../services/video_service.dart';
 import '../models/ecole.dart';
 import '../models/video.dart';
 import '../models/coulisse_excellence.dart';
@@ -298,7 +298,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     });
 
     try {
-      final videos = await VideoApiService.getVideosForSchool('gainhs');
+      final videos = await VideoService.getVideosByType('visiteguide');
       if (mounted) {
         setState(() {
           _videos = videos;

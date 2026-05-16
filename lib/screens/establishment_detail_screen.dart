@@ -20,6 +20,7 @@ import '../models/ecole_detail.dart';
 import '../models/blog.dart';
 import '../models/event.dart';
 import '../models/avis.dart';
+import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
 import 'gallery_screen.dart';
 import '../models/fee.dart';
 import '../models/scolarite.dart';
@@ -62,7 +63,7 @@ import '../services/text_size_service.dart';
 import '../services/ecole_api_service.dart';
 import '../services/theme_service.dart';
 import '../services/blog_service.dart';
-import '../services/events_service.dart';
+import '../services/event_service.dart';
 import '../services/avis_service.dart';
 import '../services/scolarite_service.dart';
 import '../services/niveau_service.dart';
@@ -331,7 +332,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   String? _eventsError;
   String? _avisError;
   final BlogService _blogService = BlogService();
-  final EventsService _eventsService = EventsService();
   final AvisService _avisService = AvisService();
 
   // Variables pour les vidéos de visites guidées
@@ -618,11 +618,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Future<void> _loadEventsOnly() async {
-    final nom = widget.ecole.parametreNom ?? '';
-    if (nom.isEmpty) return;
+    final code = widget.ecole.parametreCode ?? '';
+    if (code.isEmpty) return;
 
     print('🔄 DÉBUT DU CHARGEMENT DES ÉVÉNEMENTS SCOLAIRES...');
-    print('📂 Nom de l\'établissement: $nom');
+    print('📂 Code de l\'établissement: $code');
 
     setState(() {
       _isLoadingEvents = true;
@@ -637,8 +637,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       print('🌐 APPEL API - getEventsForUI');
       print('📄 Page: $_currentEventsPage, PerPage: $_eventsPerPage');
 
-      final events = await _eventsService.getEventsForUI(
-        nomEtablissement: nom,
+      final events = await EventService.getEventsForUI(
+        schoolCode: code,
         page: _currentEventsPage,
         perPage: _eventsPerPage,
       );
@@ -673,8 +673,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Future<void> _loadMoreEvents() async {
-    final nom = widget.ecole.parametreNom ?? '';
-    if (nom.isEmpty || !_hasMoreEvents) return;
+    final code = widget.ecole.parametreCode ?? '';
+    if (code.isEmpty || !_hasMoreEvents) return;
 
     setState(() {
       _isLoadingMoreEvents = true;
@@ -683,8 +683,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     try {
       _currentEventsPage++;
-      final newEvents = await _eventsService.getEventsForUI(
-        nomEtablissement: nom,
+      final newEvents = await EventService.getEventsForUI(
+        schoolCode: code,
         page: _currentEventsPage,
         perPage: _eventsPerPage,
       );
@@ -879,9 +879,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Future<void> _loadBlogsEventsAndAvis() async {
-    final nom = widget.ecole.parametreNom ?? '';
     final code = widget.ecole.parametreCode ?? '';
-    if (nom.isEmpty || code.isEmpty) return;
+    if (code.isEmpty) return;
     setState(() {
       _isLoadingBlogs = true;
       _isLoadingEvents = true;
@@ -896,7 +895,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           });
           throw e;
         }),
-        _eventsService.getEventsForUI(nomEtablissement: nom).catchError((e) {
+        EventService.getEventsForUI(schoolCode: code).catchError((e) {
           setState(() {
             _eventsError = e.toString();
             _isLoadingEvents = false;
@@ -3254,33 +3253,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   void _showActionBottomSheet(String actionType, _ActionDef def) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Déclencher le chargement si nécessaire
-    if (actionType == 'voir_les_avis' && !_isLoadingAvis) {
-      _loadAvisOnly();
-    }
-    if (actionType == 'communication') {
-      print(
-        '🔄 CLIC SUR "NOTRE ACTUALITÉS" - FutureBuilder gérera le chargement automatiquement',
-      );
-    }
+    // 1. CAS SPÉCIAL : ÉVÉNEMENTS (Utilisation du nouveau widget externalisé)
     if (actionType == 'school_events') {
-      print('🔄 CLIC SUR "ÉVÉNEMENTS SCOLAIRES" - Déclenchement du chargement');
-      _loadEventsOnly();
-    }
-    if (actionType == 'scolarite') {
-      print('🔄 CLIC SUR "SCOLARITÉ" - Déclenchement du chargement');
-      print('📂 Code de l\'établissement: ${widget.ecole.parametreCode}');
-
-      setState(() {
-        _scolariteFuture = ScolariteService.getScolaritesByEcole(
-          widget.ecole.parametreCode ?? '',
-        );
-      });
-
-      print('✅ APPEL API SCOLARITÉ - getScolaritesByEcole déclenché');
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => SchoolEventBottomSheet(
+          schoolCode: widget.ecole.parametreCode,
+          schoolName: widget.ecole.parametreNom,
+        ),
+      );
+      return; // On arrête ici pour ce cas
     }
 
-    // Cas spécial : coulisses navigue directement vers l'écran TikTok
+    // 2. CAS SPÉCIAL : COULISSES (Navigation directe)
     if (actionType == 'coulisses') {
       final ecoleCode = widget.ecole.parametreCode ?? 'gainhs';
       final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
@@ -3294,54 +3281,65 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       return;
     }
 
-    // ── Bottom sheet générique pour tous les autres cas ──
+    // 3. PRÉPARATION DES DONNÉES POUR LES AUTRES CAS
+    if (actionType == 'voir_les_avis' && !_isLoadingAvis) {
+      _loadAvisOnly();
+    }
+
+    if (actionType == 'scolarite') {
+      print('🔄 CLIC SUR "SCOLARITÉ" - Déclenchement du chargement');
+      setState(() {
+        _scolariteFuture = ScolariteService.getScolaritesByEcole(
+          widget.ecole.parametreCode ?? '',
+        );
+      });
+    }
+
+    // 4. BOTTOM SHEET GÉNÉRIQUE (Pour Informations, Scolarité, Avis, Niveaux, etc.)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ValueListenableBuilder<int>(
         valueListenable: _avisNotifier,
-        builder: (context, _, __) => ValueListenableBuilder<int>(
-          valueListenable: _eventsNotifier,
-          builder: (context, _, __) {
-            return Container(
-              constraints: BoxConstraints(
-                minHeight: 100,
-                maxHeight: MediaQuery.of(context).size.height * 0.9,
+        builder: (context, _, __) {
+          return Container(
+            constraints: BoxConstraints(
+              minHeight: 100,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
               ),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+              boxShadow: AppDimensions.getCustomShadow(
+                context: context,
+                alpha: 0.12,
+                blurRadius: 24,
+                offset: -6,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                BottomSheetHeader(
+                  icon: def.icon,
+                  iconColor: def.color,
+                  title: def.label,
+                  description: def.subtitle,
+                  onClose: () => Navigator.of(context).pop(),
                 ),
-                boxShadow: AppDimensions.getCustomShadow(
-                  context: context,
-                  alpha: 0.12,
-                  blurRadius: 24,
-                  offset: -6,
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                    child: _buildActionContent(actionType, def.color),
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  BottomSheetHeader(
-                    icon: def.icon,
-                    iconColor: def.color,
-                    title: def.label,
-                    description: def.subtitle,
-                    onClose: () => Navigator.of(context).pop(),
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                      child: _buildActionContent(actionType, def.color),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -3387,8 +3385,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         return _buildCommunicationTab(headerColor);
       case 'niveaux':
         return _buildLevelsTab(headerColor);
-      case 'school_events':
-        return _buildEventsTab(headerColor);
+      /*case 'school_events':
+        return _buildEventsTab(headerColor);*/
       case 'scolarite':
         return _buildScolariteTab(headerColor);
       case 'voir_les_avis':

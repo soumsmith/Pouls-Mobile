@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:developer' as developer;
 import '../models/blog.dart';
 import '../config/app_config.dart';
 
@@ -114,8 +115,11 @@ class BlogService {
   /// Récupère la liste des blogs depuis l'API (sans filtres)
   static Future<BlogsResponse> getBlogs() async {
     try {
+      final url = '$baseUrl/ecoles/blogs-list';
+      developer.log('GET Request URL: $url');
+
       final response = await http.get(
-        Uri.parse('$baseUrl/ecoles/blogs-list'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -139,7 +143,9 @@ class BlogService {
       final response = await getBlogs();
       return response.data;
     } catch (e) {
-      throw Exception('Erreur lors de la récupération de la liste des blogs: $e');
+      throw Exception(
+        'Erreur lors de la récupération de la liste des blogs: $e',
+      );
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class Event {
+  final String? id;
   final String slug;
   final String codeecole;
   final String nomecole;
@@ -13,6 +14,7 @@ class Event {
   final String? image;
 
   Event({
+    this.id,
     required this.slug,
     required this.codeecole,
     required this.nomecole,
@@ -27,6 +29,7 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
+      id: json['id']?.toString(),
       slug: json['slug'] as String? ?? 'unknown',
       codeecole: json['codeecole'] as String? ?? 'unknown',
       nomecole: json['nomecole'] as String? ?? 'unknown',
@@ -43,6 +46,7 @@ class Event {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'slug': slug,
       'codeecole': codeecole,
       'nomecole': nomecole,
@@ -75,7 +79,7 @@ class Event {
     );
 
     return {
-      'id': slug,
+      'id': id ?? slug,
       'slug': slug,
       'codeecole': codeecole,
       'nomecole': nomecole,

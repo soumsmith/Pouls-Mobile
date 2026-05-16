@@ -5,6 +5,7 @@ import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
 import 'package:parents_responsable/widgets/image_menu_card.dart';
 import 'package:parents_responsable/widgets/main_screen_wrapper.dart';
+import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/school_life_item_card.dart';
 import '../widgets/custom_loader.dart';
@@ -4024,7 +4025,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             index: 2,
             cardKey: 'events',
             title: 'Événements',
-            imagePath: null,
+            imagePath: 'assets/images/school-event.jpg',
             iconData: Icons.event_rounded,
             isDark: isDark,
             height: AppDimensions.getHorizontalCardHeight(context),
@@ -4039,11 +4040,24 @@ class _ChildListScreenState extends State<ChildListScreen>
             width: 175,
             actionTextColor: const Color(0xFF3F51B5),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Événements - Fonctionnalité à venir'),
-                ),
-              );
+              // On récupère juste le code texte
+              final schoolCode = _ecoleCode ?? widget.child.ecoleCode;
+
+              if (schoolCode != null && schoolCode.isNotEmpty) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => SchoolEventBottomSheet(
+                    schoolCode: schoolCode, // On passe le code
+                    schoolName: widget.child.establishment, // On passe le nom
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Code établissement introuvable')),
+                );
+              }
             },
           ),
         ]),
@@ -5023,15 +5037,19 @@ class _ChildListScreenState extends State<ChildListScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        children: days.map((day) {
-          if (coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildDynamicDaySchedule(day, coursesByDay[day]!),
-            );
-          }
-          return const SizedBox.shrink();
-        }).toList(),
+        children: [
+          ...days.map((day) {
+            if (coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildDynamicDaySchedule(day, coursesByDay[day]!),
+              );
+            }
+            return const SizedBox.shrink();
+          }).toList(),
+          // AJOUT DE L'ESPACE ICI
+          const SizedBox(height: 60),
+        ],
       ),
     );
   }

@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:developer' as developer;
 import '../models/coulisse_excellence.dart';
 
 class CoulisseExcellenceService {
   static const String baseUrl = 'https://api2.vie-ecoles.com/api/ecoles';
 
-  static Future<List<CoulisseExcellence>> getCoulisseExcellenceList(String ecoleId) async {
+  static Future<List<CoulisseExcellence>> getCoulisseExcellenceList(
+    String ecoleId,
+  ) async {
     try {
       final url = '$baseUrl/coulisseexcellencelist?ecole=$ecoleId';
       print('=== API COULISSE EXCELLENCE ===');
       print('URL: $url');
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -26,8 +29,10 @@ class CoulisseExcellenceService {
         final List<dynamic> jsonData = json.decode(response.body);
         print('JSON Data Length: ${jsonData.length}');
         print('JSON Data: $jsonData');
-        
-        final videos = jsonData.map((json) => CoulisseExcellence.fromJson(json)).toList();
+
+        final videos = jsonData
+            .map((json) => CoulisseExcellence.fromJson(json))
+            .toList();
         print('Videos processed: ${videos.length}');
         for (var video in videos) {
           print('Video: ${video.id} - ${video.titre} - ${video.videoYoutube}');
@@ -43,12 +48,14 @@ class CoulisseExcellenceService {
     }
   }
 
-  static Future<List<CoulisseExcellence>> getAllCoulisseExcellenceVideos() async {
+  static Future<List<CoulisseExcellence>>
+  getAllCoulisseExcellenceVideos() async {
     try {
       final url = '$baseUrl/coulisseexcellencelist';
+      developer.log('GET Request URL: $url');
       print('=== API COULISSE EXCELLENCE (ALL) ===');
       print('URL: $url');
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -62,8 +69,10 @@ class CoulisseExcellenceService {
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
         print('JSON Data Length: ${jsonData.length}');
-        
-        final videos = jsonData.map((json) => CoulisseExcellence.fromJson(json)).toList();
+
+        final videos = jsonData
+            .map((json) => CoulisseExcellence.fromJson(json))
+            .toList();
         print('Videos processed: ${videos.length}');
         return videos;
       } else {

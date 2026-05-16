@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
-import '../services/events_service.dart';
+import '../services/event_service.dart';
 import '../models/event.dart';
 import 'event_detail_screen.dart';
 
@@ -39,7 +39,6 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   String _selectedFilter = 'Tous';
   bool _isSearching = false;
   final _searchController = TextEditingController();
-  final _eventsService = EventsService();
   List<Map<String, dynamic>> _allEvents = [];
   bool _isLoading = true;
   String? _error;
@@ -82,7 +81,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
       _error = null;
     });
     try {
-      final events = await _eventsService.getEventsForUI();
+      final events = await EventService.getEventsForUI();
       setState(() {
         _allEvents = events;
         _isLoading = false;
@@ -99,7 +98,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   List<Map<String, dynamic>> get _filteredEvents {
     var events = _allEvents;
     if (_selectedFilter != 'Tous') {
-      events = _eventsService.filterEventsByStatus(events, _selectedFilter);
+      events = EventService.filterEventsByStatus(events, _selectedFilter);
     }
     if (_searchController.text.isNotEmpty) {
       final q = _searchController.text.toLowerCase();

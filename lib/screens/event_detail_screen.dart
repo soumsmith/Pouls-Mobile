@@ -4,10 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/event.dart';
 import '../models/event_rating_comment.dart';
 import '../models/ecole.dart';
+import '../models/ticket_category.dart';
 import '../services/event_service.dart';
 import '../services/event_rating_service.dart';
 import '../services/auth_service.dart';
 import '../services/ecole_api_service.dart';
+import '../services/ticket_service.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/components/section_row.dart';
 
@@ -31,6 +33,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   EventRatingComment? _userComment;
   bool _commentsLoading = true;
   String? _commentsError;
+
+  // Variables pour les tickets
+  List<TicketCategory> _ticketCategories = [];
+  bool _ticketsLoading = false;
+  String? _ticketsError;
+  TicketCategory? _selectedTicketCategory;
 
   @override
   void initState() {
@@ -373,6 +381,29 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _showTicketBottomSheet,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6B6B),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.confirmation_num_rounded),
+                            label: const Text(
+                              'Commander un ticket',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
@@ -1140,5 +1171,438 @@ Découvrez plus d'événements sur notre application! 📱
         ],
       ),
     );
+  }
+
+  /// Afficher le bottom sheet pour sélectionner une catégorie de ticket
+  void _showTicketBottomSheet() {
+    _loadTicketCategories();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _buildTicketCategoryBottomSheet(),
+    );
+  }
+
+  /// Construire le bottom sheet des catégories de tickets
+  Widget _buildTicketCategoryBottomSheet() {
+    return StatefulBuilder(
+      builder: (context, setState) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Barre de traction
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Titre
+            const Text(
+              'Sélectionnez une catégorie de ticket',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A2A),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Contenu avec chargement
+            if (_ticketsLoading)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(),
+              )
+            else if (_ticketsError != null)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Erreur: $_ticketsError',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadTicketCategories,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                      ),
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                ),
+              )
+            else if (_ticketCategories.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.confirmation_num_outlined,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Aucune catégorie de ticket disponible',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              )
+            else
+              SizedBox(
+                height: _ticketCategories.length * 90.0,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _ticketCategories.length,
+                  itemBuilder: (context, index) {
+                    final category = _ticketCategories[index];
+                    final isSelected =
+                        _selectedTicketCategory?.id == category.id;
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedTicketCategory = category;
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF6366F1).withOpacity(0.1)
+                              : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF6366F1)
+                                : Colors.grey[200]!,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Radio<TicketCategory>(
+                              value: category,
+                              groupValue: _selectedTicketCategory,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedTicketCategory = value;
+                                });
+                              },
+                              activeColor: const Color(0xFF6366F1),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    category.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1A2A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    category.description,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '${category.price}€',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFFF6B6B),
+                                  ),
+                                ),
+                                Text(
+                                  '${category.quantity} disponible${category.quantity > 1 ? 's' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 20),
+
+            // Boutons d'action
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF6366F1),
+                      side: const BorderSide(color: Color(0xFF6366F1)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Fermer',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _selectedTicketCategory != null
+                        ? _purchaseTicket
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B6B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Commander',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Charger les catégories de tickets
+  Future<void> _loadTicketCategories() async {
+    if (mounted) {
+      setState(() {
+        _ticketsLoading = true;
+        _ticketsError = null;
+        _selectedTicketCategory = null;
+      });
+    }
+
+    try {
+      // Utiliser l'ID de l'événement s'il existe, sinon utiliser le slug
+      final eventIdentifier = widget.event.id ?? widget.event.slug;
+      final categories = await TicketService.getTicketCategories(
+        eventIdentifier,
+        fallbackSlug: widget.event.slug,
+      );
+      if (mounted) {
+        setState(() {
+          _ticketCategories = categories;
+          _ticketsLoading = false;
+          _ticketsError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _ticketsLoading = false;
+          _ticketsError = e.toString();
+        });
+      }
+    }
+  }
+
+  /// Commander un ticket
+  Future<void> _purchaseTicket() async {
+    if (_selectedTicketCategory == null) return;
+
+    if (mounted) {
+      // Afficher un dialogue de confirmation
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirmer la commande'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Voulez-vous commander ce ticket ?'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _selectedTicketCategory!.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _selectedTicketCategory!.description,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Prix:',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        Text(
+                          '${_selectedTicketCategory!.price}€',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFF6B6B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _executeTicketPurchase();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF6B6B),
+              ),
+              child: const Text('Commander'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  /// Exécuter l'achat du ticket
+  Future<void> _executeTicketPurchase() async {
+    if (_selectedTicketCategory == null) return;
+
+    // Fermer le bottom sheet
+    if (mounted) {
+      Navigator.pop(context);
+    }
+
+    // Afficher un dialogue de chargement
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          title: Text('Traitement de la commande'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Veuillez patienter...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    try {
+      // Utiliser l'ID de l'événement s'il existe, sinon utiliser le slug
+      final eventIdentifier = widget.event.id ?? widget.event.slug;
+      await TicketService.purchaseTicket(
+        eventId: eventIdentifier,
+        categoryId: _selectedTicketCategory!.id,
+      );
+
+      if (mounted) {
+        Navigator.pop(context); // Fermer le dialogue de chargement
+
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Ticket commandé avec succès!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Réinitialiser la sélection
+        setState(() {
+          _selectedTicketCategory = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Fermer le dialogue de chargement
+
+        // Afficher un message d'erreur
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la commande: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
   }
 }

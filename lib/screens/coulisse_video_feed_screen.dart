@@ -4,9 +4,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/coulisse_excellence.dart';
 import '../models/ecole.dart';
-import '../models/video_comment.dart';
 import '../models/video_rating.dart';
+import '../models/interaction.dart';
 import '../services/ecole_api_service.dart';
+import '../services/interaction_api_service.dart';
 import 'establishment_detail_screen.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
@@ -20,7 +21,8 @@ class CoulisseVideoFeedScreen extends StatefulWidget {
   });
 
   @override
-  State<CoulisseVideoFeedScreen> createState() => _CoulisseVideoFeedScreenState();
+  State<CoulisseVideoFeedScreen> createState() =>
+      _CoulisseVideoFeedScreenState();
 }
 
 class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
@@ -53,16 +55,18 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       final videoId = video.youtubeVideoId;
       print('Traitement vidéo: ${video.id} - VideoID: $videoId');
       if (videoId.isNotEmpty) {
-        controllers.add(YoutubePlayerController(
-          initialVideoId: videoId,
-          flags: const YoutubePlayerFlags(
-            autoPlay: false,
-            mute: false,
-            enableCaption: false,
-            forceHD: false,
-            loop: false,
+        controllers.add(
+          YoutubePlayerController(
+            initialVideoId: videoId,
+            flags: const YoutubePlayerFlags(
+              autoPlay: false,
+              mute: false,
+              enableCaption: false,
+              forceHD: false,
+              loop: false,
+            ),
           ),
-        ));
+        );
       } else {
         print('VideoID vide pour vidéo ${video.id} - ${video.titre}');
         controllers.add(null);
@@ -83,7 +87,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     if (_currentIndex > 0 && _youtubeControllers[_currentIndex - 1] != null) {
       _youtubeControllers[_currentIndex - 1]!.pause();
     }
-    if (_currentIndex < _youtubeControllers.length - 1 && _youtubeControllers[_currentIndex + 1] != null) {
+    if (_currentIndex < _youtubeControllers.length - 1 &&
+        _youtubeControllers[_currentIndex + 1] != null) {
       _youtubeControllers[_currentIndex + 1]!.pause();
     }
   }
@@ -100,7 +105,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     try {
       // Charger les détails de l'école via l'API de détail
       final ecoleDetail = await EcoleApiService.getEcoleDetail(code);
-      
+
       // Créer un objet Ecole minimal avec les données récupérées
       final ecole = Ecole(
         pays: ecoleDetail.data.pays,
@@ -125,9 +130,9 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
     }
   }
@@ -135,9 +140,9 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   // Afficher les options de partage
   Future<void> _shareVideo() async {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
-    
+
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
@@ -150,13 +155,12 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     );
   }
 
-  
   // Afficher les commentaires
   void _showComments() {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
-    
+
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
@@ -166,16 +170,16 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _CommentsSheet(videoId: "video.id"), //video.id
+      builder: (context) => _CommentsSheet(videoId: video.id),
     );
   }
 
   // Afficher la notation
   void _showRating() {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
-    
+
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
@@ -190,7 +194,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
 
   void _toggleLike() {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
     setState(() {
       if (_likedVideoIds.contains(video.id)) {
@@ -234,10 +238,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
               SizedBox(height: 16),
               Text(
                 'Aucune vidéo disponible',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.white54, fontSize: 16),
               ),
             ],
           ),
@@ -298,10 +299,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
               ),
               child: Text(
                 '${_currentIndex + 1}/${widget.videos.length}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
           ),
@@ -335,13 +333,18 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 _ActionButton(
                   icon: Icons.school,
                   label: 'École',
-                  onTap: widget.videos.isNotEmpty 
-                      ? () => _navigateToEcole(widget.videos[_currentIndex].code)
+                  onTap: widget.videos.isNotEmpty
+                      ? () =>
+                            _navigateToEcole(widget.videos[_currentIndex].code)
                       : () {},
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
-                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].id)
+                  icon:
+                      widget.videos.isNotEmpty &&
+                          _likedVideoIds.contains(
+                            widget.videos[_currentIndex].id,
+                          )
                       ? Icons.favorite
                       : Icons.favorite_border,
                   label: 'J\'aime',
@@ -428,10 +431,7 @@ class _VideoPage extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                colors: [
-                  Colors.black87,
-                  Colors.transparent,
-                ],
+                colors: [Colors.black87, Colors.transparent],
               ),
             ),
             padding: const EdgeInsets.all(16),
@@ -450,18 +450,12 @@ class _VideoPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '${video.fullName} · ${video.classe}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   video.description,
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white54, fontSize: 13),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -500,11 +494,7 @@ class _ActionButton extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white24, width: 1),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 4),
           Text(
@@ -523,7 +513,7 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _CommentsSheet extends StatefulWidget {
-  final String videoId;
+  final int videoId;
 
   const _CommentsSheet({required this.videoId});
 
@@ -533,12 +523,14 @@ class _CommentsSheet extends StatefulWidget {
 
 class _CommentsSheetState extends State<_CommentsSheet> {
   final TextEditingController _commentController = TextEditingController();
-  List<VideoComment> _comments = [];
+  List<Interaction> _comments = [];
   bool _isLoading = false;
+  int? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _currentUserId = InteractionApiService.getCurrentUserId();
     _loadComments();
   }
 
@@ -549,60 +541,57 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _loadComments() async {
+    if (_currentUserId == null) {
+      print('⚠️ Utilisateur non connecté');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
-    // Simuler le chargement des commentaires
-    await Future.delayed(const Duration(seconds: 1));
-    
+    final comments = await InteractionApiService.listInteractions(
+      videoId: widget.videoId,
+      type: 'comment',
+    );
+
     setState(() {
-      _comments = [
-        VideoComment(
-          id: '1',
-          videoId: widget.videoId,
-          userId: 'user1',
-          userName: 'Marie Dupont',
-          userAvatar: '',
-          content: 'Vidéo vraiment inspirante ! Continuez comme ça.',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          likes: 5,
-        ),
-        VideoComment(
-          id: '2',
-          videoId: widget.videoId,
-          userId: 'user2',
-          userName: 'Jean Martin',
-          userAvatar: '',
-          content: 'Excellent travail, les élèves sont exceptionnels.',
-          timestamp: DateTime.now().subtract(const Duration(hours: 5)),
-          likes: 3,
-        ),
-      ];
+      _comments = comments;
       _isLoading = false;
     });
   }
 
   Future<void> _addComment() async {
     if (_commentController.text.trim().isEmpty) return;
+    if (_currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vous devez être connecté pour commenter'),
+        ),
+      );
+      return;
+    }
 
-    final newComment = VideoComment(
-      id: DateTime.now().toString(),
+    final newComment = await InteractionApiService.createInteraction(
       videoId: widget.videoId,
-      userId: 'current_user',
-      userName: 'Vous',
-      userAvatar: '',
+      userId: _currentUserId!,
+      type: 'comment',
       content: _commentController.text.trim(),
-      timestamp: DateTime.now(),
     );
 
-    setState(() {
-      _comments.insert(0, newComment);
+    if (newComment != null) {
+      setState(() {
+        _comments.insert(0, newComment);
+        _commentController.clear();
+      });
+    } else {
+      // Si l'API retourne un succès mais sans données, on recharge la liste
+      await _loadComments();
       _commentController.clear();
-    });
-
-    // Simuler l'envoi au serveur
-    await Future.delayed(const Duration(milliseconds: 500));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Commentaire ajouté avec succès')),
+      );
+    }
   }
 
   @override
@@ -625,7 +614,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -647,9 +636,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               ],
             ),
           ),
-          
+
           const Divider(color: Colors.white24),
-          
+
           // Comments list
           Expanded(
             child: _isLoading
@@ -661,11 +650,17 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                     itemCount: _comments.length,
                     itemBuilder: (context, index) {
                       final comment = _comments[index];
-                      return _CommentItem(comment: comment);
+                      return _CommentItem(
+                        comment: comment,
+                        currentUserId: _currentUserId,
+                        onDelete: () => _deleteComment(comment.id),
+                        onEdit: (newContent) =>
+                            _editComment(comment.id, newContent),
+                      );
                     },
                   ),
           ),
-          
+
           // Comment input
           Container(
             padding: const EdgeInsets.all(16),
@@ -709,15 +704,73 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       ),
     );
   }
+
+  Future<void> _deleteComment(int commentId) async {
+    if (_currentUserId == null) return;
+
+    final success = await InteractionApiService.deleteComment(
+      commentId: commentId,
+      userId: _currentUserId!,
+    );
+
+    if (success) {
+      setState(() {
+        _comments.removeWhere((c) => c.id == commentId);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erreur lors de la suppression du commentaire'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _editComment(int commentId, String newContent) async {
+    if (_currentUserId == null) return;
+
+    final success = await InteractionApiService.updateComment(
+      commentId: commentId,
+      userId: _currentUserId!,
+      content: newContent,
+    );
+
+    if (success) {
+      setState(() {
+        final index = _comments.indexWhere((c) => c.id == commentId);
+        if (index != -1) {
+          _comments[index] = _comments[index].copyWith(content: newContent);
+        }
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erreur lors de la modification du commentaire'),
+        ),
+      );
+    }
+  }
 }
 
 class _CommentItem extends StatelessWidget {
-  final VideoComment comment;
+  final Interaction comment;
+  final int? currentUserId;
+  final VoidCallback onDelete;
+  final Function(String) onEdit;
 
-  const _CommentItem({required this.comment});
+  const _CommentItem({
+    required this.comment,
+    this.currentUserId,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isCurrentUser =
+        currentUserId != null && comment.userId == currentUserId;
+    final displayName = comment.userName ?? 'Utilisateur';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -729,7 +782,7 @@ class _CommentItem extends StatelessWidget {
                 radius: 20,
                 backgroundColor: Colors.white24,
                 child: Text(
-                  comment.userName.isNotEmpty ? comment.userName[0].toUpperCase() : 'U',
+                  displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
@@ -739,7 +792,7 @@ class _CommentItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      comment.userName,
+                      displayName,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -747,7 +800,7 @@ class _CommentItem extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatTimestamp(comment.timestamp),
+                      _formatTimestamp(comment.createdAt),
                       style: const TextStyle(
                         color: Colors.white54,
                         fontSize: 12,
@@ -756,35 +809,35 @@ class _CommentItem extends StatelessWidget {
                   ],
                 ),
               ),
+              if (isCurrentUser) ...[
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.white54, size: 16),
+                  onPressed: () => _showEditDialog(context),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete,
+                    color: Colors.white54,
+                    size: 16,
+                  ),
+                  onPressed: () => _showDeleteDialog(context),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            comment.content,
+            comment.content ?? '',
             style: const TextStyle(color: Colors.white, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.thumb_up_outlined, color: Colors.white54, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                '${comment.likes}',
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(width: 16),
-              const Text(
-                'Répondre',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  String _formatTimestamp(DateTime timestamp) {
+  String _formatTimestamp(DateTime? timestamp) {
+    if (timestamp == null) return '';
+
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
@@ -795,6 +848,84 @@ class _CommentItem extends StatelessWidget {
     } else {
       return 'Il y a ${difference.inDays} j';
     }
+  }
+
+  void _showEditDialog(BuildContext context) {
+    final controller = TextEditingController(text: comment.content ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black,
+        title: const Text(
+          'Modifier le commentaire',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Votre commentaire...',
+            hintStyle: TextStyle(color: Colors.white54),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Annuler',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                onEdit(controller.text.trim());
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text(
+              'Modifier',
+              style: TextStyle(color: Colors.amber),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black,
+        title: const Text(
+          'Supprimer le commentaire',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Êtes-vous sûr de vouloir supprimer ce commentaire ?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Annuler',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              onDelete();
+              Navigator.of(context).pop();
+            },
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -833,7 +964,7 @@ class _RatingSheetState extends State<_RatingSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -855,9 +986,9 @@ class _RatingSheetState extends State<_RatingSheet> {
               ],
             ),
           ),
-          
+
           const Divider(color: Colors.white24),
-          
+
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -872,7 +1003,11 @@ class _RatingSheetState extends State<_RatingSheet> {
                         borderRadius: BorderRadius.circular(8),
                         color: Colors.white24,
                       ),
-                      child: const Icon(Icons.play_circle, color: Colors.white, size: 30),
+                      child: const Icon(
+                        Icons.play_circle,
+                        color: Colors.white,
+                        size: 30,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -902,9 +1037,9 @@ class _RatingSheetState extends State<_RatingSheet> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Current rating stats
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -928,7 +1063,9 @@ class _RatingSheetState extends State<_RatingSheet> {
                           Row(
                             children: List.generate(5, (index) {
                               return Icon(
-                                index < _averageRating.floor() ? Icons.star : Icons.star_border,
+                                index < _averageRating.floor()
+                                    ? Icons.star
+                                    : Icons.star_border,
                                 color: Colors.amber,
                                 size: 16,
                               );
@@ -936,16 +1073,19 @@ class _RatingSheetState extends State<_RatingSheet> {
                           ),
                           Text(
                             '$_totalRatings évaluations',
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // User rating
                 if (!_hasRated) ...[
                   const Text(
@@ -967,7 +1107,9 @@ class _RatingSheetState extends State<_RatingSheet> {
                           });
                         },
                         icon: Icon(
-                          index < _currentRating ? Icons.star : Icons.star_border,
+                          index < _currentRating
+                              ? Icons.star
+                              : Icons.star_border,
                           color: Colors.amber,
                           size: 40,
                         ),
@@ -1015,7 +1157,7 @@ class _RatingSheetState extends State<_RatingSheet> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
         ],
       ),
@@ -1027,7 +1169,9 @@ class _RatingSheetState extends State<_RatingSheet> {
       _hasRated = true;
       // Mettre à jour les statistiques (simulation)
       _totalRatings++;
-      _averageRating = ((_averageRating * (_totalRatings - 1)) + _currentRating) / _totalRatings;
+      _averageRating =
+          ((_averageRating * (_totalRatings - 1)) + _currentRating) /
+          _totalRatings;
     });
 
     // Simuler l'envoi au serveur
@@ -1049,25 +1193,28 @@ class _ShareOptionsSheet extends StatelessWidget {
   const _ShareOptionsSheet({required this.video});
 
   Future<void> _shareGeneral() async {
-    final String videoUrl = 'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
-    final String shareText = '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\n#CoulissesExcellence #Éducation';
-    
+    final String videoUrl =
+        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+    final String shareText =
+        '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\n#CoulissesExcellence #Éducation';
+
     try {
-      await Share.share(
-        '$shareText\n\n$videoUrl',
-        subject: video.titre,
-      );
+      await Share.share('$shareText\n\n$videoUrl', subject: video.titre);
     } catch (e) {
       // Handle error
     }
   }
 
   Future<void> _shareOnWhatsApp() async {
-    final String videoUrl = 'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
-    final String message = '🎬 *${video.titre}*\n\n${video.description}\n\n$videoUrl';
-    
-    final Uri whatsappUri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}');
-    
+    final String videoUrl =
+        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+    final String message =
+        '🎬 *${video.titre}*\n\n${video.description}\n\n$videoUrl';
+
+    final Uri whatsappUri = Uri.parse(
+      'https://wa.me/?text=${Uri.encodeComponent(message)}',
+    );
+
     try {
       if (await canLaunchUrl(whatsappUri)) {
         await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
@@ -1078,10 +1225,13 @@ class _ShareOptionsSheet extends StatelessWidget {
   }
 
   Future<void> _shareOnFacebook() async {
-    final String videoUrl = 'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
-    
-    final Uri facebookUri = Uri.parse('https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(videoUrl)}');
-    
+    final String videoUrl =
+        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+
+    final Uri facebookUri = Uri.parse(
+      'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(videoUrl)}',
+    );
+
     try {
       if (await canLaunchUrl(facebookUri)) {
         await launchUrl(facebookUri, mode: LaunchMode.externalApplication);
@@ -1111,7 +1261,7 @@ class _ShareOptionsSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1133,9 +1283,9 @@ class _ShareOptionsSheet extends StatelessWidget {
               ],
             ),
           ),
-          
+
           const Divider(color: Colors.white24),
-          
+
           // Share options
           Padding(
             padding: const EdgeInsets.all(16),
@@ -1157,7 +1307,7 @@ class _ShareOptionsSheet extends StatelessWidget {
                     _shareGeneral();
                   },
                 ),
-                
+
                 // WhatsApp option
                 ListTile(
                   leading: Container(
@@ -1182,7 +1332,7 @@ class _ShareOptionsSheet extends StatelessWidget {
                     _shareOnWhatsApp();
                   },
                 ),
-                
+
                 // Facebook option
                 ListTile(
                   leading: Container(
@@ -1207,7 +1357,7 @@ class _ShareOptionsSheet extends StatelessWidget {
                     _shareOnFacebook();
                   },
                 ),
-                
+
                 // Copy link option
                 ListTile(
                   leading: const Icon(Icons.link, color: Colors.white),
@@ -1230,7 +1380,7 @@ class _ShareOptionsSheet extends StatelessWidget {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
         ],
       ),

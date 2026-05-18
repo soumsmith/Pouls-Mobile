@@ -206,18 +206,26 @@ class _SchoolEventBottomSheetState extends State<SchoolEventBottomSheet> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // 1. On récupère l'objet Event original stocké dans la map par le service
-          // Si votre service ne le stocke pas, il faudra utiliser Event.fromJson(eventData)
           final Event? eventModel = eventData['event_object'] as Event?;
+          late final Event eventToOpen;
 
           if (eventModel != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EventDetailScreen(event: eventModel),
-              ),
-            );
+            eventToOpen = eventModel;
+          } else {
+            try {
+              eventToOpen = Event.fromJson(eventData);
+            } catch (_) {
+              return;
+            }
           }
+
+          Navigator.of(context).pop();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EventDetailScreen(event: eventToOpen),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(

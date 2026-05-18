@@ -6,7 +6,7 @@ import '../screens/profile_screen.dart';
 import '../screens/help_support_screen.dart';
 import '../screens/new_settings_screen.dart';
 import '../screens/messages_screen.dart';
-import '../screens/orders_screen.dart';
+import '../screens/my_tickets_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 
@@ -145,7 +145,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         Navigator.of(context).pop();
         Navigator.of(
           context,
-        ).push(MaterialPageRoute(builder: (_) => OrdersScreen()));
+        ).push(MaterialPageRoute(builder: (_) => const MyTicketsScreen()));
       },
     ),
     _MenuItem(

@@ -1669,7 +1669,6 @@ class _ChildListScreenState extends State<ChildListScreen>
               onClose: () => Navigator.of(context).pop(),
             ),
             // Statistiques de présence
-            if (_presenceStats != null) _buildPresenceStatsSection(),
             Expanded(child: _buildSimpleReservationsTab()),
           ],
         ),

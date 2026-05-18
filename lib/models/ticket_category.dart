@@ -17,9 +17,13 @@ class TicketCategory {
     return TicketCategory(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      quantity: json['quantity'] as int? ?? 0,
+      description: (json['description'] as String?) ?? '',
+      // L'API utilise 'prix' au lieu de 'price'
+      price: double.parse(
+        (json['prix'] ?? json['price'] ?? '0').toString(),
+      ),
+      // L'API utilise 'tickets_restants' pour la quantité disponible
+      quantity: json['tickets_restants'] as int? ?? json['quantity'] as int? ?? 0,
     );
   }
 

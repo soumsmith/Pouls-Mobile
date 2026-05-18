@@ -1,435 +1,329 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/blog.dart';
+import '../models/ecole.dart';
 import '../config/app_colors.dart';
+import '../services/ecole_api_service.dart';
 import '../widgets/components/section_row.dart';
+import 'establishment_detail_screen.dart';
 
+// ─────────────────────────────────────────────
+//  Design tokens (cohérents avec EventDetailScreen)
+// ─────────────────────────────────────────────
+class _C {
+  static const indigo      = Color(0xFF6366F1);
+  static const indigoDark  = Color(0xFF4F46E5);
+  static const indigoLight = Color(0xFFEEF2FF);
+  static const emerald     = Color(0xFF10B981);
+  static const emeraldLight= Color(0xFFD1FAE5);
+  static const amber       = Color(0xFFF59E0B);
+  static const amberLight  = Color(0xFFFEF3C7);
+  static const rose        = Color(0xFFEF4444);
+  static const roseLight   = Color(0xFFFEE2E2);
+  static const slate900    = Color(0xFF1E293B);
+  static const slate700    = Color(0xFF334155);
+  static const slate500    = Color(0xFF64748B);
+  static const slate300    = Color(0xFFCBD5E1);
+  static const slate100    = Color(0xFFF1F5F9);
+  static const gold        = Color(0xFFF59E0B);
+  static const surface     = Color(0xFFF8F8FC);
+  static const white       = Colors.white;
+}
+
+// ─────────────────────────────────────────────
+//  Screen
+// ─────────────────────────────────────────────
 class BlogDetailScreen extends StatefulWidget {
   final Blog blog;
 
-  const BlogDetailScreen({
-    super.key,
-    required this.blog,
-  });
+  const BlogDetailScreen({super.key, required this.blog});
 
   @override
   State<BlogDetailScreen> createState() => _BlogDetailScreenState();
 }
 
-class _BlogDetailScreenState extends State<BlogDetailScreen> {
+class _BlogDetailScreenState extends State<BlogDetailScreen>
+    with SingleTickerProviderStateMixin {
+
+  // ── state ───────────────────────────────────
   final TextEditingController _commentController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   double _userRating = 0;
   List<Map<String, dynamic>> _comments = [];
   bool _isSubmittingComment = false;
 
+  bool _isBookmarked = false;
+  AnimationController? _bookmarkController;
+  Animation<double>? _bookmarkAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _bookmarkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _bookmarkAnim = Tween<double>(begin: 1.0, end: 1.35).animate(
+      CurvedAnimation(parent: _bookmarkController!, curve: Curves.elasticOut),
+    );
+  }
+
   @override
   void dispose() {
     _commentController.dispose();
+    _scrollController.dispose();
+    _bookmarkController?.dispose();
     super.dispose();
   }
 
-  void _shareBlog() {
-    Share.share(
-      '${widget.blog.title}\n\n${widget.blog.nomecole}\n\nPartagé depuis l\'application Parents Responsable',
+  // ── actions ─────────────────────────────────
+  void _toggleBookmark() {
+    HapticFeedback.lightImpact();
+    setState(() => _isBookmarked = !_isBookmarked);
+    _bookmarkController?.forward(from: 0);
+  }
+
+  void _showShareMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ShareBottomSheet(blog: widget.blog),
     );
+  }
+
+  void _scrollToComments() {
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Future<void> _visitSchool() async {
+    final code = widget.blog.codeecole?.trim() ?? '';
+    if (code.isEmpty) {
+      _showSnack('Code école non disponible', _C.rose);
+      return;
+    }
+    try {
+      final ecoleDetail = await EcoleApiService.getEcoleDetail(code);
+      final ecole = Ecole(
+        pays: ecoleDetail.data.pays,
+        ville: ecoleDetail.data.ville,
+        adresse: ecoleDetail.data.adresse,
+        parametreNom: ecoleDetail.data.nom,
+        logo: ecoleDetail.data.logo ?? '',
+        telephone: ecoleDetail.data.telephone,
+        parametreCode: code,
+        statut: ecoleDetail.data.statut,
+        filiereNom: const [],
+        imagefond: ecoleDetail.image,
+        paramecole: null,
+      );
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => EstablishmentDetailScreen(ecole: ecole)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Erreur: $e', _C.rose);
+    }
   }
 
   void _submitComment() {
     if (_commentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez entrer un commentaire')),
-      );
+      _showSnack('Veuillez entrer un commentaire', _C.rose);
       return;
     }
-
-    setState(() {
-      _isSubmittingComment = true;
-    });
-
-    // Simuler l'envoi du commentaire
+    if (_userRating == 0) {
+      _showSnack('Veuillez attribuer une note', _C.amber);
+      return;
+    }
+    setState(() => _isSubmittingComment = true);
     Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
       setState(() {
         _comments.insert(0, {
           'author': 'Vous',
-          'comment': _commentController.text,
+          'comment': _commentController.text.trim(),
           'rating': _userRating,
-          'date': DateTime.now().toString(),
+          'date': DateTime.now().toIso8601String(),
         });
         _isSubmittingComment = false;
         _commentController.clear();
         _userRating = 0;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Commentaire ajouté avec succès')),
-      );
+      _showSnack('Commentaire ajouté avec succès', _C.emerald);
     });
   }
 
+  void _showSnack(String msg, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color, behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  //  BUILD
+  // ─────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final uiData = widget.blog.toUiMap();
+    final typeColor = uiData['color'] as Color;
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: _C.surface,
+        body: CustomScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            _buildSliverAppBar(uiData, typeColor),
+            SliverToBoxAdapter(child: _buildBody(typeColor, uiData)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Hero SliverAppBar ───────────────────────
+  Widget _buildSliverAppBar(Map<String, dynamic> uiData, Color typeColor) {
+    return SliverAppBar(
+      expandedHeight: 300,
+      pinned: true,
+      stretch: true,
       backgroundColor: Colors.black,
-      body: CustomScrollView(
-        slivers: [
-          // App bar avec image
-          SliverAppBar(
-            expandedHeight: 280,
-            pinned: true,
-            backgroundColor: Colors.black,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.share, color: Colors.white),
-                onPressed: _shareBlog,
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Image de fond
-                  widget.blog.image != null && widget.blog.image!.isNotEmpty
-                      ? Image.network(
-                          widget.blog.image!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    (uiData['color'] as Color).withOpacity(0.8),
-                                    (uiData['color'] as Color).withOpacity(0.4),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                (uiData['color'] as Color).withOpacity(0.8),
-                                (uiData['color'] as Color).withOpacity(0.4),
-                              ],
-                            ),
-                          ),
-                        ),
-                  // Gradient overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+      elevation: 0,
+      leading: _NavIconBtn(
+        icon: Icons.arrow_back_ios_new_rounded,
+        onTap: () => Navigator.of(context).pop(),
+      ),
+      actions: [
+        _NavIconBtn(
+          icon: _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+          iconColor: _isBookmarked ? _C.amber : Colors.white,
+          onTap: _toggleBookmark,
+          scaleAnim: _bookmarkAnim,
+        ),
+        const SizedBox(width: 4),
+        _NavIconBtn(
+          icon: Icons.share_rounded,
+          onTap: _showShareMenu,
+        ),
+        const SizedBox(width: 8),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground,
+        ],
+        background: _HeroBanner(blog: widget.blog, typeColor: typeColor, uiData: uiData),
+      ),
+    );
+  }
+
+  // ── Body ────────────────────────────────────
+  Widget _buildBody(Color typeColor, Map<String, dynamic> uiData) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _C.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          _buildDragHandle(),
+          const SizedBox(height: 20),
+          _buildActionBar(),
+          const SizedBox(height: 24),
+          _buildMetaCards(typeColor, uiData),
+          const SizedBox(height: 24),
+          _buildContent(),
+          const SizedBox(height: 28),
+          _buildRatingAndComments(),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDragHandle() => Center(
+    child: Container(
+      width: 36, height: 4,
+      decoration: BoxDecoration(
+        color: _C.slate300,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
+
+  // ── Action Bar ──────────────────────────────
+  Widget _buildActionBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _ActionIcon(
+            icon: Icons.share_rounded,
+            label: 'Partager',
+            bgColor: _C.indigo,
+            iconColor: _C.white,
+            onTap: _showShareMenu,
+          ),
+          _ActionIcon(
+            icon: _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+            label: _isBookmarked ? 'Enregistré' : 'Enregistrer',
+            bgColor: _C.amber,
+            iconColor: _C.white,
+            onTap: _toggleBookmark,
+          ),
+          _ActionIcon(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: 'Commenter',
+            bgColor: _C.emerald,
+            iconColor: _C.white,
+            onTap: _scrollToComments,
+          ),
+          _ActionIcon(
+            icon: Icons.school_rounded,
+            label: 'École',
+            bgColor: _C.slate900,
+            iconColor: _C.white,
+            onTap: _visitSchool,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Meta Cards ──────────────────────────────
+  Widget _buildMetaCards(Color typeColor, Map<String, dynamic> uiData) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _InfoCard(
+              icon: uiData['icon'] as IconData,
+              iconBg: typeColor.withOpacity(0.12),
+              iconColor: typeColor,
+              title: uiData['type'] as String,
+              subtitle: uiData['date'] as String,
             ),
           ),
-          // Contenu
-          SliverToBoxAdapter(
-            child: Container(
-              color: Colors.black,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Titre
-                  Text(
-                    widget.blog.title,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Métadonnées
-                  Row(
-                    children: [
-                      Icon(
-                        uiData['icon'] as IconData,
-                        size: 16,
-                        color: uiData['color'] as Color,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        uiData['type'] as String,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: (uiData['color'] as Color),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        uiData['date'] as String,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.school,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        widget.blog.nomecole,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Contenu
-                  const SectionRow(title: 'CONTENU'),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E2A),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      _stripHtmlTags(widget.blog.content),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Section avis et commentaires
-                  const SectionRow(title: 'AVIS ET COMMENTAIRES'),
-                  const SizedBox(height: 16),
-                  // Formulaire de commentaire
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E2A),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Note
-                        const Text(
-                          'Votre note',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: List.generate(5, (index) {
-                            return IconButton(
-                              icon: Icon(
-                                index < _userRating
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                color: AppColors.screenOrange,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _userRating = index + 1.0;
-                                });
-                              },
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 16),
-                        // Commentaire
-                        const Text(
-                          'Votre commentaire',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _commentController,
-                          maxLines: 3,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'Partagez votre avis...',
-                            hintStyle: const TextStyle(color: Colors.grey),
-                            filled: true,
-                            fillColor: const Color(0xFF2A2A35),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Bouton envoyer
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isSubmittingComment ? null : _submitComment,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.screenOrange,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isSubmittingComment
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const Text(
-                                    'Envoyer mon avis',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Liste des commentaires
-                  if (_comments.isNotEmpty) ...[
-                    const Text(
-                      'Commentaires récents',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ..._comments.map((comment) => Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E2A),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.screenOrange,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        (comment['author'] as String)[0].toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          comment['author'] as String,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          _formatDate(comment['date'] as String),
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (comment['rating'] != null && comment['rating'] > 0)
-                                    Row(
-                                      children: List.generate(5, (index) {
-                                        return Icon(
-                                          index < (comment['rating'] as int)
-                                              ? Icons.star
-                                              : Icons.star_border,
-                                          size: 16,
-                                          color: AppColors.screenOrange,
-                                        );
-                                      }),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                comment['comment'] as String,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
-                    const SizedBox(height: 32),
-                  ],
-                ],
-              ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _InfoCard(
+              icon: Icons.school_rounded,
+              iconBg: _C.emeraldLight,
+              iconColor: _C.emerald,
+              title: widget.blog.nomecole,
+              subtitle: 'Établissement',
             ),
           ),
         ],
@@ -437,22 +331,827 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
     );
   }
 
+  // ── Content ─────────────────────────────────
+  Widget _buildContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Contenu',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: _C.slate900,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: _C.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _C.slate300.withOpacity(0.5)),
+            ),
+            child: _ExpandableText(text: _stripHtmlTags(widget.blog.content)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Ratings & Comments ──────────────────────
+  Widget _buildRatingAndComments() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: const Text(
+            'Avis & commentaires',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: _C.slate900,
+              letterSpacing: -0.3,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Formulaire d'avis
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _C.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _C.slate300.withOpacity(0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: _C.indigoLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.rate_review_rounded, color: _C.indigo, size: 19),
+                    ),
+                    const SizedBox(width: 10),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Votre avis',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _C.slate900)),
+                        Text('Partagez votre opinion',
+                            style: TextStyle(fontSize: 11, color: _C.slate500)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 16),
+
+                // Étoiles
+                const Text('Note',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.slate500)),
+                const SizedBox(height: 10),
+                Row(
+                  children: List.generate(5, (i) {
+                    final filled = i < _userRating;
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _userRating = i + 1.0);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 150),
+                          child: Icon(
+                            filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                            key: ValueKey('$i-$filled'),
+                            color: filled ? _C.gold : _C.slate300,
+                            size: 36,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                if (_userRating > 0) ...[
+                  const SizedBox(height: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Container(
+                      key: ValueKey(_userRating),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _C.amberLight,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _ratingLabel(_userRating.toInt()),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _C.amber),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+
+                // Commentaire
+                const Text('Commentaire',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.slate500)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _commentController,
+                  maxLines: 3,
+                  style: const TextStyle(fontSize: 14, color: _C.slate900),
+                  decoration: InputDecoration(
+                    hintText: 'Partagez votre avis sur ce blog…',
+                    hintStyle: const TextStyle(color: _C.slate500, fontSize: 13),
+                    filled: true,
+                    fillColor: _C.slate100,
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _C.indigo, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Bouton envoyer
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isSubmittingComment ? null : _submitComment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _C.indigo,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: _C.slate300,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isSubmittingComment
+                        ? const SizedBox(
+                            height: 18, width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.send_rounded, size: 16),
+                              SizedBox(width: 8),
+                              Text('Publier mon avis',
+                                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Liste des commentaires
+        if (_comments.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Text('Commentaires récents',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _C.slate900)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _C.indigoLight,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_comments.length}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _C.indigo),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _comments.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _buildCommentCard(_comments[i]),
+          ),
+        ] else ...[
+          const SizedBox(height: 16),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: [
+                  Container(
+                    width: 52, height: 52,
+                    decoration: BoxDecoration(
+                      color: _C.slate100,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.chat_bubble_outline_rounded, size: 26, color: _C.slate500),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Soyez le premier à commenter',
+                      style: TextStyle(fontSize: 12, color: _C.slate500)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCommentCard(Map<String, dynamic> comment) {
+    final rating = (comment['rating'] as double).toInt();
+    final author = comment['author'] as String;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _C.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _C.slate300.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: _C.indigoLight,
+                child: Text(
+                  author.isNotEmpty ? author[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                    color: _C.indigo,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(author,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _C.slate900)),
+                    Text(_formatDate(comment['date'] as String),
+                        style: const TextStyle(fontSize: 11, color: _C.slate500)),
+                  ],
+                ),
+              ),
+              if (rating > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (i) => Icon(
+                    i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                    size: 14,
+                    color: _C.gold,
+                  )),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            comment['comment'] as String,
+            style: const TextStyle(fontSize: 13.5, color: _C.slate700, height: 1.55),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helpers ─────────────────────────────────
+  String _ratingLabel(int rating) {
+    const labels = ['Mauvais', 'Passable', 'Bien', 'Très bien', 'Excellent'];
+    if (rating < 1 || rating > 5) return '';
+    return labels[rating - 1];
+  }
+
   String _stripHtmlTags(String htmlString) {
-    // Supprimer les balises HTML pour afficher le texte brut
     final RegExp exp = RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false);
     return htmlString.replaceAll(exp, '').trim();
   }
 
   String _formatDate(String dateString) {
     try {
-      final dateTime = DateTime.parse(dateString);
-      final months = [
+      final dt = DateTime.parse(dateString);
+      const months = [
         'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
       ];
-      return '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}';
-    } catch (e) {
+      return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    } catch (_) {
       return dateString;
     }
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Hero Banner
+// ─────────────────────────────────────────────
+class _HeroBanner extends StatelessWidget {
+  final Blog blog;
+  final Color typeColor;
+  final Map<String, dynamic> uiData;
+
+  const _HeroBanner({required this.blog, required this.typeColor, required this.uiData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Image de fond
+        blog.image != null && blog.image!.isNotEmpty
+            ? Image.network(
+                blog.image!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildPlaceholder(),
+              )
+            : _buildPlaceholder(),
+
+        // Gradient overlay
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.2),
+                Colors.black.withOpacity(0.55),
+                Colors.black.withOpacity(0.9),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+        ),
+
+        // Contenu positionné en bas
+        Positioned(
+          bottom: 36,
+          left: 20,
+          right: 20,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Badge type
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(uiData['icon'] as IconData, size: 12, color: Colors.white),
+                    const SizedBox(width: 4),
+                    Text(
+                      uiData['type'] as String,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Titre
+              Text(
+                blog.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // École
+              Row(
+                children: [
+                  const Icon(Icons.school_rounded, size: 13, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      blog.nomecole,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            typeColor.withOpacity(0.85),
+            typeColor.withOpacity(0.4),
+          ],
+        ),
+      ),
+      child: const Icon(Icons.article_rounded, color: Colors.white24, size: 80),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Reusable widgets
+// ─────────────────────────────────────────────
+class _NavIconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final Animation<double>? scaleAnim;
+
+  const _NavIconBtn({
+    required this.icon,
+    required this.onTap,
+    this.iconColor,
+    this.scaleAnim,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget btn = GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36, height: 36,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.35),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: iconColor ?? Colors.white, size: 18),
+      ),
+    );
+    if (scaleAnim != null) {
+      return ScaleTransition(scale: scaleAnim!, child: btn);
+    }
+    return btn;
+  }
+}
+
+class _ActionIcon extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color bgColor;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _ActionIcon({
+    required this.icon,
+    required this.label,
+    required this.bgColor,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52, height: 52,
+            decoration: BoxDecoration(
+              color: bgColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: bgColor.withOpacity(0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: _C.slate500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+
+  const _InfoCard({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _C.slate300.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.slate900),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                Text(subtitle,
+                    style: const TextStyle(fontSize: 11, color: _C.slate500)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Expandable Text
+// ─────────────────────────────────────────────
+class _ExpandableText extends StatefulWidget {
+  final String text;
+  final int maxLines;
+
+  const _ExpandableText({required this.text, this.maxLines = 6});
+
+  @override
+  State<_ExpandableText> createState() => _ExpandableTextState();
+}
+
+class _ExpandableTextState extends State<_ExpandableText> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 250),
+          crossFadeState: _expanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          firstChild: Text(
+            widget.text,
+            maxLines: widget.maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 14.5, color: _C.slate700, height: 1.65),
+          ),
+          secondChild: Text(
+            widget.text,
+            style: const TextStyle(fontSize: 14.5, color: _C.slate700, height: 1.65),
+          ),
+        ),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _expanded ? 'Voir moins' : 'Lire la suite',
+                style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: _C.indigo,
+                ),
+              ),
+              const SizedBox(width: 3),
+              AnimatedRotation(
+                duration: const Duration(milliseconds: 250),
+                turns: _expanded ? 0.5 : 0,
+                child: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: _C.indigo),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Share Bottom Sheet
+// ─────────────────────────────────────────────
+class _ShareBottomSheet extends StatelessWidget {
+  final Blog blog;
+  const _ShareBottomSheet({required this.blog});
+
+  String get _shareText => '''
+📰 ${blog.title}
+
+🏫 ${blog.nomecole}
+
+${blog.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
+
+Découvrez plus d\'actualités sur notre application! 📱
+''';
+
+  Future<void> _launchWhatsApp() async {
+    final url = 'https://wa.me/?text=${Uri.encodeComponent(_shareText)}';
+    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
+  }
+
+  Future<void> _launchFacebook() async {
+    final url =
+        'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent('https://example.com')}&quote=${Uri.encodeComponent(_shareText)}';
+    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
+  }
+
+  Future<void> _launchEmail() async {
+    final subject = Uri.encodeComponent(blog.title);
+    final body = Uri.encodeComponent(_shareText);
+    final url = 'mailto:?subject=$subject&body=$body';
+    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: _C.slate300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Partager l\'actualité',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _C.slate900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            blog.title,
+            style: const TextStyle(fontSize: 13, color: _C.slate500),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _ShareOption(
+                icon: Icons.message_rounded,
+                label: 'WhatsApp',
+                color: const Color(0xFF25D366),
+                onTap: () { Navigator.pop(context); _launchWhatsApp(); },
+              ),
+              _ShareOption(
+                icon: Icons.facebook_rounded,
+                label: 'Facebook',
+                color: const Color(0xFF1877F2),
+                onTap: () { Navigator.pop(context); _launchFacebook(); },
+              ),
+              _ShareOption(
+                icon: Icons.email_rounded,
+                label: 'Email',
+                color: const Color(0xFFEA4335),
+                onTap: () { Navigator.pop(context); _launchEmail(); },
+              ),
+              _ShareOption(
+                icon: Icons.more_horiz_rounded,
+                label: 'Plus',
+                color: _C.indigo,
+                onTap: () {
+                  Navigator.pop(context);
+                  Share.share(_shareText, subject: blog.title);
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShareOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ShareOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 56, height: 56,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: _C.slate500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

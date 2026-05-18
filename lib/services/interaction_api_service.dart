@@ -1,0 +1,186 @@
+import '../models/interaction.dart';
+import 'http_service.dart';
+import 'auth_service.dart';
+
+/// Service pour la gestion des interactions (commentaires, partages, notes) via l'API vie-ecoles
+class InteractionApiService {
+  static const String _baseUrl = '/vie-ecoles/interactions';
+
+  /// Créer une nouvelle interaction (commentaire, partage, note)
+  ///
+  /// Endpoint: POST /vie-ecoles/interactions/store
+  /// Body: {
+  ///   "video_id": 1,
+  ///   "user_id": 6,
+  ///   "type": "comment",
+  ///   "content": "Belle présentation. Nous sommes fière de toi"
+  /// }
+  static Future<Interaction?> createInteraction({
+    required int videoId,
+    required int userId,
+    required String type,
+    String? content,
+  }) async {
+    try {
+      print(
+        '💬 Création d\'une interaction: video=$videoId, user=$userId, type=$type',
+      );
+
+      final response = await HttpService.post(
+        '$_baseUrl/store',
+        body: {
+          'video_id': videoId,
+          'user_id': userId,
+          'type': type,
+          if (content != null) 'content': content,
+        },
+      );
+
+      print('💬 Réponse de l\'API: $response');
+
+      // Gérer différents formats de réponse
+      if (response['status'] == 'success' && response['data'] != null) {
+        final interaction = Interaction.fromJson(
+          response['data'] as Map<String, dynamic>,
+        );
+        print('✅ Interaction créée avec succès: ${interaction.id}');
+        return interaction;
+      } else if (response['success'] == true ||
+          response['message'] == 'Interaction saved successfully') {
+        // Si l'API retourne un message de succès mais pas de data, on retourne null
+        // et on recharge la liste des commentaires
+        print('✅ Interaction créée avec succès (message de confirmation)');
+        return null;
+      } else {
+        print(
+          '❌ Échec de la création d\'interaction: ${response['message'] ?? 'Erreur inconnue'}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('❌ Erreur lors de la création d\'interaction: $e');
+      return null;
+    }
+  }
+
+  /// Lister les interactions d'une vidéo
+  ///
+  /// Endpoint: GET /vie-ecoles/interactions/list
+  /// Query params: video_id=1, type=comment
+  static Future<List<Interaction>> listInteractions({
+    required int videoId,
+    required String type,
+  }) async {
+    try {
+      print('💬 Récupération des interactions: video=$videoId, type=$type');
+
+      final response = await HttpService.get(
+        '$_baseUrl/list?video_id=$videoId&type=$type',
+      );
+
+      print('💬 Réponse de l\'API: $response');
+
+      // La réponse est paginée avec un champ "data"
+      if (response['data'] != null) {
+        final data = response['data'] as List<dynamic>;
+        final interactions = data
+            .map((item) => Interaction.fromJson(item as Map<String, dynamic>))
+            .toList();
+
+        print('✅ ${interactions.length} interactions récupérées');
+        return interactions;
+      } else {
+        print('❌ Échec de la récupération des interactions: pas de data');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Erreur lors de la récupération des interactions: $e');
+      return [];
+    }
+  }
+
+  /// Supprimer un commentaire
+  ///
+  /// Endpoint: DELETE /api/ecoles/interactions/comment/{id_comment}?user_id={idUser}
+  static Future<bool> deleteComment({
+    required int commentId,
+    required int userId,
+  }) async {
+    try {
+      print('🗑️ Suppression du commentaire: id=$commentId, user=$userId');
+      print('🌐 URL: /ecoles/interactions/comment/$commentId?user_id=$userId');
+
+      final response = await HttpService.get(
+        '/ecoles/interactions/comment/$commentId?user_id=$userId',
+      );
+
+      if (response['status'] == 'success' || response['success'] == true) {
+        print('✅ Commentaire supprimé avec succès');
+        return true;
+      } else {
+        print(
+          '❌ Échec de la suppression du commentaire: ${response['message'] ?? 'Erreur inconnue'}',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur lors de la suppression du commentaire: $e');
+      return false;
+    }
+  }
+
+  /// Modifier un commentaire
+  ///
+  /// Endpoint: POST /vie-ecoles/interactions/comment/update/{id_comment}
+  /// Body: {
+  ///   "user_id": 1,
+  ///   "content": "Voici mon nouveau texte pour le commentaire !"
+  /// }
+  static Future<bool> updateComment({
+    required int commentId,
+    required int userId,
+    required String content,
+  }) async {
+    try {
+      print('✏️ Modification du commentaire: id=$commentId, user=$userId');
+      print('🌐 URL: $_baseUrl/comment/update/$commentId');
+
+      final response = await HttpService.post(
+        '$_baseUrl/comment/update/$commentId',
+        body: {'user_id': userId, 'content': content},
+      );
+
+      if (response['status'] == 'success' || response['success'] == true) {
+        print('✅ Commentaire modifié avec succès');
+        return true;
+      } else {
+        print(
+          '❌ Échec de la modification du commentaire: ${response['message'] ?? 'Erreur inconnue'}',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur lors de la modification du commentaire: $e');
+      return false;
+    }
+  }
+
+  /// Récupérer l'ID utilisateur de l'utilisateur connecté
+  static int? getCurrentUserId() {
+    final currentUser = AuthService.instance.getCurrentUser();
+    if (currentUser == null) {
+      print('⚠️ Aucun utilisateur connecté');
+      return null;
+    }
+
+    // L'ID utilisateur peut être une chaîne, on essaie de la convertir en int
+    try {
+      return int.parse(currentUser.id);
+    } catch (e) {
+      print(
+        '⚠️ Impossible de convertir l\'ID utilisateur en int: ${currentUser.id}',
+      );
+      return null;
+    }
+  }
+}

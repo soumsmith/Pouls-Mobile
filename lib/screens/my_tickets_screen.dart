@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
+import '../services/ticket_service.dart';
+import '../models/user_ticket.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   const MyTicketsScreen({super.key});
@@ -13,52 +16,49 @@ class MyTicketsScreen extends StatefulWidget {
 class _MyTicketsScreenState extends State<MyTicketsScreen> {
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
-  
-  // Données de démonstration pour les tickets achetés
-  final List<Map<String, dynamic>> _myTickets = [
-    {
-      'id': '1',
-      'eventName': 'Journée Portes Ouvertes',
-      'establishment': 'École Primaire Jean Jaurès',
-      'date': '15 Mars 2024',
-      'time': '9h - 17h',
-      'quantity': 2,
-      'unitPrice': '5€',
-      'totalPrice': '10€',
-      'status': 'valide',
-      'purchaseDate': '10 Mars 2024',
-      'color': const Color(0xFF10B981),
-      'image': 'https://picsum.photos/seed/event1/400/300.jpg',
-    },
-    {
-      'id': '2',
-      'eventName': 'Réunion parents-professeurs',
-      'establishment': 'École Privée Saint-Exupéry',
-      'date': '25 Mars 2024',
-      'time': '18h',
-      'quantity': 1,
-      'unitPrice': 'Gratuit',
-      'totalPrice': 'Gratuit',
-      'status': 'valide',
-      'purchaseDate': '20 Mars 2024',
-      'color': const Color(0xFFF59E0B),
-      'image': 'https://picsum.photos/seed/event4/400/300.jpg',
-    },
-    {
-      'id': '3',
-      'eventName': 'Fête de l\'ecole',
-      'establishment': 'Groupe Scolaire Voltaire',
-      'date': '28 Mars 2024',
-      'time': '10h - 18h',
-      'quantity': 3,
-      'unitPrice': '2€',
-      'totalPrice': '6€',
-      'status': 'utilisé',
-      'purchaseDate': '15 Mars 2024',
-      'color': const Color(0xFF6366F1),
-      'image': 'https://picsum.photos/seed/event5/400/300.jpg',
-    },
-  ];
+
+  bool _isLoading = true;
+  String? _error;
+  List<UserTicket> _myTickets = [];
+  UserTicketStats _stats = UserTicketStats(nombreCommandes: 0, nonUtilise: 0, utilise: 0, annule: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTickets();
+  }
+
+  Future<void> _loadTickets() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final currentUser = AuthService.instance.getCurrentUser();
+    final phone = currentUser?.phone;
+
+    if (phone == null || phone.isEmpty) {
+      setState(() {
+        _error = 'Utilisateur non connecté';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await TicketService.getUserTickets(phone);
+      setState(() {
+        _myTickets = response.tickets;
+        _stats = response.stats;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +109,104 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
           ),
         ],
       ),
-      body: _myTickets.isEmpty ? _buildEmptyState() : _buildTicketsList(),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(16),
+                  color: AppColors.getTextColor(_themeService.isDarkMode),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _loadTickets,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_myTickets.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return Column(
+      children: [
+        _buildStatsHeader(),
+        Expanded(child: _buildTicketsList()),
+      ],
+    );
+  }
+
+  Widget _buildStatsHeader() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.getSurfaceColor(_themeService.isDarkMode),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildStatItem('Commandes', _stats.nombreCommandes.toString()),
+          _buildStatItem('Non utilisés', _stats.nonUtilise.toString()),
+          _buildStatItem('Utilisés', _stats.utilise.toString()),
+          _buildStatItem('Annulés', _stats.annule.toString()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String title, String value) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(18),
+              fontWeight: FontWeight.bold,
+              color: AppColors.getTextColor(_themeService.isDarkMode),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(12),
+              color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -187,19 +284,18 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     );
   }
 
-  Widget _buildTicketCard(Map<String, dynamic> ticket) {
-    final status = ticket['status'] as String;
-    final isValid = status == 'valide';
-    
+  Widget _buildTicketCard(UserTicket ticket) {
+    final isValid = ticket.status.toLowerCase() == 'valide' || ticket.status.toLowerCase() == 'non_utilise';
+    final statusLabel = ticket.status.isNotEmpty ? ticket.status : 'N/A';
+    final statusColor = isValid ? Colors.green : Colors.grey;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.getSurfaceColor(_themeService.isDarkMode),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isValid 
-              ? AppColors.primary.withOpacity(0.2)
-              : Colors.grey.withOpacity(0.2),
+          color: isValid ? statusColor.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
           width: 1,
         ),
         boxShadow: [
@@ -212,60 +308,33 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
       ),
       child: Column(
         children: [
-          // Header with status
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: (ticket['color'] as Color).withOpacity(0.05),
+              color: statusColor.withOpacity(0.05),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Row(
               children: [
-                // Event image
                 Container(
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: (ticket['color'] as Color).withOpacity(0.1),
+                    color: statusColor.withOpacity(0.1),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: ticket['image'] != null
-                        ? Image.network(
-                            ticket['image'] as String,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 60,
-                                height: 60,
-                                color: (ticket['color'] as Color).withOpacity(0.2),
-                                child: Icon(
-                                  Icons.event,
-                                  color: ticket['color'] as Color,
-                                  size: 30,
-                                ),
-                              );
-                            },
-                          )
-                        : Icon(
-                            Icons.event,
-                            color: ticket['color'] as Color,
-                            size: 30,
-                          ),
+                  child: const Icon(
+                    Icons.confirmation_number,
+                    size: 32,
                   ),
                 ),
                 const SizedBox(width: 16),
-                
-                // Event info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        ticket['eventName'] as String,
+                        ticket.eventName,
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(16),
                           fontWeight: FontWeight.bold,
@@ -276,7 +345,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        ticket['establishment'] as String,
+                        ticket.establishment,
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(12),
                           color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),
@@ -292,7 +361,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            ticket['date'] as String,
+                            ticket.date,
                             style: TextStyle(
                               fontSize: _textSizeService.getScaledFontSize(12),
                               color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),
@@ -306,7 +375,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            ticket['time'] as String,
+                            ticket.time,
                             style: TextStyle(
                               fontSize: _textSizeService.getScaledFontSize(12),
                               color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),
@@ -317,35 +386,27 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     ],
                   ),
                 ),
-                
-                // Status badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isValid 
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
+                    color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isValid 
-                          ? Colors.green.withOpacity(0.3)
-                          : Colors.grey.withOpacity(0.3),
+                      color: statusColor.withOpacity(0.3),
                     ),
                   ),
                   child: Text(
-                    isValid ? 'Valide' : 'Utilisé',
+                    statusLabel,
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(10),
                       fontWeight: FontWeight.w600,
-                      color: isValid ? Colors.green : Colors.grey,
+                      color: statusColor,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          
-          // Purchase details
           Container(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -354,7 +415,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Quantité: ${ticket['quantity']}',
+                      'Quantité: ${ticket.quantity}',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(14),
                         color: AppColors.getTextColor(_themeService.isDarkMode),
@@ -362,7 +423,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Prix unitaire: ${ticket['unitPrice']}',
+                      'Prix unitaire: ${ticket.unitPrice}',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(12),
                         color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),
@@ -375,16 +436,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Total: ${ticket['totalPrice']}',
+                      'Total: ${ticket.totalPrice}',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(16),
                         fontWeight: FontWeight.bold,
-                        color: ticket['color'] as Color,
+                        color: statusColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Acheté le ${ticket['purchaseDate']}',
+                      'Acheté le ${ticket.purchaseDate}',
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(10),
                         color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),

@@ -109,14 +109,21 @@ class OrderService {
   }
 
   /// Récupère la liste des commandes d'un utilisateur
-  Future<List<Order>> getUserOrders(String phoneNumber) async {
+  Future<List<Order>> getUserOrders(String phoneNumber, {String? statut}) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('📦 RÉCUPÉRATION DES COMMANDES');
     print('═══════════════════════════════════════════════════════════');
     print('📱 Téléphone: $phoneNumber');
+    if (statut != null) {
+      print('🏷️ Statut demandé: $statut');
+    }
 
-    final url = '$baseUrl/vie-ecoles/suivi-commandes/$phoneNumber';
+    String url = '$baseUrl/vie-ecoles/suivi-commandes/$phoneNumber';
+    if (statut != null && statut.isNotEmpty) {
+      url += '?statut=$statut';
+    }
+    
     print('🔗 URL: $url');
     print('📡 Envoi de la requête GET...');
 
@@ -135,6 +142,7 @@ class OrderService {
       print('   - Status Code: ${response.statusCode}');
       print('   - Content-Type: ${response.headers['content-type']}');
       print('   - Body length: ${response.body.length} caractères');
+      print('   - Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -158,42 +166,67 @@ class OrderService {
           print('');
           return [];
         }
+      } else if (response.statusCode == 404) {
+        print('ℹ️ 404 reçu - Aucune commande trouvée pour ce statut.');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        return [];
       } else {
         print('❌ Erreur HTTP ${response.statusCode}');
         print('❌ Corps de la réponse: ${response.body}');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        throw Exception('Erreur HTTP: ${response.statusCode}');
+        return [];
       }
     } catch (e) {
       print('💥 Exception lors de la récupération des commandes: $e');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      throw Exception('Erreur lors de la récupération des commandes: $e');
+      return [];
     }
   }
 
   /// Annule une commande
-  Future<bool> cancelOrder(String orderId) async {
+  Future<bool> cancelOrder(String orderId, {String reason = "Annulation depuis l'application mobile"}) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
-    print('❌ ANNUATION DE COMMANDE');
+    print('❌ ANNULATION DE COMMANDE DE PRODUIT');
     print('═══════════════════════════════════════════════════════════');
     print('🆔 ID Commande: $orderId');
+    print('📝 Raison: $reason');
 
-    // Pour l'instant, nous allons juste simuler l'annulation
-    // En production, il faudrait appeler l'API d'annulation
+    final url = '$baseUrl/espace-parent/commande/annuler/$orderId?statut=annulee&raison_annulation=${Uri.encodeComponent(reason)}';
+    print('🌐 [ORDER CANCEL] Envoi de la requête GET (Méthode supportée par la route)...');
+    print('🌐 [ORDER CANCEL] URL: $url');
+
     try {
-      await Future.delayed(
-        const Duration(seconds: 1),
-      ); // Simulation d'appel API
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
 
-      print('✅ Commande $orderId annulée avec succès');
+      print('📥 [ORDER CANCEL] Réponse reçue :');
+      print('   - Status Code: ${response.statusCode}');
+      print('   - Body: ${response.body}');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      return true;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data['status'] == true || data['success'] == true || data['message'] != null) {
+          print('✅ Commande $orderId annulée avec succès');
+          return true;
+        }
+        return true; 
+      } else {
+        print('❌ [ORDER CANCEL] Code statut invalide: ${response.statusCode}');
+        return false;
+      }
     } catch (e) {
-      print('💥 Erreur lors de l\'annulation: $e');
+      print('💥 Erreur lors de l\'annulation de la commande: $e');
       print('═══════════════════════════════════════════════════════════');
       print('');
       return false;

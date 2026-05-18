@@ -66,6 +66,43 @@ class HttpService {
     }
   }
 
+  /// Effectue une requête DELETE
+  static Future<Map<String, dynamic>> delete(
+    String endpoint, {
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl$endpoint');
+      print('🌐 HttpService DELETE URL: $uri');
+
+      final response = await http
+          .delete(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...?headers,
+            },
+          )
+          .timeout(timeout);
+
+      print('🌐 HttpService Response status: ${response.statusCode}');
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        print('🌐 HttpService Response body: ${response.body}');
+      }
+
+      // 204 No Content est une réponse valide pour un DELETE réussi
+      if (response.statusCode == 204) {
+        return {'status': 'success'};
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      print('🌐 HttpService Error: $e');
+      throw _handleError(e);
+    }
+  }
+
   /// Traite la réponse HTTP
   static Map<String, dynamic> _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {

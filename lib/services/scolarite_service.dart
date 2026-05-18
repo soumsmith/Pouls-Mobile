@@ -8,15 +8,22 @@ class ScolariteService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   static Future<ScolariteResponse> getScolaritesByEcole(
-    String ecoleCode,
-  ) async {
+    String ecoleCode, {
+    String? niveau,
+  }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('💰 CHARGEMENT DES FRAIS DE SCOLARITÉ');
     print('═══════════════════════════════════════════════════════════');
     print('🏫 Code école: $ecoleCode');
+    if (niveau != null) {
+      print('🎒 Niveau (filtre): $niveau');
+    }
 
-    final url = '$baseUrl/ecoles/scolarites/$ecoleCode';
+    String url = '$baseUrl/ecoles/scolarites/$ecoleCode';
+    if (niveau != null && niveau.isNotEmpty) {
+      url += '?niveau=${Uri.encodeComponent(niveau)}';
+    }
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 

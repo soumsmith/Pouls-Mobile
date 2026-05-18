@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/cart_service.dart';
 import '../screens/tutor_screen.dart';
 import '../screens/profile_screen.dart';
@@ -154,13 +155,12 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       icon: Icons.school_rounded,
       color: const Color(0xFF8B5CF6),
       badgeCount: 1,
-      onTap: () {
+      onTap: () async {
         Navigator.of(context).pop();
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const MainScreenWrapper(child: TutorScreen()),
-          ),
-        );
+        final url = Uri.parse('http://46.105.52.105:3002/');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
       },
     ),
     _MenuItem(

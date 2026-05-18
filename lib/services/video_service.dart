@@ -10,14 +10,15 @@ class VideoService {
 
   static Future<List<Video>> getVideosByType(String type) async {
     try {
-      developer.log('GET Request URL: $baseUrl (type: $type)');
-      final response = await http.get(Uri.parse(baseUrl));
+      final uri = Uri.parse(baseUrl).replace(queryParameters: {'type_video': type});
+      developer.log('GET Request URL: $uri');
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);
         final List<dynamic> data = jsonResponse['data'];
 
-        // Filtrer par typevideo
+        // Filtrer par typevideo (sécurité côté client)
         final filteredVideos = data.where((item) {
           return item['typevideo'] == type;
         }).toList();

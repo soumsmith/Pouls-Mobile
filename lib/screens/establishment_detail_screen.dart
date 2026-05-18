@@ -22,6 +22,7 @@ import '../models/event.dart';
 import '../models/avis.dart';
 import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
 import 'gallery_screen.dart';
+import 'blog_detail_screen.dart';
 import '../models/fee.dart';
 import '../models/scolarite.dart';
 import '../models/niveau.dart';
@@ -304,6 +305,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   EcoleDetail? _ecoleDetail;
   EcoleData? _ecoleParametres;
   Future<ScolariteResponse>? _scolariteFuture;
+  Future<List<Niveau>>? _niveauxFuture;
+  String? _selectedNiveauFiltre;
 
   final _avisNotifier = ValueNotifier<int>(0);
   final _eventsNotifier = ValueNotifier<int>(0);
@@ -407,6 +410,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   final TextEditingController _ordreController = TextEditingController();
   final TextEditingController _adresseEtablissementController =
       TextEditingController();
+  final TextEditingController _matriculeController = TextEditingController();
 
   // Recommendation error states
   bool _parentNomError = false;
@@ -3289,8 +3293,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     if (actionType == 'scolarite') {
       print('🔄 CLIC SUR "SCOLARITÉ" - Déclenchement du chargement');
       setState(() {
+        _niveauxFuture ??= NiveauService.getNiveauxByEcole(widget.ecole.parametreCode ?? '');
         _scolariteFuture = ScolariteService.getScolaritesByEcole(
           widget.ecole.parametreCode ?? '',
+          niveau: _selectedNiveauFiltre,
         );
       });
     }
@@ -3300,46 +3306,54 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ValueListenableBuilder<int>(
-        valueListenable: _avisNotifier,
-        builder: (context, _, __) {
-          return Container(
-            constraints: BoxConstraints(
-              minHeight: 100,
-              maxHeight: MediaQuery.of(context).size.height * 0.9,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-              boxShadow: AppDimensions.getCustomShadow(
-                context: context,
-                alpha: 0.12,
-                blurRadius: 24,
-                offset: -6,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                BottomSheetHeader(
-                  icon: def.icon,
-                  iconColor: def.color,
-                  title: def.label,
-                  description: def.subtitle,
-                  onClose: () => Navigator.of(context).pop(),
+      builder: (context) => GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: MediaQuery.of(context).viewInsets,
+          child: ValueListenableBuilder<int>(
+            valueListenable: _avisNotifier,
+            builder: (context, _, __) {
+              return Container(
+                constraints: BoxConstraints(
+                  minHeight: 100,
+                  maxHeight: MediaQuery.of(context).size.height * 0.9,
                 ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                    child: _buildActionContent(actionType, def.color),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
+                  boxShadow: AppDimensions.getCustomShadow(
+                    context: context,
+                    alpha: 0.12,
+                    blurRadius: 24,
+                    offset: -6,
                   ),
                 ),
-              ],
-            ),
-          );
-        },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BottomSheetHeader(
+                      icon: def.icon,
+                      iconColor: def.color,
+                      title: def.label,
+                      description: def.subtitle,
+                      onClose: () => Navigator.of(context).pop(),
+                    ),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        child: _buildActionContent(actionType, def.color),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -3768,186 +3782,249 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final Color color = blog['color'] as Color? ?? AppColors.screenOrange;
     final String? imageUrl = blog['image'] as String?;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: AppDimensions.getMainShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (imageUrl != null)
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
-              child: Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: 180,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 180,
-                    color: isDark
-                        ? const Color(0xFF2A2A2A)
-                        : AppColors.screenCard,
-                    child: Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        color: isDark
-                            ? Colors.white54
-                            : AppColors.screenTextSecondary,
-                        size: 40,
-                      ),
-                    ),
-                  );
-                },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: double.infinity,
-                    height: 180,
-                    color: isDark
-                        ? const Color(0xFF2A2A2A)
-                        : AppColors.screenCard,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.screenOrange,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            )
-          else
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: () => _navigateToBlogDetail(blog),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: AppColors.screenCard,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: AppDimensions.getMainShadow(context),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (imageUrl != null)
+              ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(20),
                 ),
-                gradient: LinearGradient(
-                  colors: [color.withOpacity(0.8), color.withOpacity(0.4)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  blog['icon'] as IconData? ?? Icons.article,
-                  size: 40,
-                  color: Colors.white70,
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.getSmallCardBorderRadius(context),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: double.infinity,
+                      height: 180,
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : AppColors.screenCard,
+                      child: Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: isDark
+                              ? Colors.white54
+                              : AppColors.screenTextSecondary,
+                          size: 40,
                         ),
                       ),
-                      child: Text(
-                        blog['type'] as String? ?? 'Actualité',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: color,
-                          fontWeight: FontWeight.w600,
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      width: double.infinity,
+                      height: 180,
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : AppColors.screenCard,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.screenOrange,
+                          strokeWidth: 2,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      blog['date'] as String? ?? '',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.screenTextSecondaryThemed(context),
+                    );
+                  },
+                ),
+              )
+            else
+              Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                  gradient: LinearGradient(
+                    colors: [color.withOpacity(0.8), color.withOpacity(0.4)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    blog['icon'] as IconData? ?? Icons.article,
+                    size: 40,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.getSmallCardBorderRadius(context),
+                          ),
+                        ),
+                        child: Text(
+                          blog['type'] as String? ?? 'Actualité',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  blog['title'] as String? ?? 'Sans titre',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimaryThemed(context),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  blog['content'] as String? ?? '',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.screenTextSecondaryThemed(context),
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person_outline,
-                      size: 14,
-                      color: AppColors.screenTextSecondaryThemed(context),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        blog['auteur'] as String? ?? 'Administration',
+                      const SizedBox(width: 8),
+                      Text(
+                        blog['date'] as String? ?? '',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.screenTextSecondaryThemed(context),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    blog['title'] as String? ?? 'Sans titre',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
-                    if ((blog['establishment'] as String?)?.isNotEmpty ==
-                        true) ...[
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    blog['content'] as String? ?? '',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                      height: 1.4,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
                       Icon(
-                        Icons.location_on_outlined,
-                        size: 13,
+                        Icons.person_outline,
+                        size: 14,
                         color: AppColors.screenTextSecondaryThemed(context),
                       ),
-                      const SizedBox(width: 3),
-                      Flexible(
+                      const SizedBox(width: 4),
+                      Expanded(
                         child: Text(
-                          blog['establishment'] as String? ?? '',
+                          blog['auteur'] as String? ?? 'Administration',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.screenTextSecondaryThemed(context),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if ((blog['establishment'] as String?)?.isNotEmpty ==
+                          true) ...[
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 13,
+                          color: AppColors.screenTextSecondaryThemed(context),
+                        ),
+                        const SizedBox(width: 3),
+                        Flexible(
+                          child: Text(
+                            blog['establishment'] as String? ?? '',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.screenTextSecondaryThemed(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => _navigateToBlogDetail(blog),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          backgroundColor: color.withOpacity(0.08),
+                          foregroundColor: color,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Voir plus',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 14,
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToBlogDetail(Map<String, dynamic> blog) {
+    final Blog blogObject = Blog(
+      slug: blog['id'] as String? ?? blog['slug'] as String? ?? '',
+      codeecole: widget.ecole.parametreCode ?? '',
+      nomecole: widget.ecole.parametreNom ?? '',
+      categories: List<String>.from(blog['categories'] as List? ?? [blog['type'] as String? ?? 'Actualité']),
+      title: blog['title'] as String? ?? '',
+      content: blog['content'] as String? ?? '',
+      publishedAt: DateTime.now().toIso8601String(),
+      image: blog['image'] as String?,
+      auteur: blog['auteur'] as String?,
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BlogDetailScreen(blog: blogObject),
       ),
     );
   }
@@ -4763,6 +4840,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             setState(() {
               _scolariteFuture = ScolariteService.getScolaritesByEcole(
                 widget.ecole.parametreCode ?? '',
+                niveau: _selectedNiveauFiltre,
               );
             });
           }, _kActions['scolarite']!.color);
@@ -4800,6 +4878,92 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               ),
             ),
             const SizedBox(height: 12),
+            if (_niveauxFuture != null)
+              FutureBuilder<List<Niveau>>(
+                future: _niveauxFuture,
+                builder: (context, levelsSnapshot) {
+                  if (!levelsSnapshot.hasData || levelsSnapshot.data!.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  // Extraire les noms uniques des niveaux
+                  final niveauLabels = <String>{};
+                  for (final n in levelsSnapshot.data!) {
+                    final label = (n.niveau?.isNotEmpty == true) ? n.niveau! : n.nom;
+                    if (label != null) {
+                      niveauLabels.add(label);
+                    }
+                  }
+
+                  final sortedLabels = niveauLabels.toList()..sort();
+
+                  return Container(
+                    height: 40,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        // Chip "Tous"
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: ChoiceChip(
+                            label: const Text('Tous'),
+                            selected: _selectedNiveauFiltre == null,
+                            selectedColor: AppColors.screenOrange.withOpacity(0.2),
+                            labelStyle: TextStyle(
+                              color: _selectedNiveauFiltre == null
+                                  ? AppColors.screenOrange
+                                  : AppColors.screenTextSecondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() {
+                                  _selectedNiveauFiltre = null;
+                                  _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                                    widget.ecole.parametreCode ?? '',
+                                    niveau: null,
+                                  );
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        // Chips des niveaux individuels
+                        ...sortedLabels.map((lbl) {
+                          final isSelected = _selectedNiveauFiltre == lbl;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Text(lbl),
+                              selected: isSelected,
+                              selectedColor: AppColors.screenOrange.withOpacity(0.2),
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? AppColors.screenOrange
+                                    : AppColors.screenTextSecondary,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                fontSize: 13,
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedNiveauFiltre = selected ? lbl : null;
+                                  _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                                    widget.ecole.parametreCode ?? '',
+                                    niveau: _selectedNiveauFiltre,
+                                  );
+                                });
+                              },
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  );
+                },
+              ),
             Container(
               decoration: BoxDecoration(
                 color: AppColors.screenSurface,
@@ -7551,7 +7715,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildConsultRequestsContent(Color headerColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final actionColor = headerColor;
-    final TextEditingController _matriculeController = TextEditingController();
 
     return Padding(
       padding: const EdgeInsets.all(16),

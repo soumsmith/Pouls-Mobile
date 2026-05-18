@@ -34,6 +34,7 @@ import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/snackbar.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -504,47 +505,55 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       ).copyWith(textScaler: TextScaler.linear(_currentTextScale)),
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
-        body: CustomScrollView(
-          slivers: [
-            CustomSliverAppBar(
-              title: 'Établissements',
-              isDark: false,
-              onBackTap: () => MainScreenWrapper.of(context).navigateToHome(),
-              actions: [
-                _buildHeaderAction(
-                  icon: _isSearching
-                      ? Icons.close_rounded
-                      : Icons.search_rounded,
-                  onTap: () => setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) _searchController.clear();
-                  }),
-                ),
-                const SizedBox(width: 8),
-                _buildHeaderAction(
-                  icon: Icons.tune,
-                  onTap: _showAdvancedSearchBottomSheet,
-                ),
-                const SizedBox(width: 4),
-              ],
-            ),
-            SliverToBoxAdapter(
-              child: SearchBarWidget(
-                isSearching: _isSearching,
-                searchController: _searchController,
-                onChanged: _onSearchChanged,
-                onClear: () {
-                  _searchTimer?.cancel();
-                  setState(() {
-                    _searchController.clear();
-                    _nomEtablissement = null;
-                  });
-                  _loadEcoles();
-                },
-                hintText: 'Rechercher un établissement...',
+        body: Stack(
+          children: [
+            FadeTransition(
+              opacity: _fadeAnim,
+              child: CustomScrollView(
+                slivers: [
+                  CustomSliverAppBar(
+                    title: 'Établissements',
+                    isDark: false,
+                    onBackTap: () => MainScreenWrapper.of(context).navigateToHome(),
+                    actions: [
+                      _buildHeaderAction(
+                        icon: _isSearching
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                        onTap: () => setState(() {
+                          _isSearching = !_isSearching;
+                          if (!_isSearching) _searchController.clear();
+                        }),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildHeaderAction(
+                        icon: Icons.tune,
+                        onTap: _showAdvancedSearchBottomSheet,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                  ),
+                  SliverToBoxAdapter(
+                    child: SearchBarWidget(
+                      isSearching: _isSearching,
+                      searchController: _searchController,
+                      onChanged: _onSearchChanged,
+                      onClear: () {
+                        _searchTimer?.cancel();
+                        setState(() {
+                          _searchController.clear();
+                          _nomEtablissement = null;
+                        });
+                        _loadEcoles();
+                      },
+                      hintText: 'Rechercher un établissement...',
+                    ),
+                  ),
+                  ..._buildSliverContent(),
+                ],
               ),
             ),
-            SliverFillRemaining(child: _buildBody()),
+            const BottomFadeGradient(),
           ],
         ),
       ),
@@ -589,16 +598,18 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildAdvancedSearchBottomSheet(),
+      builder: (context) => Padding(
+        padding: MediaQuery.of(context).viewInsets,
+        child: _buildAdvancedSearchBottomSheet(),
+      ),
     );
   }
 
   Widget _buildAdvancedSearchBottomSheet() {
-    return IntrinsicHeight(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
         decoration: BoxDecoration(
           color: AppColors.screenSurfaceThemed(context),
           borderRadius: const BorderRadius.only(
@@ -606,9 +617,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             topRight: Radius.circular(20),
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Container(
               margin: const EdgeInsets.only(top: 8),
               width: 40,
@@ -792,14 +805,214 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ── Body ───────────────────────────────────────────────────
-  Widget _buildBody() {
-    if (_isLoading) return _buildLoadingState();
-    if (_error != null) return _buildErrorState();
-    return _buildContent();
+  List<Widget> _buildSliverContent() {
+    if (_isLoading) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _buildLoadingState(),
+        ),
+      ];
+    }
+    if (_error != null) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _buildErrorState(),
+        ),
+      ];
+    }
+
+    final items = _filteredItems;
+    return [
+      // ── Slider des écoles en vedette ─────────────────────
+      if (_featuredSchools.isNotEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                _FeaturedSchoolsSlider(
+                  featuredSchools: _featuredSchools,
+                  pageController: _sliderController,
+                  onPageChanged: _onSliderPageChanged,
+                  currentIndex: _currentSliderIndex,
+                  showText: _showSliderText,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+      SliverToBoxAdapter(child: const SizedBox(height: 16)),
+      SliverToBoxAdapter(child: SectionRow(title: 'ACTIONS RAPIDES')),
+      SliverToBoxAdapter(child: const SizedBox(height: 8)),
+
+      // ── Actions Buttons ──
+      SliverToBoxAdapter(
+        child: _buildActionButtons(
+          Theme.of(context).brightness == Brightness.dark,
+        ),
+      ),
+      SliverToBoxAdapter(child: const SizedBox(height: 0)),
+      SliverToBoxAdapter(
+        child: SectionRow(title: 'Nos établissements'),
+      ),
+      SliverToBoxAdapter(child: const SizedBox(height: 16)),
+      // ── Filtre horizontal ─────────────────────────────
+      SliverToBoxAdapter(
+        child: FilterRowWidget(
+          filters: _filters,
+          selectedFilter: _selectedFilter,
+          onFilterSelected: (filter) =>
+              setState(() => _selectedFilter = filter),
+        ),
+      ),
+
+      // ── Empty state ────────────────────────────────
+      if (items.isEmpty)
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.screenOrangeLight,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: const Icon(
+                    Icons.business_outlined,
+                    size: 40,
+                    color: AppColors.screenOrange,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Aucun établissement',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.screenTextPrimaryThemed(context),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Aucun résultat pour ce filtre',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _selectedFilter = 'Tous';
+                    _searchController.clear();
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.screenOrangeGradient,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.screenOrange.withOpacity(
+                            0.3,
+                          ),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      'Réinitialiser les filtres',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+      else ...[
+        SliverToBoxAdapter(child: const SizedBox(height: 10)),
+
+        // ── Grid ──────────────────────────────────────
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _getCrossAxisCount(context),
+              crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
+                context,
+              ),
+              childAspectRatio:
+                  AppDimensions.getProductsGridChildAspectRatio(
+                    context,
+                    imageFlex: AppDimensions.getGridImageFlex(context),
+                  ),
+            ),
+            delegate: SliverChildBuilderDelegate((_, i) {
+              if (i == items.length && _hasMoreEcoles) {
+                return SeeMoreCard(
+                  cardColor: AppColors.screenCardThemed(context),
+                  borderColor: AppColors.screenOrange.withOpacity(0.3),
+                  iconColor: AppColors.screenOrange,
+                  textColor: AppColors.screenOrange,
+                  subtitleColor: AppColors.screenOrange.withOpacity(0.5),
+                  title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
+                  subtitle: _isLoadingMore ? '' : 'établissements',
+                  onTap: _isLoadingMore ? () {} : _loadMoreEcoles,
+                  icon: Icons.add,
+                );
+              }
+              if (i < items.length) {
+                return ImageMenuCardExternalTitle(
+                  index: i,
+                  cardKey: items[i].ecoleid.toString(),
+                  title: items[i].parametreNom ?? 'École sans nom',
+                  subtitle: items[i].ville,
+                  imagePath: items[i].displayImage,
+                  iconData: Icons.business,
+                  isDark: false,
+                  color: _typeColor(items[i].typePrincipal),
+                  location: items[i].adresse,
+                  tag: items[i].typePrincipal,
+                  titleMaxLines: 2,
+                  allowLineBreak: true,
+                  externalTitleSpacing: 8,
+                  height: AppDimensions.getEcoleCardHeight(context),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          EstablishmentDetailScreen(ecole: items[i]),
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            }, childCount: items.length + (_hasMoreEcoles ? 1 : 0)),
+          ),
+        ),
+      ],
+    ];
   }
 
   Widget _buildLoadingState() {
@@ -883,272 +1096,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildContent() {
-    final items = _filteredItems;
-    return Stack(
-      children: [
-        FadeTransition(
-          opacity: _fadeAnim,
-          child: CustomScrollView(
-            slivers: [
-              // ── Slider des écoles en vedette ─────────────────────
-              if (_featuredSchools.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Column(
-                      children: [
-                        // Row(
-                        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        //   children: [
-                        //     const Text(
-                        //       'Écoles en vedette',
-                        //       style: TextStyle(
-                        //         fontSize: 16,
-                        //         fontWeight: FontWeight.w700,
-                        //         color: Color(0xFF1A1A1A),
-                        //       ),
-                        //     ),
-                        //     GestureDetector(
-                        //       onTap: () => setState(
-                        //         () => _showSliderText = !_showSliderText,
-                        //       ),
-                        //       child: Container(
-                        //         padding: const EdgeInsets.symmetric(
-                        //           horizontal: 12,
-                        //           vertical: 6,
-                        //         ),
-                        //         decoration: BoxDecoration(
-                        //           color: _showSliderText
-                        //               ? AppColors.screenOrange
-                        //               : Colors.grey[300],
-                        //           borderRadius: BorderRadius.circular(20),
-                        //           boxShadow: [
-                        //             BoxShadow(
-                        //               color:
-                        //                   (_showSliderText
-                        //                           ? AppColors.screenOrange
-                        //                           : Colors.grey[300])!
-                        //                       .withOpacity(0.3),
-                        //               blurRadius: 4,
-                        //               offset: const Offset(0, 2),
-                        //             ),
-                        //           ],
-                        //         ),
-                        //         child: Row(
-                        //           mainAxisSize: MainAxisSize.min,
-                        //           children: [
-                        //             Icon(
-                        //               _showSliderText
-                        //                   ? Icons.visibility_rounded
-                        //                   : Icons.visibility_off_rounded,
-                        //               size: 16,
-                        //               color: _showSliderText
-                        //                   ? Colors.white
-                        //                   : Colors.grey[600],
-                        //             ),
-                        //             const SizedBox(width: 6),
-                        //             Text(
-                        //               _showSliderText ? 'Texte' : 'Image',
-                        //               style: TextStyle(
-                        //                 fontSize: 12,
-                        //                 fontWeight: FontWeight.w600,
-                        //                 color: _showSliderText
-                        //                     ? Colors.white
-                        //                     : Colors.grey[600],
-                        //               ),
-                        //             ),
-                        //           ],
-                        //         ),
-                        //       ),
-                        //     ),
-                        //   ],
-                        // ),
-                        const SizedBox(height: 8),
-                        _FeaturedSchoolsSlider(
-                          featuredSchools: _featuredSchools,
-                          pageController: _sliderController,
-                          onPageChanged: _onSliderPageChanged,
-                          currentIndex: _currentSliderIndex,
-                          showText: _showSliderText,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              SliverToBoxAdapter(child: const SizedBox(height: 16)),
-              SliverToBoxAdapter(child: SectionRow(title: 'ACTIONS RAPIDES')),
-              SliverToBoxAdapter(child: const SizedBox(height: 8)),
-
-              // ── Actions Buttons ──
-              SliverToBoxAdapter(
-                child: _buildActionButtons(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
-              ),
-              SliverToBoxAdapter(child: const SizedBox(height: 0)),
-              SliverToBoxAdapter(
-                child: SectionRow(title: 'Nos établissements'),
-              ),
-              SliverToBoxAdapter(child: const SizedBox(height: 16)),
-              // ── Filtre horizontal ─────────────────────────────
-              SliverToBoxAdapter(
-                child: FilterRowWidget(
-                  filters: _filters,
-                  selectedFilter: _selectedFilter,
-                  onFilterSelected: (filter) =>
-                      setState(() => _selectedFilter = filter),
-                ),
-              ),
-
-              // ── Results header ─────────────────────────────
-
-              // ── Empty state ────────────────────────────────
-              if (items.isEmpty)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.screenOrangeLight,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: const Icon(
-                            Icons.business_outlined,
-                            size: 40,
-                            color: AppColors.screenOrange,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Aucun établissement',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.screenTextPrimaryThemed(context),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Aucun résultat pour ce filtre',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.screenTextSecondaryThemed(context),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedFilter = 'Tous';
-                            _searchController.clear();
-                          }),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.screenOrangeGradient,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.screenOrange.withOpacity(
-                                    0.3,
-                                  ),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: const Text(
-                              'Réinitialiser les filtres',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                SliverToBoxAdapter(child: const SizedBox(height: 10)),
-
-              // ── Grid ──────────────────────────────────────
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
-                      context,
-                    ),
-                    childAspectRatio:
-                        AppDimensions.getProductsGridChildAspectRatio(
-                          context,
-                          imageFlex: AppDimensions.getGridImageFlex(context),
-                        ),
-                  ),
-                  delegate: SliverChildBuilderDelegate((_, i) {
-                    if (i == items.length && _hasMoreEcoles) {
-                      return SeeMoreCard(
-                        cardColor: AppColors.screenCardThemed(context),
-                        borderColor: AppColors.screenOrange.withOpacity(0.3),
-                        iconColor: AppColors.screenOrange,
-                        textColor: AppColors.screenOrange,
-                        subtitleColor: AppColors.screenOrange.withOpacity(0.5),
-                        title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
-                        subtitle: _isLoadingMore ? '' : 'établissements',
-                        onTap: _isLoadingMore ? () {} : _loadMoreEcoles,
-                        icon: Icons.add,
-                      );
-                    }
-                    if (i < items.length) {
-                      return ImageMenuCardExternalTitle(
-                        index: i,
-                        cardKey: items[i].ecoleid.toString(),
-                        title: items[i].parametreNom ?? 'École sans nom',
-                        subtitle: items[i].ville,
-                        imagePath: items[i].displayImage,
-                        iconData: Icons.business,
-                        isDark: false,
-                        color: _typeColor(items[i].typePrincipal),
-                        location: items[i].adresse,
-                        tag: items[i].typePrincipal,
-                        titleMaxLines: 2,
-                        allowLineBreak: true,
-                        externalTitleSpacing: 8,
-                        height: AppDimensions.getEcoleCardHeight(context),
-                        //imageFlex: AppDimensions.getProductCardImageFlex(context),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                EstablishmentDetailScreen(ecole: items[i]),
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }, childCount: items.length + (_hasMoreEcoles ? 1 : 0)),
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Gradient fade at bottom
-        const BottomFadeGradient(),
-      ],
     );
   }
 
@@ -1444,15 +1391,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          'Parrainer un établissement',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black,
-          ),
-        ),
-        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1664,6 +1602,108 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         context: context,
         onSuccess: (demandeUid) {},
         onError: (error) {},
+      );
+      return;
+    }
+
+    if (actionType == 'rating') {
+      showRatingBottomSheet(
+        context,
+        schoolId: 'general',
+        schoolName: 'Établissements',
+        schoolColor: def.color,
+        onRatingSubmitted: (rating, comment) async {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Avis soumis pour les établissements'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+      );
+      return;
+    }
+
+    if (actionType == 'recommend') {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Padding(
+          padding: MediaQuery.of(context).viewInsets,
+          child: RecommendationBottomSheet(
+            accentColor: def.color,
+            recommenderNameController: _recommenderNameController,
+            etablissementController: _etablissementController,
+            paysRecommendController: _paysRecommendController,
+            villeRecommendController: _villeRecommendController,
+            parentNomController: _parentNomController,
+            parentPrenomController: _parentPrenomController,
+            parentTelephoneController: _parentTelephoneController,
+            parentEmailController: _parentEmailController,
+            ordreController: _ordreController,
+            adresseEtablissementController: _adresseEtablissementController,
+            paysParentController: _paysParentController,
+            villeParentController: _villeParentController,
+            adresseParentController: _adresseParentController,
+            onSubmit: (context) async {
+              try {
+                await RecommendationService.submitRecommendation(
+                  etablissement: _etablissementController.text,
+                  pays: _paysRecommendController.text,
+                  ville: _villeRecommendController.text,
+                  ordre: _ordreController.text.isEmpty
+                      ? '1'
+                      : _ordreController.text,
+                  adresseEtablissement:
+                      _adresseEtablissementController.text.isEmpty
+                      ? 'Non spécifiée'
+                      : _adresseEtablissementController.text,
+                  nomParent: _parentNomController.text,
+                  prenomParent: _parentPrenomController.text,
+                  telephone: _parentTelephoneController.text,
+                  email: _parentEmailController.text.isEmpty
+                      ? 'email@example.com'
+                      : _parentEmailController.text,
+                  paysParent: _paysParentController.text.isEmpty
+                      ? _paysRecommendController.text
+                      : _paysParentController.text,
+                  villeParent: _villeParentController.text.isEmpty
+                      ? _villeRecommendController.text
+                      : _villeParentController.text,
+                  adresseParent: _adresseParentController.text.isEmpty
+                      ? 'Non spécifiée'
+                      : _adresseParentController.text,
+                );
+                Navigator.pop(context);
+                CartSnackBar.showOverlay(
+                  context,
+                  productName: 'Recommandation',
+                  message: 'Votre recommandation a été envoyée avec succès !',
+                  backgroundColor: Colors.green,
+                );
+              } catch (e) {
+                CartSnackBar.showOverlay(
+                  context,
+                  productName: 'Erreur',
+                  message: e.toString(),
+                  backgroundColor: Colors.red,
+                );
+              }
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (actionType == 'share') {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => _buildShareForm(),
       );
       return;
     }

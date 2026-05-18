@@ -8,9 +8,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:http/http.dart' as http;
-import 'package:ffmpeg_kit_flutter_min/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_min/return_code.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
 import '../services/message_api_service.dart';
@@ -361,12 +358,13 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDarkMode(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: const Color(0xFF0288D1),
+      value: (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
+        statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.screenBg(context),
         body: CustomScrollView(
           slivers: [
             _buildCustomAppBar(),
@@ -393,10 +391,11 @@ class _MessagesScreenState extends State<MessagesScreen>
       automaticallyImplyLeading: true,
       onBackTap: () => Navigator.pop(context),
       actions: _buildMessageActions(),
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
+        color: AppColors.screenTextPrimaryThemed(context),
       ),
     );
   }
@@ -410,12 +409,19 @@ class _MessagesScreenState extends State<MessagesScreen>
           height: 40,
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: AppColors.screenCardThemed(context),
             borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.screenShadowThemed(context),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.refresh_outlined,
-            color: Colors.white,
+            color: AppColors.screenTextPrimaryThemed(context),
             size: 18,
           ),
         ),
@@ -480,7 +486,7 @@ class _MessagesScreenState extends State<MessagesScreen>
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFF0288D1).withOpacity(0.1),
+               color: const Color(0xFF0288D1).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -490,12 +496,12 @@ class _MessagesScreenState extends State<MessagesScreen>
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Aucun message',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
+              color: AppColors.screenTextPrimaryThemed(context),
             ),
           ),
           const SizedBox(height: 6),
@@ -503,9 +509,9 @@ class _MessagesScreenState extends State<MessagesScreen>
             _hasStudentContext
                 ? 'Envoyez un message à ${_args!.ecoleName}'
                 : 'Démarrez une conversation',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.screenTextSecondary,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -521,11 +527,11 @@ class _MessagesScreenState extends State<MessagesScreen>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: _children.length,
-        separatorBuilder: (context, index) => const Divider(
+        separatorBuilder: (context, index) => Divider(
           height: 1,
           indent: 72,
           endIndent: 16,
-          color: Color(0xFFE0E0E0),
+          color: AppColors.screenDividerThemed(context),
         ),
         itemBuilder: (context, index) {
           final child = _children[index];
@@ -561,10 +567,10 @@ class _MessagesScreenState extends State<MessagesScreen>
       ),
       title: Text(
         child.fullName,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: AppColors.screenTextPrimary,
+          color: AppColors.screenTextPrimaryThemed(context),
         ),
       ),
       subtitle: Column(
@@ -573,18 +579,21 @@ class _MessagesScreenState extends State<MessagesScreen>
           const SizedBox(height: 4),
           Text(
             child.establishment,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.screenTextSecondary,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
           ),
           Text(
             'Classe: ${child.grade}',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.screenTextSecondaryThemed(context),
+            ),
           ),
           if (!hasMatricule)
             Container(
-              margin: const EdgeInsets.only(top: 4),
+               margin: const EdgeInsets.only(top: 4),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: Colors.orange.withOpacity(0.12),
@@ -605,7 +614,10 @@ class _MessagesScreenState extends State<MessagesScreen>
             ),
         ],
       ),
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFBDBDBD)),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: AppColors.screenTextSecondaryThemed(context),
+      ),
     );
   }
 
@@ -628,20 +640,20 @@ class _MessagesScreenState extends State<MessagesScreen>
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Aucun enfant',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
+              color: AppColors.screenTextPrimaryThemed(context),
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Ajoutez un enfant pour commencer à envoyer des messages',
             style: TextStyle(
               fontSize: 13,
-              color: AppColors.screenTextSecondary,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -712,6 +724,43 @@ class _MessagesScreenState extends State<MessagesScreen>
     AttachmentType attachmentType = AttachmentType.none,
     String? attachmentUrl,
   }) {
+    final isDark = AppColors.isDarkMode(context);
+
+    // Sent: Subtle transparent blue
+    final Color bubbleColorMe = isDark
+        ? const Color(0xFF0288D1).withOpacity(0.20)
+        : const Color(0xFF0288D1).withOpacity(0.10);
+    // Received: Subtle transparent green
+    final Color bubbleColorOther = isDark
+        ? const Color(0xFF4CAF50).withOpacity(0.20)
+        : const Color(0xFF4CAF50).withOpacity(0.10);
+        
+    final Color bubbleBgColor = isMe ? bubbleColorMe : bubbleColorOther;
+    
+    // Text colors matching the tint
+    final Color textColorMe = isDark 
+        ? const Color(0xFFE1F5FE) 
+        : const Color(0xFF01579B);
+    final Color textColorOther = isDark 
+        ? const Color(0xFFE8F5E8) 
+        : const Color(0xFF1B5E20);
+    final Color textColor = isMe ? textColorMe : textColorOther;
+
+    // Time stamp colors matching the tint
+    final Color timeColorMe = isDark 
+        ? const Color(0xFFB3E5FC) 
+        : const Color(0xFF0288D1).withOpacity(0.8);
+    final Color timeColorOther = isDark 
+        ? const Color(0xFFC8E6C9) 
+        : const Color(0xFF4CAF50).withOpacity(0.8);
+    final Color timeColor = isMe ? timeColorMe : timeColorOther;
+
+    // Check if the body text is a placeholder (i.e. user has not associated a text to the attachment)
+    final bool isPlaceholder = body == 'Note vocale' ||
+        body == 'Image' ||
+        body == 'Document';
+    final bool showText = body.isNotEmpty && !isPlaceholder;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -725,14 +774,16 @@ class _MessagesScreenState extends State<MessagesScreen>
               width: 28,
               height: 28,
               margin: const EdgeInsets.only(right: 6, bottom: 2),
-              decoration: const BoxDecoration(
-                color: Color(0xFFB3E5FC),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF4CAF50).withOpacity(0.2)
+                    : const Color(0xFFE8F5E8),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.school_outlined,
                 size: 14,
-                color: Color(0xFF0288D1),
+                color: Color(0xFF4CAF50),
               ),
             ),
           ],
@@ -748,20 +799,13 @@ class _MessagesScreenState extends State<MessagesScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: isMe ? const Color(0xFF0288D1) : Colors.white,
+                  color: bubbleBgColor,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(18),
                     topRight: const Radius.circular(18),
                     bottomLeft: Radius.circular(isMe ? 18 : 4),
                     bottomRight: Radius.circular(isMe ? 4 : 18),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: isMe
@@ -771,7 +815,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                     if (attachmentType == AttachmentType.audio &&
                         attachmentUrl != null) ...[
                       _AudioBubble(url: attachmentUrl, isMe: isMe),
-                      const SizedBox(height: 6),
+                      if (showText) const SizedBox(height: 6),
                     ] else if (attachmentType == AttachmentType.document &&
                         attachmentUrl != null) ...[
                       GestureDetector(
@@ -790,18 +834,14 @@ class _MessagesScreenState extends State<MessagesScreen>
                             Icon(
                               Icons.picture_as_pdf,
                               size: 14,
-                              color: isMe
-                                  ? Colors.white.withOpacity(0.85)
-                                  : const Color(0xFF0288D1),
+                              color: textColor,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'Ouvrir le PDF',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isMe
-                                    ? Colors.white.withOpacity(0.85)
-                                    : const Color(0xFF0288D1),
+                                color: textColor,
                                 fontStyle: FontStyle.italic,
                                 decoration: TextDecoration.underline,
                               ),
@@ -809,7 +849,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      if (showText) const SizedBox(height: 4),
                     ] else if (attachmentType == AttachmentType.image &&
                         attachmentUrl != null) ...[
                       GestureDetector(
@@ -824,52 +864,42 @@ class _MessagesScreenState extends State<MessagesScreen>
                             placeholder: (context, url) => Container(
                               width: 200,
                               height: 150,
-                              color: isMe
-                                  ? Colors.white.withOpacity(0.2)
-                                  : const Color(0xFFF5F5F5),
+                              color: textColor.withOpacity(0.1),
                               child: Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    isMe
-                                        ? Colors.white
-                                        : const Color(0xFF0288D1),
-                                  ),
+                                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
                                 ),
                               ),
                             ),
                             errorWidget: (context, url, error) => Container(
                               width: 200,
                               height: 150,
-                              color: isMe
-                                  ? Colors.white.withOpacity(0.2)
-                                  : const Color(0xFFF5F5F5),
+                              color: textColor.withOpacity(0.1),
                               child: Center(
                                 child: Icon(
                                   Icons.broken_image,
                                   size: 32,
-                                  color: isMe
-                                      ? Colors.white.withOpacity(0.6)
-                                      : const Color(0xFF0288D1),
+                                  color: textColor,
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      if (showText) const SizedBox(height: 6),
                     ],
-                    Text(
-                      body,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: isMe
-                            ? Colors.white
-                            : AppColors.screenTextPrimary,
+                    if (showText) ...[
+                      Text(
+                        body,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.4,
+                          color: textColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
+                      const SizedBox(height: 4),
+                    ],
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -877,9 +907,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                           time,
                           style: TextStyle(
                             fontSize: 10,
-                            color: isMe
-                                ? Colors.white.withOpacity(0.65)
-                                : AppColors.screenTextSecondary,
+                            color: timeColor,
                           ),
                         ),
                         if (isPending && isMe) ...[
@@ -890,7 +918,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                             child: CircularProgressIndicator(
                               strokeWidth: 1.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white.withOpacity(0.65),
+                                timeColor,
                               ),
                             ),
                           ),
@@ -913,7 +941,7 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   Widget _buildComposeBar() {
     return Container(
-      color: Colors.white,
+      color: AppColors.screenSurfaceThemed(context),
       padding: EdgeInsets.fromLTRB(
         8,
         8,
@@ -935,7 +963,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F0F0),
+                    color: AppColors.screenActionBg(context),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: Icon(
@@ -947,7 +975,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                     size: 20,
                     color: _attachedFile != null
                         ? const Color(0xFF0288D1)
-                        : AppColors.screenTextSecondary,
+                        : AppColors.screenTextSecondaryThemed(context),
                   ),
                 ),
               ),
@@ -959,10 +987,10 @@ class _MessagesScreenState extends State<MessagesScreen>
                     maxHeight: 120,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
+                    color: AppColors.grey100Adaptive(context),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFE8E8E8),
+                      color: AppColors.screenBorder(context),
                       width: 0.5,
                     ),
                   ),
@@ -970,18 +998,18 @@ class _MessagesScreenState extends State<MessagesScreen>
                     controller: _messageController,
                     maxLines: null,
                     textInputAction: TextInputAction.newline,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.screenTextPrimary,
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Message...',
                       hintStyle: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFFBBBBBB),
+                        color: AppColors.screenTextTertiary(context),
                       ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
                       ),
@@ -1079,11 +1107,14 @@ class _MessagesScreenState extends State<MessagesScreen>
         : _attachedFile!.path.split('/').last;
     final isImg = _attachmentType == AttachmentType.image;
 
+    final isDark = AppColors.isDarkMode(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFE3F2FD),
+        color: isDark
+            ? const Color(0xFF0288D1).withOpacity(0.15)
+            : const Color(0xFFE3F2FD),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: const Color(0xFF0288D1).withOpacity(0.2),
@@ -1162,7 +1193,7 @@ class _MessagesScreenState extends State<MessagesScreen>
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -1179,11 +1210,14 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   // ─── INDICATEUR ENREGISTREMENT ────────────────────────────────────────────
   Widget _buildRecordingIndicator() {
+    final isDark = AppColors.isDarkMode(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE),
+        color: isDark
+            ? const Color(0xFFEF4444).withOpacity(0.15)
+            : const Color(0xFFFFEBEE),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: const Color(0xFFEF4444).withOpacity(0.3),
@@ -1528,9 +1562,7 @@ class _ImageViewerScreen extends StatelessWidget {
 // ─── WIDGET LECTEUR AUDIO ─────────────────────────────────────────────────────
 //
 // Stratégie de lecture selon le format reçu :
-//   • .m4a / .mp3 / .wav  → lecture directe via AudioPlayers (natif iOS+Android)
-//   • .webm               → conversion FFmpeg WebM → MP3 avant lecture
-//                           MP3 = format universel, aucun souci AVFoundation/ExoPlayer
+//   • .m4a / .mp3 / .wav / .webm → lecture directe via AudioPlayers
 //
 class _AudioBubble extends StatefulWidget {
   final String url;
@@ -1550,11 +1582,6 @@ class _AudioBubbleState extends State<_AudioBubble> {
   bool _isLoading = true;
   bool _isInitialized = false;
 
-  // Conversion en cours
-  bool _isConverting = false;
-  // Chemin du fichier MP3 temporaire (nettoyé au dispose)
-  String? _convertedFilePath;
-
   @override
   void initState() {
     super.initState();
@@ -1564,104 +1591,7 @@ class _AudioBubbleState extends State<_AudioBubble> {
   @override
   void dispose() {
     _player.dispose();
-    _cleanupTempFile();
     super.dispose();
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  //  DÉTECTION FORMAT
-  // ════════════════════════════════════════════════════════════════════════════
-
-  /// Retourne true si l'URL pointe vers un WebM (non supporté nativement iOS).
-  bool _isWebM() {
-    final path = widget.url.split('?').first.toLowerCase();
-    return path.endsWith('.webm');
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  //  CONVERSION WEBM → MP3 VIA FFMPEGKIT
-  // ════════════════════════════════════════════════════════════════════════════
-
-  /// Télécharge le WebM depuis [webmUrl] et le convertit en MP3 via FFmpegKit.
-  /// Retourne le chemin local du MP3, ou null en cas d'échec.
-  ///
-  /// Commande FFmpeg utilisée :
-  ///   ffmpeg -i input.webm -vn -c:a libmp3lame -b:a 128k output.mp3
-  ///
-  /// Pourquoi MP3 ?
-  ///   • Décodeur natif sur iOS (AVFoundation) et Android (MediaCodec/ExoPlayer)
-  ///   • Pas de problème de moov atom comme M4A
-  ///   • audioplayers le lit sans aucune configuration supplémentaire
-  Future<String?> _convertWebMToMp3(String webmUrl) async {
-    try {
-      if (!mounted) return null;
-      setState(() => _isConverting = true);
-      print('🔄 [AudioBubble] Téléchargement WebM depuis: $webmUrl');
-
-      // 1. Téléchargement du fichier WebM
-      final response = await http.get(Uri.parse(webmUrl));
-      if (response.statusCode != 200) {
-        print(
-          '❌ [AudioBubble] Téléchargement échoué: HTTP ${response.statusCode}',
-        );
-        return null;
-      }
-
-      final tempDir = await getTemporaryDirectory();
-      final ts = DateTime.now().millisecondsSinceEpoch;
-      final inputPath = '${tempDir.path}/audio_input_$ts.webm';
-      final outputPath = '${tempDir.path}/audio_output_$ts.mp3';
-
-      // Écriture du WebM sur disque
-      await File(inputPath).writeAsBytes(response.bodyBytes);
-      print(
-        '✅ [AudioBubble] WebM écrit: $inputPath (${response.bodyBytes.length} bytes)',
-      );
-
-      // 2. Conversion FFmpeg : WebM (Vorbis/Opus) → MP3 128k
-      //    -vn         : ignorer la piste vidéo (le WebM peut contenir une piste vidéo vide)
-      //    -c:a libmp3lame : encoder en MP3
-      //    -b:a 128k   : bitrate 128 kbps (bon compromis qualité/taille)
-      //    -ar 44100   : sample rate standard
-      //    -ac 1       : mono (notes vocales, réduit la taille)
-      //    -y          : écraser la sortie si elle existe
-      final cmd =
-          '-i "$inputPath" -vn -c:a libmp3lame -b:a 128k -ar 44100 -ac 1 -y "$outputPath"';
-      print('🔄 [AudioBubble] FFmpeg: $cmd');
-
-      final session = await FFmpegKit.execute(cmd);
-      final returnCode = await session.getReturnCode();
-
-      // Nettoyage du fichier WebM intermédiaire
-      try {
-        await File(inputPath).delete();
-      } catch (_) {}
-
-      if (ReturnCode.isSuccess(returnCode)) {
-        final outFile = File(outputPath);
-        final exists = await outFile.exists();
-        final size = exists ? await outFile.length() : 0;
-
-        if (exists && size > 0) {
-          print('✅ [AudioBubble] MP3 créé: $outputPath ($size bytes)');
-          return outputPath;
-        } else {
-          print('❌ [AudioBubble] MP3 vide ou absent après conversion');
-        }
-      } else {
-        // Affiche les logs FFmpeg pour aider au diagnostic
-        final logs = await session.getAllLogsAsString();
-        print('❌ [AudioBubble] FFmpeg returnCode: $returnCode');
-        print('❌ [AudioBubble] FFmpeg logs:\n$logs');
-      }
-
-      return null;
-    } catch (e) {
-      print('💥 [AudioBubble] Erreur critique conversion: $e');
-      return null;
-    } finally {
-      if (mounted) setState(() => _isConverting = false);
-    }
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -1696,39 +1626,22 @@ class _AudioBubbleState extends State<_AudioBubble> {
         return;
       }
 
-      // ── Choix de la source ──────────────────────────────────────────────
-      String finalUrl = widget.url;
-
-      if (_isWebM()) {
-        // Le WebM n'est pas supporté nativement par AVFoundation (iOS).
-        // On le convertit en MP3 via FFmpegKit avant de charger le lecteur.
-        print('🔄 [AudioBubble] Format WebM détecté → conversion MP3');
-        final mp3Path = await _convertWebMToMp3(widget.url);
-        if (mp3Path == null) {
-          print('❌ [AudioBubble] Conversion échouée, lecteur désactivé');
-          if (mounted) setState(() => _isLoading = false);
-          return;
-        }
-        _convertedFilePath = mp3Path;
-        finalUrl = mp3Path; // chemin local du MP3
-      }
-
       // ── Chargement de la source audio ───────────────────────────────────
-      if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
-        // Source réseau (M4A, MP3 distant)
-        print('🌐 [AudioBubble] Chargement URL réseau: $finalUrl');
-        await _player.setSourceUrl(finalUrl);
+      if (widget.url.startsWith('http://') || widget.url.startsWith('https://')) {
+        // Source réseau (M4A, MP3, WebM distant, etc.)
+        print('🌐 [AudioBubble] Chargement URL réseau: ${widget.url}');
+        await _player.setSourceUrl(widget.url);
       } else {
-        // Source locale (MP3 converti, M4A enregistré)
-        final file = File(finalUrl);
+        // Source locale (M4A enregistré)
+        final file = File(widget.url);
         if (!await file.exists()) {
-          print('❌ [AudioBubble] Fichier local introuvable: $finalUrl');
+          print('❌ [AudioBubble] Fichier local introuvable: ${widget.url}');
           if (mounted) setState(() => _isLoading = false);
           return;
         }
         final size = await file.length();
-        print('📁 [AudioBubble] Fichier local: $finalUrl ($size bytes)');
-        await _player.setSource(DeviceFileSource(finalUrl));
+        print('📁 [AudioBubble] Fichier local: ${widget.url} ($size bytes)');
+        await _player.setSource(DeviceFileSource(widget.url));
       }
 
       if (mounted) {
@@ -1740,26 +1653,6 @@ class _AudioBubbleState extends State<_AudioBubble> {
     } catch (e) {
       print('❌ [AudioBubble] Erreur init player: $e');
       if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  //  NETTOYAGE
-  // ════════════════════════════════════════════════════════════════════════════
-
-  void _cleanupTempFile() {
-    if (_convertedFilePath != null) {
-      try {
-        final file = File(_convertedFilePath!);
-        if (file.existsSync()) {
-          file.deleteSync();
-          print(
-            '🗑️ [AudioBubble] Fichier MP3 temporaire supprimé: $_convertedFilePath',
-          );
-        }
-      } catch (e) {
-        print('⚠️ [AudioBubble] Erreur nettoyage: $e');
-      }
     }
   }
 
@@ -1792,36 +1685,12 @@ class _AudioBubbleState extends State<_AudioBubble> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isMe ? Colors.white : const Color(0xFF0288D1);
-    final trackColor = widget.isMe
-        ? Colors.white.withOpacity(0.3)
-        : const Color(0xFF0288D1).withOpacity(0.2);
-
-    // ── État : conversion en cours ─────────────────────────────────────────
-    if (_isConverting) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Préparation audio...',
-            style: TextStyle(
-              fontSize: 11,
-              color: color.withOpacity(0.7),
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      );
-    }
+    final isDark = AppColors.isDarkMode(context);
+    final Color colorMe = isDark ? const Color(0xFFE1F5FE) : const Color(0xFF01579B);
+    final Color colorOther = isDark ? const Color(0xFFE8F5E8) : const Color(0xFF1B5E20);
+    
+    final color = widget.isMe ? colorMe : colorOther;
+    final trackColor = color.withOpacity(0.25);
 
     // ── État : chargement initial ──────────────────────────────────────────
     if (_isLoading) {

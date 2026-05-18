@@ -6,11 +6,14 @@ class VideoApiService {
   static const String baseUrl = 'https://api2.vie-ecoles.com';
   static const String videosEndpoint = '/api/vie-ecoles/videos';
 
-  static Future<List<Video>> getVideos({String? ecole}) async {
+  static Future<List<Video>> getVideos({String? ecole, String? typeVideo}) async {
     try {
       final Map<String, String> queryParams = {};
       if (ecole != null && ecole.isNotEmpty) {
         queryParams['ecole'] = ecole;
+      }
+      if (typeVideo != null && typeVideo.isNotEmpty) {
+        queryParams['type_video'] = typeVideo;
       }
 
       final uri = Uri.parse('$baseUrl$videosEndpoint').replace(queryParameters: queryParams);

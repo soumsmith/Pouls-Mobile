@@ -43,7 +43,6 @@ dependencies:
   path_provider: ^2.1.2
   #just_audio: ^0.9.40     # Lecture audio
   audioplayers: ^5.2.1
-  ffmpeg_kit_flutter_min: ^6.0.3
 
   syncfusion_flutter_pdfviewer: ^27.1.48
 

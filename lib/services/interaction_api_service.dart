@@ -4,7 +4,7 @@ import 'auth_service.dart';
 
 /// Service pour la gestion des interactions (commentaires, partages, notes) via l'API vie-ecoles
 class InteractionApiService {
-  static const String _baseUrl = '/vie-ecoles/interactions';
+  static const String _baseUrl = 'https://api2.vie-ecoles.com/api/vie-ecoles/interactions';
 
   /// Créer une nouvelle interaction (commentaire, partage, note)
   ///
@@ -101,26 +101,44 @@ class InteractionApiService {
 
   /// Supprimer un commentaire
   ///
-  /// Endpoint: DELETE /api/ecoles/interactions/comment/{id_comment}?user_id={idUser}
+  /// Endpoint: DELETE /vie-ecoles/interactions/comment/{id_comment}?user_id={idUser}
   static Future<bool> deleteComment({
     required int commentId,
     required int userId,
   }) async {
     try {
       print('🗑️ Suppression du commentaire: id=$commentId, user=$userId');
-      print('🌐 URL: /ecoles/interactions/comment/$commentId?user_id=$userId');
+      print('🌐 URL: $_baseUrl/comment/$commentId?user_id=$userId');
 
-      final response = await HttpService.get(
-        '/ecoles/interactions/comment/$commentId?user_id=$userId',
-      );
-
-      if (response['status'] == 'success' || response['success'] == true) {
-        print('✅ Commentaire supprimé avec succès');
-        return true;
-      } else {
-        print(
-          '❌ Échec de la suppression du commentaire: ${response['message'] ?? 'Erreur inconnue'}',
+      try {
+        final response = await HttpService.delete(
+          '$_baseUrl/comment/$commentId?user_id=$userId',
         );
+
+        if (response['status'] == 'success' || response['success'] == true) {
+          print('✅ Commentaire supprimé avec succès');
+          return true;
+        } else {
+          // Some APIs return a message field on success
+          final message = response['message']?.toString().toLowerCase() ?? '';
+          if (message.contains('success') || message.contains('deleted') || message.contains('supprim')) {
+            print('✅ Commentaire supprimé avec succès (message: ${response['message']})');
+            return true;
+          }
+          print(
+            '❌ Échec de la suppression du commentaire: ${response['message'] ?? 'Erreur inconnue'}',
+          );
+          return false;
+        }
+      } catch (httpError) {
+        // HttpService may throw on non-JSON responses (e.g. plain text "deleted")
+        // or on 204 No Content — treat as success if it's not a real network error
+        final errorStr = httpError.toString().toLowerCase();
+        if (errorStr.contains('204') || errorStr.contains('success') || errorStr.contains('deleted')) {
+          print('✅ Commentaire supprimé avec succès (réponse non-JSON)');
+          return true;
+        }
+        print('❌ Erreur HTTP lors de la suppression: $httpError');
         return false;
       }
     } catch (e) {
@@ -161,6 +179,58 @@ class InteractionApiService {
       }
     } catch (e) {
       print('❌ Erreur lors de la modification du commentaire: $e');
+      return false;
+    }
+  }
+
+  /// Aimer/Liker ou Disliker une vidéo
+  ///
+  /// Endpoint: POST /vie-ecoles/interactions/like
+  /// Body: {
+  ///   "video_id": 1,
+  ///   "user_id": 6,
+  ///   "type": "like" // ou "dislike"
+  /// }
+  static Future<bool> toggleLike({
+    required int videoId,
+    required int userId,
+    required String type, // "like" ou "dislike"
+  }) async {
+    try {
+      print('👍 Enregistrement interaction: video=$videoId, user=$userId, type=$type');
+      print('🌐 URL: $_baseUrl/like');
+
+      final response = await HttpService.post(
+        '$_baseUrl/like',
+        body: {
+          'video_id': videoId,
+          'user_id': userId,
+          'type': type,
+        },
+      );
+
+      print('👍 Réponse de l\'API: $response');
+
+      final msg = response['message']?.toString().toLowerCase() ?? '';
+      final isSuccess = response['status'] == 'success' ||
+          response['success'] == true ||
+          msg.contains('success') ||
+          msg.contains('succè') ||
+          msg.contains('succes') ||
+          msg.contains('enregistré') ||
+          response['data'] != null;
+
+      if (isSuccess) {
+        print('✅ Like/Dislike enregistré avec succès');
+        return true;
+      } else {
+        print(
+          "❌ Échec de l'enregistrement du Like/Dislike: ${response['message'] ?? 'Erreur inconnue'}",
+        );
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur lors de l\'enregistrement du Like/Dislike: $e');
       return false;
     }
   }

@@ -4,10 +4,18 @@ import 'http_service.dart';
 class GestionPresenceEleveService {
   static Future<List<GestionPresenceEleveEntry>> getGestionPresenceEleve(
     String matricule,
-    String ecoleCode,
-  ) async {
-    print('📡 Chargement présence/absence: matricule=$matricule, ecole=$ecoleCode');
-    final endpoint = '/vie-ecoles/gestion-presence-eleve/$matricule?ecole=$ecoleCode';
+    String ecoleCode, {
+    String? date,
+    String? type,
+  }) async {
+    print('📡 Chargement présence/absence: matricule=$matricule, ecole=$ecoleCode, date=$date, type=$type');
+    var endpoint = '/vie-ecoles/gestion-presence-eleve/$matricule?ecole=$ecoleCode';
+    if (date != null && date.isNotEmpty) {
+      endpoint += '&date=$date';
+    }
+    if (type != null && type.isNotEmpty) {
+      endpoint += '&type=$type';
+    }
     print('🌐 Endpoint complet: ${HttpService.baseUrl}$endpoint');
     try {
       final response = await HttpService.get(endpoint);

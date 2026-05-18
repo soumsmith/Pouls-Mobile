@@ -15,6 +15,7 @@ class NotesScreenJson extends StatefulWidget {
   final String anneeId;
   final String classeId;
   final String anneeLibelle;
+  final String? ecoleId;
 
   const NotesScreenJson({
     super.key,
@@ -22,6 +23,7 @@ class NotesScreenJson extends StatefulWidget {
     required this.anneeId,
     required this.classeId,
     required this.anneeLibelle,
+    this.ecoleId,
   });
 
   @override
@@ -54,6 +56,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   // Variable pour l'état d'extension du filtre
   bool _isFilterExpanded = false;
 
+  // Liste des années scolaires fetched depuis l'API
+  List<dynamic> _schoolYears = [];
+  List<String> _availableYears = [];
+  bool _isLoadingYears = false;
+
   @override
   void initState() {
     super.initState();
@@ -73,7 +80,60 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     _anneeId = widget.anneeId;
     _classeId = widget.classeId;
     _selectedYear = widget.anneeLibelle;
+
+    _loadSchoolYears();
   }
+
+  Future<void> _loadSchoolYears() async {
+    final ecole = widget.ecoleId ?? '38';
+    setState(() => _isLoadingYears = true);
+    try {
+      final years = await _notesApiService.getSchoolYears(ecoleId: ecole);
+      if (!mounted) return;
+      if (years != null && years.isNotEmpty) {
+        setState(() {
+          _schoolYears = years;
+          _availableYears = years
+              .map<String>((y) => (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString())
+              .toList();
+          _isLoadingYears = false;
+        });
+
+        // Tenter de matcher l'année courante pour avoir son libellé exact
+        final currentYear = years.firstWhere(
+          (y) => y['id'].toString() == _anneeId,
+          orElse: () => null,
+        );
+        if (currentYear != null) {
+          setState(() {
+            _selectedYear = currentYear['customLibelle'] ?? currentYear['libelle'] ?? _selectedYear;
+          });
+        }
+      } else {
+        setState(() => _isLoadingYears = false);
+      }
+    } catch (e) {
+      print('❌ Erreur _loadSchoolYears: $e');
+      if (!mounted) return;
+      setState(() => _isLoadingYears = false);
+    }
+  }
+
+  void _onYearChanged(String label) {
+    final year = _schoolYears.firstWhere(
+      (y) => (y['customLibelle'] ?? y['libelle']) == label,
+      orElse: () => null,
+    );
+    if (year != null && _anneeId != year['id'].toString()) {
+      setState(() {
+        _anneeId = year['id'].toString();
+        _selectedYear = label;
+        _isLoading = true;
+      });
+      _loadApiData();
+    }
+  }
+
 
   @override
   void didChangeDependencies() {
@@ -119,6 +179,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         periode: periode,
       );
 
+      if (!mounted) return;
+
       if (apiData != null) {
         setState(() {
           _bulletinData = apiData;
@@ -136,11 +198,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           'Notes chargées : ${matieres.length} matière${matieres.length > 1 ? 's' : ''}',
         );
       } else {
-        setState(() => _isLoading = false);
+        setState(() {
+          _bulletinData = null;
+          _isLoading = false;
+        });
         _showError('Aucune note trouvée pour cette période');
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        _bulletinData = null;
+        _isLoading = false;
+      });
 
       // Gestion spécifique des erreurs 400
       if (e.toString().contains('No result found for query')) {
@@ -398,54 +467,15 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   List<Widget> _buildContentSlivers() {
     if (_bulletinData == null) {
       return [
-        SliverFillRemaining(
-          child: Center(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: AppColors.isDarkMode(context) 
-                        ? const Color(0xFF8B4513)
-                        : AppColors.screenOrangeLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.assignment_outlined,
-                    size: 48,
-                    color: AppColors.screenOrange,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Erreur de chargement',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimaryThemed(context),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Impossible de charger les données.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.screenTextSecondaryThemed(context),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 48),
-                  child: SubtleRetryButtonWithText(
-                    onTap: () {
-                      setState(() => _isLoading = true);
-                      _loadApiData();
-                    },
-                    color: AppColors.screenOrange,
-                  ),
-                ),
+                _buildFiltersSection(),
+                const SizedBox(height: 16),
+                _buildEmptyState(),
               ],
             ),
           ),
@@ -1300,50 +1330,13 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         Divider(color: AppColors.screenDividerThemed(context), height: 1),
                         const SizedBox(height: 14),
 
-          // Année scolaire (read-only)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Année scolaire',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.screenTextSecondaryThemed(context),
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.screenSurfaceThemed(context),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.screenDividerThemed(context)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      color: AppColors.screenOrange,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      _selectedYear ?? 'Chargement...',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.screenTextPrimaryThemed(context),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          // Année scolaire
+          SearchableDropdown(
+            label: 'Année scolaire',
+            value: _selectedYear ?? 'Chargement...',
+            items: _availableYears,
+            onChanged: _onYearChanged,
+            isDarkMode: AppColors.isDarkMode(context),
           ),
           const SizedBox(height: 12),
 
@@ -1356,7 +1349,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   value: _selectedSubject ?? 'Toutes',
                   items: _availableSubjects,
                   onChanged: _onSubjectChanged,
-                  isDarkMode: false,
+                  isDarkMode: AppColors.isDarkMode(context),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1366,7 +1359,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   value: _selectedTrimester ?? 'Tous',
                   items: _availableTrimesters,
                   onChanged: _onTrimesterChanged,
-                  isDarkMode: false,
+                  isDarkMode: AppColors.isDarkMode(context),
                 ),
               ),
             ],
@@ -1507,8 +1500,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           onTap: () => setState(
             () => _expandedSubjectId = isExpanded ? null : subjectName,
           ),
-          splashColor: AppColors.screenOrange.withOpacity(0.06),
-          highlightColor: AppColors.screenOrange.withOpacity(0.04),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
@@ -1764,7 +1757,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: color,
+                  color: AppColors.screenTextPrimaryThemed(context),
                 ),
               ),
               Text(

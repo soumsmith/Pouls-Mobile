@@ -274,43 +274,128 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
         ? (totalPaye / totalMontant) * 100
         : 0.0;
     final overdueCount = widget.scolariteEntries.where((e) => e.isOverdue).length;
+    final isDarkMode = _themeService.isDarkMode;
+
+    // Custom feedback based on progression
+    String progressText;
+    IconData progressIcon;
+    Color progressColor;
+    if (paymentPercentage >= 100) {
+      progressText = 'Félicitations ! Scolarité entièrement réglée. 🎉';
+      progressIcon = Icons.stars_rounded;
+      progressColor = Colors.green;
+    } else if (overdueCount > 0) {
+      progressText = 'Attention : Vous avez des paiements en retard.';
+      progressIcon = Icons.warning_amber_rounded;
+      progressColor = Colors.red;
+    } else if (paymentPercentage > 50) {
+      progressText = 'En bonne voie ! Plus de la moitié a été payée. 👍';
+      progressIcon = Icons.thumb_up_rounded;
+      progressColor = _primaryColor;
+    } else {
+      progressText = 'Échéances en cours de règlement.';
+      progressIcon = Icons.hourglass_top_rounded;
+      progressColor = Colors.amber;
+    }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Carte de statistiques
+        // Carte de statistiques premium
         Container(
-          padding: const EdgeInsets.all(20),
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: isDarkMode ? const Color(0xFF1E1E2A) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: _themeService.isDarkMode
-                  ? Colors.grey[700]!
-                  : Colors.grey[200]!,
+              color: isDarkMode
+                  ? const Color(0xFF2A2A3A)
+                  : const Color(0xFFE2E8F0),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: isDarkMode
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Titre et header de carte
               Row(
                 children: [
-                  Icon(_iconData, color: _primaryColor, size: 24),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Résumé de la scolarité',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode
-                          ? Colors.white
-                          : Colors.black,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _primaryColor.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      widget.iconData ?? Icons.payments_rounded,
+                      color: _primaryColor,
+                      size: 20,
                     ),
                   ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Résumé de la scolarité',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'Élève : ${widget.childName}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (paymentPercentage >= 100)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.verified_rounded, color: Colors.green, size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'Soldée',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 22),
+              
+              // Capsule grid of values
               Row(
                 children: [
                   Expanded(
@@ -318,86 +403,108 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                       'Total',
                       _formatAmount(totalMontant),
                       _primaryColor,
+                      Icons.account_balance_wallet_rounded,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _buildStatItem(
                       'Payé',
                       _formatAmount(totalPaye),
                       Colors.green,
+                      Icons.check_circle_rounded,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _buildStatItem(
                       'Restant',
                       _formatAmount(totalRapayer),
-                      Colors.red,
+                      totalRapayer > 0 ? Colors.red : Colors.grey,
+                      Icons.pending_actions_rounded,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Barre de progression
+              const SizedBox(height: 20),
+              
+              // Progression Bar
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Progression: ${paymentPercentage.toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          color: _themeService.isDarkMode
-                              ? Colors.white
-                              : Colors.black,
-                          fontSize: _textSizeService.getScaledFontSize(12),
-                          fontWeight: FontWeight.w500,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(progressIcon, color: progressColor, size: 15),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                progressText,
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.grey[300] : const Color(0xFF475569),
+                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      if (overdueCount > 0) ...[
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '$overdueCount retard(s)',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: _textSizeService.getScaledFontSize(10),
-                              fontWeight: FontWeight.w600,
-                            ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _primaryColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${paymentPercentage.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            color: _primaryColor,
+                            fontSize: _textSizeService.getScaledFontSize(12),
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
+                  // Progress Track
                   Container(
-                    height: 8,
+                    height: 10,
+                    width: double.infinity,
                     decoration: BoxDecoration(
-                      color:
-                          (_themeService.isDarkMode
-                                  ? Colors.grey[600]
-                                  : Colors.grey[300])!
-                              .withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(4),
+                      color: isDarkMode
+                          ? const Color(0xFF2D2D3D)
+                          : const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
                       widthFactor: paymentPercentage / 100,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: paymentPercentage == 100
-                              ? Colors.green
-                              : _primaryColor,
-                          borderRadius: BorderRadius.circular(4),
+                          gradient: LinearGradient(
+                            colors: [
+                              _primaryColor.withOpacity(0.8),
+                              paymentPercentage == 100 ? Colors.green : _primaryColor,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _primaryColor.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -407,45 +514,65 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        // Liste de toutes les échéances
-        ...widget.scolariteEntries
-            .map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildScolariteEntryCard(entry),
-              ),
-            )
-            .toList(),
+        const SizedBox(height: 24),
+        
+        // Titre liste des échéances
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 14),
+          child: Text(
+            'Détail des échéances',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: isDarkMode ? Colors.grey[300] : const Color(0xFF334155),
+              letterSpacing: -0.3,
+            ),
+          ),
+        ),
+        
+        // Liste des échéances
+        ...widget.scolariteEntries.map(
+          (entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _buildScolariteEntryCard(entry),
+          ),
+        ).toList(),
       ],
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color) {
+  Widget _buildStatItem(String label, String value, Color color, IconData icon) {
+    final isDarkMode = _themeService.isDarkMode;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: color.withOpacity(0.15),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              color: _themeService.isDarkMode
-                  ? Colors.grey[400]
-                  : Colors.grey[600],
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.grey[400] : const Color(0xFF64748B),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
               color: color,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -456,127 +583,205 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
   Widget _buildScolariteEntryCard(StudentScolariteEntry entry) {
     final isDarkMode = _themeService.isDarkMode;
     final isOverdue = entry.isOverdue;
+    final hasRemaining = entry.rapayer > 0;
     
+    // Status color & labeling
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+    
+    if (!hasRemaining) {
+      statusColor = Colors.green;
+      statusText = 'Soldé';
+      statusIcon = Icons.check_circle_rounded;
+    } else if (isOverdue) {
+      statusColor = Colors.red;
+      statusText = 'En retard';
+      statusIcon = Icons.error_rounded;
+    } else {
+      statusColor = Colors.amber[700]!;
+      statusText = 'À payer';
+      statusIcon = Icons.schedule_rounded;
+    }
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF1E1E1E)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: isDarkMode ? const Color(0xFF1E1E2A) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isOverdue
-              ? Colors.red.withOpacity(0.3)
-              : (isDarkMode
-                  ? Colors.grey[700]!
-                  : Colors.grey[200]!),
+          color: isDarkMode ? const Color(0xFF2A2A3A) : const Color(0xFFE2E8F0),
+          width: 1.2,
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.libelle,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      entry.formattedDateLimite,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDarkMode
-                            ? Colors.grey[400]
-                            : Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isOverdue)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'En retard',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildAmountItem('Total', _formatAmount(entry.montant), Colors.grey),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildAmountItem('Payé', _formatAmount(entry.paye), Colors.green),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildAmountItem('Restant', _formatAmount(entry.rapayer), 
-                    entry.rapayer > 0 ? Colors.red : Colors.grey),
-              ),
-            ],
-          ),
-          if (entry.dateLimite.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Échéance: ${entry.formattedDateLimite}',
-              style: TextStyle(
-                fontSize: 12,
-                color: isOverdue ? Colors.red : (isDarkMode
-                    ? Colors.grey[400]
-                    : Colors.grey[600]),
-              ),
-            ),
-          ],
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left status vertical colored strip
+              Container(
+                width: 6,
+                color: statusColor,
+              ),
+              // Main content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              entry.libelle,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Premium Status badge chip
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(statusIcon, color: statusColor, size: 12),
+                                const SizedBox(width: 4),
+                                Text(
+                                  statusText,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: statusColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Single beautiful date indicator
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 13,
+                            color: isDarkMode ? Colors.grey[400] : const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Échéance : ${entry.formattedDateLimite}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isOverdue 
+                                  ? Colors.red 
+                                  : (isDarkMode ? Colors.grey[400] : const Color(0xFF64748B)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      
+                      // Thin custom divider line
+                      Container(
+                        height: 1,
+                        color: isDarkMode ? const Color(0xFF2A2A3A) : const Color(0xFFF1F5F9),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Amounts row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildAmountItem(
+                              'Montant Total',
+                              _formatAmount(entry.montant),
+                              isDarkMode ? Colors.grey[300]! : const Color(0xFF475569),
+                              Icons.receipt_rounded,
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildAmountItem(
+                              'Déjà Payé',
+                              _formatAmount(entry.paye),
+                              Colors.green,
+                              Icons.check_circle_outline_rounded,
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildAmountItem(
+                              'Reste à Payer',
+                              _formatAmount(entry.rapayer),
+                              entry.rapayer > 0 ? Colors.red : Colors.grey,
+                              Icons.hourglass_bottom_rounded,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildAmountItem(String label, String value, Color color) {
+  Widget _buildAmountItem(String label, String value, Color color, IconData icon) {
+    final isDarkMode = _themeService.isDarkMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: _themeService.isDarkMode
-                ? Colors.grey[400]
-                : Colors.grey[600],
-          ),
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 11,
+              color: isDarkMode ? Colors.grey[500] : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.grey[400] : const Color(0xFF64748B),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w800,
             color: color,
+            letterSpacing: -0.1,
           ),
         ),
       ],

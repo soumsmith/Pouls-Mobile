@@ -25,6 +25,7 @@ class _OrdersScreenState extends State<OrdersScreen>
   bool _isLoading = true;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  String _selectedStatusFilter = 'En attente';
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -48,6 +49,21 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
+  String? _getApiStatusParam(String filter) {
+    switch (filter) {
+      case 'En attente':
+        return 'en_attente';
+      case 'En cours':
+        return 'en_cours';
+      case 'Livrées':
+        return 'livree';
+      case 'Annulées':
+        return 'annulee';
+      default:
+        return null;
+    }
+  }
+
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
     try {
@@ -60,7 +76,10 @@ class _OrdersScreenState extends State<OrdersScreen>
         });
         return;
       }
-      final orders = await _orderService.getUserOrders(currentUser.phone);
+      
+      final apiStatus = _getApiStatusParam(_selectedStatusFilter);
+      final orders = await _orderService.getUserOrders(currentUser.phone, statut: apiStatus);
+      
       setState(() {
         _orders = orders;
         _filteredOrders = orders;
@@ -117,11 +136,11 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark
-          .copyWith(statusBarColor: Colors.transparent),
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.screenSurfaceThemed(context),
+        backgroundColor: isDark ? Colors.black : Colors.white,
         body: _buildBody(),
       ),
     );
@@ -129,8 +148,10 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   // ─── BODY ──────────────────────────────────────────────────────────────────
   Widget _buildBody() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_isLoading) {
       return Scaffold(
+        backgroundColor: isDark ? Colors.black : Colors.white,
         body: SafeArea(
           child: CustomScrollView(
             slivers: [
@@ -150,7 +171,6 @@ class _OrdersScreenState extends State<OrdersScreen>
         ),
       );
     }
-    if (_orders.isEmpty) return _buildEmptyState();
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -164,6 +184,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                 SliverFillRemaining(
                   child: Column(
                     children: [
+                      _buildStatsHeader(),
+                      _buildFilterButtons(),
                       Expanded(child: _buildOrdersList()),
                       _buildSummaryBar(),
                     ],
@@ -285,7 +307,186 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ─── ORDERS LIST ───────────────────────────────────────────────────────────
+  Widget _buildStatsHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Calculate stats
+    final int totalCount = _orders.length;
+    final double totalSum = _orders.fold<double>(
+      0.0,
+      (sum, order) => sum + order.totalAmount,
+    );
+    final int pendingCount = _orders.where((order) => order.status == OrderStatus.pending).length;
+    final int validatedCount = _orders.where((order) => 
+      order.status == OrderStatus.confirmed || 
+      order.status == OrderStatus.processing || 
+      order.status == OrderStatus.shipped || 
+      order.status == OrderStatus.delivered
+    ).length;
+
+    // Format sum concisely: e.g., 11500 -> "11.5k" or 5000 -> "5k"
+    String sumStr = "";
+    if (totalSum >= 1000) {
+      final double kValue = totalSum / 1000;
+      sumStr = "${kValue.toStringAsFixed(kValue % 1 == 0 ? 0 : 1)}k";
+    } else {
+      sumStr = totalSum.toStringAsFixed(0);
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.screenCardThemed(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.screenDividerThemed(context).withOpacity(0.5), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildStatItem('Total', totalCount.toString(), isDark, Icons.shopping_bag_outlined, AppColors.shopBlue),
+          _buildStatVerticalDivider(isDark),
+          _buildStatItem('Somme', '$sumStr F', isDark, Icons.monetization_on_outlined, AppColors.shopGreen),
+          _buildStatVerticalDivider(isDark),
+          _buildStatItem('En attente', pendingCount.toString(), isDark, Icons.hourglass_empty_rounded, Colors.orange[700]!),
+          _buildStatVerticalDivider(isDark),
+          _buildStatItem('Validées', validatedCount.toString(), isDark, Icons.check_circle_outline_rounded, Colors.green[600]!),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatVerticalDivider(bool isDark) {
+    return Container(
+      width: 1,
+      height: 36,
+      color: AppColors.screenDividerThemed(context).withOpacity(0.5),
+    );
+  }
+
+  Widget _buildStatItem(String title, String value, bool isDark, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.screenTextPrimaryThemed(context),
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextSecondaryThemed(context),
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterButtons() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Status tabs definition
+    final List<Map<String, dynamic>> tabs = [
+      {'label': 'En attente', 'icon': Icons.hourglass_empty_rounded, 'color': Colors.orange[700]!},
+      {'label': 'En cours', 'icon': Icons.trending_up_rounded, 'color': Colors.blue[600]!},
+      {'label': 'Livrées', 'icon': Icons.check_circle_outline_rounded, 'color': Colors.green[600]!},
+      {'label': 'Annulées', 'icon': Icons.cancel_outlined, 'color': Colors.red[600]!},
+      {'label': 'Tous', 'icon': Icons.all_inbox_rounded, 'color': AppColors.shopBlue},
+    ];
+
+    return Container(
+      height: 38,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: tabs.length,
+        itemBuilder: (context, index) {
+          final tab = tabs[index];
+          final label = tab['label'] as String;
+          final icon = tab['icon'] as IconData;
+          final color = tab['color'] as Color;
+          final isSelected = _selectedStatusFilter == label;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  _selectedStatusFilter = label;
+                });
+                _loadOrders();
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected 
+                      ? color.withOpacity(isDark ? 0.2 : 0.1) 
+                      : AppColors.screenCardThemed(context),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected 
+                        ? color 
+                        : AppColors.screenDividerThemed(context).withOpacity(0.5),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 14,
+                      color: isSelected ? color : AppColors.screenTextSecondaryThemed(context),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: isSelected ? color : AppColors.screenTextPrimaryThemed(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildOrdersList() {
     final displayOrders = _isSearching ? _filteredOrders : _orders;
     
@@ -310,7 +511,7 @@ class _OrdersScreenState extends State<OrdersScreen>
             ),
           Expanded(
             child: displayOrders.isEmpty
-                ? _buildSearchEmptyState()
+                ? _buildEmptyStateArea()
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                     itemCount: displayOrders.length,
@@ -321,6 +522,88 @@ class _OrdersScreenState extends State<OrdersScreen>
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateArea() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : AppColors.shopBlueSurface,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.receipt_long_outlined,
+                  size: 38,
+                  color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Aucune commande',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.screenTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _selectedStatusFilter == 'En attente'
+                    ? 'Vous n\'avez aucune commande en attente.'
+                    : 'Vous n\'avez aucune commande dans cette catégorie.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? const Color(0xFFAAAAAA) : AppColors.screenTextSecondary,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.shopBlueLight, AppColors.shopBlue],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.shopBlue.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'Commencer vos achats',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1226,6 +1509,13 @@ class _OrderDetailsSheet extends StatelessWidget {
 
   // ─── Total recap card (miroir du CartScreen) ───────────────────────────────
   Widget _buildTotalCard() {
+    final double subtotal = order.items.fold<double>(
+      0.0,
+      (sum, item) => sum + (item.product.price * item.quantity),
+    );
+    final double deliveryFee = order.totalAmount - subtotal;
+    final bool isFree = deliveryFee <= 0;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1236,11 +1526,17 @@ class _OrderDetailsSheet extends StatelessWidget {
       child: Column(
         children: [
           _recapRow(
-              'Sous-total', '${order.totalAmount.toStringAsFixed(0)} FCFA',
-              isSubtitle: true),
+            'Sous-total',
+            '${subtotal.toStringAsFixed(0)} FCFA',
+            isSubtitle: true,
+          ),
           const SizedBox(height: 8),
-          _recapRow('Frais de livraison', 'Gratuite',
-              isSubtitle: true, valueColor: Colors.green[600]!),
+          _recapRow(
+            'Frais de livraison',
+            isFree ? 'Gratuite' : '${deliveryFee.toStringAsFixed(0)} FCFA',
+            isSubtitle: true,
+            valueColor: isFree ? Colors.green[600]! : AppColors.screenTextPrimary,
+          ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(color: AppColors.screenDivider, height: 1),
@@ -1347,11 +1643,13 @@ class _CancelButtonState extends State<_CancelButton> {
         ),
         child: Center(
           child: _isLoading
-              ? const CustomLoader(
-                  message: '',
-                  loaderColor: Colors.red,
-                  size: 20,
-                  showBackground: false,
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red[400]!),
+                  ),
                 )
               : Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1375,9 +1673,157 @@ class _CancelButtonState extends State<_CancelButton> {
   }
 
   Future<void> _cancel() async {
+    final TextEditingController reasonController = TextEditingController();
+    String selectedReason = "Changement d'avis";
+    final List<String> commonReasons = [
+      "Changement d'avis",
+      "Erreur d'article / quantité",
+      "Achat accidentel",
+      "Délai de livraison trop long",
+      "Autre raison (saisir ci-dessous)"
+    ];
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  const Icon(Icons.cancel_outlined, color: Colors.red, size: 24),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Annuler la commande',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Veuillez sélectionner le motif d\'annulation de votre commande :',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 14),
+                    ...commonReasons.map((reason) {
+                      final isSelected = selectedReason == reason;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? Colors.red[500]!.withOpacity(isDark ? 0.15 : 0.05)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected 
+                                ? Colors.red[400]! 
+                                : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            setDialogState(() {
+                              selectedReason = reason;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                                  color: isSelected ? Colors.red : Colors.grey,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    reason,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected 
+                                          ? (isDark ? Colors.red[300] : Colors.red[700])
+                                          : (isDark ? Colors.grey[300] : Colors.grey[800]),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    if (selectedReason == "Autre raison (saisir ci-dessous)") ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: reasonController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Saisissez votre motif ici...',
+                          hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Retour', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  child: const Text(
+                    'Confirmer',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    final String finalReason = selectedReason == "Autre raison (saisir ci-dessous)"
+        ? (reasonController.text.trim().isNotEmpty ? reasonController.text.trim() : "Autre motif")
+        : selectedReason;
+
     setState(() => _isLoading = true);
     try {
-      final success = await OrderService().cancelOrder(widget.order.id);
+      final success = await OrderService().cancelOrder(widget.order.id, reason: finalReason);
       if (success && mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1391,6 +1837,20 @@ class _CancelButtonState extends State<_CancelButton> {
             margin: const EdgeInsets.all(16),
           ),
         );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Échec de l\'annulation de la commande',
+                  style: TextStyle(color: Colors.white)),
+              backgroundColor: Colors.red[400],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

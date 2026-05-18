@@ -76,11 +76,8 @@ class _SearchableDropdownState extends State<SearchableDropdown>
     final availableHeight = screenHeight - keyboardHeight;
 
     const dropdownHeight = 300.0;
-    final dropdownTop = globalOffset.dy + size.height + 5.0;
-    final showAbove = dropdownTop + dropdownHeight > availableHeight;
-    final offset = showAbove
-        ? const Offset(0.0, -dropdownHeight - 5.0)
-        : Offset(0.0, size.height + 5.0);
+    // UX Choice: Always display the dropdown downward to prevent overlapping issues in bottom sheets
+    final offset = Offset(0.0, size.height + 5.0);
 
     return OverlayEntry(
       builder: (context) => GestureDetector(
@@ -219,6 +216,16 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
   void initState() {
     super.initState();
     _filteredItems = widget.items;
+  }
+
+  @override
+  void didUpdateWidget(_DropdownOverlayContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.items != oldWidget.items) {
+      setState(() {
+        _filteredItems = widget.items;
+      });
+    }
   }
 
   @override

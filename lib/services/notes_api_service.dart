@@ -41,4 +41,36 @@ class NotesApiService {
       return null;
     }
   }
+
+  Future<List<dynamic>?> getSchoolYears({required String ecoleId}) async {
+    try {
+      final url = Uri.parse(
+        '$baseUrl/annee/list-opened-or-closed-to-ecole?ecole=$ecoleId',
+      );
+
+      print('🌐 Appel API Années Scolaires: $url');
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('📊 Status code (Années): ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        print('✅ Années scolaires reçues: ${data.length}');
+        return data;
+      } else {
+        print('❌ Erreur API Années: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception lors de l\'appel API Années: $e');
+      return null;
+    }
+  }
 }

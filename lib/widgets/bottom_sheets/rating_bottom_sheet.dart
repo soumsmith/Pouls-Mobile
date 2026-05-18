@@ -99,53 +99,90 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSizeService = TextSizeService();
+
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          BottomSheetHeader(
-            icon: Icons.rate_review_outlined,
-            iconColor: widget.schoolColor,
-            title: widget.schoolName,
-            description: 'Avis et notes',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-
-          // Liste des avis (style messages WhatsApp)
-          Flexible(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.4,
+      padding: MediaQuery.of(context).viewInsets,
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.98,
+        snap: true,
+        snapSizes: const [0.5, 0.75, 0.85, 0.98],
+        expand: false,
+        builder: (context, scrollController) {
+          return GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
               ),
-              child: _isLoadingAvis
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF0288D1),
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  : _avisError != null
-                  ? _buildErrorView()
-                  : _avis.isEmpty
-                  ? _buildEmptyAvisView()
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      itemCount: _avis.length,
-                      itemBuilder: (context, index) {
-                        final avis = _avis[index];
-                        return _buildAvisBubble(avis);
-                      },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  BottomSheetHeader(
+                    icon: Icons.rate_review_outlined,
+                    iconColor: widget.schoolColor,
+                    title: widget.schoolName,
+                    description: 'Avis et notes',
+                    onClose: () => Navigator.of(context).pop(),
+                    titleColor:
+                        isDark ? Colors.white : AppColors.screenTextPrimary,
+                    descriptionColor: AppColors.screenTextSecondary,
+                    titleFontSize: textSizeService.getScaledFontSize(18),
+                    iconSize: 22,
+                  ),
+  
+                  // Liste des avis (style messages WhatsApp)
+                  Expanded(
+                    child: _isLoadingAvis
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF0288D1),
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : _avisError != null
+                        ? _buildErrorView()
+                        : _avis.isEmpty
+                        ? _buildEmptyAvisView()
+                        : ListView.builder(
+                            controller: scrollController,
+                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            itemCount: _avis.length,
+                            itemBuilder: (context, index) {
+                              final avis = _avis[index];
+                              return _buildAvisBubble(avis);
+                            },
+                          ),
+                  ),
+  
+                  // Barre d'envoi (style WhatsApp)
+                  if (widget.allowRating)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _buildComposeAvisBar(),
                     ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-          ),
-
-          // Barre d'envoi (style WhatsApp)
-          if (widget.allowRating) _buildComposeAvisBar(),
-        ],
+          );
+        },
       ),
     );
   }
@@ -157,6 +194,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
     final int note = avis['statut'] ?? 0;
     final String date = avis['date'] ?? '';
     final Color color = avis['color'] as Color? ?? widget.schoolColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -181,7 +219,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(18),
                   topRight: Radius.circular(18),
@@ -219,10 +257,10 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                   // Contenu du message
                   Text(
                     contenu,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 1.4,
-                      color: AppColors.screenTextPrimary,
+                      color: isDark ? Colors.white70 : AppColors.screenTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -245,8 +283,9 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
 
   // Barre de composition (style WhatsApp)
   Widget _buildComposeAvisBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: Colors.white,
+      color: Colors.transparent,
       padding: EdgeInsets.fromLTRB(
         0,
         8,
@@ -267,7 +306,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -287,7 +326,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                           _ratingController.text = (index + 1).toString();
                         }),
                         child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
+                           padding: const EdgeInsets.only(right: 4),
                           child: Icon(
                             index < currentRating
                                 ? Icons.star_rounded
@@ -317,10 +356,10 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                     maxHeight: 100,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
+                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFE8E8E8),
+                      color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE8E8E8),
                       width: 0.5,
                     ),
                   ),
@@ -328,18 +367,18 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                     controller: _commentController,
                     maxLines: null,
                     textInputAction: TextInputAction.newline,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.screenTextPrimary,
+                      color: isDark ? Colors.white : AppColors.screenTextPrimary,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Votre avis...',
                       hintStyle: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFFBBBBBB),
+                        color: isDark ? Colors.white30 : const Color(0xFFBBBBBB),
                       ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
                       ),
@@ -382,7 +421,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
   // Vue d'erreur
   Widget _buildErrorView() {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -424,7 +463,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
   // Vue vide (aucun avis)
   Widget _buildEmptyAvisView() {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -517,6 +556,7 @@ void showRatingBottomSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (context) => RatingBottomSheet(
       schoolId: schoolId,

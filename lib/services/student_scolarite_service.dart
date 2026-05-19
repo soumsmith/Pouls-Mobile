@@ -29,32 +29,23 @@ class StudentScolariteService {
       );
     }
 
-    print('🔄 Début du chargement de la scolarité pour l\'élève: $matricule');
-    print('🏫 École: ${_schoolService.schoolName} (ID Vie École: $vieEcoleId)');
-
     final url = Uri.parse(
       '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/scolarite-eleve/$matricule?ecole=$vieEcoleId',
     );
 
+    print('URL de l\'API: $url');
+
     try {
-      print('📡 Appel API: $url');
       final response = await http.get(url).timeout(AppConfig.API_TIMEOUT);
 
-      print('📥 Réponse reçue - Status: ${response.statusCode}');
+      print('Statut de la réponse: ${response.statusCode}');
+      print('Corps de la réponse: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        print('✅ Données reçues: status=${data['status']}');
-
         final scolariteResponse = StudentScolariteResponse.fromJson(data);
-        print(
-          '📚 ${scolariteResponse.data.length} échéances parsées avec succès',
-        );
-
         return scolariteResponse;
       } else {
-        print('❌ Erreur HTTP - Status: ${response.statusCode}');
-        print('📄 Response body: ${response.body}');
         throw Exception(
           'Erreur lors du chargement de la scolarité: ${response.statusCode}',
         );

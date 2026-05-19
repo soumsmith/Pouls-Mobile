@@ -353,6 +353,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   String _searchQuery = '';
   String? _expandedBranche;
   late TextEditingController _searchController;
+  late FocusNode _searchFocusNode;
 
   // Variables pour les notifications
   List<GroupMessage> _notifications = [];
@@ -465,6 +466,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     // Initialize search controller
     _searchController = TextEditingController();
+    _searchFocusNode = FocusNode();
   }
 
   @override
@@ -968,6 +970,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _adresseEtablissementController.dispose();
     // Search controller
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -3293,10 +3296,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     if (actionType == 'scolarite') {
       print('🔄 CLIC SUR "SCOLARITÉ" - Déclenchement du chargement');
       setState(() {
+        _selectedNiveauFiltre = null;
+        _searchQuery = '';
+        _searchController.clear();
         _niveauxFuture ??= NiveauService.getNiveauxByEcole(widget.ecole.parametreCode ?? '');
         _scolariteFuture = ScolariteService.getScolaritesByEcole(
           widget.ecole.parametreCode ?? '',
-          niveau: _selectedNiveauFiltre,
+          niveau: null,
         );
       });
     }
@@ -3306,14 +3312,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: MediaQuery.of(context).viewInsets,
-          child: ValueListenableBuilder<int>(
-            valueListenable: _avisNotifier,
-            builder: (context, _, __) {
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: MediaQuery.of(context).viewInsets,
+            child: ValueListenableBuilder<int>(
+              valueListenable: _avisNotifier,
+              builder: (context, _, __) {
               return Container(
                 constraints: BoxConstraints(
                   minHeight: 100,
@@ -3345,7 +3352,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       child: SingleChildScrollView(
                         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        child: _buildActionContent(actionType, def.color),
+                        child: _buildActionContent(actionType, def.color, setSheetState),
                       ),
                     ),
                   ],
@@ -3355,8 +3362,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ══════════════════════════════════════════════════════════════════════════
   //  Coulisses Excellence Content
@@ -3383,7 +3391,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
   //  ACTION CONTENT ROUTER
   // ══════════════════════════════════════════════════════════════════════════
-  Widget _buildActionContent(String actionType, Color headerColor) {
+  Widget _buildActionContent(String actionType, Color headerColor, StateSetter setSheetState) {
     switch (actionType) {
       case 'rating':
         return _buildRatingForm(headerColor);
@@ -3402,9 +3410,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       /*case 'school_events':
         return _buildEventsTab(headerColor);*/
       case 'scolarite':
-        return _buildScolariteTab(headerColor);
+        return _buildScolariteTab(headerColor, setSheetState);
       case 'voir_les_avis':
-        return _buildRatingForm(headerColor);
+        return _buildAvisTabContent(headerColor);
       case 'coulisses':
         return _buildCoulissesContent(headerColor);
       default:
@@ -4081,13 +4089,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(20),
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               '${niveaux.length} classe${niveaux.length > 1 ? 's' : ''} disponible${niveaux.length > 1 ? 's' : ''}',
-              style: TextStyle(fontSize: 13, color: Colors.black),
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
             ),
             const SizedBox(height: 20),
             ...sortedFilieres.map((filiere) {
@@ -4125,8 +4136,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.screenBorder(context),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4145,12 +4160,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: AppColors.screenSurfaceThemed(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.school_rounded,
-                    color: Colors.black,
+                    color: AppColors.screenTextPrimaryThemed(context),
                     size: 18,
                   ),
                 ),
@@ -4164,12 +4179,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Colors.black,
+                          color: AppColors.screenTextPrimaryThemed(context),
                         ),
                       ),
                       Text(
                         '$totalClasses classe${totalClasses > 1 ? 's' : ''} · ${sortedNiveauKeys.length} niveau${sortedNiveauKeys.length > 1 ? 'x' : ''}',
-                        style: TextStyle(fontSize: 12, color: Colors.black),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.screenTextSecondaryThemed(context),
+                        ),
                       ),
                     ],
                   ),
@@ -4207,7 +4225,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   width: 3,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: Colors.grey[400],
+                    color: AppColors.screenOrange,
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -4217,7 +4235,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Colors.black,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -4227,14 +4245,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: AppColors.screenSurfaceThemed(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${classes.length} séries',
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.black,
+                      color: AppColors.screenTextSecondaryThemed(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -4257,9 +4275,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppColors.screenSurfaceThemed(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: AppColors.screenBorder(context)),
       ),
       child: Row(
         children: [
@@ -4267,7 +4285,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -4279,7 +4297,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: Colors.black,
+                  color: AppColors.screenTextSecondaryThemed(context),
                 ),
               ),
             ),
@@ -4294,7 +4312,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                 ),
                 // if (niveau.niveau != null && niveau.niveau!.isNotEmpty)
@@ -4333,9 +4351,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: AppColors.screenSurfaceThemed(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: AppColors.screenBorder(context)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -4345,7 +4363,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Colors.black,
+              color: AppColors.screenTextPrimaryThemed(context),
             ),
           ),
           // if (niveau.serie != null && niveau.serie!.isNotEmpty)
@@ -4810,7 +4828,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Scolarité tab ──────────────────────────────────────────────────────────
-  Widget _buildScolariteTab(Color headerColor) {
+  Widget _buildScolariteTab(Color headerColor, StateSetter setSheetState) {
     if (_scolariteFuture == null) {
       return const Center(
         child: CustomLoader(
@@ -4837,7 +4855,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         }
         if (snapshot.hasError) {
           return _buildTabError(snapshot.error.toString(), () {
-            setState(() {
+            setSheetState(() {
               _scolariteFuture = ScolariteService.getScolaritesByEcole(
                 widget.ecole.parametreCode ?? '',
                 niveau: _selectedNiveauFiltre,
@@ -4866,15 +4884,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(20),
                 fontWeight: FontWeight.bold,
-                color: AppColors.screenTextPrimary,
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Frais par branche et statut',
               style: TextStyle(
                 fontSize: 13,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
               ),
             ),
             const SizedBox(height: 12),
@@ -4914,13 +4932,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             labelStyle: TextStyle(
                               color: _selectedNiveauFiltre == null
                                   ? AppColors.screenOrange
-                                  : AppColors.screenTextSecondary,
+                                  : AppColors.screenTextSecondaryThemed(context),
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
                             onSelected: (selected) {
                               if (selected) {
-                                setState(() {
+                                setSheetState(() {
                                   _selectedNiveauFiltre = null;
                                   _scolariteFuture = ScolariteService.getScolaritesByEcole(
                                     widget.ecole.parametreCode ?? '',
@@ -4943,12 +4961,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               labelStyle: TextStyle(
                                 color: isSelected
                                     ? AppColors.screenOrange
-                                    : AppColors.screenTextSecondary,
+                                    : AppColors.screenTextSecondaryThemed(context),
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                 fontSize: 13,
                               ),
                               onSelected: (selected) {
-                                setState(() {
+                                setSheetState(() {
                                   _selectedNiveauFiltre = selected ? lbl : null;
                                   _scolariteFuture = ScolariteService.getScolaritesByEcole(
                                     widget.ecole.parametreCode ?? '',
@@ -4966,17 +4984,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               ),
             Container(
               decoration: BoxDecoration(
-                color: AppColors.screenSurface,
+                color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.screenDivider),
+                border: Border.all(color: AppColors.screenBorder(context)),
               ),
               child: TextField(
                 controller: _searchController,
-                focusNode: FocusNode(),
+                style: TextStyle(
+                  color: AppColors.screenTextPrimaryThemed(context),
+                  fontSize: 13,
+                ),
+                focusNode: _searchFocusNode,
                 autofocus: false,
                 textInputAction: TextInputAction.search,
                 onChanged: (v) {
-                  setState(() => _searchQuery = v.toLowerCase());
+                  setSheetState(() => _searchQuery = v.toLowerCase());
                 },
                 decoration: InputDecoration(
                   hintText: 'Rechercher un niveau...',
@@ -4989,7 +5011,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded, size: 18),
                           onPressed: () {
-                            setState(() => _searchQuery = '');
+                            setSheetState(() => _searchQuery = '');
                             _searchController.clear();
                           },
                         )
@@ -5031,6 +5053,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                 )
                 .toList(),
+            const SizedBox(height: 50),
           ],
         );
       },
@@ -5054,7 +5077,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(12),
           boxShadow: AppDimensions.getMainShadow(context),
         ),
@@ -5071,16 +5094,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: AppColors.screenSurfaceThemed(context),
                           borderRadius: BorderRadius.circular(12),
-                          // border: Border.all(
-                          //   color: Colors.grey.withOpacity(0.3),
-                          //   width: 1,
-                          // ),
                         ),
                         child: Icon(
                           Icons.school_rounded,
-                          color: Colors.grey[600],
+                          color: AppColors.screenTextSecondaryThemed(context),
                           size: 18,
                         ),
                       ),
@@ -5116,7 +5135,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         duration: const Duration(milliseconds: 300),
                         child: Icon(
                           Icons.expand_more,
-                          color: Colors.grey[600],
+                          color: AppColors.screenTextSecondaryThemed(context),
                           size: 20,
                         ),
                       ),
@@ -5126,9 +5145,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.05),
+                      color: AppColors.screenSurfaceThemed(context),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                      border: Border.all(color: AppColors.screenBorder(context)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -5284,10 +5303,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 padding: const EdgeInsets.only(left: 8, bottom: 6),
                 child: Text(
                   entry.key == 'INS' ? 'Inscription' : 'Scolarité',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.screenTextSecondary,
+                    color: AppColors.screenTextSecondaryThemed(context),
                   ),
                 ),
               ),
@@ -5304,9 +5323,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
       decoration: BoxDecoration(
-        color: AppColors.screenSurface,
+        color: AppColors.screenSurfaceThemed(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: ListTile(
         dense: true,
@@ -5328,17 +5346,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         ),
         title: Text(
           ScolariteService.formaterMontant(scolarite.totalMontant ?? 0),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: AppColors.screenTextPrimary,
+            color: AppColors.screenTextPrimaryThemed(context),
           ),
         ),
         subtitle: Text(
-          'Date limite: ${scolarite.dateLimiteFormatee}',
-          style: const TextStyle(
+          'Date limit: ${scolarite.dateLimiteFormatee}',
+          style: TextStyle(
             fontSize: 11,
-            color: AppColors.screenTextSecondary,
+            color: AppColors.screenTextSecondaryThemed(context),
           ),
         ),
         trailing: Container(
@@ -6025,6 +6043,84 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     }
   }
 
+  // ── Contenu de l'onglet Avis & Commentaires ───────────────────────────────────────────
+  Widget _buildAvisTabContent(Color headerColor) {
+    if (_isLoadingAvis) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(
+            color: Color(0xFF0288D1),
+            strokeWidth: 2.5,
+          ),
+        ),
+      );
+    }
+
+    if (_avisError != null) {
+      return _buildErrorView();
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_avis.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0288D1).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.rate_review_outlined,
+                      size: 32,
+                      color: Color(0xFF0288D1),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Aucun avis pour le moment',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Soyez le premier à donner votre avis !',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.screenTextSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ..._avis.map((avis) => _buildAvisBubble(avis)),
+        const SizedBox(height: 16),
+        Divider(
+          color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
+          height: 1,
+        ),
+        const SizedBox(height: 12),
+        _buildComposeAvisBar(),
+      ],
+    );
+  }
+
   // ── Bulle d'avis (style WhatsApp) ───────────────────────────────────────────────────
   Widget _buildAvisBubble(Map<String, dynamic> avis) {
     final String auteur = avis['auteur'] ?? 'Anonyme';
@@ -6032,6 +6128,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final int note = avis['statut'] ?? 0;
     final String date = avis['date'] ?? '';
     final Color color = avis['color'] as Color? ?? AppColors.screenOrange;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -6056,7 +6153,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(18),
                   topRight: Radius.circular(18),
@@ -6094,10 +6191,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   // Contenu du message
                   Text(
                     contenu,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 1.4,
-                      color: AppColors.screenTextPrimary,
+                      color: isDark ? Colors.white70 : AppColors.screenTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -6120,12 +6217,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Barre de composition (style WhatsApp) ───────────────────────────────────────────
   Widget _buildComposeAvisBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: Colors.white,
+      color: Colors.transparent,
       padding: EdgeInsets.fromLTRB(
+        0,
         8,
-        8,
-        8,
+        0,
         MediaQuery.of(context).padding.bottom + 8,
       ),
       child: Column(
@@ -6142,7 +6240,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -6192,10 +6290,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     maxHeight: 100,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
+                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFE8E8E8),
+                      color: isDark ? const Color(0xFF3B3B3B) : const Color(0xFFE8E8E8),
                       width: 0.5,
                     ),
                   ),
@@ -6203,18 +6301,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     controller: _commentController,
                     maxLines: null,
                     textInputAction: TextInputAction.newline,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.screenTextPrimary,
+                      color: isDark ? Colors.white : AppColors.screenTextPrimary,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Votre avis...',
                       hintStyle: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFFBBBBBB),
+                        color: isDark ? Colors.white30 : const Color(0xFFBBBBBB),
                       ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
                       ),

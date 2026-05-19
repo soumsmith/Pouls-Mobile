@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import '../main.dart';
 
 /// Affiche un SnackBar identique à l'ancien rendu natif (pleine largeur,
 /// collé en bas, sans marges flottantes).
@@ -19,47 +20,64 @@ class CartSnackBar {
     Duration duration = const Duration(seconds: 2),
     VoidCallback? onUndo,
   }) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        // ── Contenu : texte simple, nom en gras ──────────────────────────
-        content: RichText(
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          text: TextSpan(
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              height: 1.4,
-            ),
-            children: [
-              TextSpan(
-                text: productName,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              TextSpan(text: ' $message'),
-            ],
+    final snackBar = SnackBar(
+      // ── Contenu : texte simple, nom en gras ──────────────────────────
+      content: RichText(
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        text: TextSpan(
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            height: 1.4,
           ),
+          children: [
+            TextSpan(
+              text: productName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: ' $message'),
+          ],
         ),
-
-        // ── Style identique à l'original ─────────────────────────────────
-        backgroundColor: backgroundColor ?? AppColors.shopGreen,
-        duration: duration,
-        behavior: SnackBarBehavior.fixed, // collé en bas, pleine largeur
-        elevation: 0,                     // pas d'ombre
-        shape: const RoundedRectangleBorder(), // pas de bordures arrondies
-
-        // ── Bouton Annuler optionnel ──────────────────────────────────────
-        action: onUndo != null
-            ? SnackBarAction(
-                label: 'Annuler',
-                textColor: Colors.white.withOpacity(0.85),
-                onPressed: onUndo,
-              )
-            : null,
       ),
+
+      // ── Style identique à l'original ─────────────────────────────────
+      backgroundColor: backgroundColor ?? AppColors.shopGreen,
+      duration: duration,
+      behavior: SnackBarBehavior.fixed, // collé en bas, pleine largeur
+      elevation: 0,                     // pas d'ombre
+      shape: const RoundedRectangleBorder(), // pas de bordures arrondies
+
+      // ── Bouton Annuler optionnel ──────────────────────────────────────
+      action: onUndo != null
+          ? SnackBarAction(
+              label: 'Annuler',
+              textColor: Colors.white.withOpacity(0.85),
+              onPressed: onUndo,
+            )
+          : null,
     );
+
+    try {
+      final state = scaffoldMessengerKey.currentState;
+      if (state != null) {
+        state.clearSnackBars();
+        state.showSnackBar(snackBar);
+        return;
+      }
+    } catch (e) {
+      print('⚠️ Error using global ScaffoldMessenger: $e');
+    }
+
+    try {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.clearSnackBars();
+      messenger.showSnackBar(snackBar);
+    } catch (e) {
+      print('⚠️ Error using fallback ScaffoldMessenger: $e');
+    }
   }
 
   /// Affiche un SnackBar au-dessus de tous les widgets (bottom sheets, modals, etc.)
@@ -74,38 +92,48 @@ class CartSnackBar {
     double? minHeight,
     IconData? icon,
   }) {
-    final overlay = Overlay.of(context);
-    late OverlayEntry overlayEntry;
+    if (!context.mounted) return;
     
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        bottom: 0,
-        left: 0,
-        right: 0,
-        child: Material(
-          color: Colors.transparent,
-          child: _SnackBarOverlay(
-            productName: productName,
-            message: message,
-            backgroundColor: backgroundColor ?? AppColors.shopGreen,
-            duration: duration,
-            onUndo: onUndo,
-            onDismiss: () => overlayEntry.remove(),
-            minHeight: minHeight,
-            icon: icon,
+    try {
+      final overlay = Overlay.of(context);
+      late OverlayEntry overlayEntry;
+      
+      overlayEntry = OverlayEntry(
+        builder: (context) => Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Material(
+            color: Colors.transparent,
+            child: _SnackBarOverlay(
+              productName: productName,
+              message: message,
+              backgroundColor: backgroundColor ?? AppColors.shopGreen,
+              duration: duration,
+              onUndo: onUndo,
+              onDismiss: () {
+                if (overlayEntry.mounted) {
+                  overlayEntry.remove();
+                }
+              },
+              minHeight: minHeight,
+              icon: icon,
+            ),
           ),
         ),
-      ),
-    );
-    
-    overlay.insert(overlayEntry);
-    
-    // Auto-remove après la durée spécifiée
-    Future.delayed(duration, () {
-      if (overlayEntry.mounted) {
-        overlayEntry.remove();
-      }
-    });
+      );
+      
+      overlay.insert(overlayEntry);
+      
+      // Auto-remove après la durée spécifiée
+      Future.delayed(duration, () {
+        if (overlayEntry.mounted) {
+          overlayEntry.remove();
+        }
+      });
+    } catch (e) {
+      print('⚠️ Error showing overlay snackbar: $e');
+    }
   }
 }
 

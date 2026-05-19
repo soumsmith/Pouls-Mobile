@@ -229,7 +229,7 @@ class AppColors {
   }
 
   static Color screenCardThemed(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF2A2A35) : Colors.white;
+    return isDarkMode(context) ? const Color(0xFF141414) : Colors.white;
   }
 
   // Textes (theme-aware)

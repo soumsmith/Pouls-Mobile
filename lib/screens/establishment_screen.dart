@@ -207,6 +207,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       vsync: this,
     );
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeController.forward();
 
     _loadEcoles();
     _loadVideos();
@@ -388,7 +389,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               ecoles.length >= _ecolesPerPage ||
               (_currentPage == 1 && ecoles.isNotEmpty);
         });
-        _fadeController.forward(from: 0);
       }
     } catch (e) {
       if (mounted) {
@@ -811,23 +811,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
   // ── Body ───────────────────────────────────────────────────
   List<Widget> _buildSliverContent() {
-    if (_isLoading) {
-      return [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _buildLoadingState(),
-        ),
-      ];
-    }
-    if (_error != null) {
-      return [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _buildErrorState(),
-        ),
-      ];
-    }
-
     final items = _filteredItems;
     return [
       // ── Slider des écoles en vedette ─────────────────────
@@ -846,6 +829,25 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   showText: _showSliderText,
                 ),
               ],
+            ),
+          ),
+        )
+      else if (_isLoadingVideos)
+        // Shimmer ou loading léger pour les vidéos sans bloquer le reste
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: AppColors.screenCardThemed(context),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.screenOrange),
+                ),
+              ),
             ),
           ),
         ),
@@ -875,8 +877,26 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         ),
       ),
 
-      // ── Empty state ────────────────────────────────
-      if (items.isEmpty)
+      // ── Contenu conditionnel des établissements ───────
+      if (_isLoading)
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: 60),
+          sliver: SliverToBoxAdapter(
+            child: Center(
+              child: _buildLoadingState(),
+            ),
+          ),
+        )
+      else if (_error != null)
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          sliver: SliverToBoxAdapter(
+            child: Center(
+              child: _buildErrorState(),
+            ),
+          ),
+        )
+      else if (items.isEmpty)
         SliverFillRemaining(
           hasScrollBody: false,
           child: Center(

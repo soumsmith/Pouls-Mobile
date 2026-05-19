@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../utils/api_exception_handler.dart';
 
 /// Service HTTP pour les appels API externes
 class HttpService {
@@ -30,7 +32,7 @@ class HttpService {
 
       return _handleResponse(response);
     } catch (e) {
-      throw _handleError(e);
+      throw _handleError(e, context: 'POST $endpoint');
     }
   }
 
@@ -62,7 +64,7 @@ class HttpService {
       return _handleResponse(response);
     } catch (e) {
       print('🌐 HttpService Error: $e');
-      throw _handleError(e);
+      throw _handleError(e, context: 'GET $endpoint');
     }
   }
 
@@ -99,12 +101,20 @@ class HttpService {
       return _handleResponse(response);
     } catch (e) {
       print('🌐 HttpService Error: $e');
-      throw _handleError(e);
+      throw _handleError(e, context: 'DELETE $endpoint');
     }
   }
 
   /// Traite la réponse HTTP
   static Map<String, dynamic> _handleResponse(http.Response response) {
+    // Vérifier les erreurs HTTP et notifier l'utilisateur
+    ApiExceptionHandler.handleHttpStatus(
+      response.statusCode,
+      responseBody: response.body,
+      context: 'la requête API',
+      showNotification: response.statusCode >= 500, // Notifier seulement pour les erreurs serveur
+    );
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       try {
         return json.decode(response.body) as Map<String, dynamic>;
@@ -123,8 +133,16 @@ class HttpService {
     }
   }
 
-  /// Traite les erreurs
-  static Exception _handleError(dynamic error) {
+  /// Traite les erreurs et affiche les notifications appropriées
+  static Exception _handleError(dynamic error, {String? context}) {
+    // Utiliser le handler centralisé pour détecter et notifier
+    ApiExceptionHandler.handle(
+      error,
+      context: context,
+      showNotification: true,
+    );
+
+    // Retourner l'exception originale pour ne pas casser le flow existant
     if (error is Exception) {
       return error;
     }

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/cart_item.dart';
 import '../models/order.dart';
 import 'auth_service.dart';
 import '../config/app_config.dart';
+import '../utils/api_exception_handler.dart';
 
 class OrderService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
@@ -102,6 +104,7 @@ class OrderService {
       }
     } catch (e) {
       print('💥 Exception lors de la création de la commande: $e');
+      ApiExceptionHandler.handle(e, context: 'la création de la commande');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la création de la commande: $e');
@@ -180,6 +183,7 @@ class OrderService {
       }
     } catch (e) {
       print('💥 Exception lors de la récupération des commandes: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des commandes');
       print('═══════════════════════════════════════════════════════════');
       print('');
       return [];
@@ -227,6 +231,7 @@ class OrderService {
       }
     } catch (e) {
       print('💥 Erreur lors de l\'annulation de la commande: $e');
+      ApiExceptionHandler.handle(e, context: 'l\'annulation de la commande');
       print('═══════════════════════════════════════════════════════════');
       print('');
       return false;

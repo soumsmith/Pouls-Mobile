@@ -160,14 +160,14 @@ class _IntegrationRequestBottomSheetState
   // ─────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final isDark = _themeService.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
+        color: isDark ? const Color(0xFF141414) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -335,6 +335,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   }
 
   Widget _buildProgressIndicator() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -357,14 +358,14 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                             ? Colors.green
                             : isActive
                             ? AppColors.shopBlue
-                            : AppColors.screenSurface,
+                            : (isDark ? const Color(0xFF222222) : AppColors.screenSurface),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isActive
                               ? AppColors.shopBlue
                               : isCompleted
                               ? Colors.green
-                              : AppColors.screenDivider,
+                              : (isDark ? const Color(0xFF333333) : AppColors.screenDivider),
                           width: 2,
                         ),
                         boxShadow: isActive
@@ -400,7 +401,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                               size: 14,
                               color: isActive
                                   ? Colors.white
-                                  : AppColors.screenTextSecondary,
+                                  : (isDark ? Colors.white38 : AppColors.screenTextSecondary),
                             ),
                     ),
                     const SizedBox(height: 4),
@@ -415,7 +416,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                             ? AppColors.shopBlue
                             : isCompleted
                             ? Colors.green
-                            : AppColors.screenTextSecondary,
+                            : (isDark ? Colors.white54 : AppColors.screenTextSecondary),
                       ),
                     ),
                   ],
@@ -435,7 +436,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                     left: index > 0 ? 4 : 0,
                   ),
                   decoration: BoxDecoration(
-                    color: isCompleted ? Colors.green : AppColors.screenDivider,
+                    color: isCompleted ? Colors.green : (isDark ? const Color(0xFF333333) : AppColors.screenDivider),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -461,6 +462,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   }
 
   Widget _buildEcoleStep() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -468,13 +470,13 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.screenSurface,
+              color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.screenDivider),
+              border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -482,12 +484,12 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                     color: AppColors.screenOrange,
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Text(
                   'Chargement des écoles...',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.screenTextSecondary,
+                    color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
                   ),
                 ),
               ],
@@ -497,7 +499,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF0F0),
+              color: isDark ? const Color(0xFF3D1E1E) : const Color(0xFFFFF0F0),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.red.withOpacity(0.2)),
             ),
@@ -505,12 +507,12 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
               children: [
                 Icon(Icons.error_outline, color: Colors.red[400], size: 18),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Aucune école disponible',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.screenTextPrimary,
+                      color: isDark ? Colors.white : AppColors.screenTextPrimary,
                     ),
                   ),
                 ),
@@ -542,19 +544,29 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFE3F2FD),
+            color: isDark 
+                ? const Color(0xFF0D47A1).withOpacity(0.25) 
+                : const Color(0xFFE3F2FD),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1565C0).withOpacity(0.2)),
+            border: Border.all(
+              color: isDark 
+                  ? const Color(0xFF1565C0).withOpacity(0.3) 
+                  : const Color(0xFF1565C0).withOpacity(0.2),
+            ),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.info_outline, color: Color(0xFF1565C0), size: 16),
-              SizedBox(width: 8),
+              Icon(
+                Icons.info_outline, 
+                color: isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0), 
+                size: 16,
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
                   style: TextStyle(
-                    color: Color(0xFF1565C0),
+                    color: isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -568,15 +580,16 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   }
 
   Widget _buildMatriculeStep() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.matricule != null)
           Container(
             decoration: BoxDecoration(
-              color: AppColors.screenSurface,
+              color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.screenDivider),
+              border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             child: Row(
@@ -589,9 +602,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                 const SizedBox(width: 12),
                 Text(
                   widget.matricule!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.screenTextPrimary,
+                    color: isDark ? Colors.white : AppColors.screenTextPrimary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -611,9 +624,15 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF8E1),
+            color: isDark 
+                ? const Color(0xFFFFB300).withOpacity(0.15) 
+                : const Color(0xFFFFF8E1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.2)),
+            border: Border.all(
+              color: isDark 
+                  ? const Color(0xFFFFB300).withOpacity(0.3) 
+                  : const Color(0xFFFFB300).withOpacity(0.2),
+            ),
           ),
           child: const Row(
             children: [
@@ -637,25 +656,26 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   }
 
   Widget _buildConfirmationStep() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.screenSurface,
+            color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenSurface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.screenDivider),
+            border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Récapitulatif',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
+                  color: isDark ? Colors.white : AppColors.screenTextPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -677,9 +697,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.screenSurface,
+              color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenSurface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.screenDivider),
+              border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider),
             ),
             child: Column(
               children: [
@@ -812,17 +832,23 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   }
 
   Widget _buildBottomNavigation() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: const BoxDecoration(
-        color: AppColors.screenCard,
-        border: Border(top: BorderSide(color: AppColors.screenDivider)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141414) : AppColors.screenCard,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF2C2C2C) : AppColors.screenDivider,
+          ),
+        ),
       ),
       child: SafeArea(top: false, child: _buildNavigationButtons()),
     );
   }
 
   Widget _buildNavigationButtons() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final canNext = _validateCurrentStep();
     final isLast = _currentStep == 2;
 
@@ -840,25 +866,27 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.screenSurface,
+                  color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.screenDivider),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
+                  ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.arrow_back_ios_new,
                       size: 14,
-                      color: AppColors.screenTextSecondary,
+                      color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
                       'Précédent',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.screenTextSecondary,
+                        color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
                       ),
                     ),
                   ],
@@ -880,7 +908,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                           end: Alignment.bottomRight,
                         )
                       : LinearGradient(
-                          colors: [Colors.grey.shade300, Colors.grey.shade300],
+                          colors: isDark
+                              ? [const Color(0xFF2A2A2A), const Color(0xFF2A2A2A)]
+                              : [Colors.grey.shade300, Colors.grey.shade300],
                         ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: canNext
@@ -893,7 +923,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         ]
                       : null,
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
@@ -901,15 +931,19 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: canNext
+                            ? Colors.white
+                            : (isDark ? Colors.white30 : Colors.white70),
                         letterSpacing: 0.1,
                       ),
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Icon(
                       Icons.arrow_forward_rounded,
                       size: 14,
-                      color: Colors.white,
+                      color: canNext
+                          ? Colors.white
+                          : (isDark ? Colors.white30 : Colors.white70),
                     ),
                   ],
                 ),
@@ -932,7 +966,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                           end: Alignment.bottomRight,
                         )
                       : LinearGradient(
-                          colors: [Colors.grey.shade300, Colors.grey.shade300],
+                          colors: isDark
+                              ? [const Color(0xFF2A2A2A), const Color(0xFF2A2A2A)]
+                              : [Colors.grey.shade300, Colors.grey.shade300],
                         ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: canNext && !widget.isLoadingRequest
@@ -960,20 +996,24 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         ),
                       )
                     else ...[
-                      const Text(
+                      Text(
                         'Consulter',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: canNext
+                              ? Colors.white
+                              : (isDark ? Colors.white30 : Colors.white70),
                           letterSpacing: 0.1,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
+                      Icon(
                         Icons.search_rounded,
                         size: 14,
-                        color: Colors.white,
+                        color: canNext
+                            ? Colors.white
+                            : (isDark ? Colors.white30 : Colors.white70),
                       ),
                     ],
                   ],

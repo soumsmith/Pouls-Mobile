@@ -12,6 +12,7 @@ import 'services/auth_service.dart';
 
 // NavigatorKey global pour accéder au contexte depuis n'importe quel écran
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +62,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, child) {
             return MaterialApp(
               navigatorKey: navigatorKey,
+              scaffoldMessengerKey: scaffoldMessengerKey,
               title: 'Parents Responsable',
               debugShowCheckedModeBanner: false,
               theme: _themeService.lightTheme,

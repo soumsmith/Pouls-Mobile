@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 import '../models/event.dart';
 import '../config/app_config.dart';
+import '../utils/api_exception_handler.dart';
 
 /// Service centralisé pour la gestion des événements
 /// Fusion optimisée de event_service.dart et events_service.dart
@@ -72,6 +74,7 @@ class EventService {
       }
     } catch (e) {
       developer.log('❌ Erreur lors de la récupération des événements: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des événements');
       throw Exception('Erreur lors de la récupération des événements: $e');
     }
   }

@@ -12,6 +12,7 @@ import '../models/matiere.dart';
 import '../models/note_api.dart';
 import '../models/note_classe_dto.dart';
 import '../models/student_class_info.dart';
+import '../utils/api_exception_handler.dart';
 import 'school_service.dart';
 
 /// Classe pour retourner les notes avec les informations globales
@@ -168,6 +169,9 @@ class PoulsScolaireApiService {
       print('═══════════════════════════════════════════════════════════');
       print('');
 
+      // Utiliser le handler centralisé pour afficher la notification
+      ApiExceptionHandler.handle(e, context: 'la récupération des écoles');
+
       // Gérer les différents types d'erreurs
       if (e is http.ClientException) {
         final errorMsg = e.message.toLowerCase();
@@ -227,6 +231,7 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       _logApiError('getClassesByEcole', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération des classes');
       throw Exception('Erreur lors de la récupération des classes: $e');
     }
   }
@@ -269,9 +274,11 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       if (e is Exception) {
+        ApiExceptionHandler.handle(e, context: 'la récupération de l\'année scolaire');
         rethrow;
       }
       _logApiError('getAnneeScolaireOuverte', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération de l\'année scolaire');
       throw Exception(
         'Erreur lors de la récupération de l\'année scolaire: $e',
       );
@@ -381,6 +388,7 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       print('❌ Erreur lors de la récupération des élèves: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des élèves');
       throw Exception('Erreur lors de la récupération des élèves: $e');
     }
   }
@@ -412,6 +420,7 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       _logApiError('getAllPeriodes', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération des périodes');
       throw Exception('Erreur lors de la récupération des périodes: $e');
     }
   }
@@ -460,6 +469,7 @@ class PoulsScolaireApiService {
       return null;
     } catch (e) {
       print('❌ Erreur lors de la recherche de l\'élève: $e');
+      ApiExceptionHandler.handle(e, context: 'la recherche de l\'élève');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la recherche de l\'élève: $e');
@@ -641,6 +651,7 @@ class PoulsScolaireApiService {
       print('');
       print('❌ Exception lors de la récupération des matières: $e');
       _logApiError('getMatieresByEcoleAndClasse', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération des matières');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la récupération des matières: $e');
@@ -705,6 +716,7 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       print('❌ Exception lors de la récupération des notes: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des notes');
       throw Exception('Erreur lors de la récupération des notes: $e');
     }
   }
@@ -938,6 +950,7 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       print('❌ Erreur lors de la récupération des notes de l\'élève: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des notes de l\'élève');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception(
@@ -984,6 +997,7 @@ class PoulsScolaireApiService {
         elevesParClasse: elevesParClasse,
       );
     } catch (e) {
+      ApiExceptionHandler.handle(e, context: 'le chargement des données scolaires');
       throw Exception('Erreur lors du chargement des données: $e');
     }
   }
@@ -1163,6 +1177,7 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       _logApiError('getStudentClassInfo', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération des informations classe/école');
       throw Exception(
         'Erreur lors de la récupération des informations classe/école: $e',
       );

@@ -18,6 +18,22 @@ Ce document fournit une explication concrète et approfondie pour **chaque API**
 * **Rôle technique (Backend)** : Récupère la liste de toutes les catégories d'articles scolaires configurées sur la plateforme e-commerce Libouli (ex: Manuels Scolaires, Uniformes, Sacs à dos, Papeterie).
 * **Fonctionnalité parent (Mobile)** : Alimente les onglets de filtres dans la boutique en ligne (`shop_screen.dart`). Le parent peut filtrer instantanément les articles par catégorie pour trouver plus rapidement les fournitures de son enfant.
 
+### 🔴 1.12 Consultation des points d'arrêt d'un voyage (`GET /vie-ecoles/service/point-arrets/{id_voyage}?ecole={code}`)
+* **Rôle technique (Backend)** : Récupère la liste ordonnée des arrêts de bus prévus pour un trajet de transport scolaire en cours.
+* **Fonctionnalité parent (Mobile)** : Intégrable dans un module de suivi de transport en temps réel. Permet au parent de voir où se trouve le bus de son enfant et à quel arrêt il s'est arrêté.
+
+### 🔴 6.8 Points d'arrêt d'une zone (`GET /preinscription/service/{points_arret}/{id}?ecole={code}`)
+* **Rôle technique (Backend)** : Extrait tous les points d'arrêt ou points de rendez-vous physiques configurés pour les bus dans une zone sélectionnée.
+* **Fonctionnalité parent (Mobile)** : Permet au parent de sélectionner le point d'arrêt précis le plus proche de son domicile pour la prise en charge et le dépôt quotidien de son enfant.
+
+### 🔴 6.2 Inscription : Paiement en ligne (`GET /vie-ecoles/inscription-eleve/paiement-en-ligne/{matricule}`)
+* **Rôle technique (Backend)** : Génère un lien de paiement direct et sécurisé pour régler instantanément les frais d'inscription administratifs de l'élève.
+* **Fonctionnalité parent (Mobile)** : Déclenche la redirection vers la passerelle de paiement mobile (Orange Money, Wave, etc.) pour finaliser immédiatement la création du dossier d'inscription.
+
+### 🔴 6.4 Réservation de place (paiement en ligne) (`POST /vie-ecoles/reservation/payer/{matricule}`)
+* **Rôle technique (Backend)** : Initialise une transaction spécifique de réservation de classe par paiement mobile (PEL) pour sécuriser une place avant l'inscription finale.
+* **Fonctionnalité parent (Mobile)** : Permet aux parents de verser un acompte rapide de réservation en ligne pour garantir la place de leur enfant pendant les périodes de forte affluence.
+
 ### 🔴 1.2 Statuts d'affectation d'une école (`GET /vie-ecoles/statut-affectation?ecole={codeecole}`)
 * **Rôle technique (Backend)** : Vérifie le statut d'une école partenaire spécifique dans le système national/privé (ex: affecté par l'État, non affecté, statut de la subvention).
 * **Fonctionnalité parent (Mobile)** : Utilisé lors du parcours d'inscription pour informer le parent si l'élève est orienté officiellement vers cet établissement et si les tarifs subventionnés s'appliquent.
@@ -50,7 +66,7 @@ Ce document fournit une explication concrète et approfondie pour **chaque API**
 * **Rôle technique (Backend)** : Calcule le taux de présence cumulé sur l'année en cours (ex: 95% de présence, 5 jours d'absence non justifiés).
 * **Fonctionnalité parent (Mobile)** : Affiche des graphiques de synthèse sur la fiche de l'élève. Permet au parent de suivre la régularité et l'assiduité globale de son enfant tout au long de l'année scolaire.
 
-### 🟢 1.10 Récupération des produits scolaires souscrits (`GET /vie-ecoles/abonnement-services/eleve/{matricule}?ecole={code_ecole}`)
+### 🟢 1.10 Récupération des produits scolaires souscrits (`GET /vie-ecoles/service/abonnement/eleve/{matricule}?ecole={code_ecole}`)
 * **Rôle technique (Backend)** : Récupère la liste des services annexes auxquels l'élève est activement abonné pour l'année scolaire courante (ex: Cantine active, Transport scolaire ligne 3).
 * **Fonctionnalité parent (Mobile)** : Affiche un récapitulatif des abonnements actifs dans le profil de l'élève. Le parent peut voir immédiatement quels services extra-scolaires sont payés et opérationnels.
 
@@ -58,9 +74,7 @@ Ce document fournit une explication concrète et approfondie pour **chaque API**
 * **Rôle technique (Backend)** : Fournit le détail quotidien d'un service (ex: pour la cantine, le menu du jour consommé; pour le transport, le trajet effectué).
 * **Fonctionnalité parent (Mobile)** : Permet de suivre au jour le jour les activités de son enfant (ex : savoir s'il a bien mangé à la cantine ce midi ou s'il est bien monté dans le bus scolaire).
 
-### 🔴 1.12 Consultation des points d'arrêt d'un voyage (`GET /vie-ecoles/service/point-arrets/{id_voyage}?ecole={code}`)
-* **Rôle technique (Backend)** : Récupère la liste ordonnée des arrêts de bus prévus pour un trajet de transport scolaire en cours.
-* **Fonctionnalité parent (Mobile)** : Intégrable dans un module de suivi de transport en temps réel. Permet au parent de voir où se trouve le bus de son enfant et à quel arrêt il s'est arrêté.
+
 
 ### 🟢 1.13 Interaction de like sur vidéo (`POST /vie-ecoles/interactions/like`)
 * **Rôle technique (Backend)** : Enregistre le vote favorable (like) ou défavorable (dislike) d'un parent identifié sur une vidéo de l'école.
@@ -182,21 +196,14 @@ Ce document fournit une explication concrète et approfondie pour **chaque API**
 * **Rôle technique (Backend)** : Enregistre définitivement la demande d'inscription ou de réinscription d'un élève avec son package financier configuré (choix des échéances scolaires obligatoires et services facultatifs).
 * **Fonctionnalité parent (Mobile)** : Soumet le dossier complet à la fin du tunnel d'inscription (`inscription_screen.dart`). Confirme officiellement la place de l'élève pour la rentrée prochaine auprès du secrétariat.
 
-### 🔴 6.2 Inscription : Paiement en ligne (`GET /vie-ecoles/inscription-eleve/paiement-en-ligne/{matricule}`)
-* **Rôle technique (Backend)** : Génère un lien de paiement direct et sécurisé pour régler instantanément les frais d'inscription administratifs de l'élève.
-* **Fonctionnalité parent (Mobile)** : Déclenche la redirection vers la passerelle de paiement mobile (Orange Money, Wave, etc.) pour finaliser immédiatement la création du dossier d'inscription.
-
-### 🟢 6.3 Vérification réservation élève (`GET vie-ecoles/reservation/eleve/{matricule}`)
-* **Rôle technique (Backend)** : Vérifie dans la base si le parent a déjà effectué un versement de réservation pour bloquer une place pour cet élève dans sa future classe.
-* **Fonctionnalité parent (Mobile)** : Affiche à l'écran si la place de l'élève est pré-réservée et le montant déjà versé à déduire des futurs frais de scolarité globaux.
-
-### 🔴 6.4 Réservation de place (paiement en ligne) (`POST /vie-ecoles/reservation/payer/{matricule}`)
-* **Rôle technique (Backend)** : Initialise une transaction spécifique de réservation de classe par paiement mobile (PEL) pour sécuriser une place avant l'inscription finale.
-* **Fonctionnalité parent (Mobile)** : Permet aux parents de verser un acompte rapide de réservation en ligne pour garantir la place de leur enfant pendant les périodes de forte affluence.
 
 ### 🟢 6.5 Services extrascolaires école (`GET /preinscription/services?ecole={code}`)
 * **Rôle technique (Backend)** : Récupère la liste de tous les services payants additionnels offerts par l'école (Cantine scolaire, Lignes de transport, Garderie, Assurances).
 * **Fonctionnalité parent (Mobile)** : Affiche les options complémentaires au cours du tunnel d'inscription. Le parent choisit de cocher ou non l'abonnement à la cantine ou au bus pour l'année.
+
+### 🟢 6.3 Vérification réservation élève (`GET vie-ecoles/reservation/eleve/{matricule}`)
+* **Rôle technique (Backend)** : Vérifie dans la base si le parent a déjà effectué un versement de réservation pour bloquer une place pour cet élève dans sa future classe.
+* **Fonctionnalité parent (Mobile)** : Affiche à l'écran si la place de l'élève est pré-réservée et le montant déjà versé à déduire des futurs frais de scolarité globaux.
 
 ### 🟢 6.6 Échéancier d'un service (`GET /preinscription/service/echeances/{uid}?ecole={code}`)
 * **Rôle technique (Backend)** : Fournit le plan de facturation détaillé associé à un service extra-scolaire (ex : mensualités ou paiement trimestriel pour la cantine).
@@ -206,9 +213,7 @@ Ce document fournit une explication concrète et approfondie pour **chaque API**
 * **Rôle technique (Backend)** : Récupère les différentes zones de desserte géographiques couvertes par les bus scolaires de l'établissement avec la tarification spécifique de chaque zone.
 * **Fonctionnalité parent (Mobile)** : Affiche un sélecteur de zones (ex : Zone A, Zone B, Ligne Est) lors de la souscription au service de transport pour appliquer le bon tarif de trajet.
 
-### 🔴 6.8 Points d'arrêt d'une zone (`GET /preinscription/service/{points_arret}/{id}?ecole={code}`)
-* **Rôle technique (Backend)** : Extrait tous les points d'arrêt ou points de rendez-vous physiques configurés pour les bus dans une zone sélectionnée.
-* **Fonctionnalité parent (Mobile)** : Permet au parent de sélectionner le point d'arrêt précis le plus proche de son domicile pour la prise en charge et le dépôt quotidien de son enfant.
+
 
 ### 🟢 6.8 (bis) Emploi du temps élève (`GET /vie-ecoles/emploi-du-temps-eleve/{matricule}?ecole={ecole}`)
 * **Rôle technique (Backend)** : Récupère l'emploi du temps hebdomadaire complet de l'élève (matières, horaires, salles de classe, noms des enseignants).

@@ -37,7 +37,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = _themeService.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final authService = AuthService();
     final currentUser = authService.getCurrentUser();
 
@@ -48,7 +48,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isDark ? const Color(0xFF141414) : Colors.white,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppDimensions.getLargeCardBorderRadius(context)),
         ),
@@ -240,9 +240,9 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
   void _showParrainageCodeModal(String codeParrainage) {
     showDialog(
       context: context,
-      barrierDismissible: true, // Permet la fermeture en cliquant en dehors
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        final isDark = _themeService.isDarkMode;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -252,7 +252,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  color: isDark ? const Color(0xFF141414) : Colors.white,
                   borderRadius: BorderRadius.circular(
                     AppDimensions.getLargeCardBorderRadius(context),
                   ),

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 import '../models/blog.dart';
 import '../config/app_config.dart';
+import '../utils/api_exception_handler.dart';
 
 class BlogService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
@@ -54,6 +56,7 @@ class BlogService {
       }
     } catch (e) {
       print('💥 Exception lors de la récupération des blogs: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des blogs');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la récupération des blogs: $e');

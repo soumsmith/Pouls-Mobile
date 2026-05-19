@@ -173,9 +173,12 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeBg = isDark ? Colors.grey[900] : Colors.white;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: themeBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: const [
           BoxShadow(
@@ -196,8 +199,8 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                 ? 'Entrez le montant à payer pour ${widget.childName}'
                 : 'Entrez le montant à payer',
             onClose: () => Navigator.of(context).pop(),
-            titleColor: AppColors.screenTextPrimary,
-            descriptionColor: AppColors.screenTextSecondary,
+            titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
+            descriptionColor: isDark ? Colors.white70 : AppColors.screenTextSecondary,
             titleFontSize: 18,
             descriptionFontSize: 13,
             titleFontWeight: FontWeight.w800,
@@ -234,10 +237,12 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.screenOrangeLight.withOpacity(0.3),
+                    color: isDark 
+                        ? AppColors.screenOrange.withOpacity(0.1) 
+                        : AppColors.screenOrangeLight.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.screenOrange.withOpacity(0.2),
+                      color: AppColors.screenOrange.withOpacity(isDark ? 0.3 : 0.2),
                     ),
                   ),
                   child: Row(

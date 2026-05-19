@@ -226,7 +226,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = _themeService.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DraggableScrollableSheet(
       initialChildSize: _sheetSize,
@@ -238,7 +238,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: _kSheetCard,
+            color: isDark ? const Color(0xFF141414) : _kSheetCard,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(

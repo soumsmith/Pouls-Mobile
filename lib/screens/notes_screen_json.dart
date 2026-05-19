@@ -223,6 +223,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   void _showError(String msg) {
+    if (!mounted) return;
     CartSnackBar.show(
       context,
       productName: 'Erreur',
@@ -232,6 +233,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   void _showSuccess(String msg) {
+    if (!mounted) return;
     CartSnackBar.show(
       context,
       productName: 'Succès',
@@ -241,6 +243,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   void _showInfo(String msg) {
+    if (!mounted) return;
     CartSnackBar.show(
       context,
       productName: 'Information',

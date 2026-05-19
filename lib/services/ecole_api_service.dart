@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
 import '../config/app_config.dart';
+import '../utils/api_exception_handler.dart';
 
 class EcoleApiService {
   static String get baseUrl =>
@@ -84,9 +86,7 @@ class EcoleApiService {
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      print('💥 Exception lors de la récupération des écoles: $e');
-      print('═══════════════════════════════════════════════════════════');
-      print('');
+      ApiExceptionHandler.handle(e, context: 'la récupération des écoles (page)');
       throw Exception('Erreur lors de la récupération des écoles: $e');
     }
   }
@@ -140,9 +140,7 @@ class EcoleApiService {
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      print('💥 Exception lors de la récupération des écoles: $e');
-      print('═══════════════════════════════════════════════════════════');
-      print('');
+      ApiExceptionHandler.handle(e, context: 'la récupération de toutes les écoles');
       throw Exception('Erreur lors de la récupération des écoles: $e');
     }
   }
@@ -190,9 +188,7 @@ class EcoleApiService {
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      print('💥 Exception lors de la récupération des détails de l\'école: $e');
-      print('═══════════════════════════════════════════════════════════');
-      print('');
+      ApiExceptionHandler.handle(e, context: 'la récupération des détails de l\'école');
       throw Exception(
         'Erreur lors de la récupération des détails de l\'école: $e',
       );
@@ -250,11 +246,7 @@ class EcoleApiService {
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      print(
-        '💥 Exception lors de la récupération des paramètres de l\'école: $e',
-      );
-      print('═══════════════════════════════════════════════════════════');
-      print('');
+      ApiExceptionHandler.handle(e, context: 'la récupération des paramètres de l\'école');
       throw Exception(
         'Erreur lors de la récupération des paramètres de l\'école: $e',
       );

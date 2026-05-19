@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import '../models/child.dart';
 import '../widgets/custom_loader.dart';
@@ -7,6 +9,9 @@ import '../widgets/selectable_item_card.dart';
 import '../widgets/search_bar_widget.dart';
 import '../services/ecole_eleve_service.dart';
 import '../services/inscription_api_service.dart';
+import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/bottom_sheets/payment_choice_bottom_sheet.dart';
+import '../widgets/snackbar.dart';
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
@@ -44,6 +49,18 @@ class InscriptionWizardScreen extends StatefulWidget {
 
 class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     with TickerProviderStateMixin {
+  // ── Thème adaptatif ────────────────────────────────────────────────────────
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get screenBgColor =>
+      isDark ? const Color(0xFF000000) : AppColors.pureWhite;
+  Color get cardColor =>
+      isDark ? const Color(0xFF000000) : AppColors.screenCard;
+  Color get textColor => isDark ? Colors.white : AppColors.screenTextPrimary;
+  Color get textSecondaryColor =>
+      isDark ? Colors.white70 : AppColors.screenTextSecondary;
+  Color get dividerColor =>
+      isDark ? const Color(0xFF222222) : AppColors.screenDivider;
+
   // ── État du wizard ──────────────────────────────────────────────────────────
   int _currentPageIndex = 0;
   late PageController _pageController;
@@ -528,10 +545,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         );
       }
 
+      print('📡 Vérification des périodes d\'inscription...');
       final statuts = await _checkInscriptionPeriods();
+      print('📡 Résultat périodes: $statuts');
+
       if (statuts['preinscription'] != true &&
           statuts['inscription'] != true &&
           statuts['reservation'] != true) {
+        print('⚠️ TOUTES les périodes sont fermées → affichage écran fermé');
         if (mounted) {
           setState(() {
             _periodsClosed = true;
@@ -545,12 +566,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       String brancheId = _uid_eleve;
 
       print('🔍 BrancheId qui sera utilisé (UID élève): $brancheId');
+      print(
+        '🔗 Appel fetchScolarite avec: brancheId=$brancheId, ecoleCode=$_ecoleCode, systemeEducatif=$systemeEducatif',
+      );
 
       final echeances = await InscriptionApiService.fetchScolarite(
         brancheId: brancheId,
         ecoleCode: _ecoleCode,
         systemeEducatif: systemeEducatif,
       );
+      print('✅ fetchScolarite retourné: ${echeances.length} échéances');
       if (mounted) {
         setState(() => _echeancesScolarite = echeances);
         _fadeController.forward();
@@ -798,27 +823,25 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+    CartSnackBar.showOverlay(
+      context,
+      productName: 'Erreur',
+      message: msg,
+      backgroundColor: Colors.red[400],
+      icon: Icons.error_outline_rounded,
+      duration: const Duration(seconds: 4),
     );
   }
 
   void _showSuccess(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green[500],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+    CartSnackBar.showOverlay(
+      context,
+      productName: 'Succès',
+      message: msg,
+      backgroundColor: Colors.green[500],
+      icon: Icons.check_circle_outline_rounded,
+      duration: const Duration(seconds: 4),
     );
   }
 
@@ -870,20 +893,20 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       //     ),
       //   ),
       // ],
-      backgroundColor: AppColors.screenCard,
+      backgroundColor: cardColor,
       elevation: 0,
     );
   }
 
   Widget _buildAppBarSubtitle() {
     return Container(
-      color: AppColors.screenCard,
+      color: cardColor,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Text(
         'Étape ${_currentPageIndex + 1} sur ${_orderedStepIds.length}',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
-          color: AppColors.screenTextSecondary,
+          color: textSecondaryColor,
           fontWeight: FontWeight.w400,
         ),
       ),
@@ -895,7 +918,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildProgressIndicator() {
     final steps = _orderedStepIds;
     return Container(
-      color: AppColors.screenCard,
+      color: cardColor,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         children: [
@@ -903,7 +926,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: (_currentPageIndex + 1) / steps.length,
-              backgroundColor: AppColors.screenDivider,
+              backgroundColor: dividerColor,
               valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
               minHeight: 4,
             ),
@@ -957,7 +980,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             : meta['icon'] as IconData,
                         color: (isCompleted || isCurrent)
                             ? Colors.white
-                            : AppColors.screenTextSecondary,
+                            : textSecondaryColor,
                         size: isCurrent ? 18 : 14,
                       ),
                     ),
@@ -972,10 +995,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             ? FontWeight.w600
                             : FontWeight.w400,
                         color: isCurrent
-                            ? AppColors.shopBlue
+                            ? (isDark
+                                  ? AppColors.shopBlueLight
+                                  : AppColors.shopBlue)
                             : isCompleted
                             ? Colors.green
-                            : AppColors.screenTextSecondary,
+                            : textSecondaryColor,
                       ),
                     ),
                   ],
@@ -992,10 +1017,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   Widget _sectionLabel(String text) => Text(
     text,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w700,
-      color: AppColors.screenTextPrimary,
+      color: textColor,
       letterSpacing: -0.3,
     ),
   );
@@ -1012,10 +1037,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: AppColors.shopBlueSurface,
+            color: isDark ? const Color(0xFF1E293B) : AppColors.shopBlueSurface,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: AppColors.shopBlue, size: 22),
+          child: Icon(
+            icon,
+            color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
+            size: 22,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1024,19 +1053,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimary,
+                  color: textColor,
                   letterSpacing: -0.4,
                 ),
               ),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.screenTextSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: textSecondaryColor),
               ),
             ],
           ),
@@ -1046,16 +1072,16 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.screenCard,
+              color: cardColor,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.screenDivider),
+              border: Border.all(color: dividerColor),
             ),
             child: IconButton(
               onPressed: onSearchPressed,
-              icon: const Icon(
+              icon: Icon(
                 Icons.search_rounded,
                 size: 18,
-                color: AppColors.screenTextSecondary,
+                color: textSecondaryColor,
               ),
               padding: EdgeInsets.zero,
             ),
@@ -1067,15 +1093,15 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildCountBadge(String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     decoration: BoxDecoration(
-      color: AppColors.shopBlueSurface,
+      color: isDark ? const Color(0xFF1E293B) : AppColors.shopBlueSurface,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: AppColors.shopBlue,
+        color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
       ),
     ),
   );
@@ -1099,7 +1125,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildLoadingState(String message) => CustomLoader(
     message: message,
     loaderColor: AppColors.shopBlue,
-    backgroundColor: AppColors.screenCard,
+    backgroundColor: cardColor,
   );
 
   Widget _buildEmptyState(String message, IconData icon) => Container(
@@ -1111,22 +1137,20 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           width: 72,
           height: 72,
           decoration: BoxDecoration(
-            color: AppColors.shopBlueSurface,
+            color: isDark ? const Color(0xFF1E293B) : AppColors.shopBlueSurface,
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
             size: 34,
-            color: AppColors.shopBlue.withOpacity(0.5),
+            color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
+                .withOpacity(0.5),
           ),
         ),
         const SizedBox(height: 14),
         Text(
           message,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.screenTextSecondary,
-          ),
+          style: TextStyle(fontSize: 14, color: textSecondaryColor),
           textAlign: TextAlign.center,
         ),
       ],
@@ -1137,9 +1161,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       Container(
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: AppColors.shopBlueSurface,
+          color: isDark ? const Color(0xFF1E293B) : AppColors.shopBlueSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.shopBlue.withOpacity(0.15)),
+          border: Border.all(
+            color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
+                .withOpacity(0.15),
+          ),
         ),
         child: Column(
           children: [
@@ -1147,46 +1174,46 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.shopBlue.withOpacity(0.12),
+                color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
+                    .withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 32,
-                color: AppColors.shopBlue.withOpacity(0.6),
+                color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
+                    .withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.shopBlue,
+                color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: textSecondaryColor),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.shopBlue.withOpacity(0.1),
+                color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
+                    .withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
+              child: Text(
                 'Appuyez sur Suivant pour continuer',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.shopBlue,
+                  color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
                 ),
               ),
             ),
@@ -1270,18 +1297,24 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   : Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.screenCard,
+                        color: cardColor,
                         borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: AppColors.screenShadow,
+                            color: isDark
+                                ? Colors.black38
+                                : AppColors.screenShadow,
                             blurRadius: 6,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                         border: _reservation!.status
                             ? Border.all(
-                                color: AppColors.shopBlue.withOpacity(0.3),
+                                color:
+                                    (isDark
+                                            ? AppColors.shopBlueLight
+                                            : AppColors.shopBlue)
+                                        .withOpacity(0.3),
                               )
                             : null,
                       ),
@@ -1303,8 +1336,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                   : Icons.bookmark_border_rounded,
                               size: 34,
                               color: _reservation!.status
-                                  ? AppColors.shopBlue
-                                  : AppColors.screenTextSecondary,
+                                  ? (isDark
+                                        ? AppColors.shopBlueLight
+                                        : AppColors.shopBlue)
+                                  : textSecondaryColor,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -1316,8 +1351,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: _reservation!.status
-                                  ? AppColors.shopBlue
-                                  : AppColors.screenTextPrimary,
+                                  ? (isDark
+                                        ? AppColors.shopBlueLight
+                                        : AppColors.shopBlue)
+                                  : textColor,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1325,9 +1362,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             _reservation!.status
                                 ? 'Une déduction sera appliquée au montant total'
                                 : 'Aucune déduction ne sera appliquée',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.screenTextSecondary,
+                              color: textSecondaryColor,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -1901,13 +1938,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     required Widget child,
   }) => Container(
     decoration: BoxDecoration(
-      color: AppColors.screenCard,
+      color: cardColor,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: const [
+      boxShadow: [
         BoxShadow(
-          color: AppColors.screenShadow,
+          color: isDark ? Colors.black38 : AppColors.screenShadow,
           blurRadius: 6,
-          offset: Offset(0, 2),
+          offset: const Offset(0, 2),
         ),
       ],
     ),
@@ -1916,23 +1953,27 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: const BoxDecoration(
-            color: AppColors.shopBlueSurface,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : AppColors.shopBlueSurface,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(15),
               topRight: Radius.circular(15),
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.shopBlue, size: 16),
+              Icon(
+                icon,
+                color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.shopBlue,
+                  color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
                 ),
               ),
             ],
@@ -1954,9 +1995,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
-                  color: isBold
-                      ? AppColors.screenTextPrimary
-                      : AppColors.screenTextSecondary,
+                  color: isBold ? textColor : textSecondaryColor,
                 ),
               ),
             ),
@@ -1965,9 +2004,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-                color: isBold
-                    ? AppColors.shopGreen
-                    : AppColors.screenTextPrimary,
+                color: isBold ? AppColors.shopGreen : textColor,
               ),
             ),
           ],
@@ -1982,22 +2019,6 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     final isSecondToLast = _currentPageIndex == _orderedStepIds.length - 2;
 
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -2012,25 +2033,27 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.screenSurface,
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : AppColors.screenSurface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.screenDivider),
+                    border: Border.all(color: dividerColor),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.arrow_back_ios_new,
                         size: 14,
-                        color: AppColors.screenTextSecondary,
+                        color: textSecondaryColor,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
                         'Précédent',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.screenTextSecondary,
+                          color: textSecondaryColor,
                         ),
                       ),
                     ],
@@ -2095,7 +2118,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               ),
             if (isLast)
               GestureDetector(
-                onTap: _effectuerInscription,
+                onTap: _showPaymentChoiceBottomSheet,
                 child: Container(
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2159,7 +2182,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     final matricule = widget.child.matricule ?? '–';
 
     return Scaffold(
-      backgroundColor: AppColors.pureWhite,
+      backgroundColor: screenBgColor,
       body: CustomScrollView(
         slivers: [
           _buildCustomAppBar(context),
@@ -2188,10 +2211,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   // Titre
                   Text(
                     'Déjà inscrit(e)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.screenTextPrimary,
+                      color: textColor,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -2201,9 +2224,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   Text(
                     '${widget.child.firstName} est déjà inscrit(e) pour '
                     "l'année scolaire en cours dans cet établissement.",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      color: AppColors.screenTextSecondary,
+                      color: textSecondaryColor,
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
@@ -2214,13 +2237,15 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: AppColors.screenCard,
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: AppColors.screenShadow,
+                          color: isDark
+                              ? Colors.black38
+                              : AppColors.screenShadow,
                           blurRadius: 8,
-                          offset: Offset(0, 2),
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -2232,27 +2257,33 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             horizontal: 16,
                             vertical: 12,
                           ),
-                          decoration: const BoxDecoration(
-                            color: AppColors.shopBlueSurface,
-                            borderRadius: BorderRadius.only(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF1E293B)
+                                : AppColors.shopBlueSurface,
+                            borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(19),
                               topRight: Radius.circular(19),
                             ),
                           ),
                           child: Row(
-                            children: const [
+                            children: [
                               Icon(
                                 Icons.person_rounded,
-                                color: AppColors.shopBlue,
+                                color: isDark
+                                    ? AppColors.shopBlueLight
+                                    : AppColors.shopBlue,
                                 size: 16,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 'Détails de l\'inscription',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.shopBlue,
+                                  color: isDark
+                                      ? AppColors.shopBlueLight
+                                      : AppColors.shopBlue,
                                 ),
                               ),
                             ],
@@ -2279,11 +2310,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Statut',
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: AppColors.screenTextSecondary,
+                                        color: textSecondaryColor,
                                       ),
                                     ),
                                     Container(
@@ -2319,24 +2350,30 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.shopBlueSurface,
+                      color: isDark
+                          ? const Color(0xFF1E293B)
+                          : AppColors.shopBlueSurface,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: AppColors.shopBlue,
+                          color: isDark
+                              ? AppColors.shopBlueLight
+                              : AppColors.shopBlue,
                           size: 16,
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             "Si vous pensez que c'est une erreur, "
                             "contactez l'administration de l'école.",
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.shopBlue,
+                              color: isDark
+                                  ? AppColors.shopBlueLight
+                                  : AppColors.shopBlue,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2387,17 +2424,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondary,
-            ),
+            style: TextStyle(fontSize: 13, color: textSecondaryColor),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.screenTextPrimary,
+              color: textColor,
             ),
           ),
         ],
@@ -2407,7 +2441,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   // ─── SOUMISSION ────────────────────────────────────────────────────────────
 
-  Future<void> _effectuerInscription() async {
+  List<Map<String, dynamic>> _buildPaymentPayload() {
     final List<Map<String, dynamic>> ids = [];
 
     final echeancesScol = _echeancesScolarite
@@ -2418,6 +2452,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         'id': 'SCO',
         'service': 'Scolarité',
         'montant': _totalScolarite,
+        'reservation': false,
         'echeancesSelectionnees': echeancesScol.map((e) => e.toJson()).toList(),
       });
     }
@@ -2446,7 +2481,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
     // Zone de transport (seulement si TRANS coché ET zone sélectionnée)
     final hasTransService = selectedServices.any((s) => s.service == 'TRANS');
-    if (_selectedZone != null && hasTransService) {
+    if (_selectedZone != null && hasTransService && _totalTransport > 0) {
       ids.add({
         'id': _selectedZone!.idzone,
         'service': 'Transport',
@@ -2455,11 +2490,15 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       });
     }
 
+    return ids;
+  }
+
+  Future<void> _effectuerInscription() async {
     try {
       await InscriptionApiService.submitInscription(
         matricule: _matricule,
         ecoleCode: _ecoleCode,
-        payload: InscriptionPayload(ids: ids),
+        payload: InscriptionPayload(ids: _buildPaymentPayload()),
       );
       if (mounted) {
         Navigator.of(context).pop();
@@ -2472,12 +2511,158 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     }
   }
 
+  Future<void> _effectuerPaiementEnLigne() async {
+    final totalAmount = _totalScolarite + _totalServices + _totalTransport;
+
+    try {
+      final response = await InscriptionApiService.submitPaiementEnLigne(
+        matricule: _matricule,
+        ecoleCode: _ecoleCode,
+        payload: _buildPaymentPayload(),
+        totalMontant: totalAmount,
+      );
+      if (mounted) {
+        final String? paymentUrl = response['url'];
+        final String? token = response['token'];
+
+        if (paymentUrl != null) {
+          final uri = Uri.parse(paymentUrl);
+          try {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            _showPaymentVerificationLoader(_uid_eleve);
+          } catch (e) {
+            _showError('Impossible d\'ouvrir la page de paiement.');
+          }
+        } else {
+          _showSuccess(
+            response['message'] ??
+                'Paiement en ligne initié pour ${widget.child.firstName}.',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) _showError(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  void _showPaymentVerificationLoader(String uidEleve) {
+    if (uidEleve.isEmpty) return;
+
+    Timer? timer;
+    bool isChecking = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF141414) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomLoader(
+                    message: 'Attente de la confirmation du paiement...',
+                    loaderColor: const Color(0xFFFF7A3C),
+                    showBackground: false,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Veuillez finaliser le paiement sur la page sécurisée. L\'application vérifie actuellement le statut de votre transaction.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textSecondaryColor,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextButton(
+                    onPressed: () {
+                      timer?.cancel();
+                      Navigator.of(dialogContext).pop();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red[400],
+                    ),
+                    child: const Text('Fermer / Annuler la vérification'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      timer?.cancel(); // Sécurité pour s'assurer que le timer est bien tué
+    });
+
+    int attempts = 0;
+    const int maxAttempts = 24; // 24 * 5s = 120s (2 minutes)
+
+    // Lancement du polling toutes les 5 secondes
+    timer = Timer.periodic(const Duration(seconds: 5), (t) async {
+      if (isChecking || !mounted) return;
+
+      attempts++;
+      if (attempts >= maxAttempts) {
+        t.cancel();
+        if (mounted) {
+          Navigator.of(context).pop(); // Fermer uniquement le loader
+          _showError(
+            'L\'opération a échoué suite à une longue attente de paiement. Veuillez vérifier et réessayer.',
+          );
+        }
+        return;
+      }
+
+      isChecking = true;
+
+      try {
+        final success = await InscriptionApiService.checkPaiementStatus(
+          uidEleve,
+        );
+        if (success && mounted) {
+          t.cancel();
+          // 1. Fermer le loader
+          Navigator.of(context).pop();
+          // 2. Afficher le succès
+          _showSuccess(
+            'Paiement validé et inscription de ${widget.child.firstName} enregistrée avec succès !',
+          );
+          // 3. Quitter l'écran d'inscription
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        // En cas d'erreur de vérification, on laisse tourner
+      } finally {
+        isChecking = false;
+      }
+    });
+  }
+
+  void _showPaymentChoiceBottomSheet() {
+    PaymentChoiceBottomSheet.show(
+      context: context,
+      onOnlinePayment: _effectuerPaiementEnLigne,
+      onCashPayment: _effectuerInscription,
+    );
+  }
+
   // ─── BUILD PRINCIPAL ───────────────────────────────────────────────────────
 
   /// Construit l'écran affiché lorsque les périodes d'inscription sont fermées
   Widget _buildPeriodsClosedScreen() {
     return Scaffold(
-      backgroundColor: AppColors.pureWhite,
+      backgroundColor: screenBgColor,
       body: CustomScrollView(
         slivers: [
           _buildCustomAppBar(context),
@@ -2492,13 +2677,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: AppColors.shopBlueSurface,
+                      color: isDark
+                          ? const Color(0xFF1E293B)
+                          : AppColors.shopBlueSurface,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.calendar_today_rounded,
                       size: 60,
-                      color: AppColors.shopBlue,
+                      color: isDark
+                          ? AppColors.shopBlueLight
+                          : AppColors.shopBlue,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -2509,7 +2698,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.screenTextPrimary,
+                      color: textColor,
                       letterSpacing: -0.5,
                     ),
                     textAlign: TextAlign.center,
@@ -2522,7 +2711,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.screenTextSecondary,
+                      color: textSecondaryColor,
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,
@@ -2533,10 +2722,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.shopBlueSurface.withOpacity(0.3),
+                      color: isDark
+                          ? const Color(0xFF1E293B).withOpacity(0.3)
+                          : AppColors.shopBlueSurface.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.shopBlue.withOpacity(0.2),
+                        color: isDark
+                            ? AppColors.shopBlueLight.withOpacity(0.2)
+                            : AppColors.shopBlue.withOpacity(0.2),
                         width: 1,
                       ),
                     ),
@@ -2546,7 +2739,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                           children: [
                             Icon(
                               Icons.info_outline_rounded,
-                              color: AppColors.shopBlue,
+                              color: isDark
+                                  ? AppColors.shopBlueLight
+                                  : AppColors.shopBlue,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
@@ -2556,7 +2751,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.shopBlue,
+                                  color: isDark
+                                      ? AppColors.shopBlueLight
+                                      : AppColors.shopBlue,
                                 ),
                               ),
                             ),
@@ -2569,7 +2766,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                           '• Revenez plus tard pour vérifier l\'ouverture des inscriptions',
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.screenTextSecondary,
+                            color: textSecondaryColor,
                             height: 1.5,
                           ),
                         ),
@@ -2620,7 +2817,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   /// Construit l'écran affiché lorsqu'une erreur critique survient
   Widget _buildCriticalErrorScreen() {
     return Scaffold(
-      backgroundColor: AppColors.pureWhite,
+      backgroundColor: screenBgColor,
       body: CustomScrollView(
         slivers: [
           _buildCustomAppBar(context),
@@ -2652,7 +2849,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.screenTextPrimary,
+                      color: textColor,
                       letterSpacing: -0.5,
                     ),
                     textAlign: TextAlign.center,
@@ -2666,7 +2863,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.screenTextSecondary,
+                      color: textSecondaryColor,
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,
@@ -2677,7 +2874,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.05),
+                      color: isDark
+                          ? Colors.red.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: Colors.red.withOpacity(0.2),
@@ -2714,7 +2913,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                           '• Cliquez sur "Actualiser" pour recharger les données',
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.screenTextSecondary,
+                            color: textSecondaryColor,
                             height: 1.5,
                           ),
                         ),
@@ -2859,11 +3058,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.screenTextSecondary,
-                            side: BorderSide(
-                              color: AppColors.screenDivider,
-                              width: 1,
-                            ),
+                            foregroundColor: textSecondaryColor,
+                            side: BorderSide(color: dividerColor, width: 1),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -2898,7 +3094,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   /// Construit l'écran de chargement initial
   Widget _buildInitialLoadingScreen() {
     return Scaffold(
-      backgroundColor: AppColors.pureWhite,
+      backgroundColor: screenBgColor,
       body: CustomScrollView(
         slivers: [
           _buildCustomAppBar(context),
@@ -2954,7 +3150,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     final steps = _orderedStepIds;
 
     return Scaffold(
-      backgroundColor: AppColors.pureWhite,
+      backgroundColor: screenBgColor,
       body: Stack(
         children: [
           CustomScrollView(
@@ -2975,6 +3171,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
+          BottomFadeGradient(height: 100, endColor: screenBgColor),
           Positioned(
             left: 16,
             right: 16,

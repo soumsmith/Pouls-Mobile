@@ -216,6 +216,9 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
   void initState() {
     super.initState();
     _filteredItems = widget.items;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
+    });
   }
 
   @override
@@ -286,7 +289,7 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                   child: TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    autofocus: false,
+                    autofocus: true,
                     enableInteractiveSelection: true,
                     decoration: InputDecoration(
                       hintText: 'Rechercher...',

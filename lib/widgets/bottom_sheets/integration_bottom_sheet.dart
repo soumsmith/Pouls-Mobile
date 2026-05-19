@@ -960,9 +960,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Progress indicator ─────────────────────────────────────────────────────
   Widget _buildProgressIndicator() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
         borderRadius: BorderRadius.circular(
           AppDimensions.getMediumCardBorderRadius(context),
         ),
@@ -974,7 +975,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: (_currentStep + 1) / _totalSteps,
-              backgroundColor: AppColors.screenDivider,
+              backgroundColor: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
               valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
               minHeight: 4,
             ),
@@ -1007,7 +1008,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                                 ? Colors.green
                                 : isCurrent
                                 ? AppColors.shopBlue
-                                : AppColors.screenDivider,
+                                : (isDark ? const Color(0xFF333333) : AppColors.screenDivider),
                             boxShadow: isCurrent
                                 ? [
                                     BoxShadow(
@@ -1033,7 +1034,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                                 : _stepIcons[index],
                             color: (isCompleted || isCurrent)
                                 ? Colors.white
-                                : AppColors.screenTextSecondary,
+                                : (isDark ? Colors.white38 : AppColors.screenTextSecondary),
                             size: isCurrent ? 18 : 14,
                           ),
                         ),
@@ -1056,7 +1057,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                                   ? AppColors.shopBlue
                                   : isCompleted
                                   ? Colors.green
-                                  : AppColors.screenTextSecondary,
+                                  : (isDark ? Colors.white54 : AppColors.screenTextSecondary),
                             ),
                           ),
                         ),
@@ -1095,6 +1096,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Navigation buttons ─────────────────────────────────────────────────────
   Widget _buildNavigationButtons() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final canNext = _canNavigateToNext();
 
     return Row(
@@ -1106,25 +1108,27 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: AppColors.screenSurface,
+                color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.screenDivider),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
+                ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.arrow_back_ios_new,
                     size: 14,
-                    color: AppColors.screenTextSecondary,
+                    color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
                   ),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   Text(
                     'Précédent',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.screenTextSecondary,
+                      color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
                     ),
                   ),
                 ],
@@ -1146,7 +1150,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                       end: Alignment.bottomRight,
                     )
                   : LinearGradient(
-                      colors: [Colors.grey.shade300, Colors.grey.shade300],
+                      colors: isDark
+                          ? [const Color(0xFF2C2C2C), const Color(0xFF2C2C2C)]
+                          : [Colors.grey.shade300, Colors.grey.shade300],
                     ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: canNext
@@ -1169,7 +1175,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: canNext ? Colors.white : Colors.grey.shade500,
+                    color: canNext
+                        ? Colors.white
+                        : (isDark ? Colors.white30 : Colors.grey.shade500),
                     letterSpacing: 0.1,
                   ),
                 ),
@@ -1178,7 +1186,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                   Icon(
                     Icons.arrow_forward_rounded,
                     size: 14,
-                    color: canNext ? Colors.white : Colors.grey.shade500,
+                    color: canNext
+                        ? Colors.white
+                        : (isDark ? Colors.white30 : Colors.grey.shade500),
                   ),
                 ],
               ],
@@ -1249,12 +1259,13 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   Widget _buildLoadingField(String msg) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.screenSurface,
+        color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.screenDivider),
+        border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider),
       ),
       child: Row(
         children: [
@@ -1269,9 +1280,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           const SizedBox(width: 12),
           Text(
             msg,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.screenTextSecondary,
+              color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
             ),
           ),
         ],
@@ -1685,22 +1696,23 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   Widget _buildSummaryItem(String title, List<String> items) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.screenSurface,
+        color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.screenDivider.withOpacity(0.3)),
+        border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
+              color: isDark ? Colors.white : AppColors.screenTextPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -1724,9 +1736,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                       Expanded(
                         child: Text(
                           item,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.screenTextSecondary,
+                            color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
                             height: 1.4,
                           ),
                         ),
@@ -1758,10 +1770,11 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     required IconData icon,
     required List<Widget> children,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
         borderRadius: BorderRadius.circular(
           AppDimensions.getLargeCardBorderRadius(context),
         ),
@@ -1778,7 +1791,9 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: AppColors.screenOrangeLight,
+                    color: isDark
+                        ? AppColors.screenOrange.withOpacity(0.15)
+                        : AppColors.screenOrangeLight,
                     borderRadius: BorderRadius.circular(
                       AppDimensions.getBadgeBorderRadius(context),
                     ),
@@ -1788,18 +1803,21 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                 const SizedBox(width: 10),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
+                    color: isDark ? Colors.white : AppColors.screenTextPrimary,
                   ),
                 ),
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Divider(color: AppColors.screenDivider, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: Divider(
+              color: isDark ? const Color(0xFF333333) : AppColors.screenDivider, 
+              height: 1,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

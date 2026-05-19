@@ -282,10 +282,12 @@ class InscriptionApiService {
         '$kBaseUrl/preinscription/scolarite/branche/$brancheId'
         '?ecole=$ecoleCode&systeme_educatif=$systemeEducatif';
 
-    _logRequest('GET', url);
+    print('URL de l\'API: $url');
 
     final response = await http.get(Uri.parse(url), headers: _headers);
-    _logResponse('scolarité', response.statusCode, response.body);
+
+    print('Statut de la réponse: ${response.statusCode}');
+    print('Corps de la réponse: ${response.body}');
 
     if (response.statusCode == 200) {
       final decodedData = jsonDecode(response.body);
@@ -478,5 +480,76 @@ class InscriptionApiService {
     } catch (_) {}
 
     throw Exception(errorMessage);
+  }
+
+  /// Soumet le paiement en ligne de l'inscription / préinscription.
+  ///
+  /// [matricule] : matricule de l'élève
+  /// [ecoleCode] : code de l'école
+  /// [payload]   : tableau d'objets (identique à payload.ids)
+  static Future<Map<String, dynamic>> submitPaiementEnLigne({
+    required String matricule,
+    required String ecoleCode,
+    required List<Map<String, dynamic>> payload,
+    required int totalMontant,
+  }) async {
+    final url =
+        '$kBaseUrl/vie-ecoles/inscription-eleve/paiement-en-ligne/$matricule'
+        '?ecole=$ecoleCode';
+
+    final requestBody = {
+      'lien': 2,
+      'inscription': true,
+      'montant': totalMontant,
+      'ids': payload,
+    };
+
+    _logRequest('POST', url, body: requestBody);
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: _headers,
+      body: jsonEncode(requestBody),
+    );
+
+    _logResponse('paiement en ligne', response.statusCode, response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        return {'success': true, 'message': 'Paiement initié avec succès'};
+      }
+    }
+
+    String errorMessage =
+        'Erreur lors de l\'initiation du paiement [${response.statusCode}]';
+    try {
+      final errorData = jsonDecode(response.body);
+      errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+    } catch (_) {}
+
+    throw Exception(errorMessage);
+  }
+
+  /// Vérifie le statut d'un paiement en ligne via l'uid de l'élève.
+  static Future<bool> checkPaiementStatus(String uidEleve) async {
+    final url = '$kBaseUrl/vie-ecoles/verifier/paiement-en-ligne/$uidEleve';
+    _logRequest('GET', url);
+    
+    try {
+      final response = await http.get(Uri.parse(url), headers: _headers);
+      _logResponse('check paiement', response.statusCode, response.body);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['data'] != null && data['data']['statuspaiement'] == 1) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 }

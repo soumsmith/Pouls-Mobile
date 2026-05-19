@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/avis.dart';
 import '../config/app_config.dart';
+import '../utils/api_exception_handler.dart';
 
 class AvisService {
   static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles';
@@ -51,6 +53,7 @@ class AvisService {
       }
     } catch (e) {
       print('💥 Exception lors de la récupération des avis: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des avis');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la récupération des avis: $e');

@@ -163,23 +163,23 @@ class SelectableItemCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 6),
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: config.selected ? _accent.withOpacity(0.4) : Colors.transparent,
             width: config.selected ? 1.5 : 0,
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: AppColors.screenShadow,
+              color: AppColors.screenShadowThemed(context),
               blurRadius: 8,
-              offset: Offset(0, 3),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(10),
-          child: _buildContent(),
+          child: _buildContent(context),
         ),
       ),
     );
@@ -204,16 +204,16 @@ class SelectableItemCard extends StatelessWidget {
 
   // ── Sélecteur de layout selon la variante ──────────────────────────────────
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     switch (config.variant) {
       case ItemCardVariant.echeance:
-        return _buildEcheanceLayout();
+        return _buildEcheanceLayout(context);
       case ItemCardVariant.service:
-        return _buildServiceLayout();
+        return _buildServiceLayout(context);
       case ItemCardVariant.zone:
-        return _buildZoneLayout();
+        return _buildZoneLayout(context);
       case ItemCardVariant.generic:
-        return _buildGenericLayout();
+        return _buildGenericLayout(context);
     }
   }
 
@@ -223,10 +223,10 @@ class SelectableItemCard extends StatelessWidget {
   //     📅 Limite : 31/08/2025  [Obligatoire]
   // ══════════════════════════════════════════════════════════════════════════
 
-  Widget _buildEcheanceLayout() {
+  Widget _buildEcheanceLayout(BuildContext context) {
     return Row(
       children: [
-        _buildCheckCircle(size: 26),
+        _buildCheckCircle(context, size: 26),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -234,10 +234,10 @@ class SelectableItemCard extends StatelessWidget {
             children: [
               Text(
                 config.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
+                  color: AppColors.screenTextPrimaryThemed(context),
                   letterSpacing: -0.3,
                 ),
               ),
@@ -245,17 +245,17 @@ class SelectableItemCard extends StatelessWidget {
               Row(
                 children: [
                   if (config.subtitle != null) ...[
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_rounded,
                       size: 11,
-                      color: AppColors.screenTextSecondary,
+                      color: AppColors.screenTextSecondaryThemed(context),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       config.subtitle!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -297,7 +297,7 @@ class SelectableItemCard extends StatelessWidget {
   //        [CANTINE]                        [✓]
   // ══════════════════════════════════════════════════════════════════════════
 
-  Widget _buildServiceLayout() {
+  Widget _buildServiceLayout(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -306,12 +306,12 @@ class SelectableItemCard extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: config.selected ? _accent.withOpacity(0.12) : AppColors.screenSurface,
+            color: config.selected ? _accent.withOpacity(0.12) : AppColors.screenSurfaceThemed(context),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             config.leadingIcon ?? Icons.grid_view_rounded,
-            color: config.selected ? _accent : AppColors.screenTextSecondary,
+            color: config.selected ? _accent : AppColors.screenTextSecondaryThemed(context),
             size: 18,
           ),
         ),
@@ -323,10 +323,10 @@ class SelectableItemCard extends StatelessWidget {
               // Title on one line with ellipsis
               Text(
                 config.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
+                  color: AppColors.screenTextPrimaryThemed(context),
                   letterSpacing: -0.3,
                 ),
                 maxLines: 1,
@@ -360,7 +360,7 @@ class SelectableItemCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        _buildCheckCircle(size: 22),
+        _buildCheckCircle(context, size: 22),
       ],
     );
   }
@@ -371,19 +371,19 @@ class SelectableItemCard extends StatelessWidget {
   //      Code : QRN-01
   // ══════════════════════════════════════════════════════════════════════════
 
-  Widget _buildZoneLayout() {
+  Widget _buildZoneLayout(BuildContext context) {
     return Row(
       children: [
         Container(
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: config.selected ? _accent.withOpacity(0.12) : AppColors.screenSurface,
+            color: config.selected ? _accent.withOpacity(0.12) : AppColors.screenSurfaceThemed(context),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             config.leadingIcon ?? Icons.location_on_rounded,
-            color: config.selected ? _accent : AppColors.screenTextSecondary,
+            color: config.selected ? _accent : AppColors.screenTextSecondaryThemed(context),
             size: 18,
           ),
         ),
@@ -394,25 +394,25 @@ class SelectableItemCard extends StatelessWidget {
             children: [
               Text(
                 config.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
+                  color: AppColors.screenTextPrimaryThemed(context),
                   letterSpacing: -0.3,
                 ),
               ),
               if (config.subtitle != null)
                 Text(
                   config.subtitle!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.screenTextSecondary,
+                    color: AppColors.screenTextSecondaryThemed(context),
                   ),
                 ),
             ],
           ),
         ),
-        if (config.selected) _buildCheckCircle(size: 22),
+        if (config.selected) _buildCheckCircle(context, size: 22),
       ],
     );
   }
@@ -423,7 +423,7 @@ class SelectableItemCard extends StatelessWidget {
   //      Sous-titre optionnel
   // ══════════════════════════════════════════════════════════════════════════
 
-  Widget _buildGenericLayout() {
+  Widget _buildGenericLayout(BuildContext context) {
     return Row(
       children: [
         if (config.showLeadingIcon) ...[
@@ -431,12 +431,12 @@ class SelectableItemCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: config.selected ? _accent.withOpacity(0.12) : AppColors.screenSurface,
+              color: config.selected ? _accent.withOpacity(0.12) : AppColors.screenSurfaceThemed(context),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               config.leadingIcon ?? Icons.circle_outlined,
-              color: config.selected ? _accent : AppColors.screenTextSecondary,
+              color: config.selected ? _accent : AppColors.screenTextSecondaryThemed(context),
               size: 18,
             ),
           ),
@@ -448,10 +448,10 @@ class SelectableItemCard extends StatelessWidget {
             children: [
               Text(
                 config.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimary,
+                  color: AppColors.screenTextPrimaryThemed(context),
                   letterSpacing: -0.3,
                 ),
               ),
@@ -459,9 +459,9 @@ class SelectableItemCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   config.subtitle!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.screenTextSecondary,
+                    color: AppColors.screenTextSecondaryThemed(context),
                   ),
                 ),
               ],
@@ -479,7 +479,7 @@ class SelectableItemCard extends StatelessWidget {
           ),
         if (config.selectionStyle != ItemCardSelectionStyle.badgeCheck) ...[
           const SizedBox(width: 10),
-          _buildCheckCircle(size: 22),
+          _buildCheckCircle(context, size: 22),
         ],
       ],
     );
@@ -490,7 +490,7 @@ class SelectableItemCard extends StatelessWidget {
   // ══════════════════════════════════════════════════════════════════════════
 
   /// Cercle de sélection (checkbox / check trailing)
-  Widget _buildCheckCircle({required double size}) {
+  Widget _buildCheckCircle(BuildContext context, {required double size}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: size,
@@ -499,7 +499,7 @@ class SelectableItemCard extends StatelessWidget {
         shape: BoxShape.circle,
         color: config.selected ? _accent : Colors.transparent,
         border: Border.all(
-          color: config.selected ? _accent : AppColors.screenDivider,
+          color: config.selected ? _accent : AppColors.screenDividerThemed(context),
           width: 2,
         ),
       ),
@@ -579,19 +579,19 @@ class ItemSectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
           ),
           if (trailingLabel != null)
             Text(
               trailingLabel!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
               ),
             ),
         ],

@@ -74,20 +74,21 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
   // ── Build ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-        decoration: const BoxDecoration(
-          color: _kCard,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF141414) : _kCard,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           boxShadow: [
             BoxShadow(
-              color: Color(0x18000000),
+              color: isDark ? Colors.black.withOpacity(0.3) : const Color(0x18000000),
               blurRadius: 32,
-              offset: Offset(0, -8),
+              offset: const Offset(0, -8),
             ),
             BoxShadow(
-              color: Color(0x08000000),
+              color: isDark ? Colors.black.withOpacity(0.1) : const Color(0x08000000),
               blurRadius: 8,
-              offset: Offset(0, -2),
+              offset: const Offset(0, -2),
             ),
           ],
         ),
@@ -218,7 +219,14 @@ class _MenuTileState extends State<_MenuTile> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final item = widget.item;
+
+    final textPrimary = isDark ? Colors.white : _kTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : _kTextSecondary;
+    final surface = isDark ? const Color(0xFF222222) : _kSurface;
+    final divider = isDark ? const Color(0xFF2C2C2C) : _kDivider;
+    final pressedBg = isDark ? const Color(0xFF2A1F1A) : _kOrangeLight;
 
     return Column(
       children: [
@@ -235,7 +243,7 @@ class _MenuTileState extends State<_MenuTile> {
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
-              color: _pressed ? _kOrangeLight : Colors.transparent,
+              color: _pressed ? pressedBg : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -269,19 +277,19 @@ class _MenuTileState extends State<_MenuTile> {
                     children: [
                       Text(
                         item.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: _kTextPrimary,
+                          color: textPrimary,
                           letterSpacing: -0.2,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         item.subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: _kTextSecondary,
+                          color: textSecondary,
                           height: 1.3,
                         ),
                       ),
@@ -296,13 +304,13 @@ class _MenuTileState extends State<_MenuTile> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: _kSurface,
+                    color: surface,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 13,
-                    color: _kTextSecondary,
+                    color: textSecondary,
                   ),
                 ),
               ],
@@ -315,7 +323,7 @@ class _MenuTileState extends State<_MenuTile> {
           Container(
             height: 1,
             margin: const EdgeInsets.only(left: 70, right: 4),
-            color: _kDivider,
+            color: divider,
           ),
       ],
     );
@@ -330,6 +338,9 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final badgeBorderColor = isDark ? const Color(0xFF141414) : _kCard;
+
     return Container(
       constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
       padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -342,7 +353,7 @@ class _Badge extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: _kCard, width: 1.5),
+        border: Border.all(color: badgeBorderColor, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: (isOrange ? _kOrange : const Color(0xFFFF3B2C)).withOpacity(

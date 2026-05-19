@@ -34,12 +34,27 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final labelColor = isDark ? Colors.white70 : AppColors.screenTextSecondary;
+    final textColor = isDark ? Colors.white : AppColors.screenTextPrimary;
+    final hintColor = isDark ? Colors.white38 : const Color(0xFFBBBBBB);
+    final textFillColor = isDark ? const Color(0xFF1E1E1E) : AppColors.screenSurface;
+    final borderColor = isDark ? const Color(0xFF333333) : AppColors.screenDivider;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondary)),
+            Text(
+              label, 
+              style: TextStyle(
+                fontSize: 12, 
+                fontWeight: FontWeight.w600, 
+                color: labelColor,
+              ),
+            ),
             if (required) const Text(' *', style: TextStyle(color: AppColors.screenOrange, fontSize: 12, fontWeight: FontWeight.bold)),
           ],
         ),
@@ -50,17 +65,40 @@ class CustomTextField extends StatelessWidget {
           maxLines: maxLines,
           inputFormatters: inputFormatters,
           readOnly: readOnly,
-          style: const TextStyle(fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 14, 
+            color: textColor, 
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-            prefixIcon: Icon(icon, color: hasError ? Colors.red : (iconColor ?? AppColors.screenOrange), size: 18),
+            hintStyle: TextStyle(
+              fontSize: 13, 
+              color: hintColor,
+            ),
+            prefixIcon: Icon(
+              icon, 
+              color: hasError ? Colors.red : (iconColor ?? AppColors.screenOrange), 
+              size: 18,
+            ),
             filled: true,
-            fillColor: AppColors.screenSurface,
+            fillColor: textFillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: hasError ? Colors.red : AppColors.screenDivider)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: hasError ? Colors.red : AppColors.screenDivider)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: hasError ? Colors.red : (focusBorderColor ?? AppColors.screenOrange), width: 1.5)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12), 
+              borderSide: BorderSide(color: hasError ? Colors.red : borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12), 
+              borderSide: BorderSide(color: hasError ? Colors.red : borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12), 
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : (focusBorderColor ?? AppColors.screenOrange), 
+                width: 1.5,
+              ),
+            ),
           ),
         ),
       ],

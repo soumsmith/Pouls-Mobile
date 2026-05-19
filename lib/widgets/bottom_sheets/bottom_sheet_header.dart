@@ -34,6 +34,8 @@ class BottomSheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       color: backgroundColor ?? Colors.transparent,
       padding: padding ?? const EdgeInsets.fromLTRB(0, 8, 0, 12),
@@ -47,7 +49,7 @@ class BottomSheetHeader extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: isDark ? const Color(0xFF444444) : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -85,7 +87,7 @@ class BottomSheetHeader extends StatelessWidget {
                         style: TextStyle(
                           fontSize: titleFontSize ?? 14,
                           fontWeight: titleFontWeight ?? FontWeight.w600,
-                          color: titleColor ?? const Color(0xFF1A1A1A),
+                          color: titleColor ?? (isDark ? Colors.white : const Color(0xFF1A1A1A)),
                           letterSpacing: -0.4,
                         ),
                         maxLines: 1,
@@ -96,7 +98,7 @@ class BottomSheetHeader extends StatelessWidget {
                         description,
                         style: TextStyle(
                           fontSize: descriptionFontSize ?? 10,
-                          color: descriptionColor ?? const Color(0xFF666666),
+                          color: descriptionColor ?? (isDark ? Colors.white70 : const Color(0xFF666666)),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -112,12 +114,12 @@ class BottomSheetHeader extends StatelessWidget {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0F0F0),
+                      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.close,
-                      color: Color(0xFF666666),
+                      color: isDark ? Colors.white70 : const Color(0xFF666666),
                       size: 14,
                     ),
                   ),
@@ -129,7 +131,10 @@ class BottomSheetHeader extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Divider
-          const Divider(color: Color(0xFFE5E5E5), height: 1),
+          Divider(
+            color: isDark ? const Color(0xFF333333) : const Color(0xFFE5E5E5),
+            height: 1,
+          ),
         ],
       ),
     );

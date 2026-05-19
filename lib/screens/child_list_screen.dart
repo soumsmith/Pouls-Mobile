@@ -386,7 +386,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<GroupMessage> _notifications = [];
   bool _isLoadingNotifications = false;
   bool _notificationsLoaded = false; // ✅ AJOUT ICI
-  Set<String> _expandedNotificationIds = <String>{}; // IDs des notifications étendues
+  Set<String> _expandedNotificationIds =
+      <String>{}; // IDs des notifications étendues
 
   // Variables pour les notifications d'échéance
   EcheanceNotification? _echeanceNotification;
@@ -1148,13 +1149,19 @@ class _ChildListScreenState extends State<ChildListScreen>
     final now = DateTime.now();
     final weekday = now.weekday;
     String todayStr = 'Lundi';
-    if (weekday == 2) todayStr = 'Mardi';
-    else if (weekday == 3) todayStr = 'Mercredi';
-    else if (weekday == 4) todayStr = 'Jeudi';
-    else if (weekday == 5) todayStr = 'Vendredi';
-    else if (weekday == 6) todayStr = 'Samedi';
-    else if (weekday == 7) todayStr = 'Dimanche';
-    
+    if (weekday == 2)
+      todayStr = 'Mardi';
+    else if (weekday == 3)
+      todayStr = 'Mercredi';
+    else if (weekday == 4)
+      todayStr = 'Jeudi';
+    else if (weekday == 5)
+      todayStr = 'Vendredi';
+    else if (weekday == 6)
+      todayStr = 'Samedi';
+    else if (weekday == 7)
+      todayStr = 'Dimanche';
+
     _selectedTimetableDay = todayStr;
 
     showModalBottomSheet(
@@ -1643,7 +1650,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             height: MediaQuery.of(context).size.height * 0.8,
             decoration: BoxDecoration(
               color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             child: Column(
               children: [
@@ -2148,7 +2157,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                           height: 1.5,
                         ),
                         maxLines: isExpanded ? null : 2,
-                        overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                        overflow: isExpanded
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                       ),
 
                       if (notification.hasAttachment) ...[
@@ -4143,7 +4154,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Code établissement introuvable')),
+                  const SnackBar(
+                    content: Text('Code établissement introuvable'),
+                  ),
                 );
               }
             },
@@ -5123,7 +5136,10 @@ class _ChildListScreenState extends State<ChildListScreen>
     final coursesByDay = _timetableResponse!.coursesByDay;
     final days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
     final availableDays = days
-        .where((day) => coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty)
+        .where(
+          (day) =>
+              coursesByDay.containsKey(day) && coursesByDay[day]!.isNotEmpty,
+        )
         .toList();
 
     if (availableDays.isEmpty) {
@@ -5137,7 +5153,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               'Aucun cours programmé',
               style: TextStyle(
                 fontSize: 16,
-                color: _themeService.isDarkMode ? Colors.white70 : Colors.grey[600],
+                color: _themeService.isDarkMode
+                    ? Colors.white70
+                    : Colors.grey[600],
               ),
             ),
           ],
@@ -5145,7 +5163,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       );
     }
 
-    if (_selectedTimetableDay == null || !availableDays.contains(_selectedTimetableDay)) {
+    if (_selectedTimetableDay == null ||
+        !availableDays.contains(_selectedTimetableDay)) {
       _selectedTimetableDay = availableDays.first;
     }
 
@@ -5158,7 +5177,10 @@ class _ChildListScreenState extends State<ChildListScreen>
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildDynamicDaySchedule(_selectedTimetableDay!, selectedCourses),
+          child: _buildDynamicDaySchedule(
+            _selectedTimetableDay!,
+            selectedCourses,
+          ),
         ),
         const SizedBox(height: 80),
       ],
@@ -5202,7 +5224,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                     : null,
                 color: isSelected
                     ? null
-                    : (_themeService.isDarkMode ? Colors.grey[850] : Colors.grey[100]),
+                    : (_themeService.isDarkMode
+                          ? Colors.grey[850]
+                          : Colors.grey[100]),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: isSelected
                     ? [
@@ -5210,13 +5234,15 @@ class _ChildListScreenState extends State<ChildListScreen>
                           color: const Color(0xFFF57C00).withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ]
                     : null,
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
-                      : (_themeService.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!),
+                      : (_themeService.isDarkMode
+                            ? Colors.grey[800]!
+                            : Colors.grey[300]!),
                   width: 1,
                 ),
               ),
@@ -5227,10 +5253,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                     day,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: isSelected
                           ? Colors.white
-                          : (_themeService.isDarkMode ? Colors.grey[300] : Colors.grey[700]),
+                          : (_themeService.isDarkMode
+                                ? Colors.grey[300]
+                                : Colors.grey[700]),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -5238,10 +5268,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                     '$coursesCount cours',
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       color: isSelected
                           ? Colors.white.withOpacity(0.8)
-                          : (_themeService.isDarkMode ? Colors.grey[500] : Colors.grey[500]),
+                          : (_themeService.isDarkMode
+                                ? Colors.grey[500]
+                                : Colors.grey[500]),
                     ),
                   ),
                 ],
@@ -7448,7 +7482,9 @@ class _ChildListScreenState extends State<ChildListScreen>
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: courses.map((course) => _buildDynamicCourseItem(course)).toList(),
+      children: courses
+          .map((course) => _buildDynamicCourseItem(course))
+          .toList(),
     );
   }
 
@@ -7475,7 +7511,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   color: color.withOpacity(0.06),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
-                )
+                ),
               ]
             : null,
       ),
@@ -7524,14 +7560,18 @@ class _ChildListScreenState extends State<ChildListScreen>
                               Icon(
                                 Icons.access_time_rounded,
                                 size: 13,
-                                color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                                color: isDarkMode
+                                    ? Colors.grey[500]
+                                    : Colors.grey[500],
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 course.formattedTime,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -7564,7 +7604,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         child: Column(
                           children: [
                             Divider(
-                              color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                              color: isDarkMode
+                                  ? Colors.grey[800]
+                                  : Colors.grey[200],
                               height: 1,
                             ),
                             const SizedBox(height: 12),
@@ -7577,7 +7619,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+                                          color: isDarkMode
+                                              ? Colors.grey[850]
+                                              : Colors.grey[100],
                                           shape: BoxShape.circle,
                                         ),
                                         child: Icon(
@@ -7589,23 +7633,29 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'Enseignant',
                                               style: TextStyle(
                                                 fontSize: 10,
-                                                color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                                                color: isDarkMode
+                                                    ? Colors.grey[500]
+                                                    : Colors.grey[500],
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
                                             const SizedBox(height: 1),
                                             Text(
-                                              course.professeur ?? 'Non assigné',
+                                              course.professeur ??
+                                                  'Non assigné',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: isDarkMode ? Colors.grey[300] : Colors.black87,
+                                                color: isDarkMode
+                                                    ? Colors.grey[300]
+                                                    : Colors.black87,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -7623,7 +7673,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+                                          color: isDarkMode
+                                              ? Colors.grey[850]
+                                              : Colors.grey[100],
                                           shape: BoxShape.circle,
                                         ),
                                         child: Icon(
@@ -7635,13 +7687,16 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'Salle',
                                               style: TextStyle(
                                                 fontSize: 10,
-                                                color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                                                color: isDarkMode
+                                                    ? Colors.grey[500]
+                                                    : Colors.grey[500],
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -7651,7 +7706,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: isDarkMode ? Colors.grey[300] : Colors.black87,
+                                                color: isDarkMode
+                                                    ? Colors.grey[300]
+                                                    : Colors.black87,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -8738,7 +8795,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -8814,9 +8873,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? const Color(0xFF2A2A2A)
-                      : Colors.white,
+                  color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(12),
                     bottomRight: Radius.circular(12),
@@ -8956,8 +9013,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         Directory? directory;
         try {
           if (Platform.isAndroid) {
-            directory = await getExternalStorageDirectory() ?? 
-                        await getApplicationDocumentsDirectory();
+            directory =
+                await getExternalStorageDirectory() ??
+                await getApplicationDocumentsDirectory();
           } else {
             directory = await getApplicationDocumentsDirectory();
           }
@@ -8970,8 +9028,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         final cleanPrenoms = prenoms.trim().replaceAll(' ', '_');
         final cleanPeriode = periode.trim().replaceAll(' ', '_');
         final cleanAnnee = annee.trim().replaceAll('/', '-');
-        
-        final fileName = 'Bulletin_${cleanPeriode}_${cleanPrenoms}_${cleanNom}_$cleanAnnee.pdf';
+
+        final fileName =
+            'Bulletin_${cleanPeriode}_${cleanPrenoms}_${cleanNom}_$cleanAnnee.pdf';
         final filePath = '$documentsPath/$fileName';
 
         // Save file locally
@@ -8981,10 +9040,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         if (mounted) {
           // On iOS, open native share/save sheet to allow user to "Save to Files" (Enregistrer dans Fichiers)
           if (Platform.isIOS) {
-            await Share.shareXFiles(
-              [XFile(filePath)],
-              subject: 'Bulletin $periode - $prenoms $nom',
-            );
+            await Share.shareXFiles([
+              XFile(filePath),
+            ], subject: 'Bulletin $periode - $prenoms $nom');
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Option de sauvegarde affichée avec succès'),
@@ -8999,10 +9057,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 action: SnackBarAction(
                   label: 'Partager le fichier',
                   onPressed: () async {
-                    await Share.shareXFiles(
-                      [XFile(filePath)],
-                      subject: 'Bulletin $periode - $prenoms $nom',
-                    );
+                    await Share.shareXFiles([
+                      XFile(filePath),
+                    ], subject: 'Bulletin $periode - $prenoms $nom');
                   },
                 ),
               ),
@@ -9959,7 +10016,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                             '$formattedDate • ${order.items.length} article${order.items.length > 1 ? "s" : ""}',
                             style: TextStyle(
                               fontSize: _textSizeService.getScaledFontSize(12),
-                              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
                             ),
                           ),
                         ],
@@ -9978,7 +10037,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -10017,7 +10079,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Divider(
-                              color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                              color: isDarkMode
+                                  ? Colors.grey[800]
+                                  : Colors.grey[200],
                               height: 1,
                             ),
                             const SizedBox(height: 12),
@@ -10026,19 +10090,25 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 Text(
                                   'ID Commande : ',
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(11),
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(11),
                                     fontWeight: FontWeight.w600,
-                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                    color: isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                                   ),
                                 ),
                                 Expanded(
                                   child: SelectableText(
                                     order.id,
                                     style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(11),
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(11),
                                       fontWeight: FontWeight.w400,
                                       fontFamily: 'monospace',
-                                      color: isDarkMode ? Colors.grey[300] : Colors.black54,
+                                      color: isDarkMode
+                                          ? Colors.grey[300]
+                                          : Colors.black54,
                                     ),
                                   ),
                                 ),
@@ -10049,10 +10119,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                               width: double.infinity,
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: isDarkMode ? Colors.grey[850] : Colors.grey[50],
+                                color: isDarkMode
+                                    ? Colors.grey[850]
+                                    : Colors.grey[50],
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+                                  color: isDarkMode
+                                      ? Colors.grey[800]!
+                                      : Colors.grey[200]!,
                                 ),
                               ),
                               child: Column(
@@ -10061,53 +10135,78 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   Text(
                                     'Détails des articles',
                                     style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(12),
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(12),
                                       fontWeight: FontWeight.w700,
-                                      color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                      color: isDarkMode
+                                          ? Colors.grey[300]
+                                          : Colors.grey[700],
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  ...order.items.map((item) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 10),
-                                        child: Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Container(
-                                              margin: const EdgeInsets.only(top: 5),
-                                              width: 5,
-                                              height: 5,
-                                              decoration: BoxDecoration(
-                                                color: statusColor,
-                                                shape: BoxShape.circle,
+                                  ...order.items
+                                      .map(
+                                        (item) => Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 10,
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                margin: const EdgeInsets.only(
+                                                  top: 5,
+                                                ),
+                                                width: 5,
+                                                height: 5,
+                                                decoration: BoxDecoration(
+                                                  color: statusColor,
+                                                  shape: BoxShape.circle,
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    item.product.title ?? 'Produit sans nom',
-                                                    style: TextStyle(
-                                                      fontSize: _textSizeService.getScaledFontSize(13),
-                                                      fontWeight: FontWeight.w600,
-                                                      color: isDarkMode ? Colors.white : Colors.black87,
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.product.title ??
+                                                          'Produit sans nom',
+                                                      style: TextStyle(
+                                                        fontSize: _textSizeService
+                                                            .getScaledFontSize(
+                                                              13,
+                                                            ),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: isDarkMode
+                                                            ? Colors.white
+                                                            : Colors.black87,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    'Quantité: ${item.quantity} • ${item.product.price.toStringAsFixed(2)} FCFA',
-                                                    style: TextStyle(
-                                                      fontSize: _textSizeService.getScaledFontSize(11),
-                                                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      'Quantité: ${item.quantity} • ${item.product.price.toStringAsFixed(2)} FCFA',
+                                                      style: TextStyle(
+                                                        fontSize: _textSizeService
+                                                            .getScaledFontSize(
+                                                              11,
+                                                            ),
+                                                        color: isDarkMode
+                                                            ? Colors.grey[400]
+                                                            : Colors.grey[600],
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      )).toList(),
+                                      )
+                                      .toList(),
                                 ],
                               ),
                             ),
@@ -10118,16 +10217,22 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 Text(
                                   'Sous-total :',
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(12),
-                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(12),
+                                    color: isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                                   ),
                                 ),
                                 Text(
                                   '${(order.totalAmount - (order.metadata?["frais_livraison"] as num? ?? 0)).toStringAsFixed(2)} FCFA',
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(12),
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(12),
                                     fontWeight: FontWeight.w500,
-                                    color: isDarkMode ? Colors.white : Colors.black87,
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : Colors.black87,
                                   ),
                                 ),
                               ],
@@ -10135,28 +10240,39 @@ class _ChildListScreenState extends State<ChildListScreen>
                             if (order.metadata?["frais_livraison"] != null) ...[
                               const SizedBox(height: 6),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Frais de livraison :',
                                     style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(12),
-                                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(12),
+                                      color: isDarkMode
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
                                     ),
                                   ),
                                   Text(
                                     '+${(order.metadata!["frais_livraison"] as num).toStringAsFixed(2)} FCFA',
                                     style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(12),
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(12),
                                       fontWeight: FontWeight.w500,
-                                      color: isDarkMode ? Colors.white : Colors.black87,
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : Colors.black87,
                                     ),
                                   ),
                                 ],
                               ),
                             ],
                             const SizedBox(height: 8),
-                            Divider(color: isDarkMode ? Colors.grey[800] : Colors.grey[200]),
+                            Divider(
+                              color: isDarkMode
+                                  ? Colors.grey[800]
+                                  : Colors.grey[200],
+                            ),
                             const SizedBox(height: 6),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -10164,15 +10280,19 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 Text(
                                   'Total Général :',
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(13),
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(13),
                                     fontWeight: FontWeight.w700,
-                                    color: isDarkMode ? Colors.white : Colors.black87,
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : Colors.black87,
                                   ),
                                 ),
                                 Text(
                                   formattedAmount,
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(15),
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(15),
                                     fontWeight: FontWeight.w800,
                                     color: statusColor,
                                   ),
@@ -10673,12 +10793,13 @@ class _ChildListScreenState extends State<ChildListScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: (_statistiquesPresence!.tauxPresence >= 95
-                                ? const Color(0xFF10B981)
-                                : _statistiquesPresence!.tauxPresence >= 90
-                                ? const Color(0xFFF59E0B)
-                                : const Color(0xFFEF4444))
-                            .withOpacity(0.3),
+                        color:
+                            (_statistiquesPresence!.tauxPresence >= 95
+                                    ? const Color(0xFF10B981)
+                                    : _statistiquesPresence!.tauxPresence >= 90
+                                    ? const Color(0xFFF59E0B)
+                                    : const Color(0xFFEF4444))
+                                .withOpacity(0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
@@ -10710,7 +10831,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                             Text(
                               'Taux de présence globale',
                               style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(13),
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  13,
+                                ),
                                 color: Colors.white.withOpacity(0.85),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -10719,7 +10842,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                             Text(
                               '${_statistiquesPresence!.tauxPresence.toStringAsFixed(1)}%',
                               style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(28),
+                                fontSize: _textSizeService.getScaledFontSize(
+                                  28,
+                                ),
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.5,
@@ -10765,10 +10890,14 @@ class _ChildListScreenState extends State<ChildListScreen>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[850] : Colors.blue.shade50.withOpacity(0.3),
+                    color: isDarkMode
+                        ? Colors.grey[850]
+                        : Colors.blue.shade50.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDarkMode ? Colors.grey[800]! : Colors.blue.shade100,
+                      color: isDarkMode
+                          ? Colors.grey[800]!
+                          : Colors.blue.shade100,
                       width: 1.2,
                     ),
                   ),
@@ -10888,7 +11017,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     final borderColor = isPresent
         ? const Color(0xFF10B981).withOpacity(0.2)
         : const Color(0xFFEF4444).withOpacity(0.2);
-    final accentColor = isPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final accentColor = isPresent
+        ? const Color(0xFF10B981)
+        : const Color(0xFFEF4444);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -11017,7 +11148,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                       ),
                     )
                   : const Icon(Icons.refresh_rounded),
-              label: Text(_isLoadingPresence ? 'Chargement en cours...' : 'Actualiser les données'),
+              label: Text(
+                _isLoadingPresence
+                    ? 'Chargement en cours...'
+                    : 'Actualiser les données',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1565C0),
                 foregroundColor: Colors.white,
@@ -11046,11 +11181,19 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ? '${debutDate.day.toString().padLeft(2, '0')}/${debutDate.month.toString().padLeft(2, '0')} à ${debutDate.hour.toString().padLeft(2, '0')}:${debutDate.minute.toString().padLeft(2, '0')}'
                 : entry.debut ?? '';
 
-            final statusColor = isPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+            final statusColor = isPresent
+                ? const Color(0xFF10B981)
+                : const Color(0xFFEF4444);
             final statusBgColor = isPresent
-                ? (isDarkMode ? const Color(0xFF0F3720) : const Color(0xFFD1FAE5))
-                : (isDarkMode ? const Color(0xFF3C1818) : const Color(0xFFFEE2E2));
-            final itemBgColor = isDarkMode ? const Color(0xFF1E1E2A) : Colors.white;
+                ? (isDarkMode
+                      ? const Color(0xFF0F3720)
+                      : const Color(0xFFD1FAE5))
+                : (isDarkMode
+                      ? const Color(0xFF3C1818)
+                      : const Color(0xFFFEE2E2));
+            final itemBgColor = isDarkMode
+                ? const Color(0xFF1E1E2A)
+                : Colors.white;
 
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -11105,7 +11248,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   child: Text(
                                     isPresent ? 'Présent' : 'Absent',
                                     style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(11),
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(11),
                                       fontWeight: FontWeight.bold,
                                       color: statusColor,
                                     ),
@@ -11116,9 +11260,12 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   child: Text(
                                     entry.matiere ?? 'Matière inconnue',
                                     style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(14),
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(14),
                                       fontWeight: FontWeight.bold,
-                                      color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : const Color(0xFF1F2937),
                                     ),
                                     textAlign: TextAlign.end,
                                     maxLines: 1,
@@ -11134,31 +11281,42 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 Icon(
                                   Icons.access_time_rounded,
                                   size: 14,
-                                  color: isDarkMode ? Colors.white38 : Colors.grey[500],
+                                  color: isDarkMode
+                                      ? Colors.white38
+                                      : Colors.grey[500],
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
                                   timeStr,
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(12),
-                                    color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(12),
+                                    color: isDarkMode
+                                        ? Colors.white70
+                                        : Colors.grey[600],
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const Spacer(),
                                 // Professor name
-                                if (entry.nomProf != null && entry.prenomProf != null) ...[
+                                if (entry.nomProf != null &&
+                                    entry.prenomProf != null) ...[
                                   Icon(
                                     Icons.person_outline_rounded,
                                     size: 14,
-                                    color: isDarkMode ? Colors.white38 : Colors.grey[500],
+                                    color: isDarkMode
+                                        ? Colors.white38
+                                        : Colors.grey[500],
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${entry.prenomProf} ${entry.nomProf}',
                                     style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(12),
-                                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(12),
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : Colors.grey[600],
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -11190,7 +11348,11 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
             child: Column(
               children: [
-                Icon(Icons.info_outline_rounded, size: 48, color: Colors.grey[400]),
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Aucune donnée de présence disponible',
@@ -11235,7 +11397,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     try {
       String? dateParam;
       if (_filterStartDate != null) {
-        dateParam = '${_filterStartDate!.year}-${_filterStartDate!.month.toString().padLeft(2, '0')}-${_filterStartDate!.day.toString().padLeft(2, '0')}';
+        dateParam =
+            '${_filterStartDate!.year}-${_filterStartDate!.month.toString().padLeft(2, '0')}-${_filterStartDate!.day.toString().padLeft(2, '0')}';
       }
       String? typeParam;
       if (_filterType != null) {
@@ -12273,10 +12436,12 @@ class _ExtraScolaireSheetContent extends StatefulWidget {
   });
 
   @override
-  State<_ExtraScolaireSheetContent> createState() => _ExtraScolaireSheetContentState();
+  State<_ExtraScolaireSheetContent> createState() =>
+      _ExtraScolaireSheetContentState();
 }
 
-class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> {
+class _ExtraScolaireSheetContentState
+    extends State<_ExtraScolaireSheetContent> {
   bool _isLoadingServices = true;
   bool _isLoadingActivities = false;
   List<dynamic> _services = [];
@@ -12328,8 +12493,10 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
 
   @override
   Widget build(BuildContext context) {
-    final themeBg = widget.isDark ? Colors.grey[950]! : Colors.white;
-    final themeHeaderColor = widget.isDark ? Colors.white : const Color(0xFF1F2937);
+    final themeBg = widget.isDark ? const Color(0xFF0A0A0A) : Colors.white;
+    final themeHeaderColor = widget.isDark
+        ? Colors.white
+        : const Color(0xFF1F2937);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -12368,11 +12535,16 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7B1FA2).withOpacity(widget.isDark ? 0.2 : 0.1),
+                    color: const Color(
+                      0xFF7B1FA2,
+                    ).withOpacity(widget.isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.playlist_add_check_rounded,
-                      color: Color(0xFF7B1FA2), size: 24),
+                  child: const Icon(
+                    Icons.playlist_add_check_rounded,
+                    color: Color(0xFF7B1FA2),
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -12382,7 +12554,9 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                       Text(
                         'Services scolaires',
                         style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(18),
+                          fontSize: widget.textSizeService.getScaledFontSize(
+                            18,
+                          ),
                           fontWeight: FontWeight.bold,
                           color: themeHeaderColor,
                           letterSpacing: -0.4,
@@ -12392,7 +12566,9 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                       Text(
                         'Suivi de ${widget.childName}',
                         style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(12),
+                          fontSize: widget.textSizeService.getScaledFontSize(
+                            12,
+                          ),
                           color: AppColors.screenTextSecondary,
                         ),
                       ),
@@ -12405,7 +12581,9 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: widget.isDark ? Colors.grey[900] : Colors.grey[100],
+                      color: widget.isDark
+                          ? Colors.grey[900]
+                          : Colors.grey[100],
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.close, size: 16),
@@ -12427,23 +12605,23 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                     ),
                   )
                 : _services.isEmpty
-                    ? _buildEmptyServicesState()
-                    : Column(
-                        children: [
-                          _buildServicesTabs(),
-                          Expanded(
-                            child: _isLoadingActivities
-                                ? const Center(
-                                    child: CustomLoader(
-                                      message: 'Chargement du suivi quotidien...',
-                                      loaderColor: Color(0xFF7B1FA2),
-                                      showBackground: false,
-                                    ),
-                                  )
-                                : _buildActivitiesSection(),
-                          ),
-                        ],
+                ? _buildEmptyServicesState()
+                : Column(
+                    children: [
+                      _buildServicesTabs(),
+                      Expanded(
+                        child: _isLoadingActivities
+                            ? const Center(
+                                child: CustomLoader(
+                                  message: 'Chargement du suivi quotidien...',
+                                  loaderColor: Color(0xFF7B1FA2),
+                                  showBackground: false,
+                                ),
+                              )
+                            : _buildActivitiesSection(),
                       ),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -12461,7 +12639,9 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: widget.isDark ? const Color(0xFF1E0A2E) : const Color(0xFFF3E5F5),
+                color: widget.isDark
+                    ? const Color(0xFF1E0A2E)
+                    : const Color(0xFFF3E5F5),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -12514,7 +12694,8 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
           if (title.toLowerCase().contains('cantine')) {
             icon = Icons.restaurant_rounded;
             color = const Color(0xFFE65100);
-          } else if (title.toLowerCase().contains('transport') || title.toLowerCase().contains('bus')) {
+          } else if (title.toLowerCase().contains('transport') ||
+              title.toLowerCase().contains('bus')) {
             icon = Icons.directions_bus_rounded;
             color = const Color(0xFF0288D1);
           }
@@ -12523,7 +12704,8 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
             padding: const EdgeInsets.only(right: 10),
             child: InkWell(
               onTap: () {
-                if (serviceUid.isNotEmpty && _selectedServiceUid != serviceUid) {
+                if (serviceUid.isNotEmpty &&
+                    _selectedServiceUid != serviceUid) {
                   setState(() {
                     _selectedServiceUid = serviceUid;
                   });
@@ -12533,32 +12715,47 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
               borderRadius: BorderRadius.circular(14),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? color.withOpacity(widget.isDark ? 0.25 : 0.12)
-                      : widget.isDark ? Colors.grey[900] : Colors.grey[100],
+                      : widget.isDark
+                      ? Colors.grey[900]
+                      : Colors.grey[100],
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
                         ? color
-                        : widget.isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                        : widget.isDark
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!,
                     width: 1.5,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 16, color: isSelected ? color : Colors.grey),
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isSelected ? color : Colors.grey,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       title,
                       style: TextStyle(
                         fontSize: widget.textSizeService.getScaledFontSize(13),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w600,
                         color: isSelected
                             ? (widget.isDark ? Colors.white : color)
-                            : (widget.isDark ? Colors.grey[400] : Colors.grey[700]),
+                            : (widget.isDark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[700]),
                       ),
                     ),
                   ],
@@ -12577,15 +12774,17 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
       orElse: () => null,
     );
 
-    final String serviceTitle = activeService?['titre']?.toString() ?? 'Service';
+    final String serviceTitle =
+        activeService?['titre']?.toString() ?? 'Service';
     final String status = activeService?['statut']?.toString() ?? 'Actif';
     final String debut = activeService?['debut']?.toString() ?? '';
     final String fin = activeService?['fin']?.toString() ?? '';
-    
+
     Color serviceColor = const Color(0xFF7B1FA2);
     if (serviceTitle.toLowerCase().contains('cantine')) {
       serviceColor = const Color(0xFFE65100);
-    } else if (serviceTitle.toLowerCase().contains('transport') || serviceTitle.toLowerCase().contains('bus')) {
+    } else if (serviceTitle.toLowerCase().contains('transport') ||
+        serviceTitle.toLowerCase().contains('bus')) {
       serviceColor = const Color(0xFF0288D1);
     }
 
@@ -12613,13 +12812,20 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                     style: TextStyle(
                       fontSize: widget.textSizeService.getScaledFontSize(15),
                       fontWeight: FontWeight.w700,
-                      color: widget.isDark ? Colors.white : const Color(0xFF1F2937),
+                      color: widget.isDark
+                          ? Colors.white
+                          : const Color(0xFF1F2937),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(widget.isDark ? 0.2 : 0.1),
+                      color: Colors.green.withOpacity(
+                        widget.isDark ? 0.2 : 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -12639,7 +12845,11 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey[500]),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 12,
+                      color: Colors.grey[500],
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'Période d\'abonnement : ${debut} - ${fin}',
@@ -12817,12 +13027,16 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                   color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: widget.isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                    color: widget.isDark
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(widget.isDark ? 0.1 : 0.02),
+                      color: Colors.black.withOpacity(
+                        widget.isDark ? 0.1 : 0.02,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -12838,15 +13052,21 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                           child: Text(
                             description,
                             style: TextStyle(
-                              fontSize: widget.textSizeService.getScaledFontSize(13),
+                              fontSize: widget.textSizeService
+                                  .getScaledFontSize(13),
                               fontWeight: FontWeight.bold,
-                              color: widget.isDark ? Colors.white : const Color(0xFF374151),
+                              color: widget.isDark
+                                  ? Colors.white
+                                  : const Color(0xFF374151),
                             ),
                           ),
                         ),
                         if (statut.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: serviceColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
@@ -12867,8 +13087,12 @@ class _ExtraScolaireSheetContentState extends State<_ExtraScolaireSheetContent> 
                       Text(
                         details,
                         style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(12),
-                          color: widget.isDark ? const Color(0xFFCCCCCC) : const Color(0xFF4B5563),
+                          fontSize: widget.textSizeService.getScaledFontSize(
+                            12,
+                          ),
+                          color: widget.isDark
+                              ? const Color(0xFFCCCCCC)
+                              : const Color(0xFF4B5563),
                           height: 1.4,
                         ),
                       ),
@@ -12900,10 +13124,12 @@ class _SuiviActivitesSheetContent extends StatefulWidget {
   });
 
   @override
-  State<_SuiviActivitesSheetContent> createState() => _SuiviActivitesSheetContentState();
+  State<_SuiviActivitesSheetContent> createState() =>
+      _SuiviActivitesSheetContentState();
 }
 
-class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent> {
+class _SuiviActivitesSheetContentState
+    extends State<_SuiviActivitesSheetContent> {
   bool _isLoadingServices = true;
   bool _isLoadingActivities = false;
   List<dynamic> _services = [];
@@ -12956,8 +13182,7 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
 
   @override
   Widget build(BuildContext context) {
-    final themeBg = widget.isDark ? Colors.grey[950]! : Colors.white;
-    final themeHeaderColor = widget.isDark ? Colors.white : const Color(0xFF1F2937);
+    final themeBg = widget.isDark ? Colors.grey[900] : Colors.white;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -12974,75 +13199,15 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
       ),
       child: Column(
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4.5,
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              decoration: BoxDecoration(
-                color: widget.isDark ? Colors.grey[800] : Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+          BottomSheetHeader(
+            icon: Icons.history_toggle_off_rounded,
+            iconColor: const Color(0xFFE65100),
+            title: 'Suivi des activités',
+            description: 'Rapport quotidien de ${widget.childName}',
+            titleFontSize: widget.textSizeService.getScaledFontSize(16),
+            descriptionFontSize: widget.textSizeService.getScaledFontSize(11),
+            onClose: () => Navigator.of(context).pop(),
           ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE65100).withOpacity(widget.isDark ? 0.2 : 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.history_toggle_off_rounded,
-                      color: Color(0xFFE65100), size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Suivi des activités',
-                        style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(18),
-                          fontWeight: FontWeight.bold,
-                          color: themeHeaderColor,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Rapport quotidien de ${widget.childName}',
-                        style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(12),
-                          color: AppColors.screenTextSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: widget.isDark ? Colors.grey[900] : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.close, size: 16),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, thickness: 1),
 
           // Content
           Expanded(
@@ -13055,24 +13220,24 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
                     ),
                   )
                 : _services.isEmpty
-                    ? _buildEmptyServicesState()
-                    : Column(
-                        children: [
-                          _buildServicesTabs(),
-                          _buildDateFilterRow(),
-                          Expanded(
-                            child: _isLoadingActivities
-                                ? const Center(
-                                    child: CustomLoader(
-                                      message: 'Chargement du suivi quotidien...',
-                                      loaderColor: Color(0xFFE65100),
-                                      showBackground: false,
-                                    ),
-                                  )
-                                : _buildActivitiesTimeline(),
-                          ),
-                        ],
+                ? _buildEmptyServicesState()
+                : Column(
+                    children: [
+                      _buildServicesTabs(),
+                      _buildDateFilterRow(),
+                      Expanded(
+                        child: _isLoadingActivities
+                            ? const Center(
+                                child: CustomLoader(
+                                  message: 'Chargement du suivi quotidien...',
+                                  loaderColor: Color(0xFFE65100),
+                                  showBackground: false,
+                                ),
+                              )
+                            : _buildActivitiesTimeline(),
                       ),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -13090,7 +13255,9 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: widget.isDark ? const Color(0xFF2E1605) : const Color(0xFFFFF3E0),
+                color: widget.isDark
+                    ? const Color(0xFF2E1605)
+                    : const Color(0xFFFFF3E0),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -13143,7 +13310,8 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
           if (title.toLowerCase().contains('cantine')) {
             icon = Icons.restaurant_rounded;
             color = const Color(0xFFE65100);
-          } else if (title.toLowerCase().contains('transport') || title.toLowerCase().contains('bus')) {
+          } else if (title.toLowerCase().contains('transport') ||
+              title.toLowerCase().contains('bus')) {
             icon = Icons.directions_bus_rounded;
             color = const Color(0xFF0288D1);
           }
@@ -13152,7 +13320,8 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
             padding: const EdgeInsets.only(right: 10),
             child: InkWell(
               onTap: () {
-                if (serviceUid.isNotEmpty && _selectedServiceUid != serviceUid) {
+                if (serviceUid.isNotEmpty &&
+                    _selectedServiceUid != serviceUid) {
                   setState(() {
                     _selectedServiceUid = serviceUid;
                   });
@@ -13162,32 +13331,47 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
               borderRadius: BorderRadius.circular(14),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? color.withOpacity(widget.isDark ? 0.25 : 0.12)
-                      : widget.isDark ? Colors.grey[900] : Colors.grey[100],
+                      : widget.isDark
+                      ? Colors.grey[900]
+                      : Colors.grey[100],
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
                         ? color
-                        : widget.isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                        : widget.isDark
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!,
                     width: 1.5,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 16, color: isSelected ? color : Colors.grey),
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isSelected ? color : Colors.grey,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       title,
                       style: TextStyle(
                         fontSize: widget.textSizeService.getScaledFontSize(13),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w600,
                         color: isSelected
                             ? (widget.isDark ? Colors.white : color)
-                            : (widget.isDark ? Colors.grey[400] : Colors.grey[700]),
+                            : (widget.isDark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[700]),
                       ),
                     ),
                   ],
@@ -13241,11 +13425,13 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
       orElse: () => null,
     );
 
-    final String serviceTitle = activeService?['titre']?.toString() ?? 'Service';
+    final String serviceTitle =
+        activeService?['titre']?.toString() ?? 'Service';
     Color serviceColor = const Color(0xFFE65100);
     if (serviceTitle.toLowerCase().contains('cantine')) {
       serviceColor = const Color(0xFFE65100);
-    } else if (serviceTitle.toLowerCase().contains('transport') || serviceTitle.toLowerCase().contains('bus')) {
+    } else if (serviceTitle.toLowerCase().contains('transport') ||
+        serviceTitle.toLowerCase().contains('bus')) {
       serviceColor = const Color(0xFF0288D1);
     }
 
@@ -13388,12 +13574,16 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
                   color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: widget.isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                    color: widget.isDark
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(widget.isDark ? 0.1 : 0.02),
+                      color: Colors.black.withOpacity(
+                        widget.isDark ? 0.1 : 0.02,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -13409,15 +13599,21 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
                           child: Text(
                             description,
                             style: TextStyle(
-                              fontSize: widget.textSizeService.getScaledFontSize(13),
+                              fontSize: widget.textSizeService
+                                  .getScaledFontSize(13),
                               fontWeight: FontWeight.bold,
-                              color: widget.isDark ? Colors.white : const Color(0xFF374151),
+                              color: widget.isDark
+                                  ? Colors.white
+                                  : const Color(0xFF374151),
                             ),
                           ),
                         ),
                         if (statut.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: serviceColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
@@ -13438,8 +13634,12 @@ class _SuiviActivitesSheetContentState extends State<_SuiviActivitesSheetContent
                       Text(
                         details,
                         style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(12),
-                          color: widget.isDark ? const Color(0xFFCCCCCC) : const Color(0xFF4B5563),
+                          fontSize: widget.textSizeService.getScaledFontSize(
+                            12,
+                          ),
+                          color: widget.isDark
+                              ? const Color(0xFFCCCCCC)
+                              : const Color(0xFF4B5563),
                           height: 1.4,
                         ),
                       ),

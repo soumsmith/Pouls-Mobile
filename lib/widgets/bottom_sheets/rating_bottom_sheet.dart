@@ -117,7 +117,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
             behavior: HitTestBehavior.opaque,
             child: Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
+                color: isDark ? const Color(0xFF141414) : AppColors.screenCard,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
@@ -141,11 +141,13 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                     onClose: () => Navigator.of(context).pop(),
                     titleColor:
                         isDark ? Colors.white : AppColors.screenTextPrimary,
-                    descriptionColor: AppColors.screenTextSecondary,
+                    descriptionColor: isDark
+                        ? Colors.white70
+                        : AppColors.screenTextSecondary,
                     titleFontSize: textSizeService.getScaledFontSize(18),
                     iconSize: 22,
                   ),
-  
+
                   // Liste des avis (style messages WhatsApp)
                   Expanded(
                     child: _isLoadingAvis
@@ -161,8 +163,12 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                         ? _buildEmptyAvisView()
                         : ListView.builder(
                             controller: scrollController,
-                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
                             itemCount: _avis.length,
                             itemBuilder: (context, index) {
                               final avis = _avis[index];
@@ -170,7 +176,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                             },
                           ),
                   ),
-  
+
                   // Barre d'envoi (style WhatsApp)
                   if (widget.allowRating)
                     Padding(
@@ -260,7 +266,9 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                     style: TextStyle(
                       fontSize: 14,
                       height: 1.4,
-                      color: isDark ? Colors.white70 : AppColors.screenTextPrimary,
+                      color: isDark
+                          ? Colors.white70
+                          : AppColors.screenTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -306,7 +314,9 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                  color: isDark
+                      ? const Color(0xFF2A2A2A)
+                      : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -326,7 +336,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                           _ratingController.text = (index + 1).toString();
                         }),
                         child: Padding(
-                           padding: const EdgeInsets.only(right: 4),
+                          padding: const EdgeInsets.only(right: 4),
                           child: Icon(
                             index < currentRating
                                 ? Icons.star_rounded
@@ -356,10 +366,14 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                     maxHeight: 100,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                    color: isDark
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE8E8E8),
+                      color: isDark
+                          ? const Color(0xFF3A3A3A)
+                          : const Color(0xFFE8E8E8),
                       width: 0.5,
                     ),
                   ),
@@ -369,13 +383,17 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                     textInputAction: TextInputAction.newline,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDark ? Colors.white : AppColors.screenTextPrimary,
+                      color: isDark
+                          ? Colors.white
+                          : AppColors.screenTextPrimary,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Votre avis...',
                       hintStyle: TextStyle(
                         fontSize: 14,
-                        color: isDark ? Colors.white30 : const Color(0xFFBBBBBB),
+                        color: isDark
+                            ? Colors.white30
+                            : const Color(0xFFBBBBBB),
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(

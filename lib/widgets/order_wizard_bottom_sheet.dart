@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import 'bottom_sheets/bottom_sheet_header.dart';
 import '../models/cart_item.dart';
 import '../models/lieu_livraison.dart';
 import '../models/user.dart';
@@ -295,9 +296,9 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.70,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -331,81 +332,18 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      child: Column(
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.screenDivider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.shopBlueSurface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  _stepIcons[_currentStep],
-                  color: AppColors.shopBlue,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Finaliser la commande - ${_stepTitles[_currentStep]}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.screenTextPrimary,
-                        letterSpacing: -0.4,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      'Étape ${_currentStep + 1} sur 4',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.screenTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenSurface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    size: 18,
-                    color: AppColors.screenTextSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return BottomSheetHeader(
+      icon: _stepIcons[_currentStep],
+      iconColor: AppColors.shopBlue,
+      title: 'Finaliser la commande',
+      description: 'Étape ${_currentStep + 1} sur 4 : ${_stepTitles[_currentStep]}',
+      onClose: () => Navigator.pop(context),
+      titleFontSize: 16,
+      descriptionFontSize: 12,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
+      descriptionColor: AppColors.screenTextSecondaryThemed(context),
     );
   }
 
@@ -432,14 +370,14 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                             ? Colors.green
                             : isActive
                                 ? AppColors.shopBlue
-                                : AppColors.screenSurface,
+                                : AppColors.screenSurfaceThemed(context),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isActive
                               ? AppColors.shopBlue
                               : isCompleted
                                   ? Colors.green
-                                  : AppColors.screenDivider,
+                                  : AppColors.screenDividerThemed(context),
                           width: 2,
                         ),
                         boxShadow: isActive
@@ -471,7 +409,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                               size: 14,
                               color: isActive
                                   ? Colors.white
-                                  : AppColors.screenTextSecondary,
+                                  : AppColors.screenTextSecondaryThemed(context),
                             ),
                     ),
                     const SizedBox(height: 4),
@@ -484,7 +422,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                             ? AppColors.shopBlue
                             : isCompleted
                                 ? Colors.green
-                                : AppColors.screenTextSecondary,
+                                : AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -506,7 +444,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                   decoration: BoxDecoration(
                     color: isCompleted
                         ? Colors.green
-                        : AppColors.screenDivider,
+                        : AppColors.screenDividerThemed(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -521,10 +459,10 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   Widget _buildBottomNavigation() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: const BoxDecoration(
-        color: AppColors.screenCard,
+      decoration: BoxDecoration(
+        color: AppColors.screenCardThemed(context),
         border: Border(
-          top: BorderSide(color: AppColors.screenDivider),
+          top: BorderSide(color: AppColors.screenDividerThemed(context)),
         ),
       ),
       child: SafeArea(
@@ -552,25 +490,25 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.screenSurface,
+                  color: AppColors.screenSurfaceThemed(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.screenDivider),
+                  border: Border.all(color: AppColors.screenDividerThemed(context)),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.arrow_back_ios_new,
                       size: 14,
-                      color: AppColors.screenTextSecondary,
+                      color: AppColors.screenTextSecondaryThemed(context),
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
                       'Précédent',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -884,19 +822,19 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.screenSurface,
+              color: AppColors.screenSurfaceThemed(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.screenDivider),
+              border: Border.all(color: AppColors.screenDividerThemed(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Articles (${widget.cart.totalItems})',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -907,18 +845,18 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                       Expanded(
                         child: Text(
                           '${item.quantity}x ${item.product.title}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.screenTextSecondary,
+                            color: AppColors.screenTextSecondaryThemed(context),
                           ),
                         ),
                       ),
                       Text(
                         '${(item.product.price * item.quantity).toStringAsFixed(0)} FCFA',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.screenTextPrimary,
+                          color: AppColors.screenTextPrimaryThemed(context),
                         ),
                       ),
                     ],
@@ -934,19 +872,19 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.screenSurface,
+              color: AppColors.screenSurfaceThemed(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.screenDivider),
+              border: Border.all(color: AppColors.screenDividerThemed(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Informations de livraison',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -990,10 +928,10 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                   '${_prixLivraison.toStringAsFixed(0)} FCFA',
                   isSubtitle: true,
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Divider(
-                    color: AppColors.screenDivider,
+                    color: AppColors.screenDividerThemed(context),
                     height: 1,
                   ),
                 ),
@@ -1020,9 +958,9 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
             width: 100,
             child: Text(
               '$label :',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1030,9 +968,9 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.screenTextPrimary,
+                color: AppColors.screenTextPrimaryThemed(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1044,20 +982,20 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
 
   Widget _sectionLabel(String text) => Text(
     text,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w700,
-      color: AppColors.screenTextPrimary,
+      color: AppColors.screenTextPrimaryThemed(context),
       letterSpacing: -0.3,
     ),
   );
 
   Widget _sectionSubLabel(String text) => Text(
     text,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w600,
-      color: AppColors.screenTextSecondary,
+      color: AppColors.screenTextSecondaryThemed(context),
     ),
   );
 
@@ -1076,12 +1014,12 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           decoration: BoxDecoration(
             color: selected
                 ? AppColors.shopBlueSurface
-                : AppColors.screenSurface,
+                : AppColors.screenSurfaceThemed(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
                   ? AppColors.shopBlue
-                  : AppColors.screenDivider,
+                  : AppColors.screenDividerThemed(context),
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -1093,7 +1031,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                 size: 16,
                 color: selected
                     ? AppColors.shopBlue
-                    : AppColors.screenTextSecondary,
+                    : AppColors.screenTextSecondaryThemed(context),
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -1104,7 +1042,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                     fontWeight: FontWeight.w600,
                     color: selected
                         ? AppColors.shopBlue
-                        : AppColors.screenTextSecondary,
+                        : AppColors.screenTextSecondaryThemed(context),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1130,8 +1068,8 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           style: TextStyle(
             fontSize: isTotal ? 15 : 13,
             color: isTotal
-                ? AppColors.screenTextPrimary
-                : AppColors.screenTextSecondary,
+                ? AppColors.screenTextPrimaryThemed(context)
+                : AppColors.screenTextSecondaryThemed(context),
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
           ),
         ),
@@ -1141,7 +1079,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
             fontSize: isTotal ? 17 : 13,
             color: isTotal
                 ? AppColors.shopBlue
-                : AppColors.screenTextPrimary,
+                : AppColors.screenTextPrimaryThemed(context),
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
@@ -1165,10 +1103,10 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
                 letterSpacing: 0.2,
               ),
             ),
@@ -1188,28 +1126,28 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: AppColors.screenTextPrimary,
+            color: AppColors.screenTextPrimaryThemed(context),
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+            hintStyle: TextStyle(fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
             prefixIcon: Icon(icon, color: AppColors.shopBlue, size: 18),
             filled: true,
-            fillColor: AppColors.screenSurface,
+            fillColor: AppColors.screenSurfaceThemed(context),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 14,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
+              borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.screenDivider),
+              borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1250,17 +1188,17 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
             Text(
               'Zone de livraison',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
               ),
             ),
-            Text(
+            const Text(
               ' *',
               style: TextStyle(
                 color: AppColors.shopBlue,
@@ -1289,7 +1227,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                   : 0;
             });
           },
-          isDarkMode: false,
+          isDarkMode: Theme.of(context).brightness == Brightness.dark,
         ),
         if (_selectedLieu != null) ...[
           const SizedBox(height: 8),

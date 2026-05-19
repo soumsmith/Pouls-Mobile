@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/product.dart';
 import '../config/app_config.dart';
+import '../utils/api_exception_handler.dart';
 
 class ProduitService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
@@ -89,6 +91,7 @@ class ProduitService {
       }
     } catch (e) {
       print('💥 Exception lors de la récupération des produits: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des produits');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la récupération des produits: $e');
@@ -147,6 +150,7 @@ class ProduitService {
       }
     } catch (e) {
       print('💥 Exception lors de la récupération des détails du produit: $e');
+      ApiExceptionHandler.handle(e, context: 'la récupération des détails du produit');
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception(

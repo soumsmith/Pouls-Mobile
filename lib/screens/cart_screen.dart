@@ -391,10 +391,10 @@ class _CartScreenState extends State<CartScreen>
                         Expanded(
                           child: Text(
                             item.product.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.screenTextPrimary,
+                              color: AppColors.screenTextPrimaryThemed(context),
                               letterSpacing: -0.3,
                             ),
                             maxLines: 2,
@@ -426,9 +426,9 @@ class _CartScreenState extends State<CartScreen>
                     const SizedBox(height: 3),
                     Text(
                       item.product.subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         fontWeight: FontWeight.w400,
                       ),
                       maxLines: 1,
@@ -496,10 +496,10 @@ class _CartScreenState extends State<CartScreen>
           alignment: Alignment.center,
           child: Text(
             '${item.quantity}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
+              color: AppColors.screenTextPrimaryThemed(context),
             ),
           ),
         ),
@@ -558,19 +558,19 @@ class _CartScreenState extends State<CartScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Résumé du panier',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
+                        color: AppColors.screenTextPrimaryThemed(context),
                       ),
                     ),
                     Text(
                       '${_cart?.totalItems ?? 0} article${(_cart?.totalItems ?? 0) > 1 ? 's' : ''}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -623,7 +623,7 @@ class _CartScreenState extends State<CartScreen>
           label,
           style: TextStyle(
             fontSize: isTotal ? 15 : 14,
-            color: isTotal ? AppColors.screenTextPrimary : AppColors.screenTextSecondary,
+            color: isTotal ? AppColors.screenTextPrimaryThemed(context) : AppColors.screenTextSecondaryThemed(context),
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
@@ -631,7 +631,7 @@ class _CartScreenState extends State<CartScreen>
           value,
           style: TextStyle(
             fontSize: isTotal ? 16 : 14,
-            color: isTotal ? AppColors.shopBlue : AppColors.screenTextPrimary,
+            color: isTotal ? AppColors.shopBlue : AppColors.screenTextPrimaryThemed(context),
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
@@ -827,20 +827,24 @@ class _CartScreenState extends State<CartScreen>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
+        title: Text(
           'Vider le panier ?',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          style: TextStyle(
+            fontWeight: FontWeight.w700, 
+            fontSize: 18,
+            color: AppColors.screenTextPrimaryThemed(context),
+          ),
         ),
-        content: const Text(
+        content: Text(
           'Tous les articles seront supprimés.',
-          style: TextStyle(color: AppColors.screenTextSecondary),
+          style: TextStyle(color: AppColors.screenTextSecondaryThemed(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
+            child: Text(
               'Annuler',
-              style: TextStyle(color: AppColors.screenTextSecondary),
+              style: TextStyle(color: AppColors.screenTextSecondaryThemed(context)),
             ),
           ),
           TextButton(
@@ -991,22 +995,22 @@ class _CartScreenState extends State<CartScreen>
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Finaliser la commande',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.screenTextPrimary,
+                                    color: AppColors.screenTextPrimaryThemed(context),
                                     letterSpacing: -0.4,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   softWrap: false,
                                 ),
-                                const Text(
+                                Text(
                                   'Remplissez vos informations',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.screenTextSecondary,
+                                    color: AppColors.screenTextSecondaryThemed(context),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   softWrap: false,
@@ -1033,7 +1037,7 @@ class _CartScreenState extends State<CartScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Section: Coordonnées
-                          _sectionLabel('Coordonnées'),
+                          _sectionLabel(context, 'Coordonnées'),
                           const SizedBox(height: 12),
                           _buildSheetTextField(
                             controller: _nomController,
@@ -1061,7 +1065,7 @@ class _CartScreenState extends State<CartScreen>
                           ),
 
                           const SizedBox(height: 24),
-                          _sectionLabel('Livraison'),
+                          _sectionLabel(context, 'Livraison'),
                           const SizedBox(height: 12),
 
                           _buildSheetTextField(
@@ -1112,7 +1116,7 @@ class _CartScreenState extends State<CartScreen>
                           const SizedBox(height: 12),
 
                           // Type de livraison
-                          _sectionSubLabel('Type de livraison'),
+                          _sectionSubLabel(context, 'Type de livraison'),
                           const SizedBox(height: 8),
                           Row(
                             children: [
@@ -1141,7 +1145,7 @@ class _CartScreenState extends State<CartScreen>
                           ),
 
                           const SizedBox(height: 24),
-                          _sectionLabel('Informations scolaires (optionnel)'),
+                          _sectionLabel(context, 'Informations scolaires (optionnel)'),
                           const SizedBox(height: 12),
                           _buildSheetTextField(
                             controller: _ecoleController,
@@ -1298,22 +1302,22 @@ class _CartScreenState extends State<CartScreen>
   }
 
   // ─── SHEET HELPERS ────────────────────────────────────────────────────────
-  Widget _sectionLabel(String text) => Text(
+  Widget _sectionLabel(BuildContext context, String text) => Text(
     text,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w700,
-      color: AppColors.screenTextPrimary,
+      color: AppColors.screenTextPrimaryThemed(context),
       letterSpacing: -0.3,
     ),
   );
 
-  Widget _sectionSubLabel(String text) => Text(
+  Widget _sectionSubLabel(BuildContext context, String text) => Text(
     text,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w600,
-      color: AppColors.screenTextSecondary,
+      color: AppColors.screenTextSecondaryThemed(context),
     ),
   );
 
@@ -1332,12 +1336,12 @@ class _CartScreenState extends State<CartScreen>
           decoration: BoxDecoration(
             color: selected
                 ? AppColors.screenOrangeLight
-                : AppColors.screenSurface,
+                : AppColors.screenSurfaceThemed(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
                   ? AppColors.screenOrange
-                  : AppColors.screenDivider,
+                  : AppColors.screenDividerThemed(context),
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -1349,7 +1353,7 @@ class _CartScreenState extends State<CartScreen>
                 size: 16,
                 color: selected
                     ? AppColors.screenOrange
-                    : AppColors.screenTextSecondary,
+                    : AppColors.screenTextSecondaryThemed(context),
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -1360,7 +1364,7 @@ class _CartScreenState extends State<CartScreen>
                     fontWeight: FontWeight.w600,
                     color: selected
                         ? AppColors.screenOrange
-                        : AppColors.screenTextSecondary,
+                        : AppColors.screenTextSecondaryThemed(context),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1386,8 +1390,8 @@ class _CartScreenState extends State<CartScreen>
           style: TextStyle(
             fontSize: isTotal ? 15 : 13,
             color: isTotal
-                ? AppColors.screenTextPrimary
-                : AppColors.screenTextSecondary,
+                ? AppColors.screenTextPrimaryThemed(context)
+                : AppColors.screenTextSecondaryThemed(context),
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
           ),
         ),
@@ -1397,7 +1401,7 @@ class _CartScreenState extends State<CartScreen>
             fontSize: isTotal ? 17 : 13,
             color: isTotal
                 ? AppColors.screenOrange
-                : AppColors.screenTextPrimary,
+                : AppColors.screenTextPrimaryThemed(context),
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
@@ -1421,10 +1425,10 @@ class _CartScreenState extends State<CartScreen>
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
                 letterSpacing: 0.2,
               ),
             ),
@@ -1513,16 +1517,16 @@ class _CartScreenState extends State<CartScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: const [
+          children: [
             Text(
               'Zone de livraison',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
               ),
             ),
-            Text(
+            const Text(
               ' *',
               style: TextStyle(
                 color: AppColors.screenOrange,
@@ -1601,9 +1605,9 @@ class _CartScreenState extends State<CartScreen>
           const SizedBox(width: 12),
           Text(
             msg,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.screenTextSecondary,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
           ),
         ],

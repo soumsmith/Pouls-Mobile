@@ -13,7 +13,9 @@ import '../widgets/snackbar.dart';
 class _T {
   // Méthodes theme-aware
   static Color bg(BuildContext context) => AppColors.screenBg(context);
-  static Color card(BuildContext context) => AppColors.screenCardThemed(context);
+  static Color card(BuildContext context) => AppColors.isDarkMode(context)
+      ? const Color(0xFF141414)
+      : AppColors.screenCardThemed(context);
   static Color cardBorder(BuildContext context) => AppColors.screenBorder(context);
   static Color divider(BuildContext context) => AppColors.screenDividerThemed(context);
   static Color stepperBg(BuildContext context) => AppColors.screenBg(context);

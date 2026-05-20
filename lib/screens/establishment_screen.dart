@@ -1551,6 +1551,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       Icons.message,
                       'WhatsApp',
                       const Color(0xFF25D366),
+                      imageAsset: 'assets/images/icons/whatsapp.png',
                     ),
                     _buildShareOption(
                       Icons.email,
@@ -1578,7 +1579,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  Widget _buildShareOption(IconData icon, String label, Color color) {
+  Widget _buildShareOption(IconData icon, String label, Color color, {String? imageAsset}) {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).pop();
@@ -1598,7 +1599,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, size: 28, color: color),
+            child: imageAsset != null
+                ? Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset(imageAsset, fit: BoxFit.contain),
+                  )
+                : Icon(icon, size: 28, color: color),
           ),
           const SizedBox(height: 8),
           Text(

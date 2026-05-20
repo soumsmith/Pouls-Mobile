@@ -236,91 +236,65 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
     );
   }
 
-  // ── Parrainage Code Modal ────────────────────────────────────────────────────
+  // ── Parrainage Code Bottom Sheet ────────────────────────────────────────────
   void _showParrainageCodeModal(String codeParrainage) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (BuildContext context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Stack(
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF141414) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: AppDimensions.getCustomShadow(
+              context: context,
+              alpha: isDark ? 0.5 : 0.22,
+              blurRadius: 32,
+              offset: 12,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Contenu principal
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF141414) : Colors.white,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getLargeCardBorderRadius(context),
-                  ),
-                  boxShadow: AppDimensions.getCustomShadow(
-                    context: context,
-                    alpha: isDark ? 0.5 : 0.22,
-                    blurRadius: 32,
-                    offset: 12,
-                  ),
-                ),
+              // Header
+              BottomSheetHeader(
+                icon: Icons.card_giftcard_rounded,
+                iconColor: const Color(0xFF10B981),
+                title: 'Parrainage réussi !',
+                description: 'Votre code a été généré avec succès',
+                onClose: () => Navigator.of(context).pop(),
+                titleColor: isDark ? Colors.white : const Color(0xFF1F2937),
+                descriptionColor:
+                    isDark ? Colors.white70 : const Color(0xFF6B7280),
+                titleFontSize: _textSizeService.getScaledFontSize(18),
+                iconSize: 22,
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Icon de succès
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.getHeroCardBorderRadius(context),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.card_giftcard_rounded,
-                        size: 40,
-                        color: Color(0xFF10B981),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Titre
-                    Text(
-                      'Parrainage réussi!',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(20),
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF1F2937),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Sous-titre
-                    Text(
-                      'Votre code de parrainage a été généré avec succès',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(14),
-                        color: isDark ? Colors.white70 : const Color(0xFF6B7280),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Code de parrainage - Grand et centré
+                    // Code de parrainage
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
-                        vertical: 32,
+                        vertical: 24,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
+                        color: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(
                           AppDimensions.getMediumCardBorderRadius(context),
                         ),
                         border: Border.all(
-                          color: const Color(0xFFE5E7EB),
+                          color: isDark
+                              ? const Color(0xFF333333)
+                              : const Color(0xFFE5E7EB),
                           width: 2,
                         ),
                       ),
@@ -329,19 +303,21 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                           Text(
                             'VOTRE CODE DE PARRAINAGE',
                             style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(12),
+                              fontSize:
+                                  _textSizeService.getScaledFontSize(12),
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF6B7280),
                               letterSpacing: 1.5,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           Text(
                             codeParrainage,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(28),
+                              fontSize:
+                                  _textSizeService.getScaledFontSize(28),
                               fontWeight: FontWeight.w900,
                               color: const Color(0xFF3B82F6),
                               letterSpacing: 4,
@@ -350,41 +326,17 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
-                    // Boutons d'action personnalisés avec défilement horizontal
+                    // Boutons de partage
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: _buildShareButtons(codeParrainage),
                       ),
-                    )],
-                ),
-              ),
-              // Bouton de fermeture en haut à droite
-              Positioned(
-                top: 8,
-                right: 8,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
-                        width: 1,
-                      ),
                     ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: isDark ? Colors.white70 : Colors.black54,
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -401,6 +353,31 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         : 'https://apps.apple.com/app/parent-responsable/id123456789';
 
     final shareButtons = [
+      // WhatsApp en premier
+      ShareButton(
+        label: 'WhatsApp',
+        icon: Icons.message_rounded,
+        iconColor: const Color(0xFF25D366),
+        imagePath: 'assets/images/icons/whatsapp.png',
+        onTap: () async {
+          final message = 'Salut ! J\'utilise l\'application PARENT RESPONSABLE et je voulais partager mon code de parrainage avec toi : *$codeParrainage*. Télécharge l\'application ici $downloadLink et utilise ce code pour vous inscrire et bénéficier d\'avantages !';
+          final whatsappUrl = 'https://wa.me/?text=${Uri.encodeComponent(message)}';
+          
+          if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
+            await launchUrl(
+              Uri.parse(whatsappUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          } else {
+            CartSnackBar.showOverlay(
+              context,
+              productName: 'Erreur',
+              message: 'WhatsApp n\'est pas installé sur cet appareil',
+              backgroundColor: Colors.red[500],
+            );
+          }
+        },
+      ),
       ShareButton(
         label: 'Copier',
         icon: Icons.content_copy_rounded,
@@ -457,30 +434,6 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
               context,
               productName: 'Erreur',
               message: 'L\'application email n\'est pas disponible sur cet appareil',
-              backgroundColor: Colors.red[500],
-            );
-          }
-        },
-      ),
-      ShareButton(
-        label: 'WhatsApp',
-        icon: Icons.message_rounded,
-        iconColor: const Color(0xFF25D366),
-        imagePath: 'assets/images//Users/logo-app.png',
-        onTap: () async {
-          final message = 'Salut ! J\'utilise l\'application PARENT RESPONSABLE et je voulais partager mon code de parrainage avec toi : *$codeParrainage*. Télécharge l\'application ici $downloadLink et utilise ce code pour vous inscrire et bénéficier d\'avantages !';
-          final whatsappUrl = 'https://wa.me/?text=${Uri.encodeComponent(message)}';
-          
-          if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
-            await launchUrl(
-              Uri.parse(whatsappUrl),
-              mode: LaunchMode.externalApplication,
-            );
-          } else {
-            CartSnackBar.showOverlay(
-              context,
-              productName: 'Erreur',
-              message: 'WhatsApp n\'est pas installé sur cet appareil',
               backgroundColor: Colors.red[500],
             );
           }

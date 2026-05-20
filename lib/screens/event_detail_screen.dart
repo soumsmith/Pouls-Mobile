@@ -1327,7 +1327,7 @@ Découvrez plus d'événements sur notre application! 📱
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _ShareOption(icon: Icons.message_rounded, label: 'WhatsApp',
+              _ShareOption(imageAsset: 'assets/images/icons/whatsapp.png', label: 'WhatsApp',
                   color: const Color(0xFF25D366), onTap: () { Navigator.pop(context); _launchWhatsApp(); }),
               _ShareOption(icon: Icons.facebook_rounded, label: 'Facebook',
                   color: const Color(0xFF1877F2), onTap: () { Navigator.pop(context); _launchFacebook(); }),
@@ -1345,12 +1345,19 @@ Découvrez plus d'événements sur notre application! 📱
 }
 
 class _ShareOption extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final String? imageAsset;
   final String label;
   final Color color;
   final VoidCallback onTap;
 
-  const _ShareOption({required this.icon, required this.label, required this.color, required this.onTap});
+  const _ShareOption({
+    this.icon,
+    this.imageAsset,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  }) : assert(icon != null || imageAsset != null);
 
   @override
   Widget build(BuildContext context) {
@@ -1364,7 +1371,12 @@ class _ShareOption extends StatelessWidget {
               color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: color, size: 26),
+            child: imageAsset != null
+                ? Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset(imageAsset!, fit: BoxFit.contain),
+                  )
+                : Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 6),
           Text(label, style: const TextStyle(fontSize: 11, color: _AppColors.slate500, fontWeight: FontWeight.w500)),

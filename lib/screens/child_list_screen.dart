@@ -51,6 +51,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/snackbar.dart';
+import '../widgets/establishment_action_cards.dart' hide SchoolLifeItemCard;
 import '../models/parent_suggestion.dart';
 import '../services/parent_suggestion_service.dart';
 import '../services/access_log_service.dart';
@@ -1022,7 +1023,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       // const SizedBox(height: 20),
                       // _buildEleveDetailSection(),
                       const SizedBox(height: 24),
-                      _buildSectionHeader('Aperçu rapide', AppColors.primary),
+                      _buildSectionHeader('Statistique', AppColors.primary),
                       _buildSummaryCardsGrid(),
                       const SizedBox(height: 8),
                       _buildPaymentBannerCard(),
@@ -1358,28 +1359,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  void _showSuiviActivitesBottomSheet() {
-    final isDark = _themeService.isDarkMode;
-    final schoolCode = _ecoleCode ?? widget.child.ecoleCode ?? '';
-    final matricule = _matricule ?? widget.child.matricule ?? '';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return _SuiviActivitesSheetContent(
-            isDark: isDark,
-            schoolCode: schoolCode,
-            matricule: matricule,
-            childName: widget.child.fullName,
-            textSizeService: _textSizeService,
-          );
-        },
-      ),
-    );
-  }
 
   void _showSanctionsBottomSheet() {
     showModalBottomSheet(
@@ -2587,7 +2566,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       title: widget.child.fullName,
       isDark: isDarkMode,
       expandedHeight: 70,
-      actions: [_buildNotificationButton()], //, _buildMoreButton()
+      actions: [_buildNotificationButton(), _buildMoreButton()], //,
       titleTextStyle: TextStyle(
         fontSize: _textSizeService.getScaledFontSize(16),
         fontWeight: FontWeight.w700,
@@ -2670,8 +2649,49 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildMoreButton() {
     final theme = Theme.of(context);
     final isDarkMode = _themeService.isDarkMode;
-    return GestureDetector(
-      onTap: () {},
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 48),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
+      elevation: 8,
+      onSelected: (value) {
+        if (value == 'remove_child') {
+          _showRemoveChildConfirmation();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'remove_child',
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.person_remove_rounded,
+                  color: Colors.red,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Retirer cet enfant',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
       child: Container(
         width: 40,
         height: 40,
@@ -2717,6 +2737,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 70,
@@ -2795,59 +2816,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            '|',
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(14),
-                              color: Colors.white.withOpacity(0.5),
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              _eleveDetail!['nationalite']?.toString() ?? 'N/A',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  14,
-                                ),
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => _showFamilyBottomSheet(),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Text(
-                                'Voir +',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(
-                                    11,
-                                  ),
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
+                        const SizedBox(width: 10),
+                        _PulseAnimatedButton(
+                          onTap: _showFamilyBottomSheet,
+                        ),
                       ],
                     ),
                   ],
@@ -3015,7 +2988,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                 title: 'Informations complètes',
                 description: 'Détails complets sur l\'élève et sa scolarité',
                 iconColor: Colors.blue,
-                backgroundColor: Colors.blue.withOpacity(0.15),
                 onClose: () => Navigator.of(context).pop(),
               ),
 
@@ -3262,7 +3234,6 @@ class _ChildListScreenState extends State<ChildListScreen>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -3568,7 +3539,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
       ),
@@ -3773,36 +3743,30 @@ class _ChildListScreenState extends State<ChildListScreen>
     bool allowLineBreak = false,
   }) {
     final isDark = _themeService.isDarkMode;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ImageMenuCardExternalTitle(
-          index: index,
-          cardKey: cardKey,
-          title: title,
-          width: width,
-          height: height,
-          imageFlex: 2,
-          imagePath: imagePath,
-          isDark: isDark,
-          titleFontSize: 11,
-          imageBorderRadius: imageBorderRadius,
-          doubleBorderGap: doubleBorderGap,
-          color: color,
-          backgroundColor: isDark
-              ? backgroundColor.withOpacity(0.15)
-              : backgroundColor,
-          textColor: isDark ? color.withOpacity(0.75) : textColor,
-          actionText: actionText,
-          onTap: onTap,
-          enableInnerBorder: enableInnerBorder,
-          enableOuterBorder: enableOuterBorder,
-          innerBorderColor: innerBorderColor,
-          centerTitle: centerTitle,
-          allowLineBreak: allowLineBreak,
-        ),
-        const SizedBox(width: 10),
-      ],
+    return ImageMenuCardExternalTitle(
+      index: index,
+      cardKey: cardKey,
+      title: title,
+      width: width,
+      height: height,
+      imageFlex: 2,
+      imagePath: imagePath,
+      isDark: isDark,
+      titleFontSize: 11,
+      imageBorderRadius: imageBorderRadius,
+      doubleBorderGap: doubleBorderGap,
+      color: color,
+      backgroundColor: isDark
+          ? backgroundColor.withOpacity(0.15)
+          : backgroundColor,
+      textColor: isDark ? color.withOpacity(0.75) : textColor,
+      actionText: actionText,
+      onTap: onTap,
+      enableInnerBorder: enableInnerBorder,
+      enableOuterBorder: enableOuterBorder,
+      innerBorderColor: innerBorderColor,
+      centerTitle: centerTitle,
+      allowLineBreak: allowLineBreak,
     );
   }
 
@@ -3829,220 +3793,238 @@ class _ChildListScreenState extends State<ChildListScreen>
         // SECTION 1 : Paiements & Inscription
         // ════════════════════════════════════════════════════════════════
         SectionRow(title: 'Paiements & Inscription'),
-        SizedBox(
-          height: AppDimensions.getPaymentBannerCardHeight(context) + 20,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(
-              horizontal:
-                  AppDimensions.getPaymentBannerCardSpacing(context) * 0.8,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCard(
-                  index: 0,
-                  cardKey: 'paiement',
-                  title: 'Paiement\nen ligne',
-                  imagePath: 'assets/images/icons/paiement.png',
-                  color: AppColors.cardLightGrey,
-                  backgroundColor: const Color(0xFFF8FCFF),
-                  textColor: const Color(0xFF333333),
-                  actionText: '',
-                  enableInnerBorder: false,
-                  enableOuterBorder: false,
-                  innerBorderColor: const Color(0xFF93C5FD),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                  width: AppDimensions.getSquareCardWidthSize(context),
-                  height: AppDimensions.getSquareCardHeightSize(context),
-                  centerTitle: true,
-                  allowLineBreak: true,
-                  onTap: _showPaiementBottomSheet,
-                ),
-                SizedBox(
-                  width: AppDimensions.getPaymentBannerCardSpacing(context),
-                ),
-                _buildCard(
-                  index: 1,
-                  cardKey: 'historique_paiements',
-                  title: 'Historique \n paiement',
-                  imagePath: 'assets/images/icons/historique.png',
-                  backgroundColor: const Color.fromARGB(255, 253, 253, 253),
-                  textColor: const Color(0xFF333333),
-                  actionText: '',
-                  allowLineBreak: true,
-                  enableInnerBorder: false,
-                  enableOuterBorder: false,
-                  color: AppColors.cardLightGrey,
-                  innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                  width: AppDimensions.getSquareCardWidthSize(context),
-                  height: AppDimensions.getSquareCardHeightSize(context),
-                  centerTitle: true,
-                  onTap: _showHistoriquePaiementsBottomSheet,
-                ),
-                SizedBox(
-                  width: AppDimensions.getPaymentBannerCardSpacing(context),
-                ),
-                _buildCard(
-                  index: 2,
-                  cardKey: 'inscription',
-                  title: 'Inscription \n en ligne',
-                  imagePath: 'assets/images/icons/inscription.png',
-                  color: AppColors.cardLightGrey,
-                  backgroundColor: const Color(0xFFF7FEFC),
-                  textColor: const Color(0xFF333333),
-                  actionText: '',
-                  enableInnerBorder: false,
-                  enableOuterBorder: false,
-                  allowLineBreak: true,
-                  innerBorderColor: const Color(0xFF6EE7B7),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                  width: AppDimensions.getSquareCardWidthSize(context),
-                  height: AppDimensions.getSquareCardHeightSize(context),
-                  centerTitle: true,
-                  onTap: () {
-                    print('=== NAVIGATION INSCRIPTION ===');
-                    print('Élève: ${widget.child.fullName}');
-                    print('UID de l\'élève: ${_eleveDetail?["uid"]}');
-                    print(
-                      'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
-                    );
-                    print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
-
-                    // Mettre à jour l'objet Child avec le ecoleCode si disponible
-                    final updatedChild =
-                        _ecoleCode != null && _ecoleCode!.isNotEmpty
-                        ? widget.child.copyWith(ecoleCode: _ecoleCode)
-                        : widget.child;
-
-                    print(
-                      'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
-                    );
-                    print('=== FIN NAVIGATION INSCRIPTION ===');
-
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            inscription.InscriptionWizardScreen(
-                              child: updatedChild,
-                              uid: _eleveDetail?['uid'],
-                              eleveDetail: _eleveDetail,
-                            ),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.8,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: _buildCard(
+                        index: 0,
+                        cardKey: 'paiement',
+                        title: 'Paiement\nen ligne',
+                        imagePath: 'assets/images/icons/paiement.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFF8FCFF),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        innerBorderColor: const Color(0xFF93C5FD),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(
+                          context,
+                        ),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        allowLineBreak: true,
+                        onTap: _showPaiementBottomSheet,
                       ),
-                    );
-                  },
-                ),
-                SizedBox(
-                  width: AppDimensions.getPaymentBannerCardSpacing(context),
-                ),
-                _buildCard(
-                  index: 3,
-                  cardKey: 'reservations',
-                  title: 'Réservations',
-                  imagePath: 'assets/images/icons/reservation.png',
-                  color: AppColors.cardLightGrey,
-                  backgroundColor: const Color(0xFFE8F5E9),
-                  textColor: const Color(0xFF333333),
-                  actionText: '',
-                  enableInnerBorder: false,
-                  enableOuterBorder: false,
-                  innerBorderColor: const Color(0xFF81C784),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
+                    ),
                   ),
-                  width: AppDimensions.getSquareCardWidthSize(context),
-                  height: AppDimensions.getSquareCardHeightSize(context),
-                  centerTitle: true,
-                  onTap: () async {
-                    if (_reservations.isEmpty && !_isLoadingReservations) {
-                      await _loadReservationsData();
-                    }
-                    if (mounted) {
-                      _showReservationsBottomSheet();
-                    }
-                  },
-                ),
-                SizedBox(
-                  width: AppDimensions.getPaymentBannerCardSpacing(context),
-                ),
-                _buildCard(
-                  index: 4,
-                  cardKey: 'scolarite',
-                  title: 'Échéancier\n Scolarité',
-                  imagePath: 'assets/images/icons/scolarite.png',
-                  color: AppColors.cardLightGrey,
-                  backgroundColor: const Color(0xFFFFFEF7),
-                  textColor: const Color(0xFF333333),
-                  actionText: '',
-                  allowLineBreak: true,
-                  enableInnerBorder: false,
-                  enableOuterBorder: false,
-                  innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
+                  Expanded(
+                    child: Center(
+                      child: _buildCard(
+                        index: 1,
+                        cardKey: 'historique_paiements',
+                        title: 'Historique \n paiement',
+                        imagePath: 'assets/images/icons/historique.png',
+                        backgroundColor: const Color.fromARGB(255, 253, 253, 253),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        allowLineBreak: true,
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        color: AppColors.cardLightGrey,
+                        innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(
+                          context,
+                        ),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: _showHistoriquePaiementsBottomSheet,
+                      ),
+                    ),
                   ),
-                  width: AppDimensions.getSquareCardWidthSize(context),
-                  height: AppDimensions.getSquareCardHeightSize(context),
-                  centerTitle: true,
-                  onTap: () async {
-                    if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
-                      await _loadScolariteData();
-                    }
-                    if (mounted) {
-                      showEnhancedScolariteBottomSheet(
-                        context,
-                        childName: widget.child.fullName,
-                        childMatricule: widget.child.matricule,
-                        scolariteEntries: _scolariteEntries,
-                        isLoading: _isLoadingScolarite,
-                        onRefresh: _loadScolariteData,
-                        title: 'Scolarité',
-                        description: 'Consultez les informations de scolarité',
-                        primaryColor: const Color(0xFFF59E0B),
+                  Expanded(
+                    child: Center(
+                      child: _buildCard(
+                        index: 2,
+                        cardKey: 'inscription',
+                        title: 'Inscription \n en ligne',
+                        imagePath: 'assets/images/icons/inscription.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFF7FEFC),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        allowLineBreak: true,
+                        innerBorderColor: const Color(0xFF6EE7B7),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(
+                          context,
+                        ),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () {
+                          print('=== NAVIGATION INSCRIPTION ===');
+                          print('Élève: ${widget.child.fullName}');
+                          print('UID de l\'élève: ${_eleveDetail?["uid"]}');
+                          print(
+                            'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
+                          );
+                          print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
+
+                          // Mettre à jour l'objet Child avec le ecoleCode si disponible
+                          final updatedChild =
+                              _ecoleCode != null && _ecoleCode!.isNotEmpty
+                              ? widget.child.copyWith(ecoleCode: _ecoleCode)
+                              : widget.child;
+
+                          print(
+                            'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
+                          );
+                          print('=== FIN NAVIGATION INSCRIPTION ===');
+
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  inscription.InscriptionWizardScreen(
+                                    child: updatedChild,
+                                    uid: _eleveDetail?['uid'],
+                                    eleveDetail: _eleveDetail,
+                                  ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: _buildCard(
+                        index: 3,
+                        cardKey: 'reservations',
+                        title: 'Réservations',
+                        imagePath: 'assets/images/icons/reservation.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFE8F5E9),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        innerBorderColor: const Color(0xFF81C784),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(
+                          context,
+                        ),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () async {
+                          if (_reservations.isEmpty && !_isLoadingReservations) {
+                            await _loadReservationsData();
+                          }
+                          if (mounted) {
+                            _showReservationsBottomSheet();
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: _buildCard(
+                        index: 4,
+                        cardKey: 'scolarite',
+                        title: 'Échéancier\n Scolarité',
+                        imagePath: 'assets/images/icons/scolarite.png',
+                        color: AppColors.cardLightGrey,
                         backgroundColor: const Color(0xFFFFFEF7),
-                        iconColor: const Color(0xFFD97706),
-                        iconData: Icons.school_rounded,
-                      );
-                    }
-                  },
-                ),
-                SizedBox(
-                  width: AppDimensions.getPaymentBannerCardSpacing(context),
-                ),
-                _buildCard(
-                  index: 5,
-                  cardKey: 'integration_requests',
-                  title: 'Demandes\n intégration',
-                  imagePath: 'assets/images/icons/consulter.png',
-                  color: AppColors.cardLightGrey,
-                  backgroundColor: const Color(0xFFFCFAFF),
-                  textColor: const Color(0xFF333333),
-                  actionText: '',
-                  enableInnerBorder: false,
-                  enableOuterBorder: false,
-                  allowLineBreak: true,
-                  innerBorderColor: const Color(0xFFC4B5FD),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        allowLineBreak: true,
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(
+                          context,
+                        ),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () async {
+                          if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
+                            await _loadScolariteData();
+                          }
+                          if (mounted) {
+                            showEnhancedScolariteBottomSheet(
+                              context,
+                              childName: widget.child.fullName,
+                              childMatricule: widget.child.matricule,
+                              scolariteEntries: _scolariteEntries,
+                              isLoading: _isLoadingScolarite,
+                              onRefresh: _loadScolariteData,
+                              title: 'Scolarité',
+                              description: 'Consultez les informations de scolarité',
+                              primaryColor: const Color(0xFFF59E0B),
+                              backgroundColor: const Color(0xFFFFFEF7),
+                              iconColor: const Color(0xFFD97706),
+                              iconData: Icons.school_rounded,
+                            );
+                          }
+                        },
+                      ),
+                    ),
                   ),
-                  width: AppDimensions.getSquareCardWidthSize(context),
-                  height: AppDimensions.getSquareCardHeightSize(context),
-                  centerTitle: true,
-                  onTap: () => IntegrationRequestBottomSheet.show(
-                    context,
-                    matricule: widget.child.matricule,
-                    childFullName: widget.child.fullName,
+                  Expanded(
+                    child: Center(
+                      child: _buildCard(
+                        index: 5,
+                        cardKey: 'integration_requests',
+                        title: 'Demandes\n intégration',
+                        imagePath: 'assets/images/icons/consulter.png',
+                        color: AppColors.cardLightGrey,
+                        backgroundColor: const Color(0xFFFCFAFF),
+                        textColor: const Color(0xFF333333),
+                        actionText: '',
+                        enableInnerBorder: false,
+                        enableOuterBorder: false,
+                        allowLineBreak: true,
+                        innerBorderColor: const Color(0xFFC4B5FD),
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(
+                          context,
+                        ),
+                        width: AppDimensions.getSquareCardWidthSize(context),
+                        height: AppDimensions.getSquareCardHeightSize(context),
+                        centerTitle: true,
+                        onTap: () => IntegrationRequestBottomSheet.show(
+                          context,
+                          matricule: widget.child.matricule,
+                          childFullName: widget.child.fullName,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  // Slots vides pour aligner avec la ligne du dessus (4 colonnes)
+                  const Expanded(child: SizedBox()),
+                  const Expanded(child: SizedBox()),
+                ],
+              ),
+            ],
           ),
         ),
 
@@ -4050,118 +4032,68 @@ class _ChildListScreenState extends State<ChildListScreen>
         // SECTION 2 : Suivi scolaire
         // ════════════════════════════════════════════════════════════════
         SectionRow(title: 'Vie scolaire'),
-        _buildHorizontalCards([
-          ImageMenuCard(
-            index: 0,
-            cardKey: 'access_control',
-            title: 'Contrôle d\'accès',
-            imagePath: null,
-            iconData: Icons.fingerprint_rounded,
-            isDark: isDark,
-            height: AppDimensions.getHorizontalCardHeight(context),
-            color: const Color(0xFFC2185B),
-            backgroundColor: isDark
-                ? const Color(0xFF2D0A1E)
-                : const Color(0xFFFCE4EC),
-            textColor: isDark
-                ? const Color(0xFFF48FB1)
-                : const Color(0xFF880E4F),
-            actionText: 'Voir accès',
-            width: 175,
-            actionTextColor: const Color(0xFFC2185B),
-            onTap: () {
-              _showAccessControlBottomSheet();
-              if (!_accessControlLoaded && !_isLoadingAccessControl) {
-                _loadAccessControlData();
-              }
-            },
-          ),
-          ImageMenuCard(
-            index: 1,
-            cardKey: 'services_extras',
-            title: 'Services scolaires',
-            imagePath: null,
-            iconData: Icons.playlist_add_check_rounded,
-            isDark: isDark,
-            height: AppDimensions.getHorizontalCardHeight(context),
-            color: const Color(0xFF7B1FA2),
-            backgroundColor: isDark
-                ? const Color(0xFF1E0A2E)
-                : const Color(0xFFF3E5F5),
-            textColor: isDark
-                ? const Color(0xFFCE93D8)
-                : const Color(0xFF4A148C),
-            actionText: 'Suivre',
-            width: 175,
-            actionTextColor: const Color(0xFF7B1FA2),
-            onTap: () {
-              _showExtraScolaireBottomSheet();
-            },
-          ),
-          ImageMenuCard(
-            index: 2,
-            cardKey: 'daily_tracking',
-            title: 'Suivi des activités',
-            imagePath: null,
-            iconData: Icons.history_toggle_off_rounded,
-            isDark: isDark,
-            height: AppDimensions.getHorizontalCardHeight(context),
-            color: const Color(0xFFE65100),
-            backgroundColor: isDark
-                ? const Color(0xFF2E1605)
-                : const Color(0xFFFFF3E0),
-            textColor: isDark
-                ? const Color(0xFFFFB74D)
-                : const Color(0xFFE65100),
-            actionText: 'Consulter',
-            width: 175,
-            actionTextColor: const Color(0xFFE65100),
-            onTap: () {
-              _showSuiviActivitesBottomSheet();
-            },
-          ),
-          ImageMenuCard(
-            index: 3,
-            cardKey: 'events',
-            title: 'Événements',
-            imagePath: 'assets/images/school-event.jpg',
-            iconData: Icons.event_rounded,
-            isDark: isDark,
-            height: AppDimensions.getHorizontalCardHeight(context),
-            color: const Color(0xFF3F51B5),
-            backgroundColor: isDark
-                ? const Color(0xFF0A1540)
-                : const Color(0xFFE8EAF6),
-            textColor: isDark
-                ? const Color(0xFF9FA8DA)
-                : const Color(0xFF1A237E),
-            actionText: 'Voir events',
-            width: 175,
-            actionTextColor: const Color(0xFF3F51B5),
-            onTap: () {
-              // On récupère juste le code texte
-              final schoolCode = _ecoleCode ?? widget.child.ecoleCode;
-
-              if (schoolCode != null && schoolCode.isNotEmpty) {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => SchoolEventBottomSheet(
-                    schoolCode: schoolCode, // On passe le code
-                    schoolName: widget.child.establishment, // On passe le nom
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Code établissement introuvable'),
-                  ),
-                );
-              }
-            },
-          ),
-        ]),
+        EstablishmentActionSection(
+          actions: [
+            EstablishmentAction(
+              key: 'access_control',
+              title: 'Contrôle d\'accès',
+              subtitle: 'Voir accès',
+              iconData: Icons.fingerprint_rounded,
+              color: const Color(0xFFC2185B),
+              actionText: 'Voir accès',
+              onTap: () {
+                _showAccessControlBottomSheet();
+                if (!_accessControlLoaded && !_isLoadingAccessControl) {
+                  _loadAccessControlData();
+                }
+              },
+            ),
+            EstablishmentAction(
+              key: 'services_extras',
+              title: 'Services scolaires',
+              subtitle: 'Suivre',
+              iconData: Icons.playlist_add_check_rounded,
+              color: const Color(0xFF7B1FA2),
+              actionText: 'Suivre',
+              onTap: () {
+                _showExtraScolaireBottomSheet();
+              },
+            ),
+            EstablishmentAction(
+              key: 'events',
+              title: 'Événements',
+              subtitle: 'Voir events',
+              imagePath: 'assets/images/school-event.jpg',
+              iconData: Icons.event_rounded,
+              color: const Color(0xFF3F51B5),
+              actionText: 'Voir events',
+              onTap: () {
+                final schoolCode = _ecoleCode ?? widget.child.ecoleCode;
+                if (schoolCode != null && schoolCode.isNotEmpty) {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => SchoolEventBottomSheet(
+                      schoolCode: schoolCode,
+                      schoolName: widget.child.establishment,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Code établissement introuvable'),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+          isDark: isDark,
+          useExternalTitle: true,
+          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
+          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+        ),
 
         // ════════════════════════════════════════════════════════════════
         // SECTION 3 : Vie scolaire
@@ -4421,199 +4353,126 @@ class _ChildListScreenState extends State<ChildListScreen>
         const SizedBox(height: 16),
         SectionRow(title: 'Communications'),
         const SizedBox(height: 16),
-        _buildHorizontalCards([
-          ImageMenuCard(
-            index: 0,
-            cardKey: 'communication',
-            title: 'Messages',
-            imagePath: 'assets/images/messages.jpg',
-            iconData: Icons.message_rounded,
-            isDark: isDark,
-            width: 175,
-            color: const Color(0xFF0288D1),
-            backgroundColor: isDark
-                ? const Color(0xFF001A2E)
-                : const Color(0xFFE1F5FE),
-            textColor: isDark
-                ? const Color(0xFF81D4FA)
-                : const Color(0xFF01579B),
-            actionText: 'Voir messages',
-            actionTextColor: const Color(0xFF0288D1),
-            onTap: () async {
-              if (_studentMessages.isEmpty && !_isLoadingMessages) {
-                await _loadMessagesData();
-              }
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MessagesScreen(
-                      studentArgs: StudentMessageArgs(
-                        studentName: widget.child.fullName,
-                        studentMatricule:
-                            _matricule ?? widget.child.matricule ?? '',
-                        ecoleName:
-                            _studentClassInfo?.ecole.libelle ??
-                            widget.child.establishment,
-                        ecoleCode: _ecoleCode ?? widget.child.ecoleCode ?? '',
+        EstablishmentActionSection(
+          actions: [
+            EstablishmentAction(
+              key: 'communication',
+              title: 'Messages',
+              subtitle: 'Voir messages',
+              imagePath: 'assets/images/messages.jpg',
+              iconData: Icons.message_rounded,
+              color: const Color(0xFF0288D1),
+              actionText: 'Voir messages',
+              onTap: () async {
+                if (_studentMessages.isEmpty && !_isLoadingMessages) {
+                  await _loadMessagesData();
+                }
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MessagesScreen(
+                        studentArgs: StudentMessageArgs(
+                          studentName: widget.child.fullName,
+                          studentMatricule:
+                              _matricule ?? widget.child.matricule ?? '',
+                          ecoleName:
+                              _studentClassInfo?.ecole.libelle ??
+                              widget.child.establishment,
+                          ecoleCode: _ecoleCode ?? widget.child.ecoleCode ?? '',
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }
-            },
-          ),
-          ImageMenuCard(
-            index: 1,
-            cardKey: 'voir_les_avis',
-            title: 'Suggestions',
-            iconData: Icons.lightbulb_rounded,
-            isDark: isDark,
-            color: const Color(0xFFFFB300),
-            backgroundColor: isDark
-                ? const Color(0xFF2A1E00)
-                : const Color(0xFFFFF8E1),
-            textColor: isDark
-                ? const Color(0xFFFFE082)
-                : const Color(0xFFFF6F00),
-            actionText: 'Voir suggestions',
-            actionTextColor: const Color(0xFFFFB300),
-            width: 175,
-            onTap: () async {
-              if (_suggestions.isEmpty && !_isLoadingSuggestions) {
-                await _loadSuggestionsData();
-              }
-              if (mounted) {
-                _showSuggestionsBottomSheet();
-              }
-            },
-          ),
-        ]),
+                  );
+                }
+              },
+            ),
+            EstablishmentAction(
+              key: 'voir_les_avis',
+              title: 'Suggestions',
+              subtitle: 'Voir suggestions',
+              iconData: Icons.lightbulb_rounded,
+              color: const Color(0xFFFFB300),
+              actionText: 'Voir suggestions',
+              onTap: () async {
+                if (_suggestions.isEmpty && !_isLoadingSuggestions) {
+                  await _loadSuggestionsData();
+                }
+                if (mounted) {
+                  _showSuggestionsBottomSheet();
+                }
+              },
+            ),
+          ],
+          isDark: isDark,
+          useExternalTitle: true,
+          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
+          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+        ),
         // ════════════════════════════════════════════════════════════════
         // SECTION 5 : Services
         // ════════════════════════════════════════════════════════════════
         const SizedBox(height: 16),
         SectionRow(title: 'Services'),
         const SizedBox(height: 16),
-        _buildHorizontalCards([
-          ImageMenuCard(
-            index: 0,
-            cardKey: 'niveaux',
-            title: 'Fournitures',
-            imagePath: 'assets/images/foutnitures-scolaire.jpg',
-            height: 110,
-            width: 120,
-            iconData: Icons.inventory_2_rounded,
-            isDark: isDark,
-            color: const Color(0xFF795548),
-            backgroundColor: isDark
-                ? const Color(0xFF1A0E08)
-                : const Color(0xFFEFEBE9),
-            textColor: isDark
-                ? const Color(0xFFBCAAA4)
-                : const Color(0xFF4E342E),
-            actionText: 'Voir liste',
-            actionTextColor: const Color(0xFF795548),
-            onTap: () => _showSuppliesBottomSheet(),
-          ),
-          ImageMenuCard(
-            index: 1,
-            cardKey: 'consult_requests',
-            //title: 'Commandes',
-            imagePath: 'assets/images/mes-commandes.jpg',
-            height: 110,
-            width: 120,
-            iconData: Icons.shopping_cart_rounded,
-            isDark: isDark,
-            color: const Color(0xFF00ACC1),
-            backgroundColor: isDark
-                ? const Color(0xFF00202A)
-                : const Color(0xFFE0F7FA),
-            textColor: isDark
-                ? const Color(0xFF80DEEA)
-                : const Color(0xFF00838F),
-            actionText: 'Voir commandes',
-            actionTextColor: const Color(0xFF00ACC1),
-            onTap: () => _showOrdersBottomSheet(),
-          ),
-          ImageMenuCard(
-            index: 3,
-            cardKey: 'tickets',
-            title: 'Tickets',
-            height: 110,
-            width: 120,
-            iconData: Icons.confirmation_number_rounded,
-            isDark: isDark,
-            color: const Color(0xFFE91E63),
-            backgroundColor: isDark
-                ? const Color(0xFF2D0A1E)
-                : const Color(0xFFFCE4EC),
-            textColor: isDark
-                ? const Color(0xFFF48FB1)
-                : const Color(0xFFC2185B),
-            actionText: 'Voir tickets',
-            actionTextColor: const Color(0xFFE91E63),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tickets - Fonctionnalité à venir'),
-                ),
-              );
-            },
-          ),
-          ImageMenuCard(
-            index: 4,
-            cardKey: 'tuteur_adom',
-            title: 'Tuteur Adom',
-            height: 110,
-            width: 120,
-            iconData: Icons.person_search_rounded,
-            isDark: isDark,
-            color: const Color(0xFF9C27B0),
-            backgroundColor: isDark
-                ? const Color(0xFF1E0A2E)
-                : const Color(0xFFF3E5F5),
-            textColor: isDark
-                ? const Color(0xFFCE93D8)
-                : const Color(0xFF6A1B9A),
-            actionText: 'Voir tuteur',
-            actionTextColor: const Color(0xFF9C27B0),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tuteur Adom - Fonctionnalité à venir'),
-                ),
-              );
-            },
-          ),
-          // ImageMenuCard(
-          //   index: 3,
-          //   cardKey: 'niveaux',
-          //   title: "Logs d'accès",
-          //   iconData: Icons.security_rounded,
-          //   isDark: isDark,
-          //   color: const Color(0xFF616161),
-          //   backgroundColor: isDark
-          //       ? const Color(0xFF1A1A1A)
-          //       : const Color(0xFFEEEEEE),
-          //   textColor: isDark
-          //       ? const Color(0xFFBDBDBD)
-          //       : const Color(0xFF212121),
-          //   actionText: 'Voir logs',
-          //   actionTextColor: const Color(0xFF616161),
-          //   onTap: () async {
-          //     if (_accessLogs.isEmpty && !_isLoadingAccessLogs) {
-          //       await _loadAccessLogsData();
-          //     }
-          //     if (mounted) {
-          //       _showStudentMenuBottomSheet(
-          //         'accessLogs',
-          //         _getStudentMenuCardItem('accessLogs'),
-          //       );
-          //     }
-          //   },
-          // ),
-        ]),
+        EstablishmentActionSection(
+          actions: [
+            EstablishmentAction(
+              key: 'niveaux',
+              title: 'Fournitures',
+              subtitle: 'Voir liste',
+              imagePath: 'assets/images/foutnitures-scolaire.jpg',
+              iconData: Icons.inventory_2_rounded,
+              color: const Color(0xFF795548),
+              actionText: 'Voir liste',
+              onTap: () => _showSuppliesBottomSheet(),
+            ),
+            EstablishmentAction(
+              key: 'consult_requests',
+              title: 'Commandes',
+              subtitle: 'Voir commandes',
+              imagePath: 'assets/images/mes-commandes.jpg',
+              iconData: Icons.shopping_cart_rounded,
+              color: const Color(0xFF00ACC1),
+              actionText: 'Voir commandes',
+              onTap: () => _showOrdersBottomSheet(),
+            ),
+            EstablishmentAction(
+              key: 'tickets',
+              title: 'Tickets',
+              subtitle: 'Voir tickets',
+              iconData: Icons.confirmation_number_rounded,
+              color: const Color(0xFFE91E63),
+              actionText: 'Voir tickets',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tickets - Fonctionnalité à venir'),
+                  ),
+                );
+              },
+            ),
+            EstablishmentAction(
+              key: 'tuteur_adom',
+              title: 'Tuteur Adom',
+              subtitle: 'Voir tuteur',
+              iconData: Icons.person_search_rounded,
+              color: const Color(0xFF9C27B0),
+              actionText: 'Voir tuteur',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tuteur Adom - Fonctionnalité à venir'),
+                  ),
+                );
+              },
+            ),
+          ],
+          isDark: isDark,
+          useExternalTitle: true,
+          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
+          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+        ),
       ],
     );
   }
@@ -4790,37 +4649,32 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (cards.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: EdgeInsets.all(8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              itemCount: cards.length,
-              itemBuilder: (context, index) {
-                return TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: 1),
-                  duration: Duration(milliseconds: 400 + (index * 100)),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) => Transform.scale(
-                    scale: 0.8 + (0.2 * value),
-                    child: Opacity(opacity: value, child: child),
-                  ),
-                  child: Container(
-                    width: 100,
-                    margin: EdgeInsets.only(
-                      right: index < cards.length - 1 ? 12.0 : 0.0,
-                    ),
-                    child: cards[index],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: SizedBox(
+        height: 86,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          itemCount: cards.length,
+          itemBuilder: (context, index) {
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: Duration(milliseconds: 350 + (index * 80)),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) => Transform.translate(
+                offset: Offset(0, 8 * (1 - value)),
+                child: Opacity(opacity: value, child: child),
+              ),
+              child: Container(
+                width: 90,
+                margin: EdgeInsets.only(
+                  right: index < cards.length - 1 ? 10.0 : 0.0,
+                ),
+                child: cards[index],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -12321,53 +12175,58 @@ class _ChildListScreenState extends State<ChildListScreen>
     LinearGradient? gradient,
     int maxLines = 1,
   }) {
+    final isDark = _themeService.isDarkMode;
+    // Couleurs subtiles basées sur la couleur de la carte
+    final bgColor = isDark
+        ? color.withOpacity(0.12)
+        : color.withOpacity(0.07);
+    final borderColor = color.withOpacity(isDark ? 0.25 : 0.18);
+    final iconBg = color.withOpacity(isDark ? 0.25 : 0.15);
+    final valueColor = isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E);
+    final titleColor = isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF6B7280);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {},
-        borderRadius: BorderRadius.circular(
-          AppDimensions.getMediumCardBorderRadius(context),
-        ),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           decoration: BoxDecoration(
-            gradient: gradient ?? _getGradientForColor(color),
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getMediumCardBorderRadius(context),
-            ),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+            color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            mainAxisSize: MainAxisSize.min, // ← clé pour hauteur minimale
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Icône seule (dot supprimé)
+              // Icône avec fond coloré subtil
               Container(
-                width: 22,
-                height: 22,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: iconBg,
                   borderRadius: BorderRadius.circular(7),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: Icon(icon, color: color, size: 12),
+                child: Icon(icon, color: color, size: 13),
               ),
-              const SizedBox(height: 5),
-
+              const SizedBox(height: 6),
               // Valeur principale
               if (isLoading)
                 Container(
-                  height: 16,
+                  height: 14,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
+                    color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 )
@@ -12376,41 +12235,27 @@ class _ChildListScreenState extends State<ChildListScreen>
                   child: Text(
                     value,
                     style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(15),
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                      height: 1.2,
+                      fontSize: _textSizeService.getScaledFontSize(13),
+                      fontWeight: FontWeight.w700,
+                      color: valueColor,
+                      letterSpacing: -0.3,
+                      height: 1.1,
                     ),
                     maxLines: maxLines,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              // Titre + sous-titre
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(10),
-                      color: Colors.white.withOpacity(0.9),
-                      fontWeight: FontWeight.normal,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  // if (subtitle != null) ...[
-                  //   const SizedBox(height: 1),
-                  //   Text(
-                  //     subtitle,
-                  //     style: TextStyle(
-                  //       fontSize: _textSizeService.getScaledFontSize(8),
-                  //       color: Colors.white.withOpacity(0.7),
-                  //       fontWeight: FontWeight.w500,
-                  //     ),
-                  //   ),
-                  // ],
-                ],
+              // Titre
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(9),
+                  color: titleColor,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -12447,6 +12292,7 @@ class _ExtraScolaireSheetContentState
   List<dynamic> _services = [];
   String? _selectedServiceUid;
   List<dynamic> _activities = [];
+  Map<String, dynamic>? _serviceDetails;
 
   @override
   void initState() {
@@ -12456,10 +12302,53 @@ class _ExtraScolaireSheetContentState
 
   Future<void> _loadInitialData() async {
     setState(() => _isLoadingServices = true);
-    final services = await ExtraScolaireService.getSubscribedServices(
+    final rawServices = await ExtraScolaireService.getSubscribedServices(
       matricule: widget.matricule,
       ecoleCode: widget.schoolCode,
     );
+
+    final services = rawServices.map((service) {
+      if (service is Map<String, dynamic>) {
+        final serviceUid = service['service_uid']?.toString() ?? service['service']?.toString() ?? '';
+        final rubrique = service['rubrique']?.toString() ?? '';
+        
+        String titre = service['titre']?.toString() ?? '';
+        if (titre.isEmpty && rubrique.isNotEmpty) {
+          final clean = rubrique.trim().toUpperCase();
+          if (clean == 'CANT') {
+            titre = 'Cantine';
+          } else if (clean == 'TRANS') {
+            titre = 'Transport';
+          } else if (clean == 'GARD') {
+            titre = 'Garderie';
+          } else if (clean == 'ETUD') {
+            titre = 'Étude';
+          } else {
+            titre = clean[0] + clean.substring(1).toLowerCase();
+          }
+        }
+        if (titre.isEmpty) {
+          titre = 'Service';
+        }
+
+        final status = service['statut']?.toString() ?? 'Actif';
+        final debut = service['debut']?.toString() ?? '';
+        final fin = service['fin']?.toString() ?? '';
+        final abonnementDate = service['abonnement_date']?.toString() ?? '';
+
+        return {
+          'service_uid': serviceUid,
+          'titre': titre,
+          'statut': status,
+          'debut': debut,
+          'fin': fin,
+          'abonnement_date': abonnementDate,
+          ...service,
+        };
+      }
+      return service;
+    }).toList();
+
     if (mounted) {
       setState(() {
         _services = services;
@@ -12485,7 +12374,8 @@ class _ExtraScolaireSheetContentState
     );
     if (mounted) {
       setState(() {
-        _activities = activities;
+        _activities = activities['activities'] as List<dynamic>? ?? [];
+        _serviceDetails = activities['details'] as Map<String, dynamic>?;
         _isLoadingActivities = false;
       });
     }
@@ -12839,7 +12729,7 @@ class _ExtraScolaireSheetContentState
                   ),
                 ],
               ),
-              if (debut.isNotEmpty || fin.isNotEmpty) ...[
+              if (debut.isNotEmpty || fin.isNotEmpty || (activeService?['abonnement_date']?.toString() ?? '').isNotEmpty) ...[
                 const SizedBox(height: 10),
                 const Divider(height: 1),
                 const SizedBox(height: 10),
@@ -12852,7 +12742,9 @@ class _ExtraScolaireSheetContentState
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Période d\'abonnement : ${debut} - ${fin}',
+                      debut.isNotEmpty || fin.isNotEmpty
+                          ? 'Période d\'abonnement : $debut - $fin'
+                          : 'Abonné le : ${_formatAbonnementDate(activeService?['abonnement_date']?.toString() ?? '')}',
                       style: TextStyle(
                         fontSize: widget.textSizeService.getScaledFontSize(11),
                         color: Colors.grey[600],
@@ -12861,6 +12753,164 @@ class _ExtraScolaireSheetContentState
                     ),
                   ],
                 ),
+              ],
+              if (_serviceDetails != null) ...[
+                const SizedBox(height: 10),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                if ((_serviceDetails!['trajet']?.toString() ?? '').isNotEmpty) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.alt_route_rounded,
+                        size: 14,
+                        color: serviceColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Trajet',
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _serviceDetails!['trajet'].toString(),
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(12),
+                                color: widget.isDark ? Colors.white : const Color(0xFF1F2937),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if ((_serviceDetails!['point_arret']?.toString() ?? '').isNotEmpty) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.pin_drop_rounded,
+                        size: 14,
+                        color: Colors.red[400],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Point d\'arrêt',
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _serviceDetails!['point_arret'].toString(),
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(12),
+                                color: widget.isDark ? Colors.white : const Color(0xFF1F2937),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if ((_serviceDetails!['description']?.toString() ?? '').isNotEmpty && 
+                    _serviceDetails!['description']?.toString() != _serviceDetails!['point_arret']?.toString() &&
+                    _serviceDetails!['description']?.toString() != _serviceDetails!['trajet']?.toString()) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 14,
+                        color: Colors.grey[500],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Description',
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _serviceDetails!['description'].toString(),
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(12),
+                                color: widget.isDark ? Colors.grey[300] : const Color(0xFF4B5563),
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (_serviceDetails!['prix'] != null && _serviceDetails!['prix'] is num && _serviceDetails!['prix'] > 0) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.payments_rounded,
+                        size: 14,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tarif',
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_serviceDetails!['prix']} FCFA',
+                              style: TextStyle(
+                                fontSize: widget.textSizeService.getScaledFontSize(12),
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ],
           ),
@@ -13106,551 +13156,118 @@ class _ExtraScolaireSheetContentState
       ),
     );
   }
+
+  String _formatAbonnementDate(String dateStr) {
+    try {
+      if (dateStr.isEmpty) return '';
+      final parts = dateStr.split(' ');
+      final datePart = parts.first;
+      final dateSegments = datePart.split('-');
+      if (dateSegments.length == 3) {
+        final year = dateSegments[0];
+        final month = dateSegments[1];
+        final day = dateSegments[2];
+        return '$day/$month/$year';
+      }
+      return datePart;
+    } catch (_) {
+      return dateStr;
+    }
+  }
 }
 
-class _SuiviActivitesSheetContent extends StatefulWidget {
-  final bool isDark;
-  final String schoolCode;
-  final String matricule;
-  final String childName;
-  final TextSizeService textSizeService;
+/// Bouton animé avec effet pulse pour attirer l'attention de l'utilisateur
+class _PulseAnimatedButton extends StatefulWidget {
+  final VoidCallback onTap;
 
-  const _SuiviActivitesSheetContent({
-    required this.isDark,
-    required this.schoolCode,
-    required this.matricule,
-    required this.childName,
-    required this.textSizeService,
-  });
+  const _PulseAnimatedButton({required this.onTap});
 
   @override
-  State<_SuiviActivitesSheetContent> createState() =>
-      _SuiviActivitesSheetContentState();
+  State<_PulseAnimatedButton> createState() => _PulseAnimatedButtonState();
 }
 
-class _SuiviActivitesSheetContentState
-    extends State<_SuiviActivitesSheetContent> {
-  bool _isLoadingServices = true;
-  bool _isLoadingActivities = false;
-  List<dynamic> _services = [];
-  String? _selectedServiceUid;
-  List<dynamic> _activities = [];
-  String _selectedDateFilter = "Aujourd'hui";
+class _PulseAnimatedButtonState extends State<_PulseAnimatedButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnim;
+  late final Animation<double> _glowAnim;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _scaleAnim = Tween<double>(begin: 1.0, end: 1.06).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _glowAnim = Tween<double>(begin: 0.0, end: 0.25).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
   }
 
-  Future<void> _loadInitialData() async {
-    setState(() => _isLoadingServices = true);
-    final services = await ExtraScolaireService.getSubscribedServices(
-      matricule: widget.matricule,
-      ecoleCode: widget.schoolCode,
-    );
-    if (mounted) {
-      setState(() {
-        _services = services;
-        _isLoadingServices = false;
-        if (services.isNotEmpty) {
-          final firstService = services.first;
-          final serviceUid = firstService['service_uid']?.toString() ?? '';
-          if (serviceUid.isNotEmpty) {
-            _selectedServiceUid = serviceUid;
-            _loadActivities(serviceUid);
-          }
-        }
-      });
-    }
-  }
-
-  Future<void> _loadActivities(String serviceUid) async {
-    setState(() => _isLoadingActivities = true);
-    final activities = await ExtraScolaireService.getServiceActivities(
-      serviceUid: serviceUid,
-      matricule: widget.matricule,
-      ecoleCode: widget.schoolCode,
-    );
-    if (mounted) {
-      setState(() {
-        _activities = activities;
-        _isLoadingActivities = false;
-      });
-    }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeBg = widget.isDark ? Colors.grey[900] : Colors.white;
-
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: themeBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(widget.isDark ? 0.4 : 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          BottomSheetHeader(
-            icon: Icons.history_toggle_off_rounded,
-            iconColor: const Color(0xFFE65100),
-            title: 'Suivi des activités',
-            description: 'Rapport quotidien de ${widget.childName}',
-            titleFontSize: widget.textSizeService.getScaledFontSize(16),
-            descriptionFontSize: widget.textSizeService.getScaledFontSize(11),
-            onClose: () => Navigator.of(context).pop(),
-          ),
-
-          // Content
-          Expanded(
-            child: _isLoadingServices
-                ? const Center(
-                    child: CustomLoader(
-                      message: 'Chargement des services...',
-                      loaderColor: Color(0xFFE65100),
-                      showBackground: false,
-                    ),
-                  )
-                : _services.isEmpty
-                ? _buildEmptyServicesState()
-                : Column(
-                    children: [
-                      _buildServicesTabs(),
-                      _buildDateFilterRow(),
-                      Expanded(
-                        child: _isLoadingActivities
-                            ? const Center(
-                                child: CustomLoader(
-                                  message: 'Chargement du suivi quotidien...',
-                                  loaderColor: Color(0xFFE65100),
-                                  showBackground: false,
-                                ),
-                              )
-                            : _buildActivitiesTimeline(),
-                      ),
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyServicesState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 90,
-              height: 90,
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnim.value,
+          child: GestureDetector(
+            onTap: widget.onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
-                color: widget.isDark
-                    ? const Color(0xFF2E1605)
-                    : const Color(0xFFFFF3E0),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.assignment_late_outlined,
-                size: 42,
-                color: Color(0xFFE65100),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Aucun suivi disponible',
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(18),
-                fontWeight: FontWeight.bold,
-                color: widget.isDark ? Colors.white : const Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Votre enfant n\'est abonné à aucun service actif pour le moment. Les rapports de suivi quotidien s\'afficheront ici.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(13),
-                color: AppColors.screenTextSecondary,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildServicesTabs() {
-    return Container(
-      height: 44,
-      margin: const EdgeInsets.fromLTRB(0, 14, 0, 8),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _services.length,
-        itemBuilder: (context, index) {
-          final service = _services[index];
-          final String title = service['titre']?.toString() ?? 'Service';
-          final String serviceUid = service['service_uid']?.toString() ?? '';
-          final bool isSelected = _selectedServiceUid == serviceUid;
-
-          IconData icon = Icons.star_rounded;
-          Color color = const Color(0xFFE65100);
-          if (title.toLowerCase().contains('cantine')) {
-            icon = Icons.restaurant_rounded;
-            color = const Color(0xFFE65100);
-          } else if (title.toLowerCase().contains('transport') ||
-              title.toLowerCase().contains('bus')) {
-            icon = Icons.directions_bus_rounded;
-            color = const Color(0xFF0288D1);
-          }
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: InkWell(
-              onTap: () {
-                if (serviceUid.isNotEmpty &&
-                    _selectedServiceUid != serviceUid) {
-                  setState(() {
-                    _selectedServiceUid = serviceUid;
-                  });
-                  _loadActivities(serviceUid);
-                }
-              },
-              borderRadius: BorderRadius.circular(14),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withOpacity(widget.isDark ? 0.25 : 0.12)
-                      : widget.isDark
-                      ? Colors.grey[900]
-                      : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected
-                        ? color
-                        : widget.isDark
-                        ? Colors.grey[800]!
-                        : Colors.grey[200]!,
-                    width: 1.5,
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(_glowAnim.value + 0.1),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                    offset: Offset.zero,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 16,
-                      color: isSelected ? color : Colors.grey,
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.10),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Plus d\'action',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: const Color(0xFFFF6B2C),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: widget.textSizeService.getScaledFontSize(13),
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w600,
-                        color: isSelected
-                            ? (widget.isDark ? Colors.white : color)
-                            : (widget.isDark
-                                  ? Colors.grey[400]
-                                  : Colors.grey[700]),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 10,
+                    color: Color(0xFFFF6B2C),
+                  ),
+                ],
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildDateFilterRow() {
-    final List<String> dateFilters = ["Aujourd'hui", "Hier", "Avant-hier"];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        children: dateFilters.map((filter) {
-          final bool isSelected = _selectedDateFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedDateFilter = filter;
-                });
-              },
-              child: Text(
-                filter,
-                style: TextStyle(
-                  fontSize: widget.textSizeService.getScaledFontSize(12),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected
-                      ? const Color(0xFFE65100)
-                      : (widget.isDark ? Colors.grey[500] : Colors.grey[600]),
-                  decoration: isSelected ? TextDecoration.underline : null,
-                  decorationColor: const Color(0xFFE65100),
-                  decorationThickness: 2,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildActivitiesTimeline() {
-    final activeService = _services.firstWhere(
-      (s) => s['service_uid']?.toString() == _selectedServiceUid,
-      orElse: () => null,
-    );
-
-    final String serviceTitle =
-        activeService?['titre']?.toString() ?? 'Service';
-    Color serviceColor = const Color(0xFFE65100);
-    if (serviceTitle.toLowerCase().contains('cantine')) {
-      serviceColor = const Color(0xFFE65100);
-    } else if (serviceTitle.toLowerCase().contains('transport') ||
-        serviceTitle.toLowerCase().contains('bus')) {
-      serviceColor = const Color(0xFF0288D1);
-    }
-
-    if (_activities.isEmpty) {
-      return _buildEmptyActivitiesState(serviceTitle);
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      itemCount: _activities.length,
-      itemBuilder: (context, index) {
-        return _buildTimelineStep(
-          activity: _activities[index],
-          isLast: index == _activities.length - 1,
-          serviceColor: serviceColor,
+          ),
         );
       },
     );
   }
-
-  Widget _buildEmptyActivitiesState(String serviceTitle) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.notifications_none_rounded,
-              size: 38,
-              color: widget.isDark ? Colors.grey[600] : Colors.grey[400],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Aucune activité enregistrée',
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(14),
-                fontWeight: FontWeight.bold,
-                color: widget.isDark ? Colors.grey[400] : Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Aucun rapport de suivi journalier n\'a été publié pour la date sélectionnée concernant le service ${serviceTitle}.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(12),
-                color: Colors.grey,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimelineStep({
-    required dynamic activity,
-    required bool isLast,
-    required Color serviceColor,
-  }) {
-    final String time = activity['heure']?.toString() ?? '--:--';
-    final String date = activity['date']?.toString() ?? '';
-    final String details = activity['details']?.toString() ?? '';
-    final String statut = activity['statut']?.toString() ?? '';
-    final String description = activity['description']?.toString() ?? '';
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Timeline indicator (Time + line)
-          SizedBox(
-            width: 55,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontSize: widget.textSizeService.getScaledFontSize(13),
-                    fontWeight: FontWeight.bold,
-                    color: serviceColor,
-                  ),
-                ),
-                if (date.isNotEmpty)
-                  Text(
-                    date,
-                    style: const TextStyle(
-                      fontSize: 8,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Node indicator (dots & line)
-          Column(
-            children: [
-              Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: serviceColor.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: serviceColor, width: 2),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: serviceColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: serviceColor.withOpacity(0.3),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 14),
-
-          // Card contents
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: widget.isDark
-                        ? Colors.grey[800]!
-                        : Colors.grey[200]!,
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(
-                        widget.isDark ? 0.1 : 0.02,
-                      ),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            description,
-                            style: TextStyle(
-                              fontSize: widget.textSizeService
-                                  .getScaledFontSize(13),
-                              fontWeight: FontWeight.bold,
-                              color: widget.isDark
-                                  ? Colors.white
-                                  : const Color(0xFF374151),
-                            ),
-                          ),
-                        ),
-                        if (statut.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: serviceColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              statut,
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: serviceColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (details.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        details,
-                        style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(
-                            12,
-                          ),
-                          color: widget.isDark
-                              ? const Color(0xFFCCCCCC)
-                              : const Color(0xFF4B5563),
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
+
+

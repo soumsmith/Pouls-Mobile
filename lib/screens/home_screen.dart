@@ -2170,7 +2170,13 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: imageAsset != null
-                ? Image.asset(imageAsset, width: 10, height: 10)
+                ? Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Image.asset(
+                      imageAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  )
                 : Icon(icon, color: iconColor, size: 26),
           ),
           const SizedBox(height: 6),
@@ -2711,7 +2717,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Section Coulisses de l'Excellence
                   if (_hasCoulisseExcellenceData) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
                     SectionRow(
                       title: 'COULISSES DE L\'EXCELLENCE',
                       onSeeMore: () {
@@ -2729,7 +2735,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Section Événements et Faits Scolaires
                   if (_hasEventsData) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
                     SectionRow(
                       title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES',
                       onSeeMore: () {

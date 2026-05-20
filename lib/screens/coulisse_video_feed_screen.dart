@@ -11,6 +11,7 @@ import '../services/interaction_api_service.dart';
 import '../services/theme_service.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/custom_sliver_app_bar_fixed.dart';
+import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -227,6 +228,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) => _RatingSheet(video: video),
     );
   }
@@ -875,40 +878,14 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       ),
       child: Column(
         children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: handleColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
           // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  'Commentaires',
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.close, color: textColor),
-                ),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.comment_rounded,
+            iconColor: const Color(0xFF0288D1),
+            title: 'Commentaires',
+            description: 'Échangez sur cette vidéo',
+            onClose: () => Navigator.of(context).pop(),
           ),
-
-          Divider(color: dividerColor),
 
           // Comments list
           Expanded(
@@ -1363,40 +1340,14 @@ class _RatingSheetState extends State<_RatingSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: handleColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
           // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  'Noter la vidéo',
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.close, color: textColor),
-                ),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.star_rounded,
+            iconColor: Colors.amber,
+            title: 'Noter la vidéo',
+            description: 'Donnez votre avis sur cette vidéo',
+            onClose: () => Navigator.of(context).pop(),
           ),
-
-          Divider(color: dividerColor),
 
           Padding(
             padding: const EdgeInsets.all(16),
@@ -1447,7 +1398,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Current rating stats
                 Container(
@@ -1493,7 +1444,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // User rating
                 if (!_hasRated) ...[
@@ -1505,7 +1456,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
@@ -1520,27 +1471,32 @@ class _RatingSheetState extends State<_RatingSheet> {
                               ? Icons.star
                               : Icons.star_border,
                           color: Colors.amber,
-                          size: 40,
+                          size: 32,
                         ),
                       );
                     }),
                   ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _currentRating > 0 ? _submitRating : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _currentRating > 0 ? _submitRating : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.green.withOpacity(0.4),
+                          disabledForegroundColor: Colors.white70,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
                         ),
-                      ),
-                      child: const Text(
-                        'Envoyer la note',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        child: const Text(
+                          'Envoyer la note',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
@@ -1567,7 +1523,7 @@ class _RatingSheetState extends State<_RatingSheet> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -1668,40 +1624,14 @@ class _ShareOptionsSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: handleColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
           // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  'Partager la vidéo',
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.close, color: textColor),
-                ),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.share_rounded,
+            iconColor: const Color(0xFF0288D1),
+            title: 'Partager la vidéo',
+            description: 'Choisissez comment partager',
+            onClose: () => Navigator.of(context).pop(),
           ),
-
-          Divider(color: dividerColor),
 
           // Share options
           Padding(
@@ -1731,10 +1661,16 @@ class _ShareOptionsSheet extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: const BoxDecoration(
-                      color: Colors.green,
+                      color: Color(0xFFEAF7EE),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.message, color: Colors.white),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Image.asset(
+                        'assets/images/icons/whatsapp.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
                   title: Text(
                     'WhatsApp',

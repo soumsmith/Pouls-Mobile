@@ -1080,7 +1080,7 @@ Découvrez plus d\'actualités sur notre application! 📱
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _ShareOption(
-                icon: Icons.message_rounded,
+                imageAsset: 'assets/images/icons/whatsapp.png',
                 label: 'WhatsApp',
                 color: const Color(0xFF25D366),
                 onTap: () { Navigator.pop(context); _launchWhatsApp(); },
@@ -1115,17 +1115,19 @@ Découvrez plus d\'actualités sur notre application! 📱
 }
 
 class _ShareOption extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final String? imageAsset;
   final String label;
   final Color color;
   final VoidCallback onTap;
 
   const _ShareOption({
-    required this.icon,
+    this.icon,
+    this.imageAsset,
     required this.label,
     required this.color,
     required this.onTap,
-  });
+  }) : assert(icon != null || imageAsset != null);
 
   @override
   Widget build(BuildContext context) {
@@ -1139,7 +1141,12 @@ class _ShareOption extends StatelessWidget {
               color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: color, size: 26),
+            child: imageAsset != null
+                ? Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset(imageAsset!, fit: BoxFit.contain),
+                  )
+                : Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 6),
           Text(

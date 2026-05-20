@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../utils/api_exception_handler.dart';
 
 class ExtraScolaireService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/vie-ecoles';
+  static const String baseUrl = 'https://api2.vie-ecoles.com/api';
 
   /// 1.10 Récupération des produits scolaires souscrits (abonnements actifs)
   static Future<List<dynamic>> getSubscribedServices({
@@ -18,7 +18,7 @@ class ExtraScolaireService {
     print('👤 Matricule: $matricule');
     print('🏫 École: $ecoleCode');
 
-    final url = Uri.parse('$baseUrl/abonnement-services/eleve/$matricule?ecole=$ecoleCode');
+    final url = Uri.parse('$baseUrl/vie-ecoles/service/abonnement/eleve/$matricule?ecole=$ecoleCode');
     print('🔗 URL: $url');
 
     try {
@@ -53,7 +53,7 @@ class ExtraScolaireService {
   }
 
   /// 1.11 Consultation des activités extra-scolaires quotidiennes d'un service
-  static Future<List<dynamic>> getServiceActivities({
+  static Future<Map<String, dynamic>> getServiceActivities({
     required String serviceUid,
     required String matricule,
     required String ecoleCode,
@@ -66,7 +66,7 @@ class ExtraScolaireService {
     print('👤 Matricule: $matricule');
     print('🏫 École: $ecoleCode');
 
-    final url = Uri.parse('$baseUrl/activite-service/$serviceUid/eleve/$matricule?ecole=$ecoleCode');
+    final url = Uri.parse('$baseUrl/vie-ecoles/service/activite/$serviceUid/eleve/$matricule?ecole=$ecoleCode');
     print('🔗 URL: $url');
 
     try {
@@ -82,23 +82,46 @@ class ExtraScolaireService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        List<dynamic> list = [];
-        if (data is Map<String, dynamic> && data['status'] == true) {
-          list = data['data'] as List<dynamic>? ?? [];
+        List<dynamic> activitiesList = [];
+        Map<String, dynamic>? detailsMap;
+
+        if (data is Map<String, dynamic>) {
+          final rawData = data['data'];
+          if (rawData is List) {
+            activitiesList = rawData;
+          } else if (rawData is Map<String, dynamic>) {
+            detailsMap = rawData;
+            for (var val in rawData.values) {
+              if (val is List) {
+                activitiesList = val;
+                break;
+              }
+            }
+          }
         } else if (data is List) {
-          list = data;
+          activitiesList = data;
         }
-        print('✅ ${list.length} activité(s) récupérée(s)');
-        return list;
+
+        print('✅ ${activitiesList.length} activité(s) récupérée(s)');
+        return {
+          'activities': activitiesList,
+          'details': detailsMap,
+        };
       } else {
         print('❌ Erreur HTTP ${response.statusCode}');
         print('📥 Response Body: ${response.body}');
-        return [];
+        return {
+          'activities': [],
+          'details': null,
+        };
       }
     } catch (e) {
       print('💥 Exception activités service: $e');
       ApiExceptionHandler.handle(e, context: 'la récupération des activités');
-      return [];
+      return {
+        'activities': [],
+        'details': null,
+      };
     }
   }
 }

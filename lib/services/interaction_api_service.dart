@@ -4,7 +4,7 @@ import 'auth_service.dart';
 
 /// Service pour la gestion des interactions (commentaires, partages, notes) via l'API vie-ecoles
 class InteractionApiService {
-  static const String _baseUrl = 'https://api2.vie-ecoles.com/api/vie-ecoles/interactions';
+  static const String _baseUrl = 'https://api2.vie-ecoles.com/api';
 
   /// Créer une nouvelle interaction (commentaire, partage, note)
   ///
@@ -27,7 +27,7 @@ class InteractionApiService {
       );
 
       final response = await HttpService.post(
-        '$_baseUrl/store',
+        '$_baseUrl/vie-ecoles/interactionsstore',
         body: {
           'video_id': videoId,
           'user_id': userId,
@@ -75,7 +75,7 @@ class InteractionApiService {
       print('💬 Récupération des interactions: video=$videoId, type=$type');
 
       final response = await HttpService.get(
-        '$_baseUrl/list?video_id=$videoId&type=$type',
+        '$_baseUrl/vie-ecoles/interactionslist?video_id=$videoId&type=$type',
       );
 
       print('💬 Réponse de l\'API: $response');
@@ -108,11 +108,11 @@ class InteractionApiService {
   }) async {
     try {
       print('🗑️ Suppression du commentaire: id=$commentId, user=$userId');
-      print('🌐 URL: $_baseUrl/comment/$commentId?user_id=$userId');
+      print('🌐 URL: $_baseUrl/vie-ecoles/interactionscomment/$commentId?user_id=$userId');
 
       try {
         final response = await HttpService.delete(
-          '$_baseUrl/comment/$commentId?user_id=$userId',
+          '$_baseUrl/vie-ecoles/interactionscomment/$commentId?user_id=$userId',
         );
 
         if (response['status'] == 'success' || response['success'] == true) {
@@ -161,10 +161,10 @@ class InteractionApiService {
   }) async {
     try {
       print('✏️ Modification du commentaire: id=$commentId, user=$userId');
-      print('🌐 URL: $_baseUrl/comment/update/$commentId');
+      print('🌐 URL: $_baseUrl/vie-ecoles/interactionscomment/update/$commentId');
 
       final response = await HttpService.post(
-        '$_baseUrl/comment/update/$commentId',
+        '$_baseUrl/vie-ecoles/interactionscomment/update/$commentId',
         body: {'user_id': userId, 'content': content},
       );
 
@@ -198,10 +198,10 @@ class InteractionApiService {
   }) async {
     try {
       print('👍 Enregistrement interaction: video=$videoId, user=$userId, type=$type');
-      print('🌐 URL: $_baseUrl/like');
+      print('🌐 URL: $_baseUrl/vie-ecoles/interactionslike');
 
       final response = await HttpService.post(
-        '$_baseUrl/like',
+        '$_baseUrl/vie-ecoles/interactionslike',
         body: {
           'video_id': videoId,
           'user_id': userId,

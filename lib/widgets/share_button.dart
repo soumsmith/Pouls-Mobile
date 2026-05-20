@@ -57,15 +57,12 @@ class ShareButton extends StatelessWidget {
   Widget _buildButtonContent() {
     // Si un chemin d'image est fourni, afficher l'image
     if (imagePath != null && imagePath!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(50),
+      return Padding(
+        padding: const EdgeInsets.all(14),
         child: Image.asset(
           imagePath!,
-          width: 40,
-          height: 40,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
-            // Si l'image ne peut pas être chargée, afficher l'icône par défaut
             return _buildDefaultIcon();
           },
         ),

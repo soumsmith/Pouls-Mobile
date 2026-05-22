@@ -44,7 +44,7 @@ class CustomTextInput extends StatelessWidget {
       focusBorderColor: focusBorderColor ?? AppColors.shopBlue,
       hasError: hasError,
       required: required,
-      keyboardType: keyboardType,
+      keyboardType: keyboardType ?? TextInputType.text,
       inputFormatters: inputFormatters,
       readOnly: readOnly,
       maxLines: maxLines,

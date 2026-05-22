@@ -33,10 +33,10 @@ class Scolarite {
     };
   }
 
-  bool get isAffecte => statut == 'AFF';
+  bool get isAffecte => statut != 'NAFF' && statut != 'ECOLIER';
   bool get isNonAffecte => statut == 'NAFF';
   bool get isEcolier => statut == 'ECOLIER';
-  bool get shouldDisplay => !isEcolier; // N'affiche pas les statuts ECOLIER
+  bool get shouldDisplay => true; // On affiche tous les statuts, y compris ECOLIER
 
   String get rubriqueLibelle {
     switch (rubrique) {

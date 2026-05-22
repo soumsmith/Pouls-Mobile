@@ -125,12 +125,16 @@ class ScolariteService {
     final Map<String, List<Scolarite>> separes = {
       'AFF': [], // Montants affectés
       'NAFF': [], // Montants non affectés
+      'ECOLIER': [], // Montants écolier
     };
 
     for (final scolarite in scolarites) {
-      final statut = scolarite.statut ?? 'AUTRE';
-      if (separes.containsKey(statut)) {
-        separes[statut]!.add(scolarite);
+      if (scolarite.isEcolier) {
+        separes['ECOLIER']!.add(scolarite);
+      } else if (scolarite.isAffecte) {
+        separes['AFF']!.add(scolarite);
+      } else if (scolarite.isNonAffecte) {
+        separes['NAFF']!.add(scolarite);
       }
     }
 
@@ -151,6 +155,7 @@ class ScolariteService {
     return {
       'AFF': calculerTotalMontant(scolaritesParStatut['AFF'] ?? []),
       'NAFF': calculerTotalMontant(scolaritesParStatut['NAFF'] ?? []),
+      'ECOLIER': calculerTotalMontant(scolaritesParStatut['ECOLIER'] ?? []),
       'total': calculerTotalMontant(scolarites),
     };
   }

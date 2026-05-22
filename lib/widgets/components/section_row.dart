@@ -40,8 +40,8 @@ class SectionRow extends StatelessWidget {
             title.toUpperCase(),
             style: TextStyle(
               color: effectiveTextColor,
-              fontSize: effectiveFontSize,
-              fontWeight: FontWeight.w600,
+              fontSize: effectiveFontSize + 2,
+              fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
             ),
           ),

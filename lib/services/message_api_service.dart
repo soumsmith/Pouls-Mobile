@@ -134,7 +134,7 @@ class MessageApiService {
       print('📖 Marquage des messages comme lus pour la conversation $conversationId');
       
       final response = await HttpService.post(
-        '$_baseUrl/vie-ecoles/messages/marquer-comme-lu',
+        '$_baseUrl/marquer-comme-lu',
         body: {
           'numero_parent': numeroParent,
           'conversation_id': conversationId,

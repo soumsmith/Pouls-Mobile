@@ -137,8 +137,7 @@ class CustomLoader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        LoadingAnimationWidget.staggeredDotsWave(color: loaderColor, size: 40),
-        // Garde un espace constant pour éviter le mouvement vertical
+        LoadingAnimationWidget.staggeredDotsWave(color: loaderColor, size: size),
         if (message.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(
@@ -151,8 +150,7 @@ class CustomLoader extends StatelessWidget {
               decoration: TextDecoration.none, // Pas de soulignement
             ),
           ),
-        ] else
-          const SizedBox(height: 16),
+        ],
       ],
     );
 

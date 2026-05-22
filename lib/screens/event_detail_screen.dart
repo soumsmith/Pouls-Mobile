@@ -13,6 +13,7 @@ import '../services/ecole_api_service.dart';
 import '../services/ticket_service.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/components/section_row.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -160,15 +161,21 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   // ── Hero SliverAppBar ───────────────────────
   Widget _buildSliverAppBar(Map<String, dynamic> uiData, Color typeColor) {
-    return SliverAppBar(
+    return CustomSliverAppBar(
+      title: '',
       expandedHeight: 320,
       pinned: true,
       stretch: true,
       backgroundColor: Colors.black,
       elevation: 0,
-      leading: _NavIconBtn(
-        icon: Icons.arrow_back_ios_new_rounded,
-        onTap: () => Navigator.of(context).pop(),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 12.0),
+        child: Center(
+          child: _NavIconBtn(
+            icon: Icons.arrow_back_ios_new_rounded,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+        ),
       ),
       actions: [
         _NavIconBtn(

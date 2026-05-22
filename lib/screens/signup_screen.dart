@@ -27,6 +27,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isLoading = false;
   String _completePhoneNumber = '';
   String _selectedSecurityQuestion = 'Quel est votre plat préféré ?';
+  bool _acceptConditions = false;
 
   final List<String> _securityQuestions = [
     'Quel est votre plat préféré ?',
@@ -66,14 +67,16 @@ class _SignupScreenState extends State<SignupScreen> {
         phoneNumber = _phoneController.text.trim();
       }
 
+      final invitationCode = _invitationCodeController.text.trim();
       final userData = {
         'name': _nameController.text.trim(),
         'prenoms': _prenomsController.text.trim(),
         'phone': phoneNumber,
         'password': _passwordController.text,
-        'invitation_code': _invitationCodeController.text.trim(),
+        'invitation_code': invitationCode.isEmpty ? null : invitationCode,
         'security_question': _selectedSecurityQuestion,
         'security_answer': _securityAnswerController.text.trim(),
+        'accept_conditions': true,
       };
 
       // Log des données à envoyer
@@ -308,6 +311,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: TextFormField(
                           controller: _nameController,
+                          keyboardType: TextInputType.text,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Veuillez entrer votre nom';
@@ -385,6 +389,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: TextFormField(
                           controller: _prenomsController,
+                          keyboardType: TextInputType.visiblePassword,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Veuillez entrer vos prénoms';
@@ -557,6 +562,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: TextFormField(
                           controller: _passwordController,
+                          keyboardType: TextInputType.visiblePassword,
                           obscureText: true,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -638,6 +644,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: TextFormField(
                           controller: _invitationCodeController,
+                          keyboardType: TextInputType.text,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontSize: isTablet ? 18.0 : 16.0,
@@ -795,6 +802,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: TextFormField(
                           controller: _securityAnswerController,
+                          keyboardType: TextInputType.text,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Veuillez répondre à la question de sécurité';
@@ -850,11 +858,45 @@ class _SignupScreenState extends State<SignupScreen> {
                       SizedBox(
                         height: AppDimensions.getAdaptiveSpacing(context) * 0.4,
                       ),
+                      // Checkbox conditions
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _acceptConditions,
+                            onChanged: (value) {
+                              setState(() {
+                                _acceptConditions = value ?? false;
+                              });
+                            },
+                            activeColor: Colors.green,
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _acceptConditions = !_acceptConditions;
+                                });
+                              },
+                              child: Text(
+                                "J'accepte les conditions d'utilisation",
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(
+                        height: AppDimensions.getAdaptiveSpacing(context) * 0.4,
+                      ),
                       // Bouton créer le compte
                       CustomButton(
                         text: 'CRÉER LE COMPTE',
-                        onPressed: _handleSignup,
+                        onPressed: _acceptConditions ? _handleSignup : null,
                         isLoading: _isLoading,
+                        backgroundColor: _acceptConditions ? Colors.green : Colors.grey,
                       ),
                       SizedBox(
                         height:

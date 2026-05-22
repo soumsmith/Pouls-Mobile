@@ -19,6 +19,8 @@ class CustomSliverAppBar extends StatelessWidget {
   final bool pinned;
   final double? elevation;
   final TextStyle? titleTextStyle;
+  final Widget? flexibleSpace;
+  final bool stretch;
 
   const CustomSliverAppBar({
     super.key,
@@ -35,6 +37,8 @@ class CustomSliverAppBar extends StatelessWidget {
     this.pinned = true,
     this.elevation = 0,
     this.titleTextStyle,
+    this.flexibleSpace,
+    this.stretch = false,
   });
 
   @override
@@ -45,11 +49,12 @@ class CustomSliverAppBar extends StatelessWidget {
       expandedHeight: expandedHeight,
       floating: floating,
       pinned: pinned,
+      stretch: stretch,
       elevation: elevation ?? 0,
       surfaceTintColor: surfaceTintColor ?? Colors.transparent,
       backgroundColor: backgroundColor ?? AppColors.screenSurfaceThemed(context),
       leading: leading ?? (automaticallyImplyLeading ? _buildDefaultLeading(context) : null),
-      title: Text(
+      title: title.isEmpty ? null : Text(
         title,
         style: titleTextStyle ??
             TextStyle(
@@ -60,6 +65,7 @@ class CustomSliverAppBar extends StatelessWidget {
             ),
       ),
       actions: actions,
+      flexibleSpace: flexibleSpace,
     );
   }
 

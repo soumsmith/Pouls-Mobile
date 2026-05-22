@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -5,6 +6,7 @@ import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
 import 'package:parents_responsable/widgets/image_menu_card.dart';
 import 'package:parents_responsable/widgets/main_screen_wrapper.dart';
+import '../services/student_scolarite_service.dart';
 import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/school_life_item_card.dart';
@@ -44,9 +46,10 @@ import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
 import '../services/student_message_service.dart';
 import '../models/student_message.dart';
-import '../services/student_scolarite_service.dart';
 import '../models/student_scolarite.dart';
 import '../widgets/bottom_sheets/enhanced_scolarite_bottom_sheet.dart';
+import '../widgets/bottom_sheets/my_reservations_bottom_sheet.dart';
+import 'my_tickets_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/components/section_row.dart';
@@ -312,6 +315,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<SchoolSupply> _schoolSupplies = [];
   bool _isLoading = true;
   bool _isLoadingSupplies = false;
+  
+  // Données de l'école récupérées directement depuis l'API spécifique à l'élève
+  dynamic _apiEcoleData;
+  
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
   final SchoolSupplyService _schoolSupplyService = SchoolSupplyService();
@@ -344,6 +351,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isAccessControlBottomSheetOpen = false;
   StateSetter? _accessControlModalSetState;
   bool _accessControlLoaded = false;
+  DateTime _selectedAccessDate = DateTime.now();
 
   // Variables pour les messages
   List<StudentMessage> _studentMessages = [];
@@ -601,6 +609,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           final ecoleData = await EcoleEleveService.getEcoleParametresForEleve(
             _ecoleCode!,
           );
+          _apiEcoleData = ecoleData;
           print('✅ Données de l\'école chargées avec succès');
           print('📊 [API] Résumé des données reçues:');
           print('   - Nom: ${ecoleData.nom}');
@@ -643,20 +652,26 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       // Étape 3: Charger les autres données (timetable, messages, fees)
       print('📊 Étape 3: Chargement des données de base...');
-      final results = await Future.wait([
-        apiService.getNotesForChild(widget.child.id),
-        apiService.getTimetableForChild(widget.child.id),
-        apiService.getMessages(
-          MainScreenWrapper.of(context).currentUserId ?? 'parent1',
-        ),
-        apiService.getFeesForChild(widget.child.id),
-      ]);
+      // Exécuter séquentiellement avec un léger délai pour éviter l'erreur 429 (Too Many Attempts)
+      final notesResult = await apiService.getNotesForChild(widget.child.id);
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      final timetableResult = await apiService.getTimetableForChild(widget.child.id);
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      final messagesResult = await apiService.getMessages(
+        MainScreenWrapper.of(context).currentUserId ?? 'parent1',
+      );
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      final feesResult = await apiService.getFeesForChild(widget.child.id);
+      await Future.delayed(const Duration(milliseconds: 200));
 
       setState(() {
-        _notes = results[0] as List<Note>;
-        _timetable = results[1] as List<TimetableEntry>;
-        _messages = results[2] as List<Message>;
-        _fees = results[3] as List<Fee>;
+        _notes = notesResult;
+        _timetable = timetableResult;
+        _messages = messagesResult;
+        _fees = feesResult;
         _isLoading = false;
       });
 
@@ -1230,6 +1245,70 @@ class _ChildListScreenState extends State<ChildListScreen>
               onClose: () => Navigator.of(context).pop(),
             ),
             Expanded(child: _buildHomeworkTab()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showProgressionBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            BottomSheetHeader(
+              icon: Icons.trending_up_rounded,
+              iconColor: const Color(0xFF1976D2),
+              title: 'Progression',
+              description: 'Suivi de la progression',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: _buildComingSoonContent(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHomeworkProgramBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            BottomSheetHeader(
+              icon: Icons.assignment_rounded,
+              iconColor: const Color(0xFF2E7D32),
+              title: 'Programme de devoirs',
+              description: 'Planning des devoirs',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: _buildComingSoonContent(),
+              ),
+            ),
           ],
         ),
       ),
@@ -3800,229 +3879,217 @@ class _ChildListScreenState extends State<ChildListScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: _buildCard(
-                        index: 0,
-                        cardKey: 'paiement',
-                        title: 'Paiement\nen ligne',
-                        imagePath: 'assets/images/icons/paiement.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFF8FCFF),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        innerBorderColor: const Color(0xFF93C5FD),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        allowLineBreak: true,
-                        onTap: _showPaiementBottomSheet,
-                      ),
+              Builder(
+                builder: (context) {
+                  final isTablet = MediaQuery.of(context).size.width > 600;
+                  final crossAxisCount = isTablet ? 6 : 4;
+                  
+                  final List<Widget> cards = [
+                    _buildCard(
+                      index: 0,
+                      cardKey: 'reservations',
+                      title: 'Réservation\nen ligne',
+                      imagePath: 'assets/images/icons/reservation.png',
+                      color: AppColors.cardLightGrey,
+                      backgroundColor: const Color(0xFFF8FCFF),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
+                      innerBorderColor: const Color(0xFF93C5FD),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
+                      centerTitle: true,
+                      allowLineBreak: true,
+                      onTap: _showReservationPaiementBottomSheet,
                     ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: _buildCard(
-                        index: 1,
-                        cardKey: 'historique_paiements',
-                        title: 'Historique \n paiement',
-                        imagePath: 'assets/images/icons/historique.png',
-                        backgroundColor: const Color.fromARGB(255, 253, 253, 253),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        allowLineBreak: true,
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        color: AppColors.cardLightGrey,
-                        innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: _showHistoriquePaiementsBottomSheet,
-                      ),
+                    _buildCard(
+                      index: 6,
+                      cardKey: 'mes_reservations',
+                      title: 'Mes\nréservations',
+                      imagePath: 'assets/images/icons/reservation.png',
+                      color: AppColors.cardLightGrey,
+                      backgroundColor: const Color(0xFFF0FDF4),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
+                      innerBorderColor: const Color(0xFF86EFAC),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
+                      centerTitle: true,
+                      allowLineBreak: true,
+                      onTap: () {
+                        MyReservationsBottomSheet.show(
+                          context: context,
+                          childName: widget.child.firstName,
+                          matricule: widget.child.matricule ?? _matricule ?? '',
+                        );
+                      },
                     ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: _buildCard(
-                        index: 2,
-                        cardKey: 'inscription',
-                        title: 'Inscription \n en ligne',
-                        imagePath: 'assets/images/icons/inscription.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFF7FEFC),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        allowLineBreak: true,
-                        innerBorderColor: const Color(0xFF6EE7B7),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () {
-                          print('=== NAVIGATION INSCRIPTION ===');
-                          print('Élève: ${widget.child.fullName}');
-                          print('UID de l\'élève: ${_eleveDetail?["uid"]}');
-                          print(
-                            'Code école actuel AVANT mise à jour: ${widget.child.ecoleCode}',
-                          );
-                          print('Code école récupéré depuis _ecoleCode: $_ecoleCode');
+                    _buildCard(
+                      index: 3,
+                      cardKey: 'paiement',
+                      title: 'Paiement\nscolarité',
+                      imagePath: 'assets/images/icons/reservation.png',
+                      color: AppColors.cardLightGrey,
+                      backgroundColor: const Color(0xFFE8F5E9),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: false,
+                      allowLineBreak: true,
+                      enableOuterBorder: false,
+                      innerBorderColor: const Color(0xFF81C784),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
+                      centerTitle: true,
+                      onTap: _showScolaritePaiementBottomSheet,
+                    ),
+                    _buildCard(
+                      index: 1,
+                      cardKey: 'historique_paiements',
+                      title: 'Historique \n paiement',
+                      imagePath: 'assets/images/icons/historique.png',
+                      backgroundColor: const Color.fromARGB(255, 253, 253, 253),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      allowLineBreak: true,
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
+                      color: AppColors.cardLightGrey,
+                      innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
+                      centerTitle: true,
+                      onTap: _showHistoriquePaiementsBottomSheet,
+                    ),
+                    _buildCard(
+                      index: 2,
+                      cardKey: 'inscription',
+                      title: 'Inscription \n en ligne',
+                      imagePath: 'assets/images/icons/inscription.png',
+                      color: AppColors.cardLightGrey,
+                      backgroundColor: const Color(0xFFF7FEFC),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
+                      allowLineBreak: true,
+                      innerBorderColor: const Color(0xFF6EE7B7),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
+                      centerTitle: true,
+                      onTap: () {
+                        final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
+                            ? widget.child.copyWith(ecoleCode: _ecoleCode)
+                            : widget.child;
 
-                          // Mettre à jour l'objet Child avec le ecoleCode si disponible
-                          final updatedChild =
-                              _ecoleCode != null && _ecoleCode!.isNotEmpty
-                              ? widget.child.copyWith(ecoleCode: _ecoleCode)
-                              : widget.child;
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                inscription.InscriptionWizardScreen(
+                                  child: updatedChild,
+                                  uid: _eleveDetail?['uid'],
+                                  eleveDetail: _eleveDetail,
+                                ),
+                          ),
+                        );
+                      },
+                    ),
+                    
 
-                          print(
-                            'Code école final APRÈS mise à jour: ${updatedChild.ecoleCode}',
+                    
+                    _buildCard(
+                      index: 4,
+                      cardKey: 'scolarite',
+                      title: 'Échéancier\n Scolarité',
+                      imagePath: 'assets/images/icons/scolarite.png',
+                      color: AppColors.cardLightGrey,
+                      backgroundColor: const Color(0xFFFFFEF7),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      allowLineBreak: true,
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
+                      innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
+                      centerTitle: true,
+                      onTap: () async {
+                        if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
+                          await _loadScolariteData();
+                        }
+                        if (mounted) {
+                          showEnhancedScolariteBottomSheet(
+                            context,
+                            childName: widget.child.fullName,
+                            childMatricule: widget.child.matricule,
+                            scolariteEntries: _scolariteEntries,
+                            isLoading: _isLoadingScolarite,
+                            onRefresh: _loadScolariteData,
+                            title: 'Scolarité',
+                            description: 'Consultez les informations de scolarité',
+                            primaryColor: const Color(0xFFF59E0B),
+                            backgroundColor: const Color(0xFFFFFEF7),
+                            iconColor: const Color(0xFFD97706),
+                            iconData: Icons.school_rounded,
                           );
-                          print('=== FIN NAVIGATION INSCRIPTION ===');
+                        }
+                      },
+                    ),
+                    _buildCard(
+                      index: 5,
+                      cardKey: 'integration_requests',
+                      title: 'Demandes\n intégration',
+                      imagePath: 'assets/images/icons/consulter.png',
+                      color: AppColors.cardLightGrey,
+                      backgroundColor: const Color(0xFFFCFAFF),
+                      textColor: const Color(0xFF333333),
+                      actionText: '',
+                      enableInnerBorder: false,
+                      enableOuterBorder: false,
+                      allowLineBreak: true,
+                      innerBorderColor: const Color(0xFFC4B5FD),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      width: AppDimensions.getSquareCardWidthSize(context),
+                      height: AppDimensions.getSquareCardHeightSize(context),
+                      centerTitle: true,
+                      onTap: () => IntegrationRequestBottomSheet.show(
+                        context,
+                        matricule: widget.child.matricule,
+                        childFullName: widget.child.fullName,
+                      ),
+                    ),
+                    
+                  ];
 
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  inscription.InscriptionWizardScreen(
-                                    child: updatedChild,
-                                    uid: _eleveDetail?['uid'],
-                                    eleveDetail: _eleveDetail,
-                                  ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: _buildCard(
-                        index: 3,
-                        cardKey: 'reservations',
-                        title: 'Réservations',
-                        imagePath: 'assets/images/icons/reservation.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFE8F5E9),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        innerBorderColor: const Color(0xFF81C784),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () async {
-                          if (_reservations.isEmpty && !_isLoadingReservations) {
-                            await _loadReservationsData();
-                          }
-                          if (mounted) {
-                            _showReservationsBottomSheet();
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: _buildCard(
-                        index: 4,
-                        cardKey: 'scolarite',
-                        title: 'Échéancier\n Scolarité',
-                        imagePath: 'assets/images/icons/scolarite.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFFFFEF7),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        allowLineBreak: true,
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () async {
-                          if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
-                            await _loadScolariteData();
-                          }
-                          if (mounted) {
-                            showEnhancedScolariteBottomSheet(
-                              context,
-                              childName: widget.child.fullName,
-                              childMatricule: widget.child.matricule,
-                              scolariteEntries: _scolariteEntries,
-                              isLoading: _isLoadingScolarite,
-                              onRefresh: _loadScolariteData,
-                              title: 'Scolarité',
-                              description: 'Consultez les informations de scolarité',
-                              primaryColor: const Color(0xFFF59E0B),
-                              backgroundColor: const Color(0xFFFFFEF7),
-                              iconColor: const Color(0xFFD97706),
-                              iconData: Icons.school_rounded,
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: _buildCard(
-                        index: 5,
-                        cardKey: 'integration_requests',
-                        title: 'Demandes\n intégration',
-                        imagePath: 'assets/images/icons/consulter.png',
-                        color: AppColors.cardLightGrey,
-                        backgroundColor: const Color(0xFFFCFAFF),
-                        textColor: const Color(0xFF333333),
-                        actionText: '',
-                        enableInnerBorder: false,
-                        enableOuterBorder: false,
-                        allowLineBreak: true,
-                        innerBorderColor: const Color(0xFFC4B5FD),
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(
-                          context,
-                        ),
-                        width: AppDimensions.getSquareCardWidthSize(context),
-                        height: AppDimensions.getSquareCardHeightSize(context),
-                        centerTitle: true,
-                        onTap: () => IntegrationRequestBottomSheet.show(
-                          context,
-                          matricule: widget.child.matricule,
-                          childFullName: widget.child.fullName,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Slots vides pour aligner avec la ligne du dessus (4 colonnes)
-                  const Expanded(child: SizedBox()),
-                  const Expanded(child: SizedBox()),
-                ],
+                  List<Widget> rows = [];
+                  for (int i = 0; i < cards.length; i += crossAxisCount) {
+                    List<Widget> rowChildren = [];
+                    for (int j = 0; j < crossAxisCount; j++) {
+                      if (i + j < cards.length) {
+                        rowChildren.add(Expanded(child: Center(child: cards[i + j])));
+                      } else {
+                        rowChildren.add(const Expanded(child: SizedBox()));
+                      }
+                    }
+                    rows.add(Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: rowChildren,
+                    ));
+                    if (i + crossAxisCount < cards.length) {
+                      rows.add(const SizedBox(height: 10));
+                    }
+                  }
+
+                  return Column(children: rows);
+                },
               ),
             ],
           ),
@@ -4038,6 +4105,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'access_control',
               title: 'Contrôle d\'accès',
               subtitle: 'Voir accès',
+              imagePath: 'assets/images/controle-acces.jpg',
               iconData: Icons.fingerprint_rounded,
               color: const Color(0xFFC2185B),
               actionText: 'Voir accès',
@@ -4052,6 +4120,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'services_extras',
               title: 'Services scolaires',
               subtitle: 'Suivre',
+              imagePath: 'assets/images/service-scolaire.jpg',
               iconData: Icons.playlist_add_check_rounded,
               color: const Color(0xFF7B1FA2),
               actionText: 'Suivre',
@@ -4101,248 +4170,260 @@ class _ChildListScreenState extends State<ChildListScreen>
         const SizedBox(height: 16),
         SectionRow(title: 'Suivi scolaire'),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Card(
-            elevation: 0,
-            color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F7FA),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final screenWidth = constraints.maxWidth;
-                  final crossAxisCount = screenWidth > 600 ? 2 : 1;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final crossAxisCount = screenWidth > 600 ? 2 : 1;
 
-                  final schoolLifeItems = [
-                    {
-                      'title': 'Mes Notes',
-                      'subtitle': 'Notes et évaluations',
-                      'imagePath': 'assets/images/notes.jpg',
-                      'iconData': null,
-                      'color': const Color(0xFF1976D2),
-                      'buttonText': 'Consulter',
-                      'key': 'notes',
-                    },
-                    {
-                      'title': 'Emploi du temps',
-                      'subtitle': 'Planning des cours',
-                      'imagePath': 'assets/images/emploi-du-temps.jpg',
-                      'iconData': null,
-                      'color': const Color(0xFFF57C00),
-                      'buttonText': 'Voir emploi',
-                      'key': 'timetable',
-                    },
-                    {
-                      'title': 'Présence & Conduite',
-                      'subtitle': 'Suivi des absences et retards',
-                      'imagePath': 'assets/images/messages.jpg',
-                      'iconData': null,
-                      'color': const Color(0xFF00796B),
-                      'buttonText': 'Voir présence',
-                      'key': 'attendance',
-                    },
-                    {
-                      'title': 'Sanctions',
-                      'subtitle': 'Rapports de comportement',
-                      'imagePath': null,
-                      'iconData': Icons.warning_rounded,
-                      'color': const Color(0xFFD32F2F),
-                      'buttonText': 'Voir sanctions',
-                      'key': 'sanctions',
-                    },
-                    {
-                      'title': 'Bulletin',
-                      'subtitle': 'Notes et évaluations',
-                      'imagePath': null,
-                      'iconData': Icons.assessment_rounded,
-                      'color': const Color(0xFF4CAF50),
-                      'buttonText': 'Voir bulletin',
-                      'key': 'bulletins',
-                    },
-                    {
-                      'title': 'Devoirs',
-                      'subtitle': 'Travaux à faire',
-                      'imagePath': null,
-                      'iconData': Icons.assignment_rounded,
-                      'color': const Color(0xFFFF9800),
-                      'buttonText': 'Voir devoirs',
-                      'key': 'homework',
-                    },
-                    {
-                      'title': 'Difficultés',
-                      'subtitle': 'Suivi des difficultés',
-                      'imagePath': null,
-                      'iconData': Icons.psychology_rounded,
-                      'color': const Color(0xFF9C27B0),
-                      'buttonText': 'Voir difficultés',
-                      'key': 'difficulties',
-                    },
-                    {
-                      'title': 'Programme de devoirs',
-                      'subtitle': 'Planning des devoirs',
-                      'imagePath': null,
-                      'iconData': Icons.assignment_rounded,
-                      'color': const Color(0xFF2E7D32),
-                      'buttonText': 'Voir programme',
-                      'key': 'homework_program',
-                    },
-                    {
-                      'title': 'Progression',
-                      'subtitle': 'Suivi de la progression',
-                      'imagePath': null,
-                      'iconData': Icons.trending_up_rounded,
-                      'color': const Color(0xFF1976D2),
-                      'buttonText': 'Voir progression',
-                      'key': 'progression',
-                    },
-                  ];
-
-                  Widget buildCard(Map<String, Object?> item) {
-                    return SchoolLifeItemCard(
-                      title: item['title'] as String,
-                      subtitle: item['subtitle'] as String,
-                      imagePath: item['imagePath'] as String?,
-                      iconData: item['iconData'] as IconData?,
-                      isDark: isDark,
-                      mediaWidth: 70,
-                      mediaHeight: 70,
-                      showActionButton: false,
-                      mediaBorderRadius: 20,
-                      color: item['color'] as Color,
-                      buttonText: item['buttonText'] as String,
-                      onTap: () {
-                        if (item['key'] == 'notes') {
-                          if (_matricule != null &&
-                              _anneeId != null &&
-                              _classeId != null) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => NotesScreenJson(
-                                  matricule: _matricule!,
-                                  anneeId: _anneeId!.toString(),
-                                  classeId: _classeId!.toString(),
-                                  anneeLibelle:
-                                      'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
-                                  ecoleId: _ecoleId?.toString(),
-                                ),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Informations élève non disponibles',
-                                ),
-                              ),
-                            );
-                          }
-                        } else if (item['key'] == 'timetable') {
-                          _showTimetableBottomSheet();
-                        } else {
-                          switch (item['key'] as String) {
-                            case 'bulletins':
-                              _showBulletinsBottomSheet();
-                              break;
-                            case 'homework':
-                              _showHomeworkBottomSheet();
-                              break;
-                            case 'attendance':
-                              _showAttendanceBottomSheet();
-                              break;
-                            case 'sanctions':
-                              _showSanctionsBottomSheet();
-                              break;
-                            case 'messages':
-                              _showMessagesBottomSheet();
-                              break;
-                            case 'difficulties':
-                              _showDifficultiesBottomSheet();
-                              break;
-                            case 'homework_program':
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Programme de devoirs - Fonctionnalité à venir',
-                                  ),
-                                ),
-                              );
-                              break;
-                            case 'progression':
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Progression - Fonctionnalité à venir',
-                                  ),
-                                ),
-                              );
-                              break;
-                            case 'supplies':
-                              _showSuppliesBottomSheet();
-                              break;
-                            case 'orders':
-                              _showOrdersBottomSheet();
-                              break;
-                            case 'accessLogs':
-                              _showAccessLogsBottomSheet();
-                              break;
-                            case 'suggestions':
-                              _showSuggestionsBottomSheet();
-                              break;
-                            case 'reservations':
-                              _showReservationsBottomSheet();
-                              break;
-                            default:
-                              break;
-                          }
-                        }
-                      },
-                    );
-                  }
-
-                  // Mobile : Column pour éviter l'espace inutile du GridView
-                  if (crossAxisCount == 1) {
-                    return Column(
-                      children: schoolLifeItems.asMap().entries.expand((entry) {
-                        final isLast = entry.key == schoolLifeItems.length - 1;
-                        return [
-                          buildCard(entry.value),
-                          if (!isLast)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Divider(
-                                height: 1,
-                                thickness: 1,
-                                color: (isDark ? Colors.white : Colors.black)
-                                    .withOpacity(0.08),
-                              ),
-                            ),
-                        ];
-                      }).toList(),
-                    );
-                  }
-
-                  // Tablette/Desktop : GridView 2 colonnes
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 50,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 6,
+            Widget buildCard(Map<String, Object?> item) {
+              return SchoolLifeItemCard(
+                title: item['title'] as String,
+                subtitle: item['subtitle'] as String,
+                imagePath: item['imagePath'] as String?,
+                iconData: item['iconData'] as IconData?,
+                isDark: isDark,
+                mediaWidth: 70,
+                mediaHeight: 70,
+                showActionButton: false,
+                mediaBorderRadius: 20,
+                color: item['color'] as Color,
+                buttonText: item['buttonText'] as String,
+                onTap: () {
+                  if (item['key'] == 'notes') {
+                    if (_matricule != null &&
+                        _anneeId != null &&
+                        _classeId != null) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => NotesScreenJson(
+                            matricule: _matricule!,
+                            anneeId: _anneeId!.toString(),
+                            classeId: _classeId!.toString(),
+                            anneeLibelle:
+                                'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+                            ecoleId: _ecoleId?.toString(),
+                          ),
                         ),
-                    itemCount: schoolLifeItems.length,
-                    itemBuilder: (context, index) =>
-                        buildCard(schoolLifeItems[index]),
-                  );
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Informations élève non disponibles',
+                          ),
+                        ),
+                      );
+                    }
+                  } else if (item['key'] == 'timetable') {
+                    _showTimetableBottomSheet();
+                  } else {
+                    switch (item['key'] as String) {
+                      case 'bulletins':
+                        _showBulletinsBottomSheet();
+                        break;
+                      case 'homework':
+                        _showHomeworkBottomSheet();
+                        break;
+                      case 'attendance':
+                        _showAttendanceBottomSheet();
+                        break;
+                      case 'sanctions':
+                        _showSanctionsBottomSheet();
+                        break;
+                      case 'messages':
+                        _showMessagesBottomSheet();
+                        break;
+                      case 'difficulties':
+                        _showDifficultiesBottomSheet();
+                        break;
+                      case 'homework_program':
+                        _showHomeworkProgramBottomSheet();
+                        break;
+                      case 'progression':
+                        _showProgressionBottomSheet();
+                        break;
+                      case 'supplies':
+                        _showSuppliesBottomSheet();
+                        break;
+                      case 'orders':
+                        _showOrdersBottomSheet();
+                        break;
+                      case 'accessLogs':
+                        _showAccessLogsBottomSheet();
+                        break;
+                      case 'suggestions':
+                        _showSuggestionsBottomSheet();
+                        break;
+                      case 'reservations':
+                        _showReservationsBottomSheet();
+                        break;
+                      default:
+                        break;
+                    }
+                  }
                 },
-              ),
-            ),
-          ),
+              );
+            }
+
+            Widget buildGroupContainer(List<Map<String, Object?>> items) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                margin: const EdgeInsets.only(bottom: 16),
+                child: Card(
+                  elevation: 0,
+                  color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F7FA),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: crossAxisCount == 1
+                        ? Column(
+                            children: items.asMap().entries.expand((entry) {
+                              final isLast = entry.key == items.length - 1;
+                              return [
+                                buildCard(entry.value),
+                                if (!isLast)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    child: Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+                                    ),
+                                  ),
+                              ];
+                            }).toList(),
+                          )
+                        : GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 50,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 6,
+                            ),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) => buildCard(items[index]),
+                          ),
+                  ),
+                ),
+              );
+            }
+
+            final group1Items = [
+              {
+                'title': 'Mes Notes',
+                'subtitle': 'Notes et évaluations',
+                'imagePath': 'assets/images/notes.jpg',
+                'iconData': null,
+                'color': const Color(0xFF1976D2),
+                'buttonText': 'Consulter',
+                'key': 'notes',
+              },
+              {
+                'title': 'Mes bulletins',
+                'subtitle': 'Notes et évaluations',
+                'imagePath': null,
+                'iconData': Icons.assessment_rounded,
+                'color': const Color(0xFF4CAF50),
+                'buttonText': 'Voir bulletin',
+                'key': 'bulletins',
+              },
+            ];
+
+            final group3Items = [
+              {
+                'title': 'Devoirs',
+                'subtitle': 'Travail à la maison',
+                'imagePath': null,
+                'iconData': Icons.edit_note_rounded,
+                'color': const Color(0xFF7B1FA2),
+                'buttonText': 'Voir devoirs',
+                'key': 'homework',
+              },
+              {
+                'title': 'Difficultés',
+                'subtitle': 'Suivi des difficultés',
+                'imagePath': null,
+                'iconData': Icons.psychology_rounded,
+                'color': const Color(0xFF9C27B0),
+                'buttonText': 'Voir difficultés',
+                'key': 'difficulties',
+              },
+              {
+                'title': 'Programme de devoirs',
+                'subtitle': 'Planning des devoirs',
+                'imagePath': null,
+                'iconData': Icons.assignment_rounded,
+                'color': const Color(0xFF2E7D32),
+                'buttonText': 'Voir programme',
+                'key': 'homework_program',
+              },
+              {
+                'title': 'Progression',
+                'subtitle': 'Suivi de la progression',
+                'imagePath': null,
+                'iconData': Icons.trending_up_rounded,
+                'color': const Color(0xFF1976D2),
+                'buttonText': 'Voir progression',
+                'key': 'progression',
+              },
+            ];
+
+            return Column(
+              children: [
+                buildGroupContainer(group1Items),
+                EstablishmentActionSection(
+                  actions: [
+                    EstablishmentAction(
+                      key: 'timetable',
+                      title: 'Emploi du temps',
+                      subtitle: 'Planning des cours',
+                      imagePath: 'assets/images/emploi-du-temps.jpg',
+                      iconData: null,
+                      color: const Color(0xFFF57C00),
+                      actionText: 'Voir emploi',
+                      onTap: () {
+                        _showTimetableBottomSheet();
+                      },
+                    ),
+                    EstablishmentAction(
+                      key: 'attendance',
+                      title: 'Présence & Conduite',
+                      subtitle: 'Suivi des absences et retards',
+                      imagePath: 'assets/images/messages.jpg',
+                      iconData: null,
+                      color: const Color(0xFF00796B),
+                      actionText: 'Voir présence',
+                      onTap: () {
+                        _showAttendanceBottomSheet();
+                      },
+                    ),
+                    EstablishmentAction(
+                      key: 'sanctions',
+                      title: 'Sanctions',
+                      subtitle: 'Rapports de comportement',
+                      imagePath: null,
+                      iconData: Icons.warning_rounded,
+                      color: const Color(0xFFD32F2F),
+                      actionText: 'Voir sanctions',
+                      onTap: () {
+                        _showSanctionsBottomSheet();
+                      },
+                    ),
+                  ],
+                  isDark: isDark,
+                  useExternalTitle: true,
+                  cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
+                  cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+                ),
+                const SizedBox(height: 16),
+                buildGroupContainer(group3Items),
+              ],
+            );
+          },
         ),
 
         const SizedBox(height: 0),
@@ -4392,6 +4473,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               title: 'Suggestions',
               subtitle: 'Voir suggestions',
               iconData: Icons.lightbulb_rounded,
+              imagePath: 'assets/images/suggestion.jpg',
               color: const Color(0xFFFFB300),
               actionText: 'Voir suggestions',
               onTap: () async {
@@ -4441,14 +4523,14 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'tickets',
               title: 'Tickets',
               subtitle: 'Voir tickets',
+              imagePath: 'assets/images/ticket.jpg',
               iconData: Icons.confirmation_number_rounded,
               color: const Color(0xFFE91E63),
               actionText: 'Voir tickets',
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tickets - Fonctionnalité à venir'),
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MyTicketsScreen()),
                 );
               },
             ),
@@ -4456,15 +4538,21 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'tuteur_adom',
               title: 'Tuteur Adom',
               subtitle: 'Voir tuteur',
+              imagePath: 'assets/images/tuteur-adom.jpg',
               iconData: Icons.person_search_rounded,
               color: const Color(0xFF9C27B0),
               actionText: 'Voir tuteur',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tuteur Adom - Fonctionnalité à venir'),
-                  ),
-                );
+              onTap: () async {
+                final Uri url = Uri.parse('http://46.105.52.105:3002/');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Impossible d\'ouvrir le lien')),
+                    );
+                  }
+                }
               },
             ),
           ],
@@ -4481,11 +4569,36 @@ class _ChildListScreenState extends State<ChildListScreen>
     return const Icon(Icons.person, size: 30, color: Colors.white);
   }
 
-  void _showPaiementBottomSheet() {
+  void _showReservationPaiementBottomSheet() {
+    final schoolData = _schoolService.getSchoolData();
+    
+    // On passe les données immédiates s'il y en a
+    final finReservation = _apiEcoleData?.finReservation ?? schoolData?['fin_reservation']?.toString();
+    final debutReservation = _apiEcoleData?.debutReservation ?? schoolData?['debut_reservation']?.toString();
+    final montantReservation = _apiEcoleData?.montantReservation ?? schoolData?['montant_reservation'];
+
     PaymentBottomSheet.show(
       context: context,
       childName: widget.child.firstName,
       matricule: _matricule,
+      debutReservation: debutReservation,
+      finReservation: finReservation,
+      montantReservation: montantReservation,
+      loadReservationData: () async {
+        // Si les données ne sont pas chargées, on force le chargement
+        if (_apiEcoleData == null && _matricule != null && _anneeId != null && _classeId != null) {
+          await _loadStudentClassInfo();
+        }
+        final finalSchoolData = _schoolService.getSchoolData();
+        return {
+          'debutReservation': _apiEcoleData?.debutReservation ?? finalSchoolData?['debut_reservation']?.toString(),
+          'finReservation': _apiEcoleData?.finReservation ?? finalSchoolData?['fin_reservation']?.toString(),
+          'montantReservation': _apiEcoleData?.montantReservation ?? finalSchoolData?['montant_reservation'],
+        };
+      },
+      title: 'Réservation en ligne',
+      description: 'Réservez la place de ${widget.child.firstName} pour l\'année prochaine',
+      icon: Icons.event_available,
       onPayment: (montant, matricule) async {
         // Créer des fonctions factices pour setState et setLoading
         void dummySetState(VoidCallback fn) {}
@@ -4498,6 +4611,35 @@ class _ChildListScreenState extends State<ChildListScreen>
           dummySetLoading,
           dummySetLoadingFalse,
         );
+
+        return const PaymentResult.online();
+      },
+    );
+  }
+
+  void _showScolaritePaiementBottomSheet() {
+    PaymentBottomSheet.show(
+      context: context,
+      childName: widget.child.firstName,
+      matricule: _matricule,
+      title: 'Paiement de scolarité',
+      description: 'Réglez la scolarité de ${widget.child.firstName}',
+      icon: Icons.account_balance_wallet,
+      // On ne passe pas debutReservation ni finReservation pour désactiver la vérification
+      onPayment: (montant, matricule) async {
+        // Créer des fonctions factices pour setState et setLoading
+        void dummySetState(VoidCallback fn) {}
+        void dummySetLoading() {}
+        void dummySetLoadingFalse() {}
+
+        await _effectuerPaiement(
+          montant,
+          dummySetState,
+          dummySetLoading,
+          dummySetLoadingFalse,
+        );
+
+        return const PaymentResult.online();
       },
     );
   }
@@ -4604,19 +4746,15 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (paiementResponse.success && paiementResponse.url.isNotEmpty) {
         Navigator.of(context).pop(); // Fermer le bottomsheet
 
-        // Afficher un message de succès
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(paiementResponse.message),
-            backgroundColor: Colors.green,
-          ),
-        );
-
         // Rediriger vers l'URL de paiement
         final launched = await _paiementService.lancerUrlPaiement(
           paiementResponse.url,
         );
-        if (!launched) {
+        if (launched) {
+          // Afficher la modale de vérification (polling)
+          final uidToCheck = _eleveDetail?['uid']?.toString() ?? _matricule ?? '';
+          _showPaymentVerificationLoader(uidToCheck);
+        } else {
           CartSnackBar.showOverlay(
             context,
             productName: 'Erreur d\'ouverture',
@@ -4642,6 +4780,104 @@ class _ChildListScreenState extends State<ChildListScreen>
     } finally {
       CustomLoaderOverlay.hide();
     }
+  }
+
+  void _showPaymentVerificationLoader(String uidEleve) {
+    if (uidEleve.isEmpty) return;
+
+    Timer? timer;
+    bool isChecking = false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF141414) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomLoader(
+                    message: 'Attente de la confirmation du paiement...',
+                    loaderColor: const Color(0xFFFF7A3C),
+                    showBackground: false,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Veuillez finaliser le paiement sur la page sécurisée. L\'application vérifie actuellement le statut de votre transaction.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      timer?.cancel(); // Sécurité pour s'assurer que le timer est bien tué
+    });
+
+    int attempts = 0;
+    const int maxAttempts = 120; // 120 * 2s = 240s (4 minutes)
+
+    // Lancement du polling toutes les 2 secondes
+    timer = Timer.periodic(const Duration(seconds: 2), (t) async {
+      if (isChecking || !mounted) return;
+
+      attempts++;
+      if (attempts >= maxAttempts) {
+        t.cancel();
+        if (mounted) {
+          Navigator.of(context).pop(); // Fermer la modale
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Délai dépassé',
+            message: 'L\'opération a échoué suite à une longue attente. Veuillez vérifier et réessayer.',
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          );
+        }
+        return;
+      }
+
+      isChecking = true;
+
+      try {
+        final success = await api_service.InscriptionApiService.checkPaiementStatus(uidEleve);
+        if (success && mounted) {
+          t.cancel();
+          // Fermer le loader
+          Navigator.of(context).pop();
+          // Afficher le succès
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Paiement validé',
+            message: 'Le paiement de la scolarité pour ${widget.child.firstName} a été enregistré avec succès !',
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          );
+        }
+      } catch (e) {
+        // En cas d'erreur de vérification, on laisse tourner
+      } finally {
+        isChecking = false;
+      }
+    });
   }
 
   Widget _buildSummaryCardsGrid() {
@@ -5148,7 +5384,122 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: _buildDynamicAccessControl(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildAccessDateSelector(),
+          Expanded(child: _buildDynamicAccessControl()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccessDateSelector() {
+    final isDark = _themeService.isDarkMode;
+    
+    // Helper pour obtenir le nom du mois
+    String getMonthName(int month) {
+      const months = [
+        '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      ];
+      return months[month];
+    }
+
+    final String formattedDate = '${_selectedAccessDate.day.toString().padLeft(2, '0')} '
+        '${getMonthName(_selectedAccessDate.month)} '
+        '${_selectedAccessDate.year}';
+        
+    final now = DateTime.now();
+    final isToday = _selectedAccessDate.year == now.year &&
+                    _selectedAccessDate.month == now.month &&
+                    _selectedAccessDate.day == now.day;
+                    
+    final displayText = isToday ? "Aujourd'hui, $formattedDate" : formattedDate;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20.0),
+      child: TextFormField(
+        readOnly: true,
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: _selectedAccessDate,
+            firstDate: DateTime(2020),
+            lastDate: DateTime.now(),
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: isDark ? const ColorScheme.dark(
+                    primary: Color(0xFFC2185B),
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E1E1E),
+                    onSurface: Colors.white,
+                  ) : const ColorScheme.light(
+                    primary: Color(0xFFC2185B),
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Colors.black87,
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          );
+          if (picked != null && picked != _selectedAccessDate) {
+            setState(() {
+              _selectedAccessDate = picked;
+            });
+            _accessControlModalSetState?.call(() {});
+            _loadAccessControlData(_accessControlModalSetState);
+          }
+        },
+        controller: TextEditingController(text: displayText),
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.white : Colors.black87,
+        ),
+        decoration: InputDecoration(
+          labelText: 'Date de pointage',
+          labelStyle: TextStyle(
+            color: isDark ? Colors.white70 : Colors.black54,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: const Icon(
+            Icons.edit_calendar_rounded,
+            color: Color(0xFFC2185B),
+          ),
+          suffixIcon: const Icon(
+            Icons.arrow_drop_down_rounded,
+            color: Color(0xFFC2185B),
+          ),
+          filled: true,
+          fillColor: isDark 
+              ? const Color(0xFFC2185B).withOpacity(0.1) 
+              : const Color(0xFFC2185B).withOpacity(0.05),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: const Color(0xFFC2185B).withOpacity(0.3),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: const Color(0xFFC2185B).withOpacity(0.3),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(
+              color: Color(0xFFC2185B),
+              width: 1.5,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
+      ),
     );
   }
 
@@ -5823,11 +6174,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '📋 Logs d\'accès',
-            'Consultez l\'historique des accès et entrées de votre enfant.',
-            Colors.teal,
-          ),
           const SizedBox(height: 20),
           _buildDynamicAccessLogs(),
         ],
@@ -6742,12 +7088,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '💬 Messages',
-            'Consultez les messages et communications pour votre enfant.',
-            Colors.blue,
-          ),
-          const SizedBox(height: 20),
           _buildDynamicMessages(),
         ],
       ),
@@ -7681,8 +8021,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         print('✅ Données de l\'école chargées');
       }
 
+      final dateStr = '${_selectedAccessDate.year}-${_selectedAccessDate.month.toString().padLeft(2, '0')}-${_selectedAccessDate.day.toString().padLeft(2, '0')}';
       final entries = await _accessControlService
-          .getAccessControlEntriesForStudent(matricule);
+          .getAccessControlEntriesForStudent(matricule, date: dateStr);
       print('✅ Réponse reçue: ${entries.length} pointages');
 
       if (mounted) {
@@ -8199,12 +8540,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '📊 Notes et évaluations',
-            'Consultez les notes et évaluations de votre enfant pour suivre sa progression scolaire.',
-            Colors.blue,
-          ),
-          const SizedBox(height: 20),
           _buildNotesList(),
         ],
       ),
@@ -8984,49 +9319,58 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '🧠 Difficultés scolaires',
-            'Suivi des difficultés rencontrées par votre enfant et des actions mises en place pour l\'aider.',
-            Colors.orange,
-          ),
-          const SizedBox(height: 20),
           _buildDifficultiesList(),
         ],
       ),
     );
   }
 
-  Widget _buildDifficultiesList() {
-    return Column(
-      children: [
-        _buildDifficultyCard(
-          'Mathématiques',
-          'Difficultés en calcul mental et géométrie',
-          'Soutien personnalisé mis en place',
-          'En cours',
-          Icons.calculate_rounded,
-          Colors.red,
-        ),
-        const SizedBox(height: 12),
-        _buildDifficultyCard(
-          'Français',
-          'Orthographe et grammaire',
-          'Exercices supplémentaires',
-          'Amélioration constatée',
-          Icons.menu_book_rounded,
-          Colors.orange,
-        ),
-        const SizedBox(height: 12),
-        _buildDifficultyCard(
-          'Anglais',
-          'Compréhension orale',
-          'Sessions avec assistant linguistique',
-          'Progrès satisfaisants',
-          Icons.language_rounded,
-          Colors.green,
-        ),
-      ],
+  Widget _buildComingSoonContent() {
+    final isDarkMode = _themeService.isDarkMode;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1565C0).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.hourglass_empty_rounded,
+              size: 48,
+              color: Color(0xFF1565C0),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Contenu bientôt disponible',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(18),
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Cette fonctionnalité est en cours de développement et sera disponible très prochainement.',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(14),
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildDifficultiesList() {
+    return _buildComingSoonContent();
   }
 
   Widget _buildDifficultyCard(
@@ -9151,12 +9495,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '📅 Événements scolaires',
-            'Restez informé des événements importants de la vie scolaire de votre enfant.',
-            Colors.blue,
-          ),
-          const SizedBox(height: 20),
           _buildEventsList(),
         ],
       ),
@@ -9624,12 +9962,6 @@ class _ChildListScreenState extends State<ChildListScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // _buildInfoCard(
-              //   '🛒 Commandes',
-              //   'Suivi de vos commandes de fournitures scolaires et services.',
-              //   Colors.purple,
-              // ),
-              const SizedBox(height: 20),
               Column(
                 children: orders.map((order) {
                   return Padding(
@@ -10295,179 +10627,14 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '💡 Message important',
-            'Cher parents,\nMerci de vous impliquer régulièrement dans le suivi et l\'amélioration du résultat scolaire de votre enfant.',
-            Colors.blue,
-          ),
-          const SizedBox(height: 20),
-          _buildHomeworkCategories(),
-          const SizedBox(height: 20),
           _buildHomeworkContent(),
         ],
       ),
     );
   }
 
-  Widget _buildInfoCard(String title, String content, Color color) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.15), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: isDarkMode
-                ? Colors.black.withOpacity(0.3)
-                : color.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.info_outline, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  content,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(13),
-                    color: isDarkMode
-                        ? Colors.grey[300]
-                        : const Color(0xFF6B7280),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHomeworkCategories() {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4F46E5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'COURS',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                'EXERCICES',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isDarkMode
-                      ? Colors.grey[400]
-                      : const Color(0xFF6B7280),
-                  fontWeight: FontWeight.w600,
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                'CORRIGÉS',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isDarkMode
-                      ? Colors.grey[400]
-                      : const Color(0xFF6B7280),
-                  fontWeight: FontWeight.w600,
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHomeworkContent() {
-    return Column(
-      children: [
-        _buildHomeworkItem(
-          'Mathématiques',
-          'Exercices pages 45-47',
-          'Pour demain',
-          Icons.calculate,
-          Colors.orange,
-        ),
-        const SizedBox(height: 12),
-        _buildHomeworkItem(
-          'Français',
-          'Rédaction : Mon héros préféré',
-          'Pour vendredi',
-          Icons.menu_book,
-          Colors.blue,
-        ),
-        const SizedBox(height: 12),
-        _buildHomeworkItem(
-          'Histoire',
-          'Chapitre 3 : La Révolution française',
-          'Pour lundi prochain',
-          Icons.public,
-          Colors.green,
-        ),
-      ],
-    );
+    return _buildComingSoonContent();
   }
 
   Widget _buildHomeworkItem(
@@ -10621,189 +10788,79 @@ class _ChildListScreenState extends State<ChildListScreen>
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Statistiques de présence',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(16),
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Carte principale avec taux de présence
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _statistiquesPresence!.tauxPresence >= 95
-                          ? [const Color(0xFF0D9488), const Color(0xFF10B981)]
-                          : _statistiquesPresence!.tauxPresence >= 90
-                          ? [const Color(0xFFF59E0B), const Color(0xFFD97706)]
-                          : [const Color(0xFFEF4444), const Color(0xFFDC2626)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Statistiques de présence',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(15),
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            (_statistiquesPresence!.tauxPresence >= 95
-                                    ? const Color(0xFF10B981)
-                                    : _statistiquesPresence!.tauxPresence >= 90
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (_statistiquesPresence!.tauxPresence >= 95
+                                ? const Color(0xFF10B981)
+                                : _statistiquesPresence!.tauxPresence >= 90
                                     ? const Color(0xFFF59E0B)
                                     : const Color(0xFFEF4444))
-                                .withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
+                            .withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _statistiquesPresence!.tauxPresence >= 95
-                              ? Icons.check_circle_outline_rounded
+                      child: Text(
+                        '${_statistiquesPresence!.tauxPresence.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(13),
+                          fontWeight: FontWeight.bold,
+                          color: _statistiquesPresence!.tauxPresence >= 95
+                              ? const Color(0xFF10B981)
                               : _statistiquesPresence!.tauxPresence >= 90
-                              ? Icons.info_outline_rounded
-                              : Icons.warning_amber_rounded,
-                          color: Colors.white,
-                          size: 32,
+                                  ? const Color(0xFFF59E0B)
+                                  : const Color(0xFFEF4444),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Taux de présence globale',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  13,
-                                ),
-                                color: Colors.white.withOpacity(0.85),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_statistiquesPresence!.tauxPresence.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  28,
-                                ),
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Statistiques détaillées
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDetailedStatCard(
-                        'Présences',
-                        _statistiquesPresence!.totalPresent,
-                        Icons.check_circle_rounded,
-                        Colors.green,
-                        isDarkMode,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildDetailedStatCard(
-                        'Absences',
-                        _statistiquesPresence!.totalAbsent,
-                        Icons.cancel_rounded,
-                        Colors.red,
-                        isDarkMode,
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 12),
-
-                // Information totale
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? Colors.grey[850]
-                        : Colors.blue.shade50.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDarkMode
-                          ? Colors.grey[800]!
-                          : Colors.blue.shade100,
-                      width: 1.2,
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildMinimalStatItem(
+                      'Présences',
+                      _statistiquesPresence!.totalPresent,
+                      Icons.check_circle_rounded,
+                      const Color(0xFF10B981),
+                      isDarkMode,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1565C0).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.calendar_today_outlined,
-                          color: Color(0xFF1565C0),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Total des séances',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  12,
-                                ),
-                                color: isDarkMode
-                                    ? Colors.white70
-                                    : Colors.grey[600],
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_statistiquesPresence!.totalSeances} séances cette année',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  14,
-                                ),
-                                color: isDarkMode
-                                    ? Colors.white
-                                    : Colors.blue.shade900,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    ),
+                    _buildMinimalStatItem(
+                      'Absences',
+                      _statistiquesPresence!.totalAbsent,
+                      Icons.cancel_rounded,
+                      const Color(0xFFEF4444),
+                      isDarkMode,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    ),
+                    _buildMinimalStatItem(
+                      'Total',
+                      _statistiquesPresence!.totalSeances.toString(),
+                      Icons.calendar_today_rounded,
+                      const Color(0xFF3B82F6),
+                      isDarkMode,
+                    ),
+                  ],
                 ),
               ],
             )
@@ -10857,74 +10914,40 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildDetailedStatCard(
+  Widget _buildMinimalStatItem(
     String title,
     String value,
     IconData icon,
     Color color,
     bool isDarkMode,
   ) {
-    final isPresent = title == 'Présences';
-    final bgColor = isDarkMode
-        ? (isPresent ? const Color(0xFF0F3720) : const Color(0xFF3C1818))
-        : (isPresent ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2));
-    final borderColor = isPresent
-        ? const Color(0xFF10B981).withOpacity(0.2)
-        : const Color(0xFFEF4444).withOpacity(0.2);
-    final accentColor = isPresent
-        ? const Color(0xFF10B981)
-        : const Color(0xFFEF4444);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: accentColor, size: 18),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(11),
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(13),
-                  color: isDarkMode ? Colors.white70 : Colors.grey[700],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(24),
-              color: accentColor,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
             ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: _textSizeService.getScaledFontSize(16),
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -10974,6 +10997,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
   int? _filterType; // null = tous, 0 = absent, 1 = présent
+  bool _isFilterExpanded = false;
 
   Widget _buildAbsencesList() {
     // Appliquer les filtres
@@ -11362,7 +11386,6 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return Container(
       margin: const EdgeInsets.all(12), // Réduit de 16 à 12
-      padding: const EdgeInsets.all(12), // Réduit de 16 à 12
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[800] : Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -11373,153 +11396,207 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Filtres',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(16),
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.white70 : Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 8), // Réduit de 12 à 8
-          // Filtre par type
-          Text(
-            'Type',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              fontWeight: FontWeight.w500,
-              color: isDarkMode ? Colors.white70 : Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 6), // Réduit de 8 à 6
-          Wrap(
-            spacing: 6, // Réduit de 8 à 6
-            children: [
-              _buildFilterChip('Tous', null),
-              _buildFilterChip('Absences', 0),
-              _buildFilterChip('Présences', 1),
-            ],
-          ),
-
-          const SizedBox(height: 12), // Réduit de 16 à 12
-          // Filtre par date
-          Text(
-            'Période (facultatif)',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              fontWeight: FontWeight.w500,
-              color: isDarkMode ? Colors.white70 : Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 6), // Réduit de 8 à 6
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _selectDate(context, true),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ), // Réduit padding
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: Colors.grey[600],
+          InkWell(
+            onTap: () {
+              final effectiveModalSetState = _presenceModalSetState;
+              if (effectiveModalSetState != null && mounted) {
+                effectiveModalSetState(() {
+                  _isFilterExpanded = !_isFilterExpanded;
+                });
+              } else if (mounted) {
+                setState(() {
+                  _isFilterExpanded = !_isFilterExpanded;
+                });
+              }
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.filter_list, size: 20, color: isDarkMode ? Colors.white70 : Colors.grey[700]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Filtres',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(16),
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white70 : Colors.grey[700],
                         ),
-                        const SizedBox(width: 6), // Réduit de 8 à 6
-                        Text(
-                          _filterStartDate != null
-                              ? '${_filterStartDate!.day}/${_filterStartDate!.month}/${_filterStartDate!.year}'
-                              : 'Date début',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(12),
-                            color: isDarkMode
-                                ? Colors.white70
-                                : Colors.grey[600],
+                      ),
+                      // Indicateur si des filtres sont actifs
+                      if (_filterStartDate != null || _filterEndDate != null || _filterType != null)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1565C0),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const SizedBox(width: 4, height: 4),
+                        ),
+                    ],
+                  ),
+                  Icon(
+                    _isFilterExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isFilterExpanded) ...[
+            Divider(height: 1, color: isDarkMode ? Colors.grey[700] : Colors.grey[200]),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Filtre par type
+                  Text(
+                    'Type',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 6), // Réduit de 8 à 6
+                  Wrap(
+                    spacing: 6, // Réduit de 8 à 6
+                    children: [
+                      _buildFilterChip('Tous', null),
+                      _buildFilterChip('Absences', 0),
+                      _buildFilterChip('Présences', 1),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12), // Réduit de 16 à 12
+                  // Filtre par date
+                  Text(
+                    'Période (facultatif)',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 6), // Réduit de 8 à 6
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _selectDate(context, true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ), // Réduit padding
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 6), // Réduit de 8 à 6
+                                Text(
+                                  _filterStartDate != null
+                                      ? '${_filterStartDate!.day}/${_filterStartDate!.month}/${_filterStartDate!.year}'
+                                      : 'Date début',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(12),
+                                    color: isDarkMode
+                                        ? Colors.white70
+                                        : Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6), // Réduit de 8 à 6
+                      Icon(Icons.arrow_forward, size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 6), // Réduit de 8 à 6
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _selectDate(context, false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ), // Réduit padding
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 6), // Réduit de 8 à 6
+                                Text(
+                                  _filterEndDate != null
+                                      ? '${_filterEndDate!.day}/${_filterEndDate!.month}/${_filterEndDate!.year}'
+                                      : 'Date fin',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(12),
+                                    color: isDarkMode
+                                        ? Colors.white70
+                                        : Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8), // Réduit de 12 à 8
+                  if (_filterStartDate != null ||
+                      _filterEndDate != null ||
+                      _filterType != null)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final effectiveModalSetState = _presenceModalSetState;
+                              if (effectiveModalSetState != null && mounted) {
+                                effectiveModalSetState(() {
+                                  _filterStartDate = null;
+                                  _filterEndDate = null;
+                                  _filterType = null;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.clear),
+                            label: const Text('Effacer les filtres'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[600],
+                              foregroundColor: Colors.white,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(width: 6), // Réduit de 8 à 6
-              Icon(Icons.arrow_forward, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 6), // Réduit de 8 à 6
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _selectDate(context, false),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ), // Réduit padding
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 6), // Réduit de 8 à 6
-                        Text(
-                          _filterEndDate != null
-                              ? '${_filterEndDate!.day}/${_filterEndDate!.month}/${_filterEndDate!.year}'
-                              : 'Date fin',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(12),
-                            color: isDarkMode
-                                ? Colors.white70
-                                : Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8), // Réduit de 12 à 8
-          if (_filterStartDate != null ||
-              _filterEndDate != null ||
-              _filterType != null)
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final effectiveModalSetState = _presenceModalSetState;
-                      if (effectiveModalSetState != null && mounted) {
-                        effectiveModalSetState(() {
-                          _filterStartDate = null;
-                          _filterEndDate = null;
-                          _filterType = null;
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.clear),
-                    label: const Text('Effacer les filtres'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[600],
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
             ),
+          ],
         ],
       ),
     );
@@ -11590,57 +11667,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildInfoCard(
-            '🎯 Comportement',
-            'Cher parents,\nMerci de vous impliquer régulièrement dans le suivi et l\'amélioration du résultat scolaire de votre enfant.',
-            Colors.purple,
-          ),
-          const SizedBox(height: 20),
-          _buildBehaviorSummary(),
           const SizedBox(height: 20),
           _buildSanctionsList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBehaviorSummary() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Évaluation comportementale',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildBehaviorItem('Excellent', '⭐', Colors.green),
-              ),
-              Expanded(child: _buildBehaviorItem('Bon', '👍', Colors.blue)),
-              Expanded(
-                child: _buildBehaviorItem('À améliorer', '📈', Colors.orange),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -11674,34 +11702,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildSanctionsList() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.emoji_events, color: Colors.green, size: 24),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Excellent comportement ! Aucune sanction',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF065F46),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return _buildComingSoonContent();
   }
 
   // Section pour les notifications d'échéance

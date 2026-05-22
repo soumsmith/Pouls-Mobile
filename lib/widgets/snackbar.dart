@@ -194,111 +194,124 @@ class _SnackBarOverlayState extends State<_SnackBarOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final bgColor = Color.alphaBlend(widget.backgroundColor.withOpacity(isDark ? 0.2 : 0.1), baseBg);
+    final borderColor = widget.backgroundColor.withOpacity(0.2);
+    
+    // For text color, we try to use a slightly darker shade if it's red, otherwise the base color.
+    // In dark mode, white text is more readable for the message body.
+    final titleColor = widget.backgroundColor == Colors.red || widget.backgroundColor == Colors.red[400] 
+        ? (isDark ? Colors.red[300]! : Colors.red[700]!) 
+        : widget.backgroundColor;
+
     return SlideTransition(
       position: _offsetAnimation,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      child: SafeArea(
         child: Container(
-          margin: const EdgeInsets.all(0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          constraints: BoxConstraints(
-            minHeight: widget.minHeight ?? 60, // Hauteur minimale garantie ou personnalisée
-          ),
-          decoration: BoxDecoration(
-            color: widget.backgroundColor,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // ── Icône ─────────────────────────────────────────────────────────────
-              if (widget.icon != null) ...[
-                Icon(
-                  widget.icon,
-                  color: Colors.white,
-                  size: 24,
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            constraints: BoxConstraints(
+              minHeight: widget.minHeight ?? 50,
+            ),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(width: 12),
               ],
-              
-              // ── Contenu : texte simple, nom en gras ──────────────────────────
-              Expanded(
-                child: RichText(
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      height: 1.5,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: widget.productName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+            ),
+            child: Row(
+              children: [
+                // ── Icône ─────────────────────────────────────────────────────────────
+                if (widget.icon != null) ...[
+                  Icon(
+                    widget.icon,
+                    color: widget.backgroundColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                ] else ...[
+                  Icon(
+                    Icons.info_outline,
+                    color: widget.backgroundColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                
+                // ── Contenu : texte simple, nom en gras ──────────────────────────
+                Expanded(
+                  child: RichText(
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
                       ),
-                      if (widget.message.isNotEmpty) 
-                        TextSpan(
-                          text: ' ${widget.message}',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.normal,
+                      children: [
+                        if (widget.productName.isNotEmpty)
+                          TextSpan(
+                            text: widget.productName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: titleColor,
+                            ),
                           ),
-                        ),
-                    ],
+                        if (widget.message.isNotEmpty) 
+                          TextSpan(
+                            text: widget.productName.isNotEmpty ? ' ${widget.message}' : widget.message,
+                            style: TextStyle(
+                              color: titleColor,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // ── Bouton Annuler optionnel ──────────────────────────────────────
-              if (widget.onUndo != null) ...[
-                const SizedBox(width: 16),
-                GestureDetector(
-                  onTap: () {
-                    widget.onUndo?.call();
-                    widget.onDismiss();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.5),
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                // ── Bouton Annuler optionnel ──────────────────────────────────────
+                if (widget.onUndo != null) ...[
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () {
+                      widget.onUndo?.call();
+                      widget.onDismiss();
+                    },
                     child: Text(
                       'Annuler',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
+                        color: titleColor,
                         fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
+                ],
+
+                // ── Bouton Fermer ────────────────────────────────────────────────
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: widget.onDismiss,
+                  child: Icon(
+                    Icons.close,
+                    color: isDark ? Colors.white54 : Colors.black45,
+                    size: 16,
+                  ),
                 ),
               ],
-
-              // ── Bouton Fermer ────────────────────────────────────────────────
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: widget.onDismiss,
-                child: Icon(
-                  Icons.close,
-                  color: Colors.white.withOpacity(0.7),
-                  size: 18,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

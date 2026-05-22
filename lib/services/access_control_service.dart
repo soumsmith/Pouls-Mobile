@@ -15,8 +15,9 @@ class AccessControlService {
 
   /// Récupère les pointages de contrôle d'accès pour un élève spécifique
   Future<AccessControlResponse> getAccessControlForStudent(
-    String matricule,
-  ) async {
+    String matricule, {
+    String? date,
+  }) async {
     // Récupérer l'ID Vie École depuis le SchoolService
     final vieEcoleId = _schoolService.schoolVieEcoleId;
 
@@ -34,8 +35,9 @@ class AccessControlService {
     );
     print('🏫 École: ${_schoolService.schoolName} (ID Vie École: $vieEcoleId)');
 
+    final dateStr = date ?? "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}";
     final url = Uri.parse(
-      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/controle-acces/$matricule?ecole=$vieEcoleId',
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/controle-acces/$matricule?ecole=$vieEcoleId&date=$dateStr',
     );
 
     try {
@@ -70,10 +72,11 @@ class AccessControlService {
 
   /// Récupère les pointages avec gestion d'erreur améliorée
   Future<List<AccessControlEntry>> getAccessControlEntriesForStudent(
-    String matricule,
-  ) async {
+    String matricule, {
+    String? date,
+  }) async {
     try {
-      final response = await getAccessControlForStudent(matricule);
+      final response = await getAccessControlForStudent(matricule, date: date);
 
       if (response.status) {
         return response.data;

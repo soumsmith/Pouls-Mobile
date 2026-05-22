@@ -72,9 +72,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
           ),
           SliverFillRemaining(
             child: Container(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.black
-                  : Colors.white,
+              color: AppColors.screenBg(context),
               child: errorMessage != null
                   ? _buildErrorState()
                   : Stack(
@@ -85,21 +83,14 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                         // Loader overlay — disparaît une fois le doc chargé
                         if (isLoading)
                           Container(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? Colors.black
-                                : Colors.white,
+                            color: Colors.white,
                             child: Center(
                               child: CustomLoader(
                                 message: 'Chargement du PDF...',
                                 loaderColor: AppColors.screenOrange,
                                 size: 56.0,
                                 showBackground: true,
-                                backgroundColor:
-                                    Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? Colors.grey[800]
-                                    : Colors.white,
+                                backgroundColor: Colors.white,
                               ),
                             ),
                           ),

@@ -461,7 +461,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     setState(() {
       _nomEtablissement = query.trim().isEmpty ? null : query.trim();
     });
-    _searchTimer = Timer(const Duration(milliseconds: 800), _loadEcoles);
+    
+    if (query.trim().isEmpty) {
+      _loadEcoles();
+    } else {
+      _searchTimer = Timer(const Duration(milliseconds: 800), _loadEcoles);
+    }
   }
 
   void _applyAdvancedSearch() {
@@ -520,10 +525,18 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         icon: _isSearching
                             ? Icons.close_rounded
                             : Icons.search_rounded,
-                        onTap: () => setState(() {
-                          _isSearching = !_isSearching;
-                          if (!_isSearching) _searchController.clear();
-                        }),
+                        onTap: () {
+                          setState(() {
+                            _isSearching = !_isSearching;
+                            if (!_isSearching) {
+                              _searchController.clear();
+                              _nomEtablissement = null;
+                            }
+                          });
+                          if (!_isSearching) {
+                            _loadEcoles();
+                          }
+                        },
                       ),
                       const SizedBox(width: 8),
                       _buildHeaderAction(
@@ -872,8 +885,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         child: FilterRowWidget(
           filters: _filters,
           selectedFilter: _selectedFilter,
-          onFilterSelected: (filter) =>
-              setState(() => _selectedFilter = filter),
+          onFilterSelected: (filter) {
+            setState(() {
+              _selectedFilter = filter;
+              _categorie = filter == 'Tous' ? null : filter.toLowerCase();
+            });
+            _loadEcoles();
+          },
         ),
       ),
 

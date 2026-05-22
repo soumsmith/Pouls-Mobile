@@ -18,6 +18,9 @@ import 'dart:developer' as developer;
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
 import '../models/blog.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../config/app_config.dart';
 import '../models/event.dart';
 import '../models/avis.dart';
 import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
@@ -346,6 +349,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   List<CoulisseExcellence> _coulisseExcellenceVideos = [];
   bool _isLoadingCoulisseExcellence = true;
   String? _coulisseExcellenceError;
+  
+  // Variables pour les Résultats Scolaires
+  List<Map<String, dynamic>> _resultatsScolaires = [];
+  bool _isLoadingResultatsScolaires = true;
+  String? _resultatsScolairesError;
 
   // form state
   String _selectedSexe = 'M';
@@ -462,6 +470,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     _loadNotifications(); // Charger les notifications au démarrage
     _loadVisiteGuideeVideos(); // Charger les vidéos de visites guidées
     _loadCoulisseExcellenceVideos(); // Charger les vidéos des Coulisses de l'Excellence
+    _loadResultatsScolaires(); // Charger les résultats scolaires
     _fadeController.forward();
 
     // Initialize search controller
@@ -2752,6 +2761,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section Résultats Scolaires
+        _buildResultatsScolairesSection(isDark),
+        
         // Section École
         SectionRow(title: 'École'),
         const SizedBox(height: 8),
@@ -5070,6 +5082,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final scolaritesParStatut = ScolariteService.separerParStatut(scolarites);
     final affectes = scolaritesParStatut['AFF'] ?? [];
     final nonAffectes = scolaritesParStatut['NAFF'] ?? [];
+    final ecoliers = scolaritesParStatut['ECOLIER'] ?? [];
     final totaux = ScolariteService.calculerTotauxParStatut(scolarites);
     final isExpanded = expandedBranche == branche;
     return GestureDetector(
@@ -5152,22 +5165,39 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildTotalItem(
-                          'Affectés',
-                          totaux['AFF'] ?? 0,
-                          const Color(0xFF3B82F6),
-                          Icons.check_circle_rounded,
+                        Expanded(
+                          child: _buildTotalItem(
+                            'Affectés',
+                            totaux['AFF'] ?? 0,
+                            const Color(0xFF3B82F6),
+                            Icons.check_circle_rounded,
+                          ),
                         ),
                         Container(
                           width: 1,
                           height: 24,
                           color: AppColors.screenDivider,
                         ),
-                        _buildTotalItem(
-                          'Non Affectés',
-                          totaux['NAFF'] ?? 0,
-                          const Color(0xFFEF4444),
-                          Icons.remove_circle_rounded,
+                        Expanded(
+                          child: _buildTotalItem(
+                            'Écolier',
+                            totaux['ECOLIER'] ?? 0,
+                            const Color(0xFF10B981),
+                            Icons.face_rounded,
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: AppColors.screenDivider,
+                        ),
+                        Expanded(
+                          child: _buildTotalItem(
+                            'Non Affectés',
+                            totaux['NAFF'] ?? 0,
+                            const Color(0xFFEF4444),
+                            Icons.remove_circle_rounded,
+                          ),
                         ),
                       ],
                     ),
@@ -5191,6 +5221,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               color: const Color(0xFF3B82F6),
                               isAffecte: true,
                               totalMontant: totaux['AFF'] ?? 0,
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          if (ecoliers.isNotEmpty) ...[
+                            _buildStatutSection(
+                              title: 'Montants écolier',
+                              scolarites: ecoliers,
+                              color: const Color(0xFF10B981),
+                              isAffecte: true,
+                              totalMontant: totaux['ECOLIER'] ?? 0,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -7245,6 +7285,197 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildResultatsScolairesSection(bool isDark) {
+    if (_isLoadingResultatsScolaires) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(20.0),
+        child: CustomLoader(
+          message: 'Chargement des résultats...',
+          loaderColor: AppColors.screenOrange,
+        ),
+      ));
+    }
+
+    if (_resultatsScolairesError != null || _resultatsScolaires.isEmpty) {
+      return const SizedBox.shrink(); // Ne rien afficher si erreur ou pas de données
+    }
+
+    // Regrouper par année
+    Map<String, List<Map<String, dynamic>>> groupedResults = {};
+    for (var res in _resultatsScolaires) {
+      final annee = res["annee"]?.toString() ?? "Inconnue";
+      if (!groupedResults.containsKey(annee)) {
+        groupedResults[annee] = [];
+      }
+      groupedResults[annee]!.add(res);
+    }
+
+    final annees = groupedResults.keys.toList();
+    // Trier les années par ordre décroissant (plus récente en premier) si c'est possible
+    annees.sort((a, b) => b.compareTo(a));
+
+    // Calcul de la hauteur dynamique basée sur l'année ayant le plus d'éléments
+    int maxItems = 0;
+    for (var items in groupedResults.values) {
+      if (items.length > maxItems) {
+        maxItems = items.length;
+      }
+    }
+    
+    int maxRows = (maxItems / 2).ceil();
+    // 50 (en-tête + paddings) + 24 par ligne de résultats (car childAspectRatio = 7.5 et width = ~150)
+    double dynamicHeight = 50.0 + (maxRows * 24.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionRow(title: 'Résultats Scolaires'),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: dynamicHeight, // Hauteur dynamique selon le contenu
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: annees.length,
+            itemBuilder: (context, index) {
+              final annee = annees[index];
+              final items = groupedResults[annee]!;
+              return Container(
+                width: 340, // Un peu plus large pour les textes plus grands
+                margin: const EdgeInsets.only(right: 12),
+                child: _buildResultatAnneeCard(annee, items),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildResultatAnneeCard(String annee, List<Map<String, dynamic>> items) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.screenCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        boxShadow: AppDimensions.getLightShadow(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // En-tête (Année)
+          Text(
+            annee,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(14), // Plus grand
+              color: AppColors.screenTextPrimaryThemed(context),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Liste des niveaux en 2 colonnes strictes
+          Expanded(
+            child: GridView.builder(
+              padding: EdgeInsets.zero,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 7.5, // Ratio plus grand = hauteur de ligne plus petite
+                crossAxisSpacing: 8.0,
+                mainAxisSpacing: 1.0, // Aucun espacement vertical supplémentaire
+              ),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final res = items[index];
+                final niveau = res["niveau"]?.toString() ?? '';
+                final admis = res["admis"]?.toString() ?? '0';
+                final total = res["total"]?.toString() ?? '0';
+                final taux = res["taux_reussite"]?.toString() ?? '0.00';
+                
+                final double tauxValue = double.tryParse(taux) ?? 0.0;
+                final Color tauxColor = tauxValue >= 50.0 ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: RichText(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '$niveau ',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(12),
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.screenTextPrimaryThemed(context),
+                              ),
+                            ),
+                            TextSpan(
+                              text: '($admis/$total)',
+                              style: TextStyle(
+                                fontSize: _textSizeService.getScaledFontSize(11),
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.screenTextSecondaryThemed(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${tauxValue.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(12), // Plus grand
+                        fontWeight: FontWeight.bold,
+                        color: tauxColor,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadResultatsScolaires() async {
+    try {
+      final url = '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/resultatscolaire/${widget.ecole.parametreCode}';
+      print('🌐 GET RESULTATS SCOLAIRES: $url');
+      
+      final response = await http.get(Uri.parse(url));
+      
+      print('📥 RÉPONSE RESULTATS SCOLAIRES (Code: ${response.statusCode})');
+      print('Corps: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _resultatsScolaires = List<Map<String, dynamic>>.from(data);
+            _isLoadingResultatsScolaires = false;
+          });
+        }
+      } else {
+        throw Exception('Erreur de chargement: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _resultatsScolairesError = e.toString();
+          _isLoadingResultatsScolaires = false;
+        });
+      }
+    }
   }
 
   // ── Contact section ────────────────────────────────────────────────────────

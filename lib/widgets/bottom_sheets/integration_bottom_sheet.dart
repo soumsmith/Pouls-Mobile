@@ -177,16 +177,12 @@ class IntegrationBottomSheet extends StatelessWidget {
                   iconSize: 22,
                 ),
                 Flexible(
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    // CORRECTION : plus de reverse:true, plus de padding viewInsets ici
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                    child: IntegrationFormContent(
-                      ecole: ecole,
-                      scaffoldMessengerKey: scaffoldMessengerKey,
-                      onSuccess: onSuccess,
-                      onError: onError,
-                    ),
+                  child: IntegrationFormContent(
+                    scrollController: scrollController,
+                    ecole: ecole,
+                    scaffoldMessengerKey: scaffoldMessengerKey,
+                    onSuccess: onSuccess,
+                    onError: onError,
                   ),
                 ),
               ],
@@ -207,6 +203,7 @@ class IntegrationFormContent extends StatefulWidget {
   final GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
   final void Function(String demandeUid)? onSuccess;
   final void Function(String error)? onError;
+  final ScrollController? scrollController;
 
   const IntegrationFormContent({
     super.key,
@@ -214,6 +211,7 @@ class IntegrationFormContent extends StatefulWidget {
     this.scaffoldMessengerKey,
     this.onSuccess,
     this.onError,
+    this.scrollController,
   });
 
   @override
@@ -941,19 +939,28 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // ── Progress indicator ────────────────────────────────────────────
-        _buildProgressIndicator(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: _buildProgressIndicator(),
+        ),
         const SizedBox(height: 20),
 
         // ── Contenu de l'étape ────────────────────────────────────────────
-        // CORRECTION : pas de Flexible ici (on est déjà dans un SingleChildScrollView parent)
-        // pas de reverse, pas de padding viewInsets
-        _buildCurrentStep(),
+        Flexible(
+          child: SingleChildScrollView(
+            controller: widget.scrollController,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: _buildCurrentStep(),
+          ),
+        ),
 
         const SizedBox(height: 16),
 
         // ── Navigation buttons ────────────────────────────────────────────
-        _buildNavigationButtons(),
-        const SizedBox(height: 20),
+        Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8),
+          child: _buildNavigationButtons(),
+        ),
       ],
     );
   }

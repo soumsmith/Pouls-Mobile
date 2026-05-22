@@ -32,10 +32,13 @@ class PaiementService {
     int montant,
   ) async {
     try {
+      final urlStr = '$baseUrl/scolarite/paiement-en-ligne/$matricule?montant=$montant';
+      print('================= PAIEMENT =================');
+      print('💳 REQUÊTE PAIEMENT - URL: $urlStr');
+      print('💳 REQUÊTE PAIEMENT - METHODE: POST');
+
       final response = await http.post(
-        Uri.parse(
-          '$baseUrl/scolarite/paiement-en-ligne/$matricule?montant=$montant',
-        ),
+        Uri.parse(urlStr),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -43,9 +46,7 @@ class PaiementService {
       );
 
       print('💳 API Paiement - Status: ${response.statusCode}');
-      print(
-        '💳 API Paiement - URL: $baseUrl/scolarite/paiement-en-ligne/$matricule?montant=$montant',
-      );
+      print('💳 API Paiement - Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);

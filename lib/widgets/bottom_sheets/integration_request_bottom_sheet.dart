@@ -832,18 +832,9 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   }
 
   Widget _buildBottomNavigation() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141414) : AppColors.screenCard,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? const Color(0xFF2C2C2C) : AppColors.screenDivider,
-          ),
-        ),
-      ),
-      child: SafeArea(top: false, child: _buildNavigationButtons()),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8),
+      child: _buildNavigationButtons(),
     );
   }
 
@@ -853,7 +844,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     final isLast = _currentStep == 2;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: _currentStep > 0
             ? MainAxisAlignment.spaceBetween
@@ -864,7 +855,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
               onTap: () => setState(() => _currentStep--),
               child: Container(
                 height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
                   borderRadius: BorderRadius.circular(12),

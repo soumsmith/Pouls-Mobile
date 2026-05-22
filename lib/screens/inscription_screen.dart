@@ -2584,17 +2584,6 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  TextButton(
-                    onPressed: () {
-                      timer?.cancel();
-                      Navigator.of(dialogContext).pop();
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red[400],
-                    ),
-                    child: const Text('Fermer / Annuler la vérification'),
-                  ),
                 ],
               ),
             ),
@@ -2606,7 +2595,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     });
 
     int attempts = 0;
-    const int maxAttempts = 24; // 24 * 5s = 120s (2 minutes)
+    const int maxAttempts = 48; // 48 * 5s = 240s (4 minutes)
 
     // Lancement du polling toutes les 5 secondes
     timer = Timer.periodic(const Duration(seconds: 5), (t) async {
@@ -3171,11 +3160,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
-          BottomFadeGradient(height: 100, endColor: screenBgColor),
+          BottomFadeGradient(height: 140, endColor: screenBgColor),
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).padding.bottom,
             child: _buildNavigationButtons(),
           ),
         ],

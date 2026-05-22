@@ -951,11 +951,11 @@ class AppDimensions {
       // Mobile : hauteur selon le nombre de colonnes
       switch (columns) {
         case 2:
-          return 190.0; // 2 colonnes : hauteur standard pour bonne lisibilité
+          return 155.0; // 2 colonnes : hauteur standard pour bonne lisibilité
         case 3:
-          return 160.0; // 3 colonnes : hauteur réduite pour optimiser l'espace
+          return 130.0; // 3 colonnes : hauteur réduite pour optimiser l'espace
         default:
-          return 190.0; // Par défaut : hauteur standard
+          return 155.0; // Par défaut : hauteur standard
       }
     } else if (isSmallTablet(context)) {
       // iPad Mini : hauteur selon le nombre de colonnes

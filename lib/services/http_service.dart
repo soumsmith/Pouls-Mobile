@@ -14,6 +14,7 @@ class HttpService {
     String endpoint, {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
+    bool showNotification = true,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
@@ -32,7 +33,7 @@ class HttpService {
 
       return _handleResponse(response);
     } catch (e) {
-      throw _handleError(e, context: 'POST $endpoint');
+      throw _handleError(e, context: 'POST $endpoint', showNotification: showNotification);
     }
   }
 
@@ -40,6 +41,7 @@ class HttpService {
   static Future<Map<String, dynamic>> get(
     String endpoint, {
     Map<String, String>? headers,
+    bool showNotification = true,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
@@ -64,7 +66,7 @@ class HttpService {
       return _handleResponse(response);
     } catch (e) {
       print('🌐 HttpService Error: $e');
-      throw _handleError(e, context: 'GET $endpoint');
+      throw _handleError(e, context: 'GET $endpoint', showNotification: showNotification);
     }
   }
 
@@ -72,6 +74,7 @@ class HttpService {
   static Future<Map<String, dynamic>> delete(
     String endpoint, {
     Map<String, String>? headers,
+    bool showNotification = true,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
@@ -101,7 +104,7 @@ class HttpService {
       return _handleResponse(response);
     } catch (e) {
       print('🌐 HttpService Error: $e');
-      throw _handleError(e, context: 'DELETE $endpoint');
+      throw _handleError(e, context: 'DELETE $endpoint', showNotification: showNotification);
     }
   }
 
@@ -134,12 +137,12 @@ class HttpService {
   }
 
   /// Traite les erreurs et affiche les notifications appropriées
-  static Exception _handleError(dynamic error, {String? context}) {
+  static Exception _handleError(dynamic error, {String? context, bool showNotification = true}) {
     // Utiliser le handler centralisé pour détecter et notifier
     ApiExceptionHandler.handle(
       error,
       context: context,
-      showNotification: true,
+      showNotification: showNotification,
     );
 
     // Retourner l'exception originale pour ne pas casser le flow existant

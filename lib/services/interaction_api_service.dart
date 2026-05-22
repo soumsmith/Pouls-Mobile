@@ -76,6 +76,7 @@ class InteractionApiService {
 
       final response = await HttpService.get(
         '$_baseUrl/vie-ecoles/interactionslist?video_id=$videoId&type=$type',
+        showNotification: false,
       );
 
       print('💬 Réponse de l\'API: $response');

@@ -716,6 +716,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: DropdownButtonFormField<String>(
                           value: _selectedSecurityQuestion,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Question de sécurité *',
                             labelStyle: TextStyle(
@@ -761,6 +762,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               value: question,
                               child: Text(
                                 question,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,

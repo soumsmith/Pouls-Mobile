@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
 import '../services/mock_api_service.dart';
 import '../models/child.dart';
 import '../config/app_colors.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import 'splash_screen.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
 
@@ -754,7 +756,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                 style: TextStyle(color: AppColors.screenTextSecondary)),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              // Effacer toutes les données stockées
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              
+              // Déconnecter l'utilisateur
+              await AuthService.instance.logout();
+              
+              if (!mounted) return;
+              
+              // Rediriger vers le SplashScreen en réinitialisant la pile de navigation
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const SplashScreen()),
+                (route) => false,
+              );
+            },
             child: Text('Supprimer',
                 style: TextStyle(
                     color: Colors.red[400],

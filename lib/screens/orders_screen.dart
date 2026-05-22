@@ -9,6 +9,7 @@ import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/bottom_fade_gradient.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -179,18 +180,23 @@ class _OrdersScreenState extends State<OrdersScreen>
         children: [
           _buildSearchBar(),
           Expanded(
-            child: CustomScrollView(
-              slivers: [
-                _buildSliverAppBar(),
-                SliverFillRemaining(
-                  child: Column(
-                    children: [
-                      _buildStatsHeader(),
-                      _buildFilterButtons(),
-                      Expanded(child: _buildOrdersList()),
-                    ],
-                  ),
+            child: Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    _buildSliverAppBar(),
+                    SliverFillRemaining(
+                      child: Column(
+                        children: [
+                          _buildStatsHeader(),
+                          _buildFilterButtons(),
+                          Expanded(child: _buildOrdersList()),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                const BottomFadeGradient(),
               ],
             ),
           ),
@@ -513,7 +519,7 @@ class _OrdersScreenState extends State<OrdersScreen>
             child: displayOrders.isEmpty
                 ? _buildEmptyStateArea()
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
                     itemCount: displayOrders.length,
                     itemBuilder: (context, index) => _buildOrderCard(
                       displayOrders[index],

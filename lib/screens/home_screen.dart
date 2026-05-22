@@ -994,21 +994,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Construire la section Événements et Faits Scolaires
   Widget _buildEventsSection() {
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final limit = isTablet ? 6 : 5;
+    
     return Container(
       height: 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _events.length > 5
-            ? 6
-            : _events.length + 1, // 5 événements + bouton Voir+
+        itemCount: _events.length > limit
+            ? limit + 1
+            : _events.length + 1,
         itemBuilder: (context, index) {
-          if (index < _events.length && index < 5) {
-            // Afficher les 5 premiers événements
+          if (index < _events.length && index < limit) {
             return _buildEventCard(_events[index]);
-          } else if (index == 5 ||
-              (index == _events.length && _events.length <= 5)) {
-            // Afficher le bouton Voir+
+          } else if (index == limit ||
+              (index == _events.length && _events.length <= limit)) {
             return _buildSeeMoreEventsCard();
           } else {
             return const SizedBox.shrink();
@@ -1150,21 +1151,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Construire la section Actualités/Blogs
   Widget _buildBlogsSection() {
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final limit = isTablet ? 6 : 5;
+    
     return Container(
       height: 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _blogs.length > 5
-            ? 6
-            : _blogs.length + 1, // 5 blogs + bouton Voir+
+        itemCount: _blogs.length > limit
+            ? limit + 1
+            : _blogs.length + 1,
         itemBuilder: (context, index) {
-          if (index < _blogs.length && index < 5) {
-            // Afficher les 5 premiers blogs
+          if (index < _blogs.length && index < limit) {
             return _buildBlogCard(_blogs[index]);
-          } else if (index == 5 ||
-              (index == _blogs.length && _blogs.length <= 5)) {
-            // Afficher le bouton Voir+
+          } else if (index == limit ||
+              (index == _blogs.length && _blogs.length <= limit)) {
             return _buildSeeMoreBlogsCard();
           } else {
             return const SizedBox.shrink();
@@ -1317,22 +1319,23 @@ class _HomeScreenState extends State<HomeScreen> {
       return const SizedBox.shrink();
     }
 
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final limit = isTablet ? 6 : 5;
+
     return Container(
       height: 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _coulisseVideos.length > 5
-            ? 6
-            : _coulisseVideos.length + 1, // 5 vidéos + bouton Voir+
+        itemCount: _coulisseVideos.length > limit
+            ? limit + 1
+            : _coulisseVideos.length + 1,
         itemBuilder: (context, index) {
-          if (index < _coulisseVideos.length && index < 5) {
-            // Afficher les 5 premières vidéos
+          if (index < _coulisseVideos.length && index < limit) {
             return _buildVideoCard(_coulisseVideos[index]);
-          } else if (index == 5 ||
+          } else if (index == limit ||
               (index == _coulisseVideos.length &&
-                  _coulisseVideos.length <= 5)) {
-            // Afficher le bouton Voir+
+                  _coulisseVideos.length <= limit)) {
             return _buildSeeMoreVideosCard();
           } else {
             return const SizedBox.shrink();
@@ -1470,26 +1473,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Construire la section Visite guidée
-  // Construire la section Visite guidée
   Widget _buildVisiteGuideeSection() {
     if (!_hasVisiteGuideeData) {
       return const SizedBox.shrink();
     }
+
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final limit = isTablet ? 6 : 5;
 
     return Container(
       height: 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _visiteGuideeVideos.length > 5
-            ? 6
+        itemCount: _visiteGuideeVideos.length > limit
+            ? limit + 1
             : _visiteGuideeVideos.length + 1,
         itemBuilder: (context, index) {
-          if (index < _visiteGuideeVideos.length && index < 5) {
+          if (index < _visiteGuideeVideos.length && index < limit) {
             return _buildVisiteGuideeCard(_visiteGuideeVideos[index], index);
-          } else if (index == 5 ||
+          } else if (index == limit ||
               (index == _visiteGuideeVideos.length &&
-                  _visiteGuideeVideos.length <= 5)) {
+                  _visiteGuideeVideos.length <= limit)) {
             return _buildSeeMoreVisiteGuideeCard();
           } else {
             return const SizedBox.shrink();

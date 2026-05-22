@@ -71,6 +71,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
               enableCaption: false,
               forceHD: false,
               loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
+              hideControls: true, // Masquer les contrôles natifs (et le titre/logo de la chaîne en haut)
             ),
           ),
         );

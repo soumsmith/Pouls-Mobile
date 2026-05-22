@@ -413,7 +413,7 @@ class _AddChildScreenState extends State<AddChildScreen>
       print('✅ Élève ajouté localement avec succès');
       setState(() => _isLoading = false);
       if (mounted) {
-        _showSnackbar('Élève ajouté avec succès');
+        // La notification de succès sera affichée par MainScreenWrapper
         
         // Forcer la navigation vers la home screen et remplacer toute la pile
         Navigator.of(context).pushAndRemoveUntil(

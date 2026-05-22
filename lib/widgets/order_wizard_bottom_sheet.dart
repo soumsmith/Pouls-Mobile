@@ -288,47 +288,62 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.70,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header with progress
-            _buildHeader(),
-            
-            // Progress indicator
-            _buildProgressIndicator(),
-            
-            // Content
-            Flexible(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildLivraisonStep(),
-                  _buildCoordonneesStep(),
-                  _buildInfosScolairesStep(),
-                  _buildRecapStep(),
-                ],
-              ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.70,
+      minChildSize: 0.50,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.screenCardThemed(context),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            
-            // Bottom navigation
-            _buildBottomNavigation(),
-          ],
-        ),
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with progress
+                _buildHeader(),
+                
+                // Progress indicator
+                _buildProgressIndicator(),
+                
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    physics: const ClampingScrollPhysics(),
+                    child: _buildCurrentStep(),
+                  ),
+                ),
+                
+                // Bottom navigation
+                _buildBottomNavigation(),
+              ],
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return _buildLivraisonStep();
+      case 1:
+        return _buildCoordonneesStep();
+      case 2:
+        return _buildInfosScolairesStep();
+      case 3:
+        return _buildRecapStep();
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildHeader() {
@@ -457,18 +472,9 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   Widget _buildBottomNavigation() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: BoxDecoration(
-        color: AppColors.screenCardThemed(context),
-        border: Border(
-          top: BorderSide(color: AppColors.screenDividerThemed(context)),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: _buildNavigationButtons(),
-      ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8),
+      child: _buildNavigationButtons(),
     );
   }
 
@@ -642,8 +648,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
 
   
   Widget _buildLivraisonStep() {
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,8 +719,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   Widget _buildCoordonneesStep() {
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -752,8 +756,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   Widget _buildInfosScolairesStep() {
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,8 +812,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   Widget _buildRecapStep() {
     final totalAmount = widget.cart.totalAmount + _prixLivraison;
     
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

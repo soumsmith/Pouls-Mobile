@@ -469,7 +469,7 @@ class PoulsScolaireApiService {
       return null;
     } catch (e) {
       print('❌ Erreur lors de la recherche de l\'élève: $e');
-      ApiExceptionHandler.handle(e, context: 'la recherche de l\'élève');
+      // On ne lance pas ApiExceptionHandler ici car _searchEleve gère l'affichage de l'erreur dans l'UI
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception('Erreur lors de la recherche de l\'élève: $e');

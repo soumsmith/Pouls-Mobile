@@ -618,6 +618,7 @@ class _CartScreenState extends State<CartScreen>
   Widget _buildPriceRow(String label, String value, {bool isTotal = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -627,12 +628,16 @@ class _CartScreenState extends State<CartScreen>
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
-            color: isTotal ? AppColors.shopBlue : AppColors.screenTextPrimaryThemed(context),
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              color: isTotal ? AppColors.shopBlue : AppColors.screenTextPrimaryThemed(context),
+              fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+            ),
           ),
         ),
       ],

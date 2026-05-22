@@ -188,7 +188,6 @@ class _OrdersScreenState extends State<OrdersScreen>
                       _buildStatsHeader(),
                       _buildFilterButtons(),
                       Expanded(child: _buildOrdersList()),
-                      _buildSummaryBar(),
                     ],
                   ),
                 ),
@@ -651,99 +650,6 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   // ─── SUMMARY BAR (miroir du checkout bar du CartScreen) ───────────────────
-  Widget _buildSummaryBar() {
-    final totalOrders = _orders.length;
-    final pendingCount =
-        _orders.where((o) => o.status == OrderStatus.pending).length;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.screenCardThemed(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 20,
-              offset: Offset(0, -4)),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.screenDivider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Résumé',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.screenTextSecondaryThemed(context)),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$totalOrders commande${totalOrders > 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.screenTextPrimaryThemed(context),
-                          letterSpacing: -0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (pendingCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.schedule_rounded,
-                              size: 13, color: Colors.orange),
-                          const SizedBox(width: 5),
-                          Text(
-                            '$pendingCount en attente',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.orange,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────
  Widget _buildEmptyState() {
@@ -1119,63 +1025,62 @@ class _OrderDetailsSheet extends StatelessWidget {
               ),
 
               // ── Boutons d'action fixés en bas (miroir du CartScreen) ──
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                decoration: BoxDecoration(
-                  color: AppColors.screenCardThemed(context),
-                  border:
-                      Border(top: BorderSide(color: AppColors.screenDividerThemed(context))),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Bouton support (outline)
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: double.infinity,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: AppColors.screenSurfaceThemed(context),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                                color: AppColors.screenDividerThemed(context), width: 1.5),
-                          ),
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.headset_mic_outlined,
-                                    size: 18,
-                                    color: AppColors.screenTextSecondaryThemed(context)),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Contacter le support',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.screenTextSecondaryThemed(context),
+              if (order.status == OrderStatus.pending)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  decoration: BoxDecoration(
+                    color: AppColors.screenCardThemed(context),
+                    border:
+                        Border(top: BorderSide(color: AppColors.screenDividerThemed(context))),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Bouton support (outline)
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: double.infinity,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: AppColors.screenSurfaceThemed(context),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: AppColors.screenDividerThemed(context), width: 1.5),
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.headset_mic_outlined,
+                                      size: 18,
+                                      color: AppColors.screenTextSecondaryThemed(context)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Contacter le support',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.screenTextSecondaryThemed(context),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
-                      // Bouton annuler uniquement si pending
-                      if (order.status == OrderStatus.pending) ...[
+                        // Bouton annuler uniquement si pending
                         const SizedBox(height: 10),
                         _CancelButton(order: order),
-                      ],
 
-                      const SizedBox(height: 4),
-                    ],
+                        const SizedBox(height: 4),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
           );
         },

@@ -21,15 +21,19 @@ enum OrderStatus {
       case 'confirmed':
         return OrderStatus.confirmed;
       case 'en traitement':
+      case 'en cours':
       case 'processing':
         return OrderStatus.processing;
       case 'expédiée':
+      case 'expediee':
       case 'shipped':
         return OrderStatus.shipped;
       case 'livrée':
+      case 'livree':
       case 'delivered':
         return OrderStatus.delivered;
       case 'annulée':
+      case 'annulee':
       case 'cancelled':
         return OrderStatus.cancelled;
       case 'remboursée':
@@ -149,18 +153,22 @@ class Order {
         status = OrderStatus.confirmed;
         break;
       case 'en_traitement':
+      case 'en_cours':
       case 'processing':
         status = OrderStatus.processing;
         break;
       case 'expédiée':
+      case 'expediee':
       case 'shipped':
         status = OrderStatus.shipped;
         break;
       case 'livrée':
+      case 'livree':
       case 'delivered':
         status = OrderStatus.delivered;
         break;
       case 'annulée':
+      case 'annulee':
       case 'cancelled':
         status = OrderStatus.cancelled;
         break;

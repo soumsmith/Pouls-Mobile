@@ -78,7 +78,7 @@ class CustomTextField extends StatelessWidget {
             ),
             prefixIcon: Icon(
               icon, 
-              color: hasError ? Colors.red : (iconColor ?? AppColors.screenOrange), 
+              color: hasError ? Colors.red : Colors.grey, 
               size: 18,
             ),
             filled: true,

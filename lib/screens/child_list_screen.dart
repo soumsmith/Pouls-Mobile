@@ -2895,7 +2895,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                             ),
                           ),
                         ],
-                        const SizedBox(width: 10),
+                        const Spacer(),
                         _PulseAnimatedButton(onTap: _showFamilyBottomSheet),
                       ],
                     ),
@@ -4202,10 +4202,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                 imagePath: item['imagePath'] as String?,
                 iconData: item['iconData'] as IconData?,
                 isDark: isDark,
-                mediaWidth: 70,
-                mediaHeight: 70,
+                mediaWidth: screenWidth > 600 ? 100 : 70,
+                mediaHeight: screenWidth > 600 ? 100 : 70,
                 showActionButton: false,
-                mediaBorderRadius: 20,
+                mediaBorderRadius: screenWidth > 600 ? 14 : 20,
                 color: item['color'] as Color,
                 buttonText: item['buttonText'] as String,
                 onTap: () {
@@ -4325,9 +4325,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 2,
-                                  crossAxisSpacing: 50,
-                                  mainAxisSpacing: 12,
-                                  childAspectRatio: 6,
+                                  crossAxisSpacing: 30,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 3.5,
                                 ),
                             itemCount: items.length,
                             itemBuilder: (context, index) =>
@@ -4621,13 +4621,26 @@ class _ChildListScreenState extends State<ChildListScreen>
       finReservation: finReservation,
       montantReservation: montantReservation,
       loadReservationData: () async {
-        // Si les données ne sont pas chargées, on force le chargement
-        if (_apiEcoleData == null &&
-            _matricule != null &&
-            _anneeId != null &&
-            _classeId != null) {
-          await _loadStudentClassInfo();
+        // Si les données ne sont pas chargées, on les charge ici pour afficher le loader du bottom sheet
+        if (_apiEcoleData == null) {
+          if (_ecoleCode == null && _matricule != null && _anneeId != null && _classeId != null) {
+            await _loadStudentClassInfo();
+          }
+
+          if (_ecoleCode != null) {
+            try {
+              final ecoleData = await EcoleEleveService.getEcoleParametresForEleve(_ecoleCode!);
+              if (mounted) {
+                setState(() {
+                  _apiEcoleData = ecoleData;
+                });
+              }
+            } catch (e) {
+              print('Erreur lors du chargement des paramètres de l\'école: $e');
+            }
+          }
         }
+        
         final finalSchoolData = _schoolService.getSchoolData();
         return {
           'debutReservation':
@@ -5533,11 +5546,11 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           prefixIcon: const Icon(
             Icons.edit_calendar_rounded,
-            color: Color(0xFFC2185B),
+            color: Colors.grey,
           ),
           suffixIcon: const Icon(
             Icons.arrow_drop_down_rounded,
-            color: Color(0xFFC2185B),
+            color: Colors.grey,
           ),
           filled: true,
           fillColor: isDark

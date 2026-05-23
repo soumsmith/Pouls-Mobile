@@ -1062,7 +1062,7 @@ class _AddChildScreenState extends State<AddChildScreen>
               ),
               prefixIcon: const Icon(
                 Icons.badge_outlined,
-                color: AppColors.screenOrange,
+                color: Colors.grey,
                 size: 18,
               ),
               filled: true,

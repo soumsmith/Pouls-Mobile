@@ -547,7 +547,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ? Colors.grey.shade600 
                     : const Color(0xFFBBBBBB)),
             prefixIcon: Icon(icon,
-                color: enabled ? AppColors.screenOrange : AppColors.screenTextSecondaryThemed(context), size: 18),
+                color: Colors.grey, size: 18),
             filled: true,
             fillColor: enabled ? AppColors.screenSurfaceThemed(context) : 
                 Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2C2C2E) : const Color(0xFFF5F5F5),

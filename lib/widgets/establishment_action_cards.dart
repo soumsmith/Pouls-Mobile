@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
 import 'image_menu_card_external_title.dart';
 
@@ -48,20 +49,22 @@ class EstablishmentActionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: cardHeight ?? 110,
+      height: cardHeight != null ? cardHeight! + 20 : 130, // Padding for shadows/text
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 16, right: 24),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
+        ),
         itemCount: actions.length,
         itemBuilder: (context, index) {
           final action = actions[index];
-          return _buildActionCard(action, index);
+          return _buildActionCard(context, action, index);
         },
       ),
     );
   }
 
-  Widget _buildActionCard(EstablishmentAction action, int index) {
+  Widget _buildActionCard(BuildContext context, EstablishmentAction action, int index) {
     if (useExternalTitle) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -89,12 +92,12 @@ class EstablishmentActionSection extends StatelessWidget {
             centerTitle: true,
             onTap: action.onTap,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
         ],
       );
     } else {
       return Padding(
-        padding: const EdgeInsets.only(right: 10),
+        padding: EdgeInsets.only(right: AppDimensions.getPaymentBannerCardSpacing(context)),
         child: ImageMenuCardExternalTitle(
           index: index,
           cardKey: action.key,
@@ -210,6 +213,8 @@ class SchoolLifeItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double imageSize = isTablet ? 64.0 : 40.0;
     
     return InkWell(
       onTap: onTap,
@@ -221,13 +226,13 @@ class SchoolLifeItemCard extends StatelessWidget {
             children: [
               // Icon or Image
               Container(
-                width: 40,
-                height: 40,
+                width: imageSize,
+                height: imageSize,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: _buildImageOrIcon(),
+                child: _buildImageOrIcon(imageSize),
               ),
               const SizedBox(width: 12),
               
@@ -297,22 +302,22 @@ class SchoolLifeItemCard extends StatelessWidget {
   }
 
   // Méthode pour gérer l'affichage de l'image ou de l'icône
-  Widget _buildImageOrIcon() {
+  Widget _buildImageOrIcon(double size) {
     // Priorité à l'image si elle est spécifiée
     if (imagePath != null && imagePath!.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Image.asset(
           imagePath!,
-          width: 40,
-          height: 40,
+          width: size,
+          height: size,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             // Si l'image ne se charge pas, afficher l'icône de secours
             return Icon(
               iconData ?? Icons.image,
               color: color,
-              size: 20,
+              size: size / 2,
             );
           },
         ),
@@ -324,7 +329,7 @@ class SchoolLifeItemCard extends StatelessWidget {
       return Icon(
         iconData,
         color: color,
-        size: 20,
+        size: size / 2,
       );
     }
 
@@ -332,7 +337,7 @@ class SchoolLifeItemCard extends StatelessWidget {
     return Icon(
       Icons.image,
       color: color,
-      size: 20,
+      size: size / 2,
     );
   }
 }

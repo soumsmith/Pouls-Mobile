@@ -1140,22 +1140,22 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Action buttons (quick actions) ─────────────────────────────────────────
   Widget _buildActionButtons(bool isDark) {
     return SizedBox(
-      height: 140,
+      height: AppDimensions.getPaymentBannerCardHeight(context) + 20,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 15),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
+        ),
         children: [
           _buildActionButton(
             index: 0,
             cardKey: 'integration',
             title: 'Demande\nintégration',
-            actionText: 'Inscrire',
+            actionText: '',
             imagePath: 'assets/images/icons/integration.png',
-            color: const Color(0xFF10B981),
-            backgroundColor: isDark
-                ? const Color(0xFFF7FEFC).withOpacity(0.15)
-                : const Color(0xFFF7FEFC),
-            textColor: AppColors.screenTextPrimaryThemed(context),
+            color: AppColors.cardLightGrey,
+            backgroundColor: const Color(0xFFF7FEFC),
+            textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => _showActionBottomSheet(
@@ -1163,49 +1163,45 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               _kActions['integration']!,
             ),
           ),
+          SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
           _buildActionButton(
             index: 1,
             cardKey: 'rating',
-            title: 'Donner un \n avis',
-            actionText: 'Évaluer',
+            title: 'Donner un\navis',
+            actionText: '',
             imagePath: 'assets/images/avis-2.jpg',
-            color: const Color(0xFFF59E0B),
-            backgroundColor: isDark
-                ? const Color(0xFFFFFEF7).withOpacity(0.15)
-                : const Color(0xFFFFFEF7),
-            textColor: AppColors.screenTextPrimaryThemed(context),
+            color: AppColors.cardLightGrey,
+            backgroundColor: const Color(0xFFFFFEF7),
+            textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => _showActionBottomSheet('rating', _kActions['rating']!),
           ),
+          SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
           _buildActionButton(
             index: 2,
             cardKey: 'recommend',
-            title: 'Recommandation',
-            actionText: 'Partager',
+            title: 'Recommand-\nation',
+            actionText: '',
             imagePath: 'assets/images/ecole.jpg',
-            color: const Color(0xFF0288D1),
-            backgroundColor: isDark
-                ? const Color(0xFFE3F2FD).withOpacity(0.15)
-                : const Color(0xFFE3F2FD),
-            textColor: AppColors.screenTextPrimaryThemed(context),
+            color: AppColors.cardLightGrey,
+            backgroundColor: const Color(0xFFE3F2FD),
+            textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () =>
                 _showActionBottomSheet('recommend', _kActions['recommend']!),
           ),
+          SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
           _buildActionButton(
             index: 3,
             cardKey: 'events',
-            title: 'Événement scolaire',
-            actionText: 'Voir',
+            title: 'Événement\nscolaire',
+            actionText: '',
             imagePath: 'assets/images/school-event.jpg',
-            color: const Color(0xFF8B5CF6),
-            backgroundColor: isDark
-                ? const Color(0xFFFCFAFF).withOpacity(0.15)
-                : const Color(0xFFFCFAFF),
-            textColor: AppColors.screenTextPrimaryThemed(context),
-
+            color: AppColors.cardLightGrey,
+            backgroundColor: const Color(0xFFFCFAFF),
+            textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
             onTap: () => Navigator.of(
@@ -1230,31 +1226,25 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     required VoidCallback onTap,
     bool allowLineBreak = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: ImageMenuCardExternalTitle(
-        index: index,
-        cardKey: cardKey,
-        title: title,
-        width: 85,
-        height:
-            120, // Augmentation de la hauteur pour accommoder les retours à la ligne
-        imageFlex: 2,
-        imagePath: imagePath,
-        isDark: isDark,
-        titleFontSize: 11,
-        imageBorderRadius: 50,
-        centerTitle: true,
-        color: color,
-        backgroundColor: backgroundColor,
-        textColor: textColor,
-        //actionText: actionText, // Réactivation de actionText
-        actionTextColor: color,
-        enableInnerBorder: true,
-        enableOuterBorder: true,
-        allowLineBreak: allowLineBreak,
-        onTap: onTap,
-      ),
+    return ImageMenuCardExternalTitle(
+      index: index,
+      cardKey: cardKey,
+      title: title,
+      width: AppDimensions.getSquareCardWidthSize(context),
+      height: AppDimensions.getSquareCardHeightSize(context),
+      imageFlex: 2,
+      imagePath: imagePath,
+      isDark: isDark,
+      titleFontSize: AppDimensions.getBottomSheetCardTextSize(context),
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      centerTitle: true,
+      color: color,
+      backgroundColor: isDark ? backgroundColor.withOpacity(0.15) : backgroundColor,
+      textColor: isDark ? color.withOpacity(0.75) : textColor,
+      enableInnerBorder: false,
+      enableOuterBorder: false,
+      allowLineBreak: allowLineBreak,
+      onTap: onTap,
     );
   }
 

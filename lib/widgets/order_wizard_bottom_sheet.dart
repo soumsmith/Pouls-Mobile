@@ -1136,7 +1136,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
-            prefixIcon: Icon(icon, color: AppColors.shopBlue, size: 18),
+            prefixIcon: Icon(icon, color: Colors.grey, size: 18),
             filled: true,
             fillColor: AppColors.screenSurfaceThemed(context),
             contentPadding: const EdgeInsets.symmetric(

@@ -998,7 +998,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
     
     return Container(
-      height: 160,
+      height: isTablet ? 200 : 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1030,8 +1030,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _handleEventAction(event);
       },
       child: Container(
-        width: 120,
-        margin: const EdgeInsets.only(right: 12),
+        width: _getCardWidth(context, 16.0),
+        margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: isDarkMode ? AppColors.grey800 : Colors.white,
@@ -1052,8 +1052,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: Radius.circular(16),
               ),
               child: Container(
-                height: 65,
-                width: 280,
+                height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 95 : 65,
+                width: double.infinity,
                 color: Colors.grey[200],
                 child: event.image != null && event.image!.isNotEmpty
                     ? Image.network(
@@ -1130,8 +1130,8 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: 'd\'événements',
       onTap: _handleSeeMoreEvents,
       icon: Icons.add,
-      width: 120,
-      height: 80,
+      width: _getCardWidth(context, 0.0),
+      height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 100 : 80,
     );
   }
 
@@ -1155,7 +1155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
     
     return Container(
-      height: 160,
+      height: isTablet ? 200 : 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1187,8 +1187,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _handleBlogAction(blog);
       },
       child: Container(
-        width: 120,
-        margin: const EdgeInsets.only(right: 12),
+        width: _getCardWidth(context, 16.0),
+        margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: isDarkMode ? AppColors.grey800 : Colors.white,
@@ -1209,8 +1209,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: Radius.circular(16),
               ),
               child: Container(
-                height: 65,
-                width: 280,
+                height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 95 : 65,
+                width: double.infinity,
                 color: Colors.grey[200],
                 child: blog.image != null && blog.image!.isNotEmpty
                     ? Image.network(
@@ -1287,8 +1287,8 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: 'd\'actualités',
       onTap: _handleSeeMoreBlogs,
       icon: Icons.add,
-      width: 120,
-      height: 80,
+      width: _getCardWidth(context, 0.0),
+      height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 100 : 80,
     );
   }
 
@@ -1314,6 +1314,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Construire la section Couliste de l'Excellence
+  // Helper pour calculer la largeur des cartes dynamiquement
+  double _getCardWidth(BuildContext context, double rightMargin) {
+    final isTablet = AppDimensions.isTablet(context) ||
+        AppDimensions.isLargeTablet(context) ||
+        AppDimensions.isDesktop(context);
+    if (isTablet) {
+      final availableWidth = MediaQuery.of(context).size.width - 32.0; // padding 16 left, 16 right
+      return (availableWidth / 5.2) - rightMargin;
+    }
+    return 120.0;
+  }
+
   Widget _buildCoulisteSection() {
     if (_coulisseVideos.isEmpty) {
       return const SizedBox.shrink();
@@ -1323,7 +1335,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
 
     return Container(
-      height: 160,
+      height: isTablet ? 200 : 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1352,7 +1364,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(
-        right: 10,
+        right: 16,
       ), // Espacement horizontal augmenté
       child: ImageMenuCardExternalTitle(
         index: 0,
@@ -1367,8 +1379,8 @@ class _HomeScreenState extends State<HomeScreen> {
         //tag: schoolData['tag'] as String?, // Permettre null
         titleMaxLines: 1,
         externalTitleSpacing: 4,
-        height: 140, // Hauteur réduite pour éviter l'overflow
-        width: 120,
+        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 180 : 140, // Hauteur réduite pour éviter l'overflow
+        width: _getCardWidth(context, 16.0),
         allowLineBreak: false,
         centerTitle: false,
         showPlayIcon: true, // Activer l'icône de play pour les vidéos
@@ -1466,8 +1478,8 @@ class _HomeScreenState extends State<HomeScreen> {
         subtitle: 'de vidéos',
         onTap: _handleSeeMoreVideos,
         icon: Icons.play_arrow,
-        width: 120,
-        height: 100,
+        width: _getCardWidth(context, 16.0),
+        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 120 : 100,
       ),
     );
   }
@@ -1482,7 +1494,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
 
     return Container(
-      height: 160,
+      height: isTablet ? 200 : 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1517,15 +1529,15 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: 'de visites',
       onTap: _handleSeeMoreVisiteGuidee,
       icon: Icons.play_circle_outline,
-      width: 120,
-      height: 80,
+      width: _getCardWidth(context, 0.0),
+      height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 100 : 80,
     );
   }
 
   // Construire une carte pour la visite guidée
   Widget _buildVisiteGuideeCard(Video video, int index) {
     return Padding(
-      padding: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.only(right: 16),
       child: ImageMenuCardExternalTitle(
         index: index,
         cardKey: 'visite_${video.youtubeVideoId}',
@@ -1537,8 +1549,8 @@ class _HomeScreenState extends State<HomeScreen> {
         color: const Color(0xFF3B82F6),
         titleMaxLines: 2,
         externalTitleSpacing: 4,
-        height: 140,
-        width: 120,
+        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 180 : 140,
+        width: _getCardWidth(context, 16.0),
         allowLineBreak: true,
         centerTitle: false,
         showPlayIcon: true,

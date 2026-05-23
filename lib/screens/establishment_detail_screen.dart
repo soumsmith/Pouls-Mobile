@@ -2738,42 +2738,46 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         ),
         const SizedBox(height: 20),
 
-        // Section Visites Guidées
-        SectionRow(
-          title: 'VISITES GUIDÉES',
-          onSeeMore: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VisiteGuideeVideoFeedScreen(
-                  videos: _visiteGuideeVideos,
-                  initialIndex: 0,
+        if (_isLoadingVisiteGuidee || _visiteGuideeVideos.isNotEmpty) ...[
+          // Section Visites Guidées
+          SectionRow(
+            title: 'VISITES GUIDÉES',
+            onSeeMore: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VisiteGuideeVideoFeedScreen(
+                    videos: _visiteGuideeVideos,
+                    initialIndex: 0,
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildVisiteGuideeSection(),
-        const SizedBox(height: 20),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildVisiteGuideeSection(),
+          const SizedBox(height: 20),
+        ],
 
-        // Section Coulisses de l'Excellence
-        SectionRow(
-          title: 'COULISSES DE L\'EXCELLENCE',
-          onSeeMore: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CoulisseVideoFeedScreen(
-                  videos: _coulisseExcellenceVideos,
-                  initialIndex: 0,
+        if (_isLoadingCoulisseExcellence || _coulisseExcellenceVideos.isNotEmpty) ...[
+          // Section Coulisses de l'Excellence
+          SectionRow(
+            title: 'COULISSES DE L\'EXCELLENCE',
+            onSeeMore: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CoulisseVideoFeedScreen(
+                    videos: _coulisseExcellenceVideos,
+                    initialIndex: 0,
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 10),
-        _buildCoulisseExcellenceSection(),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _buildCoulisseExcellenceSection(),
+        ],
       ],
     );
   }
@@ -7318,13 +7322,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   Widget _buildResultatAnneeCard(String annee, List<Map<String, dynamic>> items) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
-        boxShadow: AppDimensions.getLightShadow(context),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.15),
+        ),
+        boxShadow: isDark ? null : AppDimensions.getLightShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

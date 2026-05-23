@@ -315,10 +315,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<SchoolSupply> _schoolSupplies = [];
   bool _isLoading = true;
   bool _isLoadingSupplies = false;
-  
+
   // Données de l'école récupérées directement depuis l'API spécifique à l'élève
   dynamic _apiEcoleData;
-  
+
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
   final SchoolSupplyService _schoolSupplyService = SchoolSupplyService();
@@ -656,7 +656,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       final notesResult = await apiService.getNotesForChild(widget.child.id);
       await Future.delayed(const Duration(milliseconds: 200));
 
-      final timetableResult = await apiService.getTimetableForChild(widget.child.id);
+      final timetableResult = await apiService.getTimetableForChild(
+        widget.child.id,
+      );
       await Future.delayed(const Duration(milliseconds: 200));
 
       final messagesResult = await apiService.getMessages(
@@ -1437,7 +1439,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       ),
     );
   }
-
 
   void _showSanctionsBottomSheet() {
     showModalBottomSheet(
@@ -2731,9 +2732,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
       elevation: 8,
       onSelected: (value) {
@@ -2897,9 +2896,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                           ),
                         ],
                         const SizedBox(width: 10),
-                        _PulseAnimatedButton(
-                          onTap: _showFamilyBottomSheet,
-                        ),
+                        _PulseAnimatedButton(onTap: _showFamilyBottomSheet),
                       ],
                     ),
                   ],
@@ -3874,7 +3871,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         SectionRow(title: 'Paiements & Inscription'),
         Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.getPaymentBannerCardSpacing(context) * 0.8,
+            horizontal:
+                AppDimensions.getPaymentBannerCardSpacing(context) * 0.8,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3883,7 +3881,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 builder: (context) {
                   final isTablet = MediaQuery.of(context).size.width > 600;
                   final crossAxisCount = isTablet ? 6 : 4;
-                  
+
                   final List<Widget> cards = [
                     _buildCard(
                       index: 0,
@@ -3897,7 +3895,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       enableInnerBorder: false,
                       enableOuterBorder: false,
                       innerBorderColor: const Color(0xFF93C5FD),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
@@ -3916,7 +3916,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       enableInnerBorder: false,
                       enableOuterBorder: false,
                       innerBorderColor: const Color(0xFF86EFAC),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
@@ -3942,7 +3944,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       allowLineBreak: true,
                       enableOuterBorder: false,
                       innerBorderColor: const Color(0xFF81C784),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
@@ -3960,8 +3964,15 @@ class _ChildListScreenState extends State<ChildListScreen>
                       enableInnerBorder: false,
                       enableOuterBorder: false,
                       color: AppColors.cardLightGrey,
-                      innerBorderColor: const Color.fromARGB(255, 253, 253, 253),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      innerBorderColor: const Color.fromARGB(
+                        255,
+                        253,
+                        253,
+                        253,
+                      ),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
@@ -3980,12 +3991,15 @@ class _ChildListScreenState extends State<ChildListScreen>
                       enableOuterBorder: false,
                       allowLineBreak: true,
                       innerBorderColor: const Color(0xFF6EE7B7),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       onTap: () {
-                        final updatedChild = _ecoleCode != null && _ecoleCode!.isNotEmpty
+                        final updatedChild =
+                            _ecoleCode != null && _ecoleCode!.isNotEmpty
                             ? widget.child.copyWith(ecoleCode: _ecoleCode)
                             : widget.child;
 
@@ -4001,9 +4015,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                         );
                       },
                     ),
-                    
 
-                    
                     _buildCard(
                       index: 4,
                       cardKey: 'scolarite',
@@ -4017,7 +4029,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       enableInnerBorder: false,
                       enableOuterBorder: false,
                       innerBorderColor: const Color.fromARGB(255, 72, 71, 70),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
@@ -4034,7 +4048,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                             isLoading: _isLoadingScolarite,
                             onRefresh: _loadScolariteData,
                             title: 'Scolarité',
-                            description: 'Consultez les informations de scolarité',
+                            description:
+                                'Consultez les informations de scolarité',
                             primaryColor: const Color(0xFFF59E0B),
                             backgroundColor: const Color(0xFFFFFEF7),
                             iconColor: const Color(0xFFD97706),
@@ -4056,7 +4071,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       enableOuterBorder: false,
                       allowLineBreak: true,
                       innerBorderColor: const Color(0xFFC4B5FD),
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
@@ -4066,7 +4083,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                         childFullName: widget.child.fullName,
                       ),
                     ),
-                    
                   ];
 
                   List<Widget> rows = [];
@@ -4074,15 +4090,19 @@ class _ChildListScreenState extends State<ChildListScreen>
                     List<Widget> rowChildren = [];
                     for (int j = 0; j < crossAxisCount; j++) {
                       if (i + j < cards.length) {
-                        rowChildren.add(Expanded(child: Center(child: cards[i + j])));
+                        rowChildren.add(
+                          Expanded(child: Center(child: cards[i + j])),
+                        );
                       } else {
                         rowChildren.add(const Expanded(child: SizedBox()));
                       }
                     }
-                    rows.add(Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: rowChildren,
-                    ));
+                    rows.add(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: rowChildren,
+                      ),
+                    );
                     if (i + crossAxisCount < cards.length) {
                       rows.add(const SizedBox(height: 10));
                     }
@@ -4208,9 +4228,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text(
-                            'Informations élève non disponibles',
-                          ),
+                          content: Text('Informations élève non disponibles'),
                         ),
                       );
                     }
@@ -4271,7 +4289,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 margin: const EdgeInsets.only(bottom: 16),
                 child: Card(
                   elevation: 0,
-                  color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F7FA),
+                  color: isDark
+                      ? const Color(0xFF1E1E1E)
+                      : const Color(0xFFF5F7FA),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -4285,11 +4305,15 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 buildCard(entry.value),
                                 if (!isLast)
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
                                     child: Divider(
                                       height: 1,
                                       thickness: 1,
-                                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+                                      color:
+                                          (isDark ? Colors.white : Colors.black)
+                                              .withOpacity(0.08),
                                     ),
                                   ),
                               ];
@@ -4298,14 +4322,16 @@ class _ChildListScreenState extends State<ChildListScreen>
                         : GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 50,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 6,
-                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 50,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: 6,
+                                ),
                             itemCount: items.length,
-                            itemBuilder: (context, index) => buildCard(items[index]),
+                            itemBuilder: (context, index) =>
+                                buildCard(items[index]),
                           ),
                   ),
                 ),
@@ -4417,7 +4443,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   isDark: isDark,
                   useExternalTitle: true,
                   cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
-                  cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+                  cardHeight:
+                      AppDimensions.getHorizontalMenuCardHeight(context) + 30,
                 ),
                 const SizedBox(height: 16),
                 buildGroupContainer(group3Items),
@@ -4530,7 +4557,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const MyTicketsScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const MyTicketsScreen(),
+                  ),
                 );
               },
             ),
@@ -4549,7 +4578,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 } else {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Impossible d\'ouvrir le lien')),
+                      const SnackBar(
+                        content: Text('Impossible d\'ouvrir le lien'),
+                      ),
                     );
                   }
                 }
@@ -4571,11 +4602,16 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showReservationPaiementBottomSheet() {
     final schoolData = _schoolService.getSchoolData();
-    
+
     // On passe les données immédiates s'il y en a
-    final finReservation = _apiEcoleData?.finReservation ?? schoolData?['fin_reservation']?.toString();
-    final debutReservation = _apiEcoleData?.debutReservation ?? schoolData?['debut_reservation']?.toString();
-    final montantReservation = _apiEcoleData?.montantReservation ?? schoolData?['montant_reservation'];
+    final finReservation =
+        _apiEcoleData?.finReservation ??
+        schoolData?['fin_reservation']?.toString();
+    final debutReservation =
+        _apiEcoleData?.debutReservation ??
+        schoolData?['debut_reservation']?.toString();
+    final montantReservation =
+        _apiEcoleData?.montantReservation ?? schoolData?['montant_reservation'];
 
     PaymentBottomSheet.show(
       context: context,
@@ -4586,18 +4622,28 @@ class _ChildListScreenState extends State<ChildListScreen>
       montantReservation: montantReservation,
       loadReservationData: () async {
         // Si les données ne sont pas chargées, on force le chargement
-        if (_apiEcoleData == null && _matricule != null && _anneeId != null && _classeId != null) {
+        if (_apiEcoleData == null &&
+            _matricule != null &&
+            _anneeId != null &&
+            _classeId != null) {
           await _loadStudentClassInfo();
         }
         final finalSchoolData = _schoolService.getSchoolData();
         return {
-          'debutReservation': _apiEcoleData?.debutReservation ?? finalSchoolData?['debut_reservation']?.toString(),
-          'finReservation': _apiEcoleData?.finReservation ?? finalSchoolData?['fin_reservation']?.toString(),
-          'montantReservation': _apiEcoleData?.montantReservation ?? finalSchoolData?['montant_reservation'],
+          'debutReservation':
+              _apiEcoleData?.debutReservation ??
+              finalSchoolData?['debut_reservation']?.toString(),
+          'finReservation':
+              _apiEcoleData?.finReservation ??
+              finalSchoolData?['fin_reservation']?.toString(),
+          'montantReservation':
+              _apiEcoleData?.montantReservation ??
+              finalSchoolData?['montant_reservation'],
         };
       },
       title: 'Réservation en ligne',
-      description: 'Réservez la place de ${widget.child.firstName} pour l\'année prochaine',
+      description:
+          'Réservez la place de ${widget.child.firstName} pour l\'année prochaine',
       icon: Icons.event_available,
       onPayment: (montant, matricule) async {
         // Créer des fonctions factices pour setState et setLoading
@@ -4752,7 +4798,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         );
         if (launched) {
           // Afficher la modale de vérification (polling)
-          final uidToCheck = _eleveDetail?['uid']?.toString() ?? _matricule ?? '';
+          final uidToCheck =
+              _eleveDetail?['uid']?.toString() ?? _matricule ?? '';
           _showPaymentVerificationLoader(uidToCheck);
         } else {
           CartSnackBar.showOverlay(
@@ -4847,7 +4894,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           CartSnackBar.showOverlay(
             context,
             productName: 'Délai dépassé',
-            message: 'L\'opération a échoué suite à une longue attente. Veuillez vérifier et réessayer.',
+            message:
+                'L\'opération a échoué suite à une longue attente. Veuillez vérifier et réessayer.',
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
           );
@@ -4858,7 +4906,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       isChecking = true;
 
       try {
-        final success = await api_service.InscriptionApiService.checkPaiementStatus(uidEleve);
+        final success = await api_service
+            .InscriptionApiService.checkPaiementStatus(uidEleve);
         if (success && mounted) {
           t.cancel();
           // Fermer le loader
@@ -4867,7 +4916,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           CartSnackBar.showOverlay(
             context,
             productName: 'Paiement validé',
-            message: 'Le paiement de la scolarité pour ${widget.child.firstName} a été enregistré avec succès !',
+            message:
+                'Le paiement de la scolarité pour ${widget.child.firstName} a été enregistré avec succès !',
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           );
@@ -5396,25 +5446,38 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildAccessDateSelector() {
     final isDark = _themeService.isDarkMode;
-    
+
     // Helper pour obtenir le nom du mois
     String getMonthName(int month) {
       const months = [
-        '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        '',
+        'Janvier',
+        'Février',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juillet',
+        'Août',
+        'Septembre',
+        'Octobre',
+        'Novembre',
+        'Décembre',
       ];
       return months[month];
     }
 
-    final String formattedDate = '${_selectedAccessDate.day.toString().padLeft(2, '0')} '
+    final String formattedDate =
+        '${_selectedAccessDate.day.toString().padLeft(2, '0')} '
         '${getMonthName(_selectedAccessDate.month)} '
         '${_selectedAccessDate.year}';
-        
+
     final now = DateTime.now();
-    final isToday = _selectedAccessDate.year == now.year &&
-                    _selectedAccessDate.month == now.month &&
-                    _selectedAccessDate.day == now.day;
-                    
+    final isToday =
+        _selectedAccessDate.year == now.year &&
+        _selectedAccessDate.month == now.month &&
+        _selectedAccessDate.day == now.day;
+
     final displayText = isToday ? "Aujourd'hui, $formattedDate" : formattedDate;
 
     return Padding(
@@ -5430,17 +5493,19 @@ class _ChildListScreenState extends State<ChildListScreen>
             builder: (context, child) {
               return Theme(
                 data: Theme.of(context).copyWith(
-                  colorScheme: isDark ? const ColorScheme.dark(
-                    primary: Color(0xFFC2185B),
-                    onPrimary: Colors.white,
-                    surface: Color(0xFF1E1E1E),
-                    onSurface: Colors.white,
-                  ) : const ColorScheme.light(
-                    primary: Color(0xFFC2185B),
-                    onPrimary: Colors.white,
-                    surface: Colors.white,
-                    onSurface: Colors.black87,
-                  ),
+                  colorScheme: isDark
+                      ? const ColorScheme.dark(
+                          primary: Color(0xFFC2185B),
+                          onPrimary: Colors.white,
+                          surface: Color(0xFF1E1E1E),
+                          onSurface: Colors.white,
+                        )
+                      : const ColorScheme.light(
+                          primary: Color(0xFFC2185B),
+                          onPrimary: Colors.white,
+                          surface: Colors.white,
+                          onSurface: Colors.black87,
+                        ),
                 ),
                 child: child!,
               );
@@ -5475,8 +5540,8 @@ class _ChildListScreenState extends State<ChildListScreen>
             color: Color(0xFFC2185B),
           ),
           filled: true,
-          fillColor: isDark 
-              ? const Color(0xFFC2185B).withOpacity(0.1) 
+          fillColor: isDark
+              ? const Color(0xFFC2185B).withOpacity(0.1)
               : const Color(0xFFC2185B).withOpacity(0.05),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -5492,12 +5557,12 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: Color(0xFFC2185B),
-              width: 1.5,
-            ),
+            borderSide: const BorderSide(color: Color(0xFFC2185B), width: 1.5),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -6173,10 +6238,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 20),
-          _buildDynamicAccessLogs(),
-        ],
+        children: [const SizedBox(height: 20), _buildDynamicAccessLogs()],
       ),
     );
   }
@@ -7087,9 +7149,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildDynamicMessages(),
-        ],
+        children: [_buildDynamicMessages()],
       ),
     );
   }
@@ -8021,7 +8081,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         print('✅ Données de l\'école chargées');
       }
 
-      final dateStr = '${_selectedAccessDate.year}-${_selectedAccessDate.month.toString().padLeft(2, '0')}-${_selectedAccessDate.day.toString().padLeft(2, '0')}';
+      final dateStr =
+          '${_selectedAccessDate.year}-${_selectedAccessDate.month.toString().padLeft(2, '0')}-${_selectedAccessDate.day.toString().padLeft(2, '0')}';
       final entries = await _accessControlService
           .getAccessControlEntriesForStudent(matricule, date: dateStr);
       print('✅ Réponse reçue: ${entries.length} pointages');
@@ -8539,9 +8600,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildNotesList(),
-        ],
+        children: [_buildNotesList()],
       ),
     );
   }
@@ -9318,9 +9377,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildDifficultiesList(),
-        ],
+        children: [_buildDifficultiesList()],
       ),
     );
   }
@@ -9494,9 +9551,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildEventsList(),
-        ],
+        children: [_buildEventsList()],
       ),
     );
   }
@@ -10626,9 +10681,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildHomeworkContent(),
-        ],
+        children: [_buildHomeworkContent()],
       ),
     );
   }
@@ -10796,18 +10849,24 @@ class _ChildListScreenState extends State<ChildListScreen>
                       style: TextStyle(
                         fontSize: _textSizeService.getScaledFontSize(15),
                         fontWeight: FontWeight.bold,
-                        color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                        color: isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1F2937),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: (_statistiquesPresence!.tauxPresence >= 95
-                                ? const Color(0xFF10B981)
-                                : _statistiquesPresence!.tauxPresence >= 90
+                        color:
+                            (_statistiquesPresence!.tauxPresence >= 95
+                                    ? const Color(0xFF10B981)
+                                    : _statistiquesPresence!.tauxPresence >= 90
                                     ? const Color(0xFFF59E0B)
                                     : const Color(0xFFEF4444))
-                            .withOpacity(0.15),
+                                .withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -10818,8 +10877,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                           color: _statistiquesPresence!.tauxPresence >= 95
                               ? const Color(0xFF10B981)
                               : _statistiquesPresence!.tauxPresence >= 90
-                                  ? const Color(0xFFF59E0B)
-                                  : const Color(0xFFEF4444),
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFFEF4444),
                         ),
                       ),
                     ),
@@ -11417,7 +11476,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.filter_list, size: 20, color: isDarkMode ? Colors.white70 : Colors.grey[700]),
+                      Icon(
+                        Icons.filter_list,
+                        size: 20,
+                        color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Filtres',
@@ -11428,7 +11491,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       ),
                       // Indicateur si des filtres sont actifs
-                      if (_filterStartDate != null || _filterEndDate != null || _filterType != null)
+                      if (_filterStartDate != null ||
+                          _filterEndDate != null ||
+                          _filterType != null)
                         Container(
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.all(4),
@@ -11441,7 +11506,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ],
                   ),
                   Icon(
-                    _isFilterExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    _isFilterExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: isDarkMode ? Colors.white70 : Colors.grey[700],
                   ),
                 ],
@@ -11449,7 +11516,10 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
           ),
           if (_isFilterExpanded) ...[
-            Divider(height: 1, color: isDarkMode ? Colors.grey[700] : Colors.grey[200]),
+            Divider(
+              height: 1,
+              color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
+            ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -11496,7 +11566,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                               vertical: 6,
                             ), // Réduit padding
                             decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                              color: isDarkMode
+                                  ? Colors.grey[700]
+                                  : Colors.grey[100],
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -11512,7 +11584,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       ? '${_filterStartDate!.day}/${_filterStartDate!.month}/${_filterStartDate!.year}'
                                       : 'Date début',
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(12),
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(12),
                                     color: isDarkMode
                                         ? Colors.white70
                                         : Colors.grey[600],
@@ -11524,7 +11597,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       ),
                       const SizedBox(width: 6), // Réduit de 8 à 6
-                      Icon(Icons.arrow_forward, size: 16, color: Colors.grey[600]),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
                       const SizedBox(width: 6), // Réduit de 8 à 6
                       Expanded(
                         child: GestureDetector(
@@ -11535,7 +11612,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                               vertical: 6,
                             ), // Réduit padding
                             decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.grey[700] : Colors.grey[100],
+                              color: isDarkMode
+                                  ? Colors.grey[700]
+                                  : Colors.grey[100],
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -11551,7 +11630,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                       ? '${_filterEndDate!.day}/${_filterEndDate!.month}/${_filterEndDate!.year}'
                                       : 'Date fin',
                                   style: TextStyle(
-                                    fontSize: _textSizeService.getScaledFontSize(12),
+                                    fontSize: _textSizeService
+                                        .getScaledFontSize(12),
                                     color: isDarkMode
                                         ? Colors.white70
                                         : Colors.grey[600],
@@ -11574,7 +11654,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              final effectiveModalSetState = _presenceModalSetState;
+                              final effectiveModalSetState =
+                                  _presenceModalSetState;
                               if (effectiveModalSetState != null && mounted) {
                                 effectiveModalSetState(() {
                                   _filterStartDate = null;
@@ -11666,10 +11747,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 20),
-          _buildSanctionsList(),
-        ],
+        children: [const SizedBox(height: 20), _buildSanctionsList()],
       ),
     );
   }
@@ -12178,13 +12256,15 @@ class _ChildListScreenState extends State<ChildListScreen>
   }) {
     final isDark = _themeService.isDarkMode;
     // Couleurs subtiles basées sur la couleur de la carte
-    final bgColor = isDark
-        ? color.withOpacity(0.12)
-        : color.withOpacity(0.07);
+    final bgColor = isDark ? color.withOpacity(0.12) : color.withOpacity(0.07);
     final borderColor = color.withOpacity(isDark ? 0.25 : 0.18);
     final iconBg = color.withOpacity(isDark ? 0.25 : 0.15);
-    final valueColor = isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E);
-    final titleColor = isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF6B7280);
+    final valueColor = isDark
+        ? Colors.white.withOpacity(0.92)
+        : const Color(0xFF1A1A2E);
+    final titleColor = isDark
+        ? Colors.white.withOpacity(0.5)
+        : const Color(0xFF6B7280);
 
     return Material(
       color: Colors.transparent,
@@ -12310,9 +12390,12 @@ class _ExtraScolaireSheetContentState
 
     final services = rawServices.map((service) {
       if (service is Map<String, dynamic>) {
-        final serviceUid = service['service_uid']?.toString() ?? service['service']?.toString() ?? '';
+        final serviceUid =
+            service['service_uid']?.toString() ??
+            service['service']?.toString() ??
+            '';
         final rubrique = service['rubrique']?.toString() ?? '';
-        
+
         String titre = service['titre']?.toString() ?? '';
         if (titre.isEmpty && rubrique.isNotEmpty) {
           final clean = rubrique.trim().toUpperCase();
@@ -12730,7 +12813,10 @@ class _ExtraScolaireSheetContentState
                   ),
                 ],
               ),
-              if (debut.isNotEmpty || fin.isNotEmpty || (activeService?['abonnement_date']?.toString() ?? '').isNotEmpty) ...[
+              if (debut.isNotEmpty ||
+                  fin.isNotEmpty ||
+                  (activeService?['abonnement_date']?.toString() ?? '')
+                      .isNotEmpty) ...[
                 const SizedBox(height: 10),
                 const Divider(height: 1),
                 const SizedBox(height: 10),
@@ -12759,7 +12845,8 @@ class _ExtraScolaireSheetContentState
                 const SizedBox(height: 10),
                 const Divider(height: 1),
                 const SizedBox(height: 12),
-                if ((_serviceDetails!['trajet']?.toString() ?? '').isNotEmpty) ...[
+                if ((_serviceDetails!['trajet']?.toString() ?? '')
+                    .isNotEmpty) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -12776,7 +12863,8 @@ class _ExtraScolaireSheetContentState
                             Text(
                               'Trajet',
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(10),
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.bold,
                               ),
@@ -12785,8 +12873,11 @@ class _ExtraScolaireSheetContentState
                             Text(
                               _serviceDetails!['trajet'].toString(),
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(12),
-                                color: widget.isDark ? Colors.white : const Color(0xFF1F2937),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(12),
+                                color: widget.isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1F2937),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -12797,7 +12888,8 @@ class _ExtraScolaireSheetContentState
                   ),
                   const SizedBox(height: 10),
                 ],
-                if ((_serviceDetails!['point_arret']?.toString() ?? '').isNotEmpty) ...[
+                if ((_serviceDetails!['point_arret']?.toString() ?? '')
+                    .isNotEmpty) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -12814,7 +12906,8 @@ class _ExtraScolaireSheetContentState
                             Text(
                               'Point d\'arrêt',
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(10),
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.bold,
                               ),
@@ -12823,8 +12916,11 @@ class _ExtraScolaireSheetContentState
                             Text(
                               _serviceDetails!['point_arret'].toString(),
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(12),
-                                color: widget.isDark ? Colors.white : const Color(0xFF1F2937),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(12),
+                                color: widget.isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1F2937),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -12835,9 +12931,12 @@ class _ExtraScolaireSheetContentState
                   ),
                   const SizedBox(height: 10),
                 ],
-                if ((_serviceDetails!['description']?.toString() ?? '').isNotEmpty && 
-                    _serviceDetails!['description']?.toString() != _serviceDetails!['point_arret']?.toString() &&
-                    _serviceDetails!['description']?.toString() != _serviceDetails!['trajet']?.toString()) ...[
+                if ((_serviceDetails!['description']?.toString() ?? '')
+                        .isNotEmpty &&
+                    _serviceDetails!['description']?.toString() !=
+                        _serviceDetails!['point_arret']?.toString() &&
+                    _serviceDetails!['description']?.toString() !=
+                        _serviceDetails!['trajet']?.toString()) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -12854,7 +12953,8 @@ class _ExtraScolaireSheetContentState
                             Text(
                               'Description',
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(10),
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.bold,
                               ),
@@ -12863,8 +12963,11 @@ class _ExtraScolaireSheetContentState
                             Text(
                               _serviceDetails!['description'].toString(),
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(12),
-                                color: widget.isDark ? Colors.grey[300] : const Color(0xFF4B5563),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(12),
+                                color: widget.isDark
+                                    ? Colors.grey[300]
+                                    : const Color(0xFF4B5563),
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -12875,7 +12978,9 @@ class _ExtraScolaireSheetContentState
                   ),
                   const SizedBox(height: 10),
                 ],
-                if (_serviceDetails!['prix'] != null && _serviceDetails!['prix'] is num && _serviceDetails!['prix'] > 0) ...[
+                if (_serviceDetails!['prix'] != null &&
+                    _serviceDetails!['prix'] is num &&
+                    _serviceDetails!['prix'] > 0) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -12892,7 +12997,8 @@ class _ExtraScolaireSheetContentState
                             Text(
                               'Tarif',
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(10),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(10),
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.bold,
                               ),
@@ -12901,7 +13007,8 @@ class _ExtraScolaireSheetContentState
                             Text(
                               '${_serviceDetails!['prix']} FCFA',
                               style: TextStyle(
-                                fontSize: widget.textSizeService.getScaledFontSize(12),
+                                fontSize: widget.textSizeService
+                                    .getScaledFontSize(12),
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -13201,12 +13308,14 @@ class _PulseAnimatedButtonState extends State<_PulseAnimatedButton>
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
 
-    _scaleAnim = Tween<double>(begin: 1.0, end: 1.06).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _glowAnim = Tween<double>(begin: 0.0, end: 0.25).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnim = Tween<double>(
+      begin: 1.0,
+      end: 1.06,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _glowAnim = Tween<double>(
+      begin: 0.0,
+      end: 0.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -13270,5 +13379,3 @@ class _PulseAnimatedButtonState extends State<_PulseAnimatedButton>
     );
   }
 }
-
-

@@ -27,15 +27,17 @@ class SchoolService {
     try {
       // Vérifier si les données sont déjà chargées
       if (_schoolData != null) return;
-      
+
       // Essayer de charger depuis le cache d'abord
       await _loadCachedSchoolDataSilent();
-      
+
       // Si le cache est vide, charger depuis le fichier JSON
       if (_schoolData == null) {
-        final String jsonString = await rootBundle.loadString('assets/services/jsonOptimise.json');
+        final String jsonString = await rootBundle.loadString(
+          'assets/services/jsonOptimise.json',
+        );
         final Map<String, dynamic> data = json.decode(jsonString);
-        
+
         final bulletin = data['bulletin'] as Map<String, dynamic>?;
         if (bulletin != null) {
           final classe = bulletin['classe'] as Map<String, dynamic>?;
@@ -71,7 +73,7 @@ class SchoolService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final cachedData = prefs.getString(_schoolDataKey);
-      
+
       if (cachedData != null) {
         _schoolData = json.decode(cachedData) as Map<String, dynamic>;
       }
@@ -85,28 +87,30 @@ class SchoolService {
     print('');
     print('🔄 DÉBUT DU CHARGEMENT DES DONNÉES DE L\'ÉCOLE...');
     print('');
-    
+
     try {
       // Charger depuis le fichier JSON
       print('📂 Lecture du fichier JSON: assets/services/jsonOptimise.json');
-      final String jsonString = await rootBundle.loadString('assets/services/jsonOptimise.json');
+      final String jsonString = await rootBundle.loadString(
+        'assets/services/jsonOptimise.json',
+      );
       final Map<String, dynamic> data = json.decode(jsonString);
-      
+
       print('✅ Fichier JSON lu avec succès');
       print('📊 Structure des données: ${data.keys.toList()}');
-      
+
       final bulletin = data['bulletin'] as Map<String, dynamic>?;
       if (bulletin != null) {
         print('📋 Bulletin trouvé: ${bulletin.keys.toList()}');
-        
+
         final classe = bulletin['classe'] as Map<String, dynamic>?;
         if (classe != null) {
           print('🏫 Classe trouvée: ${classe.keys.toList()}');
-          
+
           final ecole = classe['ecole'] as Map<String, dynamic>?;
           if (ecole != null) {
             _schoolData = Map<String, dynamic>.from(ecole);
-            
+
             print('');
             print('🎉 DONNÉES DE L\'ÉCOLE EXTRAITES AVEC SUCCÈS:');
             print('   📛 Nom: ${_schoolData!['libelle']}');
@@ -114,13 +118,17 @@ class SchoolService {
             print('   🔢 Code: ${_schoolData!['code']}');
             print('   📞 Téléphone: ${_schoolData!['tel']}');
             print('   ✍️ Signataire: ${_schoolData!['nomSignataire']}');
-            print('   🏷️ ID Vie École: ${_schoolData!['identifiantVieEcole']}');
+            print(
+              '   🏷️ ID Vie École: ${_schoolData!['identifiantVieEcole']}',
+            );
             print('');
-            
+
             // Sauvegarder en cache pour utilisation hors ligne
             await _cacheSchoolData();
-            
-            print('✅ Données de l\'école chargées et mises en cache: ${schoolName}');
+
+            print(
+              '✅ Données de l\'école chargées et mises en cache: ${schoolName}',
+            );
             return;
           } else {
             print('❌ Données de l\'école non trouvées dans la classe');
@@ -131,7 +139,7 @@ class SchoolService {
       } else {
         print('❌ Bulletin non trouvé dans les données JSON');
       }
-      
+
       print('⚠️ Données de l\'école non trouvées dans le JSON');
     } catch (e) {
       print('❌ Erreur lors du chargement des données de l\'école: $e');
@@ -139,7 +147,7 @@ class SchoolService {
       // Essayer de charger depuis le cache en cas d'erreur
       await _loadCachedSchoolData();
     }
-    
+
     print('');
     print('🏁 FIN DU CHARGEMENT DES DONNÉES DE L\'ÉCOLE');
     print('');
@@ -161,11 +169,11 @@ class SchoolService {
   /// Charge les données de l'école depuis le cache
   Future<void> _loadCachedSchoolData() async {
     print('💾 TENTATIVE DE CHARGEMENT DEPUIS LE CACHE...');
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final cachedData = prefs.getString(_schoolDataKey);
-      
+
       if (cachedData != null) {
         _schoolData = json.decode(cachedData) as Map<String, dynamic>;
         print('✅ Données de l\'école chargées depuis le cache: ${schoolName}');
@@ -211,7 +219,7 @@ class SchoolService {
   /// Génère une représentation textuelle des informations de l'école
   String getSchoolInfoString() {
     if (_schoolData == null) return 'École non définie';
-    
+
     return '''${schoolName ?? 'Nom non défini'}
 ID: ${schoolId ?? 'N/A'}
 Code: ${schoolCode ?? 'N/A'}

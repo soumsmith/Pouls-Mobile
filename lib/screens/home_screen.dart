@@ -1664,8 +1664,8 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 54,
-            height: 54,
+            width: 44,
+            height: 44,
             margin: const EdgeInsets.only(right: 12),
             decoration: const BoxDecoration(
               color: Colors.white,
@@ -1693,8 +1693,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 2),
                 Text(
                   '${_getGreeting()}, ${AuthService.instance.getCurrentUser()?.firstName ?? ''}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(24),
+                    fontSize: _textSizeService.getScaledFontSize(18),
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                     letterSpacing: -0.5,

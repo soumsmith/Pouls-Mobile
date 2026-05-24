@@ -703,26 +703,12 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
-      // Charger les notifications d'échéance
-      try {
-        final echeanceNotification =
-            await EcheanceService.getEcheanceNotification(matricule);
-        if (mounted) {
-          setState(() {
-            _childrenEcheances[child.id] = echeanceNotification;
-            _childrenEcheancesLoading[child.id] = false;
-          });
-        }
-        print(
-          'Échéance chargée pour ${child.fullName}: ${echeanceNotification.hasUnpaidFees ? 'Impayée' : 'Régulière'}',
-        );
-      } catch (e) {
-        print('Erreur échéance pour ${child.fullName}: $e');
-        if (mounted) {
-          setState(() {
-            _childrenEcheancesLoading[child.id] = false;
-          });
-        }
+      // Charger les notifications d'échéance (Désactivé)
+      if (mounted) {
+        setState(() {
+          _childrenEcheances[child.id] = null;
+          _childrenEcheancesLoading[child.id] = false;
+        });
       }
     } catch (e) {
       print('Erreur générale pour ${child.fullName}: $e');

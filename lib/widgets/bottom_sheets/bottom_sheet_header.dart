@@ -14,6 +14,7 @@ class BottomSheetHeader extends StatelessWidget {
   final double? descriptionFontSize;
   final FontWeight? titleFontWeight;
   final EdgeInsetsGeometry? padding;
+  final DraggableScrollableController? draggableController;
 
   const BottomSheetHeader({
     Key? key,
@@ -30,13 +31,14 @@ class BottomSheetHeader extends StatelessWidget {
     this.descriptionFontSize,
     this.titleFontWeight,
     this.padding,
+    this.draggableController,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
+    Widget headerWidget = Container(
       color: backgroundColor ?? Colors.transparent,
       padding: padding ?? const EdgeInsets.fromLTRB(0, 8, 0, 12),
       child: Column(
@@ -138,5 +140,46 @@ class BottomSheetHeader extends StatelessWidget {
         ],
       ),
     );
+
+    if (draggableController != null) {
+      headerWidget = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onVerticalDragUpdate: (details) {
+          final controller = draggableController!;
+          if (controller.isAttached) {
+            final screenHeight = MediaQuery.of(context).size.height;
+            if (screenHeight > 0) {
+              final deltaFraction = -details.primaryDelta! / screenHeight;
+              final newSize = (controller.size + deltaFraction).clamp(0.0, 1.0);
+              controller.jumpTo(newSize);
+            }
+          }
+        },
+        onVerticalDragEnd: (details) {
+          final controller = draggableController!;
+          if (controller.isAttached) {
+            final snaps = [0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95];
+            final current = controller.size;
+            double closest = snaps.first;
+            double minDiff = (current - closest).abs();
+            for (final snap in snaps) {
+              final diff = (current - snap).abs();
+              if (diff < minDiff) {
+                minDiff = diff;
+                closest = snap;
+              }
+            }
+            controller.animateTo(
+              closest,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+            );
+          }
+        },
+        child: headerWidget,
+      );
+    }
+
+    return headerWidget;
   }
 }

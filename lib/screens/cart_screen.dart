@@ -424,17 +424,6 @@ class _CartScreenState extends State<CartScreen>
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      item.product.subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.screenTextSecondaryThemed(context),
-                        fontWeight: FontWeight.w400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Text(
@@ -959,7 +948,7 @@ class _CartScreenState extends State<CartScreen>
           ),
           child: DraggableScrollableSheet(
             initialChildSize: 0.92,
-            maxChildSize: 0.96,
+            maxChildSize: 0.95,
             minChildSize: 0.5,
             expand: false,
             builder: (context, scrollController) {

@@ -11,6 +11,7 @@ class CustomSelectInput extends StatelessWidget {
   final Function(String) onChanged;
   final bool isDarkMode;
   final bool required;
+  final bool autoFocusSearch;
 
   const CustomSelectInput({
     Key? key,
@@ -20,6 +21,7 @@ class CustomSelectInput extends StatelessWidget {
     required this.onChanged,
     required this.isDarkMode,
     this.required = false,
+    this.autoFocusSearch = true,
   }) : super(key: key);
 
   @override
@@ -55,6 +57,7 @@ class CustomSelectInput extends StatelessWidget {
           items: items,
           onChanged: onChanged,
           isDarkMode: isDarkMode,
+          autoFocusSearch: autoFocusSearch,
         ),
       ],
     );

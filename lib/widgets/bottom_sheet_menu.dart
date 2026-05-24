@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/cart_service.dart';
-import '../screens/tutor_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/help_support_screen.dart';
 import '../screens/new_settings_screen.dart';

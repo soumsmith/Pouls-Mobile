@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_typography.dart';
+import '../config/app_dimensions.dart';
 
 /// Widget Dropdown avec recherche intégrée
 class SearchableDropdown extends StatefulWidget {
@@ -10,6 +11,7 @@ class SearchableDropdown extends StatefulWidget {
   final List<String> items;
   final Function(String) onChanged;
   final bool isDarkMode;
+  final bool autoFocusSearch;
 
   const SearchableDropdown({
     super.key,
@@ -18,6 +20,7 @@ class SearchableDropdown extends StatefulWidget {
     required this.items,
     required this.onChanged,
     required this.isDarkMode,
+    this.autoFocusSearch = true,
   });
 
   @override
@@ -40,7 +43,7 @@ class _SearchableDropdownState extends State<SearchableDropdown>
 
   @override
   void dispose() {
-    _removeOverlay();
+    _removeOverlay(isDisposing: true);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -59,10 +62,10 @@ class _SearchableDropdownState extends State<SearchableDropdown>
     setState(() => _isOpen = true);
   }
 
-  void _removeOverlay() {
+  void _removeOverlay({bool isDisposing = false}) {
     _overlayEntry?.remove();
     _overlayEntry = null;
-    if (mounted) setState(() => _isOpen = false);
+    if (mounted && !isDisposing) setState(() => _isOpen = false);
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -99,6 +102,7 @@ class _SearchableDropdownState extends State<SearchableDropdown>
                     items: widget.items,
                     selectedValue: widget.value,
                     isDarkMode: widget.isDarkMode,
+                    autoFocusSearch: widget.autoFocusSearch,
                     onSelected: (item) {
                       widget.onChanged(item);
                       _removeOverlay();
@@ -129,9 +133,9 @@ class _SearchableDropdownState extends State<SearchableDropdown>
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: _isOpen
-                      ? AppColors.primary
+                      ? AppColors.inputFocusedBorder
                       : AppColors.getBorderColor(widget.isDarkMode),
-                  width: _isOpen ? 1.5 : 1,
+                  width: _isOpen ? AppDimensions.inputFocusedBorderWidth : 1,
                 ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -193,12 +197,14 @@ class _DropdownOverlayContent extends StatefulWidget {
   final String selectedValue;
   final bool isDarkMode;
   final ValueChanged<String> onSelected;
+  final bool autoFocusSearch;
 
   const _DropdownOverlayContent({
     required this.items,
     required this.selectedValue,
     required this.isDarkMode,
     required this.onSelected,
+    this.autoFocusSearch = true,
   });
 
   @override
@@ -216,9 +222,11 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
   void initState() {
     super.initState();
     _filteredItems = widget.items;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchFocusNode.requestFocus();
-    });
+    if (widget.autoFocusSearch) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _searchFocusNode.requestFocus();
+      });
+    }
   }
 
   @override
@@ -289,7 +297,7 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                   child: TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    autofocus: true,
+                    autofocus: widget.autoFocusSearch,
                     enableInteractiveSelection: true,
                     decoration: InputDecoration(
                       hintText: 'Rechercher...',
@@ -322,9 +330,9 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
-                          width: 1.5,
+                        borderSide: BorderSide(
+                          color: AppColors.inputFocusedBorder,
+                          width: AppDimensions.inputFocusedBorderWidth,
                         ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(

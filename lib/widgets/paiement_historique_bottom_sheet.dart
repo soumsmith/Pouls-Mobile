@@ -62,11 +62,18 @@ class _PaiementHistoriqueSheetContent extends StatefulWidget {
 class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueSheetContent> {
   String? _expandedNumeroRecu;
   Future<PaiementHistoriqueResponse>? _historiqueFuture;
+  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _draggableController.dispose();
+    super.dispose();
   }
 
   void _loadData() {
@@ -91,6 +98,7 @@ class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueShee
     );
 
     return DraggableScrollableSheet(
+      controller: _draggableController,
       initialChildSize: 0.75,
       maxChildSize: 0.95,
       minChildSize: 0.5,
@@ -107,6 +115,7 @@ class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueShee
               title: 'Historique des paiements',
               description: widget.childName,
               onClose: () => Navigator.of(context).pop(),
+              draggableController: _draggableController,
             ),
             
             // Contenu

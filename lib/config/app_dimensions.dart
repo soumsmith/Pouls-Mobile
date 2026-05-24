@@ -52,6 +52,7 @@ class AppDimensions {
   static const double textFieldHeight = 56.0;
   static const double textFieldBorderRadius = 8.0;
   static const double textFieldPadding = 16.0;
+  static const double inputFocusedBorderWidth = 0.5;
 
   // Dimensions pour les espacements
   static const double spacingXS = 4.0;

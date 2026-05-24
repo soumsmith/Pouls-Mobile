@@ -18,6 +18,8 @@ class EnhancedScolariteBottomSheet extends StatefulWidget {
   final VoidCallback? onClose;
   final String? title;
   final String? description;
+  final DraggableScrollableController? draggableController;
+  final ScrollController? scrollController;
   
   // Paramètres de personnalisation du design
   final Color? primaryColor;
@@ -37,6 +39,8 @@ class EnhancedScolariteBottomSheet extends StatefulWidget {
     this.onClose,
     this.title,
     this.description,
+    this.draggableController,
+    this.scrollController,
     this.primaryColor,
     this.backgroundColor,
     this.iconColor,
@@ -62,10 +66,8 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
   @override
   Widget build(BuildContext context) {
     final isDarkMode = _themeService.isDarkMode;
-    final sheetHeight = widget.height ?? (MediaQuery.of(context).size.height * 0.8);
 
     return Container(
-      height: sheetHeight,
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[900] : Colors.white,
         borderRadius: const BorderRadius.all(Radius.circular(24)),
@@ -83,6 +85,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
           _buildInlineHeader(),
           Expanded(
             child: SingleChildScrollView(
+              controller: widget.scrollController,
               padding: const EdgeInsets.all(20),
               child: _buildContent(),
             ),
@@ -107,6 +110,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
       titleFontSize: 18,
       descriptionFontSize: 14,
       titleFontWeight: FontWeight.w700,
+      draggableController: widget.draggableController,
       //padding: const EdgeInsets.all(20),
     );
   }
@@ -811,38 +815,33 @@ void showEnhancedScolariteBottomSheet(
   IconData? iconData,
   double? height,
 }) {
+  final draggableController = DraggableScrollableController();
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => DraggableScrollableSheet(
+      controller: draggableController,
       initialChildSize: 0.7,
       minChildSize: 0.5,
-      maxChildSize: 0.9,
-      builder: (_, controller) => Container(
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: EnhancedScolariteBottomSheet(
-          childName: childName,
-          childMatricule: childMatricule,
-          scolariteEntries: scolariteEntries,
-          isLoading: isLoading,
-          errorMessage: errorMessage,
-          onRefresh: onRefresh,
-          onClose: onClose,
-          title: title,
-          description: description,
-          primaryColor: primaryColor,
-          backgroundColor: backgroundColor,
-          iconColor: iconColor,
-          iconData: iconData,
-          height: height,
-        ),
+      maxChildSize: 0.95,
+      builder: (_, controller) => EnhancedScolariteBottomSheet(
+        childName: childName,
+        childMatricule: childMatricule,
+        scolariteEntries: scolariteEntries,
+        isLoading: isLoading,
+        errorMessage: errorMessage,
+        onRefresh: onRefresh,
+        onClose: onClose,
+        title: title,
+        description: description,
+        primaryColor: primaryColor,
+        backgroundColor: backgroundColor,
+        iconColor: iconColor,
+        iconData: iconData,
+        height: height,
+        draggableController: draggableController,
+        scrollController: controller,
       ),
     ),
   );

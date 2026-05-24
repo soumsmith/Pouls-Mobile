@@ -3033,15 +3033,17 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     final eleve = _eleveDetail!;
     final isDarkMode = _themeService.isDarkMode;
+    final draggableController = DraggableScrollableController();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
+        controller: draggableController,
         initialChildSize: 0.7,
         minChildSize: 0.5,
-        maxChildSize: 0.9,
+        maxChildSize: 0.95,
         builder: (_, controller) => Container(
           decoration: BoxDecoration(
             color: isDarkMode ? Colors.grey[900] : Colors.white,
@@ -3065,6 +3067,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 description: 'Détails complets sur l\'élève et sa scolarité',
                 iconColor: Colors.blue,
                 onClose: () => Navigator.of(context).pop(),
+                draggableController: draggableController,
               ),
 
               // Contenu complet

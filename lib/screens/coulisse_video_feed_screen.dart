@@ -9,8 +9,8 @@ import '../models/interaction.dart';
 import '../services/ecole_api_service.dart';
 import '../services/interaction_api_service.dart';
 import '../services/theme_service.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 import 'establishment_detail_screen.dart';
-import '../widgets/custom_sliver_app_bar_fixed.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
@@ -447,7 +447,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
               child: CustomScrollView(
                 physics: const NeverScrollableScrollPhysics(),
                 slivers: [
-                  CustomSliverAppBarFixed(
+                  CustomSliverAppBar(
                     title: '',
                     isDark: true, // Always dark style on top of video playback for supreme premium contrast
                     backgroundColor: Colors.transparent,

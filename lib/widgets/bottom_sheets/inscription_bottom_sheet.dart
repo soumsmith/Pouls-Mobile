@@ -35,6 +35,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
+  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   // État
   List<Ecole> _ecoles = [];
@@ -57,7 +58,14 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
   }
 
   @override
+  void deactivate() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    _draggableController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _matriculeController.dispose();
     super.dispose();
@@ -65,14 +73,26 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
 
   @override
   void didChangeMetrics() {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final newHasKeyboard = keyboardHeight > 0;
-    
-    if (newHasKeyboard != _hasKeyboard) {
-      setState(() {
-        _hasKeyboard = newHasKeyboard;
-        _sheetSize = newHasKeyboard ? 0.85 : 0.6;
-      });
+    if (!mounted) return;
+    try {
+      final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+      final newHasKeyboard = keyboardHeight > 0;
+      
+      if (newHasKeyboard != _hasKeyboard) {
+        setState(() {
+          _hasKeyboard = newHasKeyboard;
+          _sheetSize = newHasKeyboard ? 0.85 : 0.6;
+        });
+        if (_draggableController.isAttached) {
+          _draggableController.animateTo(
+            newHasKeyboard ? 0.85 : 0.6,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+    } catch (_) {
+      // Safely ignore deactivation metric updates
     }
   }
 
@@ -229,6 +249,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DraggableScrollableSheet(
+      controller: _draggableController,
       initialChildSize: _sheetSize,
       minChildSize: 0.4,
       maxChildSize: 0.95,
@@ -261,6 +282,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
                 onClose: () => Navigator.of(context).pop(),
                 titleFontSize: _textSizeService.getScaledFontSize(18),
                 descriptionFontSize: _textSizeService.getScaledFontSize(13),
+                draggableController: _draggableController,
               ),
 
               // Formulaire

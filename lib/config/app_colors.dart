@@ -131,6 +131,8 @@ class AppColors {
   static const Color dividerLight = Color(0xFFE8EAED);
   static const Color dividerDark = Color(0xFF333333);
 
+  static const Color inputFocusedBorder = primary;
+
   // ================= OMBRES =================
 
   static const Color shadowLight = Color(0x1A000000);

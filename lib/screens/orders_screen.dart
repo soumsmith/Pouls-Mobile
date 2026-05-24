@@ -963,9 +963,24 @@ class _StatusInfo {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORDER DETAILS BOTTOM SHEET — style aligné avec _buildOrderBottomSheet
 // ═══════════════════════════════════════════════════════════════════════════════
-class _OrderDetailsSheet extends StatelessWidget {
+class _OrderDetailsSheet extends StatefulWidget {
   final Order order;
   const _OrderDetailsSheet({required this.order});
+
+  @override
+  State<_OrderDetailsSheet> createState() => _OrderDetailsSheetState();
+}
+
+class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
+  final DraggableScrollableController _draggableController = DraggableScrollableController();
+
+  Order get order => widget.order;
+
+  @override
+  void dispose() {
+    _draggableController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -977,8 +992,9 @@ class _OrderDetailsSheet extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: DraggableScrollableSheet(
+        controller: _draggableController,
         initialChildSize: 0.92,
-        maxChildSize: 0.96,
+        maxChildSize: 0.95,
         minChildSize: 0.5,
         expand: false,
         builder: (context, scrollController) {
@@ -996,6 +1012,7 @@ class _OrderDetailsSheet extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 titleColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.screenTextPrimary,
                 descriptionColor: AppColors.screenTextSecondaryThemed(context),
+                draggableController: _draggableController,
               ),
 
               // ── Contenu scrollable ──

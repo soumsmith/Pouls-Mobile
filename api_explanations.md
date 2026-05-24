@@ -26,17 +26,19 @@ Ce document fournit une explication concrète et approfondie pour **chaque API**
 * **Rôle technique (Backend)** : Extrait tous les points d'arrêt ou points de rendez-vous physiques configurés pour les bus dans une zone sélectionnée.
 * **Fonctionnalité parent (Mobile)** : Permet au parent de sélectionner le point d'arrêt précis le plus proche de son domicile pour la prise en charge et le dépôt quotidien de son enfant.
 
-### 🔴 6.2 Inscription : Paiement en ligne (`GET /vie-ecoles/inscription-eleve/paiement-en-ligne/{matricule}`)
-* **Rôle technique (Backend)** : Génère un lien de paiement direct et sécurisé pour régler instantanément les frais d'inscription administratifs de l'élève.
-* **Fonctionnalité parent (Mobile)** : Déclenche la redirection vers la passerelle de paiement mobile (Orange Money, Wave, etc.) pour finaliser immédiatement la création du dossier d'inscription.
-
-### 🔴 6.4 Réservation de place (paiement en ligne) (`POST /vie-ecoles/reservation/payer/{matricule}`)
-* **Rôle technique (Backend)** : Initialise une transaction spécifique de réservation de classe par paiement mobile (PEL) pour sécuriser une place avant l'inscription finale.
-* **Fonctionnalité parent (Mobile)** : Permet aux parents de verser un acompte rapide de réservation en ligne pour garantir la place de leur enfant pendant les périodes de forte affluence.
-
 ### 🔴 1.2 Statuts d'affectation d'une école (`GET /vie-ecoles/statut-affectation?ecole={codeecole}`)
 * **Rôle technique (Backend)** : Vérifie le statut d'une école partenaire spécifique dans le système national/privé (ex: affecté par l'État, non affecté, statut de la subvention).
 * **Fonctionnalité parent (Mobile)** : Utilisé lors du parcours d'inscription pour informer le parent si l'élève est orienté officiellement vers cet établissement et si les tarifs subventionnés s'appliquent.
+
+### 🟢 6.2 Inscription : Paiement en ligne (`POST /vie-ecoles/inscription-eleve/paiement-en-ligne/{matricule}?ecole={codeecole}`)
+* **Rôle technique (Backend)** : Génère un lien de paiement direct et sécurisé pour régler instantanément les frais d'inscription administratifs de l'élève.
+* **Fonctionnalité parent (Mobile)** : Déclenche la redirection vers la passerelle de paiement mobile (Orange Money, Wave, etc.) pour finaliser immédiatement la création du dossier d'inscription.
+
+### 🟢 6.4 Réservation de place (paiement en ligne) (`POST /vie-ecoles/scolarite/paiement-en-ligne/{matricule}?montant=5000`)
+* **Rôle technique (Backend)** : Initialise une transaction spécifique de réservation de classe par paiement mobile (PEL) pour sécuriser une place avant l'inscription finale.
+* **Fonctionnalité parent (Mobile)** : Permet aux parents de verser un acompte rapide de réservation en ligne pour garantir la place de leur enfant pendant les périodes de forte affluence.
+
+
 
 ### 🟢 1.3 Liste des coulisses de l'excellence (`GET /ecoles/coulisseexcellencelist?ecole={codeecole}`)
 * **Rôle technique (Backend)** : Récupère un catalogue de vidéos mettant en avant les réussites scolaires, projets créatifs et distinctions des élèves, incluant les liens d'intégration YouTube.
@@ -50,9 +52,9 @@ Ce document fournit une explication concrète et approfondie pour **chaque API**
 * **Rôle technique (Backend)** : Interroge la base de données financière de l'école pour extraire l'historique complet des paiements effectués pour un élève (reçus, paiements mobiles, dates, montants).
 * **Fonctionnalité parent (Mobile)** : Affiche l'historique des paiements dans l'onglet scolarité (`student_scolarite_screen.dart`). Le parent peut consulter l'historique de chaque versement, le mode de paiement utilisé et télécharger ses reçus officiels directement sur son téléphone.
 
-### 🟢 1.6 Notification de l'état de la scolarité (`GET /vie-ecoles/echeance-notification/{matricule}`)
+### 🟡 1.6 Notification de l'état de la scolarité (`GET /vie-ecoles/echeance-notification/{matricule}`)
 * **Rôle technique (Backend)** : Génère des alertes financières en comparant l'échéancier obligatoire de l'école avec les paiements réels reçus pour un élève, identifiant tout retard de paiement.
-* **Fonctionnalité parent (Mobile)** : Affiche des notifications d'alerte et des badges de rappel sur l'écran d'accueil du parent si une échéance de scolarité est en retard ou arrive bientôt à terme.
+* **Fonctionnalité parent (Mobile)** : *Temporairement désactivée de l'écran d'accueil.* Suite à des erreurs HTTP 500 répétitives générées par le serveur de l'école (échec Laravel sur la méthode `getData`), cette API a été désactivée côté mobile pour préserver la fluidité de l'application. Auparavant, elle gérait l'affichage de badges d'alerte de scolarité.
 
 ### 🟢 1.7 Marquer des messages comme lus (`POST /vie-ecoles/messages/marquer-comme-lu`)
 * **Rôle technique (Backend)** : Met à jour le statut des messages reçus par le parent pour une conversation donnée, passant leur état de "non lu" à "lu".

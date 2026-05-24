@@ -25,6 +25,7 @@ class _SplashScreenState extends State<SplashScreen>
   final String _fullText = 'Parent responsable';
   bool _showCursor = true;
   bool _showSubtitle = false;
+  Timer? _cursorTimer;
   
   @override
   void initState() {
@@ -64,13 +65,11 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startCursorAnimation() {
-    Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (mounted && _charIndex <= _fullText.length) {
+    _cursorTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (mounted) {
         setState(() {
           _showCursor = !_showCursor;
         });
-      } else {
-        timer.cancel();
       }
     });
   }
@@ -87,7 +86,9 @@ class _SplashScreenState extends State<SplashScreen>
         }
       });
     } else {
-      // L'animation du texte est terminée, on arrête le curseur et on affiche le sous-titre
+      // L'animation du texte est terminée, on arrête définitivement le curseur
+      _cursorTimer?.cancel();
+      _cursorTimer = null;
       setState(() {
         _showCursor = false;
       });
@@ -110,6 +111,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _cursorTimer?.cancel();
     _animationController.dispose();
     super.dispose();
   }
@@ -242,10 +244,6 @@ class _SplashScreenState extends State<SplashScreen>
                     Container(
                       width: AppDimensions.isMobile(context) ? 80 : 100,
                       height: AppDimensions.isMobile(context) ? 30 : 40,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(AppDimensions.smallBorderRadius),
-                      ),
                       child: Center(
                         child: Image.asset(
                           'assets/images/cropped-logo-1.png',

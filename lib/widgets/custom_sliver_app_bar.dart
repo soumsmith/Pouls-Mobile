@@ -98,12 +98,12 @@ class CustomSliverAppBar extends StatelessWidget {
   /// Actions par défaut (favoris et partage)
   List<Widget> _buildDefaultActions() {
     return [
-      _AppBarIconButton(
+      AppBarIconButton(
         icon: Icons.favorite_border,
         isDark: isDark,
         onTap: () {},
       ),
-      _AppBarIconButton(
+      AppBarIconButton(
         icon: Icons.share,
         isDark: isDark,
         onTap: () {},
@@ -123,12 +123,12 @@ class CustomSliverAppBar extends StatelessWidget {
 }
 
 /// Widget pour les boutons d'action dans l'AppBar
-class _AppBarIconButton extends StatelessWidget {
+class AppBarIconButton extends StatelessWidget {
   final IconData icon;
   final bool isDark; // Gardé pour compatibilité mais ne sera plus utilisé
   final VoidCallback onTap;
 
-  const _AppBarIconButton({
+  const AppBarIconButton({
     required this.icon,
     this.isDark = false, // Gardé pour compatibilité mais ne sera plus utilisé
     required this.onTap,
@@ -176,7 +176,7 @@ class AppBarAction {
   });
 
   Widget buildWidget(bool isDark) {
-    Widget button = _AppBarIconButton(
+    Widget button = AppBarIconButton(
       icon: icon,
       isDark: isDark,
       onTap: onTap,

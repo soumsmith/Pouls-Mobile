@@ -15,7 +15,6 @@ import '../services/order_service.dart';
 import '../services/text_size_service.dart';
 import '../services/category_api_service.dart';
 import '../widgets/main_screen_wrapper.dart';
-import '../widgets/custom_search_bar.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/see_more_card.dart';

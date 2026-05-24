@@ -56,7 +56,6 @@ import '../models/note.dart';
 import '../models/note_api.dart';
 import '../models/note_classe_dto.dart';
 import '../models/annee_scolaire.dart';
-import '../models/access_control.dart';
 import '../models/visite_guidee_video.dart';
 import '../services/visite_guidee_service.dart';
 import '../models/coulisse_excellence.dart';
@@ -75,7 +74,6 @@ import '../services/recommendation_service.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../services/testimonial_service.dart';
-import '../widgets/custom_snackbar.dart';
 import '../services/integration_request_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_text_field.dart';
@@ -3504,10 +3502,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 _parentPrenomController.text.isEmpty ||
                 _parentTelephoneController.text.isEmpty ||
                 _recommandationEmailController.text.isEmpty) {
-              CustomSnackBar.warning(
-                context,
-                'Veuillez remplir tous les champs obligatoires',
-              );
               return;
             }
 

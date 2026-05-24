@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 
 class CustomTextField extends StatelessWidget {
   final String label;
@@ -95,8 +96,8 @@ class CustomTextField extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), 
               borderSide: BorderSide(
-                color: hasError ? Colors.red : (focusBorderColor ?? AppColors.screenOrange), 
-                width: 1.5,
+                color: hasError ? Colors.red : AppColors.inputFocusedBorder, 
+                width: AppDimensions.inputFocusedBorderWidth,
               ),
             ),
           ),

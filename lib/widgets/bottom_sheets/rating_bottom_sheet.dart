@@ -24,25 +24,58 @@ class RatingBottomSheet extends StatefulWidget {
   State<RatingBottomSheet> createState() => _RatingBottomSheetState();
 }
 
-class _RatingBottomSheetState extends State<RatingBottomSheet> {
+class _RatingBottomSheetState extends State<RatingBottomSheet> with WidgetsBindingObserver {
   final TextSizeService _textSizeService = TextSizeService();
   final TextEditingController _ratingController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
+  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   bool _isLoadingAvis = false;
   List<Map<String, dynamic>> _avis = [];
   String? _avisError;
+  bool _hasKeyboard = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void deactivate() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.deactivate();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _draggableController.dispose();
     _ratingController.dispose();
     _commentController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (!mounted) return;
+    try {
+      final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+      final newHasKeyboard = keyboardHeight > 0;
+      
+      if (newHasKeyboard != _hasKeyboard) {
+        _hasKeyboard = newHasKeyboard;
+        if (_draggableController.isAttached) {
+          _draggableController.animateTo(
+            newHasKeyboard ? 0.95 : 0.85,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+    } catch (_) {
+      // Safely ignore deactivation metric updates
+    }
   }
 
   Future<void> _sendAvis() async {
@@ -105,11 +138,12 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: DraggableScrollableSheet(
+        controller: _draggableController,
         initialChildSize: 0.85,
         minChildSize: 0.5,
-        maxChildSize: 0.98,
+        maxChildSize: 0.95,
         snap: true,
-        snapSizes: const [0.5, 0.75, 0.85, 0.98],
+        snapSizes: const [0.5, 0.75, 0.85, 0.95],
         expand: false,
         builder: (context, scrollController) {
           return GestureDetector(
@@ -146,6 +180,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
                         : AppColors.screenTextSecondary,
                     titleFontSize: textSizeService.getScaledFontSize(18),
                     iconSize: 22,
+                    draggableController: _draggableController,
                   ),
 
                   // Liste des avis (style messages WhatsApp)

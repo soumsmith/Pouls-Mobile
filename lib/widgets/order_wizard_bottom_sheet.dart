@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import 'bottom_sheets/bottom_sheet_header.dart';
 import '../models/cart_item.dart';
 import '../models/lieu_livraison.dart';
@@ -44,11 +45,12 @@ class OrderWizardBottomSheet extends StatefulWidget {
 }
 
 class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   int _currentStep = 0;
   late PageController _pageController;
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
+  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   // Controllers
   final _nomController = TextEditingController();
@@ -66,6 +68,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   double _prixLivraison = 2000;
   LieuLivraison? _selectedLieu;
   bool _isSubmitting = false;
+  bool _hasKeyboard = false;
 
   // Steps
   final List<String> _stepTitles = [
@@ -85,6 +88,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pageController = PageController();
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -123,7 +127,15 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   @override
+  void deactivate() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _draggableController.dispose();
     _pageController.dispose();
     _progressController.dispose();
     _nomController.dispose();
@@ -136,6 +148,28 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
     _ecoleController.dispose();
     _eleveIdController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (!mounted) return;
+    try {
+      final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+      final newHasKeyboard = keyboardHeight > 0;
+      
+      if (newHasKeyboard != _hasKeyboard) {
+        _hasKeyboard = newHasKeyboard;
+        if (_draggableController.isAttached) {
+          _draggableController.animateTo(
+            newHasKeyboard ? 0.95 : 0.70,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+    } catch (_) {
+      // Safely ignore deactivation metric updates
+    }
   }
 
   void _nextStep() {
@@ -289,6 +323,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
+      controller: _draggableController,
       initialChildSize: 0.70,
       minChildSize: 0.50,
       maxChildSize: 0.95,
@@ -359,6 +394,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
       descriptionColor: AppColors.screenTextSecondaryThemed(context),
+      draggableController: _draggableController,
     );
   }
 
@@ -1153,9 +1189,9 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.shopBlue,
-                width: 1.5,
+              borderSide: BorderSide(
+                color: AppColors.inputFocusedBorder,
+                width: AppDimensions.inputFocusedBorderWidth,
               ),
             ),
           ),

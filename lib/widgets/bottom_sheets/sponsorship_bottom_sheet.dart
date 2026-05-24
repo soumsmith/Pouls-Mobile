@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../custom_text_field.dart';
 import '../custom_form_button.dart';
-import '../custom_snackbar.dart';
 import '../custom_loader.dart';
 import '../snackbar.dart';
 import '../share_button.dart';
@@ -151,15 +150,6 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                   color: AppColors.screenOrange,
                   icon: Icons.card_giftcard_rounded,
                   onPressed: () async {
-                    // Validation AVANT d'afficher le loader
-                    if (_parentTelephoneController.text.isEmpty) {
-                      CustomSnackBar.warning(
-                        context,
-                        'Veuillez renseigner votre numéro de téléphone',
-                      );
-                      return;
-                    }
-
                     showDialog(
                       context: context,
                       barrierDismissible: false,

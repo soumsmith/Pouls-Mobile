@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 class AppDimensions {
   // Private constructor pour empêcher l'instanciation
@@ -833,6 +834,43 @@ class AppDimensions {
   static bool isDarkMode(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
   }
+
+  // Ombre spécifique de l'écran des paramètres externalisée pour réutilisation
+  static const double settingsCardShadowBlur = 12.0;
+  static const Offset settingsCardShadowOffset = Offset(0, 4);
+
+  static List<BoxShadow> getSettingsCardShadow(
+    BuildContext context, {
+    bool enabled = true,
+  }) {
+    if (!enabled) return [];
+    return [
+      BoxShadow(
+        color: AppColors.settingsCardShadowColorThemed(context),
+        blurRadius: settingsCardShadowBlur,
+        offset: settingsCardShadowOffset,
+      ),
+    ];
+  }
+
+  // Ombre spécifique des bottom sheets (projetée vers le haut, offset y négatif)
+  static const double bottomSheetShadowBlur = 16.0;
+  static const Offset bottomSheetShadowOffset = Offset(0, -6);
+
+  static List<BoxShadow> getBottomSheetShadow(
+    BuildContext context, {
+    bool enabled = true,
+  }) {
+    if (!enabled) return [];
+    return [
+      BoxShadow(
+        color: AppColors.settingsCardShadowColorThemed(context),
+        blurRadius: bottomSheetShadowBlur,
+        offset: bottomSheetShadowOffset,
+      ),
+    ];
+  }
+
 
   /// Crée une ombre principale complète
   static List<BoxShadow> getMainShadow(

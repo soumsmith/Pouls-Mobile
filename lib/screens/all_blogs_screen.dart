@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../utils/image_helper.dart';
 import '../services/blog_service.dart';
 import '../models/blog.dart';
@@ -129,7 +130,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
               decoration: BoxDecoration(
                 color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: AppColors.screenCardShadow,
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: const Icon(Icons.arrow_back_ios_new_rounded,
                   size: 18, color: Color(0xFF1A1A1A)),
@@ -163,7 +164,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
               decoration: BoxDecoration(
                 color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: AppColors.screenCardShadow,
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: Icon(
                 _isSearching ? Icons.close_rounded : Icons.search_rounded,
@@ -192,13 +193,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                 color: AppColors.screenSurface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.screenOrange.withOpacity(0.4)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.screenOrange.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: TextField(
                 controller: _searchController,
@@ -628,7 +623,7 @@ class _BlogCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: AppColors.screenCardShadow,
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         padding: const EdgeInsets.all(12),
         child: Row(

@@ -78,13 +78,7 @@ class CustomSliverAppBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenShadowThemed(context),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Icon(
           Icons.arrow_back_ios_new,
@@ -145,13 +139,7 @@ class AppBarIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenShadowThemed(context),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Icon(
           icon,

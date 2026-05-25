@@ -47,6 +47,51 @@ enum ApiErrorType {
 class ApiExceptionHandler {
   ApiExceptionHandler._();
 
+  static String? _cleanContext(String? context) {
+    if (context == null) return null;
+    
+    // Si c'est un endpoint brut (ex: "GET /vie-ecoles/reservation/eleve/...")
+    if (context.startsWith('GET ') || context.startsWith('POST ') || context.startsWith('DELETE ') || context.startsWith('PUT ')) {
+      final parts = context.split(' ');
+      if (parts.length < 2) return context;
+      final String endpoint = parts[1];
+      
+      if (endpoint.contains('/reservation/eleve/')) {
+        return "la récupération de vos réservations";
+      }
+      if (endpoint.contains('/emploi-du-temps-eleve/')) {
+        return "la récupération de l'emploi du temps";
+      }
+      if (endpoint.contains('/scolarite-eleve/')) {
+        return "la récupération de la scolarité";
+      }
+      if (endpoint.contains('/messages/')) {
+        return "la récupération de vos messages";
+      }
+      if (endpoint.contains('/ecoles/detail-ecole/')) {
+        return "la récupération des détails de l'école";
+      }
+      if (endpoint.contains('/statistiques-presence-eleve/')) {
+        return "la récupération de l'état des présences";
+      }
+      if (endpoint.contains('/service/abonnement/')) {
+        return "la récupération de vos abonnements";
+      }
+      if (endpoint.contains('/paiements-scolarite-eleve/')) {
+        return "la récupération de l'historique des paiements";
+      }
+      if (endpoint.contains('/commandes/') || endpoint.contains('/orders/')) {
+        return "le chargement de vos commandes";
+      }
+      if (endpoint.contains('/eleve/detail/')) {
+        return "la récupération du profil élève";
+      }
+      return "la communication avec le serveur";
+    }
+    
+    return context;
+  }
+
   /// Traite une erreur API et affiche une notification appropriée.
   ///
   /// [error] L'erreur capturée dans le catch
@@ -59,17 +104,18 @@ class ApiExceptionHandler {
     String? context,
     bool showNotification = true,
   }) {
+    final cleanCtx = _cleanContext(context);
     final ApiException apiException;
-
+ 
     if (error is TimeoutException) {
       apiException = ApiException(
-        message: context != null
-            ? 'Délai dépassé lors de $context'
+        message: cleanCtx != null
+            ? 'Délai dépassé lors de $cleanCtx'
             : 'Le serveur met trop de temps à répondre',
         type: ApiErrorType.timeout,
         originalError: error,
       );
-
+ 
       if (showNotification) {
         NotificationHelper.showTimeout(
           customMessage: 'Le serveur met trop de temps à répondre. '
@@ -78,31 +124,31 @@ class ApiExceptionHandler {
       }
     } else if (error is SocketException) {
       apiException = ApiException(
-        message: context != null
-            ? 'Pas de connexion lors de $context'
+        message: cleanCtx != null
+            ? 'Pas de connexion lors de $cleanCtx'
             : 'Impossible de se connecter au serveur',
         type: ApiErrorType.noConnection,
         originalError: error,
       );
-
+ 
       if (showNotification) {
         NotificationHelper.showNoConnection();
       }
     } else if (error is http.ClientException) {
       final errorMsg = error.message.toLowerCase();
-
+ 
       if (errorMsg.contains('failed host lookup') ||
           errorMsg.contains('no address associated') ||
           errorMsg.contains('connection refused') ||
           errorMsg.contains('network is unreachable')) {
         apiException = ApiException(
-          message: context != null
-              ? 'Connexion impossible lors de $context'
+          message: cleanCtx != null
+              ? 'Connexion impossible lors de $cleanCtx'
               : 'Impossible de résoudre le serveur',
           type: ApiErrorType.noConnection,
           originalError: error,
         );
-
+ 
         if (showNotification) {
           NotificationHelper.showNoConnection(
             customMessage: 'Impossible de joindre le serveur. '
@@ -111,13 +157,13 @@ class ApiExceptionHandler {
         }
       } else {
         apiException = ApiException(
-          message: context != null
-              ? 'Erreur réseau lors de $context'
+          message: cleanCtx != null
+              ? 'Erreur réseau lors de $cleanCtx'
               : 'Erreur réseau',
           type: ApiErrorType.unknown,
           originalError: error,
         );
-
+ 
         if (showNotification) {
           NotificationHelper.showError(
             'Erreur réseau. Veuillez réessayer.',
@@ -126,13 +172,13 @@ class ApiExceptionHandler {
       }
     } else if (error is FormatException) {
       apiException = ApiException(
-        message: context != null
-            ? 'Réponse invalide lors de $context'
+        message: cleanCtx != null
+            ? 'Réponse invalide lors de $cleanCtx'
             : 'Réponse du serveur invalide',
         type: ApiErrorType.parseError,
         originalError: error,
       );
-
+ 
       if (showNotification) {
         NotificationHelper.showError(
           'Le serveur a renvoyé une réponse inattendue.',
@@ -141,7 +187,7 @@ class ApiExceptionHandler {
     } else if (error is ApiException) {
       // Déjà une ApiException, la retourner telle quelle
       apiException = error;
-
+ 
       if (showNotification) {
         switch (error.type) {
           case ApiErrorType.timeout:
@@ -169,17 +215,17 @@ class ApiExceptionHandler {
     } else {
       // Vérifier si le message contient des indices sur le type d'erreur
       final errorString = error.toString().toLowerCase();
-
+ 
       if (errorString.contains('timeout') ||
           errorString.contains('timed out')) {
         apiException = ApiException(
-          message: context != null
-              ? 'Délai dépassé lors de $context'
+          message: cleanCtx != null
+              ? 'Délai dépassé lors de $cleanCtx'
               : 'Délai de connexion dépassé',
           type: ApiErrorType.timeout,
           originalError: error,
         );
-
+ 
         if (showNotification) {
           NotificationHelper.showTimeout();
         }
@@ -190,35 +236,35 @@ class ApiExceptionHandler {
           errorString.contains('no route') ||
           errorString.contains('connexion')) {
         apiException = ApiException(
-          message: context != null
-              ? 'Pas de connexion lors de $context'
+          message: cleanCtx != null
+              ? 'Pas de connexion lors de $cleanCtx'
               : 'Problème de connexion',
           type: ApiErrorType.noConnection,
           originalError: error,
         );
-
+ 
         if (showNotification) {
           NotificationHelper.showNoConnection();
         }
       } else {
         apiException = ApiException(
-          message: context != null
-              ? 'Erreur lors de $context'
+          message: cleanCtx != null
+              ? 'Erreur lors de $cleanCtx'
               : 'Une erreur est survenue',
           type: ApiErrorType.unknown,
           originalError: error,
         );
-
+ 
         if (showNotification) {
           NotificationHelper.showError(
-            context != null
-                ? 'Erreur lors de $context. Veuillez réessayer.'
+            cleanCtx != null
+                ? 'Erreur lors de $cleanCtx. Veuillez réessayer.'
                 : 'Une erreur inattendue est survenue.',
           );
         }
       }
     }
-
+ 
     // Log pour le debug
     print('');
     print('⚠️ ═══════════════════════════════════════════════════════════');
@@ -226,12 +272,12 @@ class ApiExceptionHandler {
     print('⚠️ ═══════════════════════════════════════════════════════════');
     print('⚠️ Type: ${apiException.type}');
     print('⚠️ Message: ${apiException.message}');
-    if (context != null) print('⚠️ Context: $context');
+    if (cleanCtx != null) print('⚠️ Context: $cleanCtx');
     print('⚠️ Original error: $error');
     print('⚠️ Notification shown: $showNotification');
     print('⚠️ ═══════════════════════════════════════════════════════════');
     print('');
-
+ 
     return apiException;
   }
 
@@ -247,31 +293,32 @@ class ApiExceptionHandler {
     if (statusCode >= 200 && statusCode < 300) {
       return null; // Pas d'erreur
     }
-
+ 
+    final cleanCtx = _cleanContext(context);
     final ApiException exception;
-
+ 
     if (statusCode >= 500) {
       exception = ApiException(
-        message: context != null
-            ? 'Erreur serveur lors de $context'
+        message: cleanCtx != null
+            ? 'Erreur serveur lors de $cleanCtx'
             : 'Erreur interne du serveur',
         type: ApiErrorType.serverError,
         statusCode: statusCode,
       );
-
+ 
       if (showNotification) {
         NotificationHelper.showServerError(statusCode: statusCode);
       }
     } else if (statusCode == 408) {
       // Request Timeout
       exception = ApiException(
-        message: context != null
-            ? 'Délai dépassé lors de $context'
+        message: cleanCtx != null
+            ? 'Délai dépassé lors de $cleanCtx'
             : 'La requête a expiré',
         type: ApiErrorType.timeout,
         statusCode: statusCode,
       );
-
+ 
       if (showNotification) {
         NotificationHelper.showTimeout();
       }
@@ -282,7 +329,7 @@ class ApiExceptionHandler {
         type: ApiErrorType.clientError,
         statusCode: statusCode,
       );
-
+ 
       if (showNotification) {
         NotificationHelper.showWarning(
           'Trop de requêtes. Veuillez patienter un moment.',
@@ -290,17 +337,19 @@ class ApiExceptionHandler {
       }
     } else if (statusCode >= 400) {
       exception = ApiException(
-        message: context != null
-            ? 'Erreur lors de $context (code $statusCode)'
+        message: cleanCtx != null
+            ? 'Erreur lors de $cleanCtx (code $statusCode)'
             : 'Erreur client (code $statusCode)',
         type: ApiErrorType.clientError,
         statusCode: statusCode,
       );
-
+ 
       if (showNotification && statusCode != 404) {
         // On ne notifie pas les 404 (souvent attendus)
         NotificationHelper.showError(
-          'Erreur lors de la requête (code $statusCode).',
+          cleanCtx != null 
+              ? 'Erreur lors de $cleanCtx (code $statusCode).'
+              : 'Erreur lors de la requête (code $statusCode).',
         );
       }
     } else {
@@ -309,14 +358,14 @@ class ApiExceptionHandler {
         type: ApiErrorType.unknown,
         statusCode: statusCode,
       );
-
+ 
       if (showNotification) {
         NotificationHelper.showError(
           'Erreur inattendue du serveur.',
         );
       }
     }
-
+ 
     return exception;
   }
 

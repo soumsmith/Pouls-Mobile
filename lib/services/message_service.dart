@@ -2,6 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../models/conversation.dart';
+import '../models/student_message.dart';
+import 'http_service.dart';
+import 'auth_service.dart';
 
 class MessageService {
   static final MessageService _instance = MessageService._internal();
@@ -411,6 +415,196 @@ class MessageService {
     } catch (e) {
       print('💥 Exception dans sendFileMessage: $e');
       return {'success': false, 'message': 'Erreur de connexion: $e'};
+    }
+  }
+
+  /// Récupère la conversation et les messages d'un élève (anciennement MessageApiService)
+  Future<Map<String, dynamic>> getMessagesForStudent(
+    String phoneNumber,
+    String matricule, {
+    int perPage = 20,
+    int page = 1,
+  }) async {
+    try {
+      print('📨 Récupération des messages pour l\'élève $matricule du parent $phoneNumber');
+      
+      final response = await HttpService.get('/vie-ecoles/messages/$phoneNumber/eleve/$matricule?per_page=$perPage&page=$page');
+      
+      if (response['status'] == true && response['data'] != null) {
+        final innerData = response['data'];
+        if (innerData['status'] == 'success' && innerData['data'] != null) {
+          final conversationData = innerData['data'];
+          
+          final hasConversation = conversationData['conversation'] != null;
+          final conversationId = hasConversation ? conversationData['conversation']['id'] : null;
+          
+          print('📝 Conversation existante: $hasConversation');
+          if (conversationId != null) {
+            print('🆔 ID de conversation: $conversationId');
+          }
+          
+          List<dynamic> messagesData = [];
+          if (conversationData['messages'] != null && conversationData['messages']['data'] != null) {
+            messagesData = conversationData['messages']['data'];
+          }
+          
+          return {
+            'success': true,
+            'hasConversation': hasConversation,
+            'conversationId': conversationId,
+            'conversationData': conversationData['conversation'],
+            'messages': messagesData,
+          };
+        }
+      }
+      
+      print('📭 Aucune conversation existante');
+      return {
+        'success': true,
+        'hasConversation': false,
+        'conversationId': null,
+        'conversationData': null,
+        'messages': [],
+      };
+    } catch (e) {
+      print('❌ Erreur lors de la récupération des messages: $e');
+      throw Exception('Erreur lors du chargement des messages: $e');
+    }
+  }
+
+  /// Marque des messages comme lus dans une conversation (anciennement MessageApiService)
+  Future<bool> markMessagesAsRead({
+    required String numeroParent,
+    required int conversationId,
+  }) async {
+    try {
+      print('📖 Marquage des messages comme lus pour la conversation $conversationId');
+      
+      final response = await HttpService.post(
+        '/vie-ecoles/messages/marquer-comme-lu',
+        body: {
+          'numero_parent': numeroParent,
+          'conversation_id': conversationId,
+        },
+      );
+      
+      if (response['status'] == true || response['success'] == true) {
+        print('✅ Messages marqués comme lus avec succès');
+        return true;
+      } else {
+        print('❌ Échec du marquage comme lu: ${response['message'] ?? 'Erreur inconnue'}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur lors du marquage comme lu: $e');
+      return false;
+    }
+  }
+
+  /// Crée une nouvelle conversation (anciennement MessageApiService)
+  Future<Conversation?> createConversation({
+    required int parentId,
+    required int schoolId,
+    required String studentId,
+    required String subject,
+    required String message,
+  }) async {
+    try {
+      print('🆕 Création d\'une nouvelle conversation');
+      
+      final response = await HttpService.post(
+        '/vie-ecoles/messages/create',
+        body: {
+          'parent_id': parentId,
+          'school_id': schoolId,
+          'student_id': studentId,
+          'subject': subject,
+          'message': message,
+        },
+      );
+      
+      if (response['status'] == 'success' && response['data'] != null) {
+        final conversation = Conversation.fromJson(response['data'] as Map<String, dynamic>);
+        print('✅ Conversation créée avec succès');
+        return conversation;
+      } else {
+        throw Exception('Échec de la création de conversation');
+      }
+    } catch (e) {
+      print('❌ Erreur lors de la création de conversation: $e');
+      return null;
+    }
+  }
+
+  /// Récupère les messages/notifications spécifiques à un élève (anciennement StudentMessageService)
+  Future<List<StudentMessage>> getStudentNotifications(
+    String phoneNumber,
+    String matricule, {
+    int perPage = 20,
+    int page = 1,
+  }) async {
+    print('🔄 Début du chargement des messages pour l\'élève: $matricule');
+
+    final url = Uri.parse(
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/messages/$phoneNumber/eleve/$matricule?per_page=$perPage&page=$page',
+    );
+
+    try {
+      print('📡 Appel API: $url');
+      final response = await http.get(url).timeout(AppConfig.API_TIMEOUT);
+
+      print('📥 Réponse reçue - Status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        print('📄 Response body: ${response.body}');
+
+        if ((data['status'] == true || data['status'] == 'success') &&
+            data['data'] != null) {
+          var innerData = data['data'];
+          if (innerData is Map && innerData['data'] != null) {
+            innerData = innerData['data'];
+            if (innerData is Map &&
+                innerData['messages'] != null &&
+                innerData['messages']['data'] != null) {
+              final List<dynamic> messagesData = innerData['messages']['data'];
+              print(
+                '⚠️ Format de réponse imbriqué détecté, mais StudentMessageService ne gère pas ce format',
+              );
+              print(
+                '✅ ${messagesData.length} messages disponibles (format conversation)',
+              );
+              return [];
+            }
+          }
+
+          if (innerData is List) {
+            final List<dynamic> messagesData = innerData;
+            final messages = messagesData
+                .map((json) => StudentMessage.fromJson(json))
+                .toList();
+            print('📚 ${messages.length} messages parsés avec succès');
+            return messages;
+          }
+
+          print('❌ Format de data non reconnu');
+          return [];
+        } else if (data['status'] == false && data['error'] != null) {
+          print('❌ Erreur API: ${data['error']}');
+          return [];
+        } else {
+          print('❌ Status false ou data null dans la réponse');
+          return [];
+        }
+      } else {
+        print('❌ Erreur HTTP - Status: ${response.statusCode}');
+        throw Exception(
+          'Erreur lors du chargement des messages: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('💥 Exception dans getStudentNotifications: $e');
+      throw Exception('Erreur de connexion: $e');
     }
   }
 }

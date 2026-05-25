@@ -521,34 +521,46 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 // Date & Time indicators
-                                Row(
+                                Wrap(
+                                  spacing: 12,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    Icon(
-                                      Icons.calendar_today_outlined,
-                                      size: 12,
-                                      color: AppColors.getTextColor(isDark, type: TextType.tertiary),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_outlined,
+                                          size: 12,
+                                          color: AppColors.getTextColor(isDark, type: TextType.tertiary),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          ticket.date.isNotEmpty ? ticket.date : 'Date à préciser',
+                                          style: TextStyle(
+                                            fontSize: _textSizeService.getScaledFontSize(11),
+                                            color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      ticket.date.isNotEmpty ? ticket.date : 'Date à préciser',
-                                      style: TextStyle(
-                                        fontSize: _textSizeService.getScaledFontSize(11),
-                                        color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Icon(
-                                      Icons.schedule_outlined,
-                                      size: 12,
-                                      color: AppColors.getTextColor(isDark, type: TextType.tertiary),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      ticket.time.isNotEmpty ? ticket.time : '--:--',
-                                      style: TextStyle(
-                                        fontSize: _textSizeService.getScaledFontSize(11),
-                                        color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                                      ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.schedule_outlined,
+                                          size: 12,
+                                          color: AppColors.getTextColor(isDark, type: TextType.tertiary),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          ticket.time.isNotEmpty ? ticket.time : '--:--',
+                                          style: TextStyle(
+                                            fontSize: _textSizeService.getScaledFontSize(11),
+                                            color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -612,59 +624,74 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Quantité: ',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(13),
-                                      color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Quantité: ',
+                                      style: TextStyle(
+                                        fontSize: _textSizeService.getScaledFontSize(13),
+                                        color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    '${ticket.quantity}',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService.getScaledFontSize(14),
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.getTextColor(isDark),
+                                    Expanded(
+                                      child: Text(
+                                        '${ticket.quantity}',
+                                        style: TextStyle(
+                                          fontSize: _textSizeService.getScaledFontSize(14),
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.getTextColor(isDark),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Prix unitaire: ${ticket.unitPrice}',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(12),
-                                  color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Prix unitaire: ${ticket.unitPrice}',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(12),
+                                    color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                          const Spacer(),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Total: ${ticket.totalPrice}',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(16),
-                                  fontWeight: FontWeight.bold,
-                                  color: statusThemeColor,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'Total: ${ticket.totalPrice}',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(16),
+                                    fontWeight: FontWeight.bold,
+                                    color: statusThemeColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                ticket.purchaseDate.isNotEmpty ? 'Acheté le ${ticket.purchaseDate}' : 'Date d\'achat N/A',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(11),
-                                  color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                                const SizedBox(height: 4),
+                                Text(
+                                  ticket.purchaseDate.isNotEmpty ? 'Acheté le ${ticket.purchaseDate}' : 'Date d\'achat N/A',
+                                  style: TextStyle(
+                                    fontSize: _textSizeService.getScaledFontSize(11),
+                                    color: AppColors.getTextColor(isDark, type: TextType.secondary),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.end,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),

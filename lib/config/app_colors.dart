@@ -261,6 +261,11 @@ class AppColors {
     return isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
   }
 
+  // Ombre spécifique de l'écran des paramètres externalisée pour réutilisation
+  static Color settingsCardShadowColorThemed(BuildContext context) {
+    return isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
+  }
+
   static List<BoxShadow> screenCardShadowThemed(BuildContext context) {
     final shadowColor = isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
     return [

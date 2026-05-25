@@ -22,7 +22,7 @@ import '../services/database_service.dart';
 import '../services/order_service.dart';
 import '../models/order.dart';
 import '../services/auth_service.dart';
-import '../services/message_api_service.dart';
+import '../services/message_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_config.dart';
@@ -44,7 +44,6 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../services/notes_api_service.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
-import '../services/student_message_service.dart';
 import '../models/student_message.dart';
 import '../models/student_scolarite.dart';
 import '../widgets/bottom_sheets/enhanced_scolarite_bottom_sheet.dart';
@@ -326,7 +325,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   final StudentTimetableService _timetableService = StudentTimetableService();
   final SchoolService _schoolService = SchoolService();
   final AccessControlService _accessControlService = AccessControlService();
-  final StudentMessageService _messageService = StudentMessageService();
+  final MessageService _messageService = MessageService();
   final StudentScolariteService _scolariteService = StudentScolariteService();
   final MockParentSuggestionService _suggestionService =
       MockParentSuggestionService();
@@ -334,6 +333,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Variables pour la gestion des commandes
   List<Order> _orders = [];
+  Future<List<Order>>? _ordersFuture;
   bool _isLoadingOrders = false;
 
   // Variables pour l'emploi du temps dynamique
@@ -342,8 +342,11 @@ class _ChildListScreenState extends State<ChildListScreen>
   StateSetter? _timetableModalSetState;
   String? _selectedTimetableDay;
   String? _expandedCourseKey;
+  bool _timetableHasError = false;
+  bool _isTimetableSheetOpen = false;
   StateSetter? _ordersModalSetState;
   String? _expandedOrderId;
+  String _ordersStatusFilter = 'Tous';
 
   // Variables pour le contrôle d'accès
   List<AccessControlEntry> _accessEntries = [];
@@ -1181,6 +1184,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       todayStr = 'Dimanche';
 
     _selectedTimetableDay = todayStr;
+    _isTimetableSheetOpen = true;
 
     showModalBottomSheet(
       context: context,
@@ -1190,10 +1194,10 @@ class _ChildListScreenState extends State<ChildListScreen>
         builder: (context, setModalState) {
           _timetableModalSetState = setModalState;
 
-          if (_timetableResponse == null && !_isLoadingTimetable) {
+          if (_timetableResponse == null && !_isLoadingTimetable && !_timetableHasError) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_timetableResponse == null && !_isLoadingTimetable) {
-                _loadTimetableData(setModalState);
+              if (_timetableResponse == null && !_isLoadingTimetable && !_timetableHasError) {
+                _loadTimetableData();
               }
             });
           }
@@ -1223,6 +1227,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       ),
     ).whenComplete(() {
       _timetableModalSetState = null;
+      _isTimetableSheetOpen = false;
     });
   }
 
@@ -1318,6 +1323,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showAttendanceBottomSheet() {
+    _hasLoadedPresence = false;
+    _hasLoadedStatistiques = false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1327,9 +1334,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           _presenceModalSetState = setModalState;
           _presenceStatsModalSetState = setModalState;
 
-          if (_presenceEntries.isEmpty && !_isLoadingPresence) {
+          if (!_hasLoadedPresence && !_isLoadingPresence) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_presenceEntries.isEmpty && !_isLoadingPresence) {
+              if (!_hasLoadedPresence && !_isLoadingPresence) {
                 _loadPresenceData(setModalState);
               }
             });
@@ -1698,6 +1705,8 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _showOrdersBottomSheet() {
     _expandedOrderId = null;
+    _ordersStatusFilter = 'Tous';
+    _ordersFuture = _loadOrdersFuture();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1722,6 +1731,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   description: 'Suivez vos commandes et achats',
                   onClose: () => Navigator.of(context).pop(),
                 ),
+                _buildOrdersFilterButtons(setModalState),
                 Expanded(child: _buildOrdersTab()),
               ],
             ),
@@ -1958,13 +1968,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
+                boxShadow: AppDimensions.getBottomSheetShadow(context),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2540,8 +2544,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           '📝 Marquage de la conversation ${notification.conversationId} comme lue...',
         );
         print('📞 Numéro parent utilisé: $numeroParent');
-        final messageApiService = MessageApiService();
-        final success = await messageApiService.markMessagesAsRead(
+        final messageService = MessageService();
+        final success = await messageService.markMessagesAsRead(
           numeroParent: numeroParent,
           conversationId: notification.conversationId!,
         );
@@ -2612,8 +2616,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         '📝 Marquage de l\'échéance conversation ${echeance.conversationId} comme lue...',
       );
       print('📞 Numéro parent utilisé: $numeroParent');
-      final messageApiService = MessageApiService();
-      final success = await messageApiService.markMessagesAsRead(
+      final messageService = MessageService();
+      final success = await messageService.markMessagesAsRead(
         numeroParent: numeroParent,
         conversationId: echeance.conversationId!,
       );
@@ -3298,13 +3302,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          boxShadow: AppDimensions.getBottomSheetShadow(context),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -5191,6 +5189,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildDynamicTimetable() {
+    final isDarkMode = _themeService.isDarkMode;
+
     if (_isLoadingTimetable) {
       return const Center(
         child: Padding(
@@ -5200,6 +5200,69 @@ class _ChildListScreenState extends State<ChildListScreen>
             loaderColor: AppColors.screenOrange,
             showBackground: false,
           ),
+        ),
+      );
+    }
+
+    if (_timetableHasError) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.wifi_off_rounded,
+              size: 48,
+              color: Colors.orange[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Erreur de chargement',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Impossible de récupérer l\'emploi du temps. Veuillez réessayer.',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: () => _loadTimetableData(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF57C00),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Réessayer',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -6020,13 +6083,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           color: _getStatusColor(suggestion.status).withOpacity(0.3),
           width: 2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -6431,13 +6488,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               : Colors.orange.withOpacity(0.3),
           width: 2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -6872,13 +6923,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           ).withOpacity(0.3),
           width: 2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -7387,13 +7432,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               : Colors.grey[200]!,
           width: message.isUnread ? 2 : 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Material(
         color: Colors.transparent,
@@ -7772,18 +7811,10 @@ class _ChildListScreenState extends State<ChildListScreen>
         border: Border.all(
           color: isExpanded
               ? color.withOpacity(0.4)
-              : (isDarkMode ? Colors.grey[850]! : Colors.grey[200]!),
+              : Colors.transparent,
           width: isExpanded ? 1.5 : 1,
         ),
-        boxShadow: isExpanded
-            ? [
-                BoxShadow(
-                  color: color.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
@@ -8018,11 +8049,13 @@ class _ChildListScreenState extends State<ChildListScreen>
       return;
     }
 
-    final effectiveModalSetState = setModalState ?? _timetableModalSetState;
-
     void updateState(VoidCallback fn) {
-      if (effectiveModalSetState != null) {
-        effectiveModalSetState(fn);
+      if (_isTimetableSheetOpen && _timetableModalSetState != null) {
+        try {
+          _timetableModalSetState!(fn);
+        } catch (e) {
+          print('⚠️ Suppressed setState after dispose for timetable modal: $e');
+        }
       }
       if (mounted) {
         setState(fn);
@@ -8032,6 +8065,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     print('✅ Matricule valide, début du chargement...');
     updateState(() {
       _isLoadingTimetable = true;
+      _timetableHasError = false;
     });
 
     try {
@@ -8052,12 +8086,14 @@ class _ChildListScreenState extends State<ChildListScreen>
       updateState(() {
         _timetableResponse = response;
         _isLoadingTimetable = false;
+        _timetableHasError = false;
       });
       print('📊 Mise à jour de l\'UI terminée');
     } catch (e) {
       print('❌ Erreur lors du chargement de l\'emploi du temps: $e');
       updateState(() {
         _isLoadingTimetable = false;
+        _timetableHasError = true;
       });
     }
   }
@@ -8155,7 +8191,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         throw Exception('Aucun utilisateur connecté');
       }
 
-      final messages = await _messageService.getMessagesForStudent(
+      final messages = await _messageService.getStudentNotifications(
         currentUser.phone,
         studentMatricule,
       );
@@ -9925,9 +9961,85 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  Widget _buildOrdersFilterButtons(StateSetter setModalState) {
+    final isDark = _themeService.isDarkMode;
+    
+    final List<Map<String, dynamic>> tabs = [
+      {'label': 'Tous', 'icon': Icons.all_inbox_rounded, 'color': AppColors.shopBlue},
+      {'label': 'En attente', 'icon': Icons.hourglass_empty_rounded, 'color': Colors.orange[700]!},
+      {'label': 'En cours', 'icon': Icons.trending_up_rounded, 'color': Colors.blue[600]!},
+      {'label': 'Livrées', 'icon': Icons.check_circle_outline_rounded, 'color': Colors.green[600]!},
+      {'label': 'Annulées', 'icon': Icons.cancel_outlined, 'color': Colors.red[600]!},
+    ];
+
+    return Container(
+      height: 38,
+      margin: const EdgeInsets.only(bottom: 8, top: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: tabs.length,
+        itemBuilder: (context, index) {
+          final tab = tabs[index];
+          final label = tab['label'] as String;
+          final icon = tab['icon'] as IconData;
+          final color = tab['color'] as Color;
+          final isSelected = _ordersStatusFilter == label;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: InkWell(
+              onTap: () {
+                setModalState(() {
+                  _ordersStatusFilter = label;
+                });
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected 
+                      ? color.withOpacity(isDark ? 0.2 : 0.1) 
+                      : (isDark ? Colors.grey[850] : Colors.grey[100]),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected 
+                        ? color 
+                        : (isDark ? Colors.grey[800]! : Colors.grey[300]!),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 14,
+                      color: isSelected ? color : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: isSelected ? color : (isDark ? Colors.grey[300] : Colors.grey[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildOrdersTab() {
     return FutureBuilder<List<Order>>(
-      future: _loadOrdersFuture(),
+      future: _ordersFuture ??= _loadOrdersFuture(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
@@ -9988,7 +10100,27 @@ class _ChildListScreenState extends State<ChildListScreen>
           );
         }
 
-        final orders = snapshot.data ?? [];
+        final rawOrders = snapshot.data ?? [];
+        
+        final orders = rawOrders.where((order) {
+          if (_ordersStatusFilter == 'Tous') return true;
+          if (_ordersStatusFilter == 'En attente') {
+            return order.status == OrderStatus.pending;
+          }
+          if (_ordersStatusFilter == 'En cours') {
+            return order.status == OrderStatus.confirmed ||
+                order.status == OrderStatus.processing ||
+                order.status == OrderStatus.shipped;
+          }
+          if (_ordersStatusFilter == 'Livrées') {
+            return order.status == OrderStatus.delivered;
+          }
+          if (_ordersStatusFilter == 'Annulées') {
+            return order.status == OrderStatus.cancelled ||
+                order.status == OrderStatus.refunded;
+          }
+          return true;
+        }).toList();
 
         if (orders.isEmpty) {
           return Container(
@@ -10217,7 +10349,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         border: Border.all(
           color: isExpanded
               ? statusColor.withOpacity(0.4)
-              : (isDarkMode ? Colors.grey[850]! : Colors.grey[200]!),
+              : Colors.transparent,
           width: isExpanded ? 1.5 : 1,
         ),
         boxShadow: [
@@ -10342,36 +10474,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                               height: 1,
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Text(
-                                  'ID Commande : ',
-                                  style: TextStyle(
-                                    fontSize: _textSizeService
-                                        .getScaledFontSize(11),
-                                    fontWeight: FontWeight.w600,
-                                    color: isDarkMode
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                                Expanded(
-                                  child: SelectableText(
-                                    order.id,
-                                    style: TextStyle(
-                                      fontSize: _textSizeService
-                                          .getScaledFontSize(11),
-                                      fontWeight: FontWeight.w400,
-                                      fontFamily: 'monospace',
-                                      color: isDarkMode
-                                          ? Colors.grey[300]
-                                          : Colors.black54,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
+                            
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(12),
@@ -10556,6 +10659,22 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 ),
                               ],
                             ),
+                            if (order.status == OrderStatus.pending) ...[
+                              const SizedBox(height: 16),
+                              _OrderCardCancelButton(
+                                order: order,
+                                onCancelled: () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _ordersFuture = _loadOrdersFuture();
+                                    });
+                                  }
+                                  if (_ordersModalSetState != null) {
+                                    _ordersModalSetState!(() {});
+                                  }
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       )
@@ -10585,15 +10704,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.15), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: isDarkMode
-                ? Colors.black.withOpacity(0.3)
-                : color.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -10802,9 +10913,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildAttendanceSummary() {
     // Charger les statistiques si pas encore chargées
-    if (_statistiquesPresence == null && !_isLoadingStatistiques) {
+    if (!_hasLoadedStatistiques && !_isLoadingStatistiques) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_statistiquesPresence == null && !_isLoadingStatistiques) {
+        if (!_hasLoadedStatistiques && !_isLoadingStatistiques) {
           _loadStatistiquesPresence(_presenceStatsModalSetState);
         }
       });
@@ -11063,9 +11174,11 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<GestionPresenceEleveEntry> _presenceEntries = [];
   List<GestionPresenceEleveEntry> _filteredPresenceEntries = [];
   bool _isLoadingPresence = false;
+  bool _hasLoadedPresence = false;
   StateSetter? _presenceModalSetState;
   StatistiquesPresence? _statistiquesPresence;
   bool _isLoadingStatistiques = false;
+  bool _hasLoadedStatistiques = false;
   StateSetter? _presenceStatsModalSetState;
 
   // Filtres pour la liste des absences
@@ -11371,12 +11484,16 @@ class _ChildListScreenState extends State<ChildListScreen>
       updateState(() {
         _presenceEntries = entries;
         _isLoadingPresence = false;
+        _hasLoadedPresence = true;
       });
 
       print('✅ ${entries.length} entrée(s) de présence/absence chargée(s)');
     } catch (e) {
       print('❌ Erreur lors du chargement des données de présence: $e');
-      updateState(() => _isLoadingPresence = false);
+      updateState(() {
+        _isLoadingPresence = false;
+        _hasLoadedPresence = true;
+      });
     }
   }
 
@@ -11411,6 +11528,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       updateState(() {
         _statistiquesPresence = statistiques;
         _isLoadingStatistiques = false;
+        _hasLoadedStatistiques = true;
       });
 
       if (statistiques != null) {
@@ -11421,7 +11539,10 @@ class _ChildListScreenState extends State<ChildListScreen>
     } catch (e) {
       print('❌ Erreur lors du chargement des statistiques de présence: $e');
       if (mounted) {
-        updateState(() => _isLoadingStatistiques = false);
+        updateState(() {
+          _isLoadingStatistiques = false;
+          _hasLoadedStatistiques = true;
+        });
       }
     }
   }
@@ -13393,5 +13514,264 @@ class _PulseAnimatedButtonState extends State<_PulseAnimatedButton>
         );
       },
     );
+  }
+}
+
+class _OrderCardCancelButton extends StatefulWidget {
+  final Order order;
+  final VoidCallback onCancelled;
+
+  const _OrderCardCancelButton({
+    required this.order,
+    required this.onCancelled,
+  });
+
+  @override
+  State<_OrderCardCancelButton> createState() => _OrderCardCancelButtonState();
+}
+
+class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _isLoading ? null : _cancel,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF0F0),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.2), width: 1.5),
+        ),
+        child: Center(
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.cancel_outlined, size: 16, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text(
+                      'Annuler la commande',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cancel() async {
+    final TextEditingController reasonController = TextEditingController();
+    String selectedReason = "Changement d'avis";
+    final List<String> commonReasons = [
+      "Changement d'avis",
+      "Erreur d'article / quantité",
+      "Achat accidentel",
+      "Délai de livraison trop long",
+      "Autre raison (saisir ci-dessous)"
+    ];
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: const [
+                  Icon(Icons.cancel_outlined, color: Colors.red, size: 24),
+                  SizedBox(width: 8),
+                  Text(
+                    'Annuler la commande',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Veuillez sélectionner le motif d\'annulation de votre commande :',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 14),
+                    ...commonReasons.map((reason) {
+                      final isSelected = selectedReason == reason;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? Colors.red[500]!.withOpacity(isDark ? 0.15 : 0.05)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected 
+                                ? Colors.red[400]! 
+                                : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            setDialogState(() {
+                              selectedReason = reason;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                                  color: isSelected ? Colors.red : Colors.grey,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    reason,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected 
+                                          ? (isDark ? Colors.red[300] : Colors.red[700])
+                                          : (isDark ? Colors.grey[300] : Colors.grey[800]),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    if (selectedReason == "Autre raison (saisir ci-dessous)") ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: reasonController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Saisissez votre motif ici...',
+                          hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Retour', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  child: const Text(
+                    'Confirmer',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    final String finalReason = selectedReason == "Autre raison (saisir ci-dessous)"
+        ? (reasonController.text.trim().isNotEmpty ? reasonController.text.trim() : "Autre motif")
+        : selectedReason;
+
+    setState(() => _isLoading = true);
+    try {
+      final success = await OrderService().cancelOrder(widget.order.id, reason: finalReason);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Commande annulée avec succès',
+                style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.green[500],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        widget.onCancelled();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Échec de l\'annulation de la commande',
+                  style: TextStyle(color: Colors.white)),
+              backgroundColor: Colors.red[400],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e',
+                style: const TextStyle(color: Colors.white)),
+            backgroundColor: Colors.red[400],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 }

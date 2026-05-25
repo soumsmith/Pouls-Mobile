@@ -5,6 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/visite_guidee_video.dart';
 import '../models/video_comment.dart';
 import '../models/video_rating.dart';
+import '../services/theme_service.dart';
+import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/snackbar.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
@@ -50,16 +53,28 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       final videoId = video.youtubeVideoId;
       print('Traitement vidéo: ${video.typeVideo} - VideoID: $videoId');
       if (videoId.isNotEmpty) {
-        controllers.add(YoutubePlayerController(
+        final isInitialVideo = widget.videos.indexOf(video) == widget.initialIndex;
+        final controller = YoutubePlayerController(
           initialVideoId: videoId,
-          flags: const YoutubePlayerFlags(
-            autoPlay: false,
+          flags: YoutubePlayerFlags(
+            autoPlay: isInitialVideo,
             mute: false,
             enableCaption: false,
             forceHD: false,
-            loop: false,
+            loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
+            hideControls: true, // Masquer les contrôles natifs
           ),
-        ));
+        );
+        // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
+        controller.addListener(() {
+          if (mounted) {
+            final activeIndex = widget.videos.indexOf(video);
+            if (activeIndex == _currentIndex) {
+              setState(() {});
+            }
+          }
+        });
+        controllers.add(controller);
       } else {
         print('VideoID vide pour vidéo ${video.typeVideo}');
         controllers.add(null);
@@ -76,12 +91,16 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       _currentIndex = index;
     });
 
-    // Mettre en pause la vidéo précédente
-    if (_currentIndex > 0 && _youtubeControllers[_currentIndex - 1] != null) {
-      _youtubeControllers[_currentIndex - 1]!.pause();
+    // Lecture instantanée de la vidéo active dès le swipe
+    if (_youtubeControllers[index] != null) {
+      _youtubeControllers[index]!.play();
     }
-    if (_currentIndex < _youtubeControllers.length - 1 && _youtubeControllers[_currentIndex + 1] != null) {
-      _youtubeControllers[_currentIndex + 1]!.pause();
+
+    // Pause immédiate de toutes les autres vidéos pour économiser le CPU et le réseau
+    for (int i = 0; i < _youtubeControllers.length; i++) {
+      if (i != index && _youtubeControllers[i] != null) {
+        _youtubeControllers[i]!.pause();
+      }
     }
   }
 
@@ -102,8 +121,12 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       await Share.share(videoUrl, subject: video.displayTitle);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur de partage: $e')),
+        CartSnackBar.showOverlay(
+          context,
+          productName: '',
+          message: 'Erreur de partage: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
         );
       }
     }
@@ -162,39 +185,42 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = ThemeService().isDarkMode;
+
     // Handle empty videos list
     if (widget.videos.isEmpty) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: isDarkMode ? Colors.black : Colors.white,
         appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: const Text(
+          backgroundColor: isDarkMode ? Colors.black : Colors.white,
+          elevation: 0,
+          title: Text(
             'Visites Guidées',
             style: TextStyle(
-              color: Colors.white,
+              color: isDarkMode ? Colors.white : Colors.black87,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black87),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.video_library_outlined,
                 size: 64,
-                color: Colors.white54,
+                color: isDarkMode ? Colors.white54 : Colors.black38,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'Aucune vidéo disponible',
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: isDarkMode ? Colors.white54 : Colors.black54,
                   fontSize: 16,
                 ),
               ),
@@ -205,29 +231,7 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(
-          'Visites Guidées',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          // Bouton pour revenir à la grille
-          IconButton(
-            icon: const Icon(Icons.grid_view, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
           // PageView pour les vidéos (défilement vertical)
@@ -272,21 +276,28 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
             child: Column(
               children: [
                 _ActionButton(
-                  icon: Icons.play_arrow,
-                  label: 'Lecture',
+                  icon: (_youtubeControllers.isNotEmpty &&
+                          _currentIndex < _youtubeControllers.length &&
+                          _youtubeControllers[_currentIndex] != null &&
+                          _youtubeControllers[_currentIndex]!.value.isPlaying)
+                      ? Icons.pause
+                      : Icons.play_arrow,
+                  label: (_youtubeControllers.isNotEmpty &&
+                          _currentIndex < _youtubeControllers.length &&
+                          _youtubeControllers[_currentIndex] != null &&
+                          _youtubeControllers[_currentIndex]!.value.isPlaying)
+                      ? 'Pause'
+                      : 'Lecture',
                   onTap: () {
-                    if (_youtubeControllers[_currentIndex] != null) {
-                      _youtubeControllers[_currentIndex]!.play();
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                _ActionButton(
-                  icon: Icons.pause,
-                  label: 'Pause',
-                  onTap: () {
-                    if (_youtubeControllers[_currentIndex] != null) {
-                      _youtubeControllers[_currentIndex]!.pause();
+                    if (_youtubeControllers.isNotEmpty &&
+                        _currentIndex < _youtubeControllers.length &&
+                        _youtubeControllers[_currentIndex] != null) {
+                      final controller = _youtubeControllers[_currentIndex]!;
+                      if (controller.value.isPlaying) {
+                        controller.pause();
+                      } else {
+                        controller.play();
+                      }
                     }
                   },
                 ),
@@ -295,9 +306,12 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                   icon: Icons.school,
                   label: 'École',
                   onTap: () {
-                    // Naviguer vers l'école (à implémenter selon les besoins)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Navigation vers l\'école à implémenter')),
+                    CartSnackBar.showOverlay(
+                      context,
+                      productName: '',
+                      message: 'Navigation vers l\'école non disponible pour cette visite guidée',
+                      backgroundColor: Colors.blue,
+                      icon: Icons.info_outline,
                     );
                   },
                 ),
@@ -330,13 +344,43 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
               ],
             ),
           ),
+
+          // CustomSliverAppBarFixed overlay (identique à coulisse_video_feed_screen.dart pour un effet ultra premium)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 56 + MediaQuery.of(context).padding.top,
+              child: CustomScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                slivers: [
+                  CustomSliverAppBar(
+                    title: '',
+                    isDark: true, // Toujours style sombre au-dessus du lecteur pour un contraste premium suprême
+                    backgroundColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    automaticallyImplyLeading: true,
+                    actions: [
+                      AppBarIconButton(
+                        icon: Icons.grid_view,
+                        isDark: true,
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _VideoPage extends StatelessWidget {
+class _VideoPage extends StatefulWidget {
   final VisiteGuideeVideo video;
   final YoutubePlayerController? youtubeController;
   final bool isActive;
@@ -348,25 +392,79 @@ class _VideoPage extends StatelessWidget {
   });
 
   @override
+  State<_VideoPage> createState() => _VideoPageState();
+}
+
+class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMixin {
+  bool _showPlayPauseOverlay = false;
+  bool _overlayIsPlayIcon = false;
+  late AnimationController _overlayAnimationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _overlayAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _overlayAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    if (widget.youtubeController != null) {
+      final isPlaying = widget.youtubeController!.value.isPlaying;
+      setState(() {
+        if (isPlaying) {
+          widget.youtubeController!.pause();
+          _overlayIsPlayIcon = false; // Show pause icon
+        } else {
+          widget.youtubeController!.play();
+          _overlayIsPlayIcon = true; // Show play icon
+        }
+        _showPlayPauseOverlay = true;
+      });
+
+      _overlayAnimationController.forward(from: 0.0).then((_) {
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) {
+            setState(() {
+              _showPlayPauseOverlay = false;
+            });
+          }
+        });
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
         // Vidéo YouTube
-        if (youtubeController != null)
-          YoutubePlayer(
-            controller: youtubeController!,
-            showVideoProgressIndicator: true,
-            progressIndicatorColor: Colors.red,
-            progressColors: const ProgressBarColors(
-              playedColor: Colors.red,
-              handleColor: Colors.redAccent,
+        if (widget.youtubeController != null)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _handleTap,
+            child: YoutubePlayer(
+              controller: widget.youtubeController!,
+              showVideoProgressIndicator: true,
+              progressIndicatorColor: Colors.red,
+              progressColors: const ProgressBarColors(
+                playedColor: Colors.red,
+                handleColor: Colors.redAccent,
+              ),
+              onReady: () {
+                if (widget.isActive) {
+                  widget.youtubeController!.play();
+                }
+              },
             ),
-            onReady: () {
-              if (isActive) {
-                youtubeController!.play();
-              }
-            },
           )
         else
           Container(
@@ -376,6 +474,38 @@ class _VideoPage extends StatelessWidget {
                 Icons.play_circle_outline,
                 color: Colors.white54,
                 size: 80,
+              ),
+            ),
+          ),
+
+        // Transient Play/Pause Overlay Icon
+        if (_showPlayPauseOverlay)
+          IgnorePointer(
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _overlayAnimationController,
+                builder: (context, child) {
+                  final scale = 1.0 + (1.0 - _overlayAnimationController.value) * 0.5;
+                  final opacity = 1.0 - _overlayAnimationController.value;
+                  return Opacity(
+                    opacity: opacity,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _overlayIsPlayIcon ? Icons.play_arrow : Icons.pause,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -402,7 +532,7 @@ class _VideoPage extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  video.displayTitle,
+                  widget.video.displayTitle,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -411,7 +541,7 @@ class _VideoPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  video.displayDescription,
+                  widget.video.displayDescription,
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,

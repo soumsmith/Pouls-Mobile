@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../models/product.dart';
 import '../services/cart_service.dart';
 import '../services/produit_service.dart';
@@ -343,13 +344,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             color: _T.navPill(context),
             shape: BoxShape.circle,
             border: Border.all(color: _T.navBorder(context)),
-            boxShadow: [
-              BoxShadow(
-                color: _T.shadowMedium(context),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Icon(icon, size: 15, color: _T.textPrimary(context)),
         ),
@@ -409,13 +404,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       decoration: BoxDecoration(
         color: AppColors.productDetailBadgeBg(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: _T.shadowMedium(context),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -473,9 +462,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         color: _T.card(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _T.cardBorder(context)),
-        boxShadow: [
-          BoxShadow(color: _T.shadowSoft(context), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,9 +661,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         color: _T.card(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _T.cardBorder(context)),
-        boxShadow: [
-          BoxShadow(color: _T.shadowSoft(context), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Row(
         children: [
@@ -879,13 +864,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       decoration: BoxDecoration(
         color: _T.card(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: _T.shadowStrong(context),
-            blurRadius: 24,
-            offset: const Offset(0, -6),
-          ),
-        ],
+        boxShadow: AppDimensions.getBottomSheetShadow(context),
       ),
       child: SafeArea(
         top: false,

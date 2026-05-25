@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
@@ -115,12 +116,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                   decoration: BoxDecoration(
                     color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 2)),
-                    ],
+                    boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
                   child: const Icon(Icons.arrow_back_ios_new,
                       size: 16, color: AppColors.screenTextPrimary),
@@ -165,9 +161,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
       decoration: BoxDecoration(
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: AppColors.screenShadow, blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: TextField(
         controller: _searchController,
@@ -272,12 +266,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                   decoration: BoxDecoration(
                     color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 12,
-                          offset: Offset(0, 4)),
-                    ],
+                    boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,12 +383,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               decoration: BoxDecoration(
                 color: AppColors.screenCard,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                      color: AppColors.screenShadow,
-                      blurRadius: 12,
-                      offset: Offset(0, 4)),
-                ],
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: Column(
                 children: [
@@ -457,10 +441,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
         decoration: BoxDecoration(
           color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-                color: AppColors.screenShadow, blurRadius: 12, offset: Offset(0, 4)),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Theme(
           data: Theme.of(context).copyWith(
@@ -575,12 +556,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
             decoration: BoxDecoration(
               color: AppColors.screenCard,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                    color: AppColors.screenShadow,
-                    blurRadius: 12,
-                    offset: Offset(0, 4)),
-              ],
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: Column(
               children: contacts.asMap().entries.map((entry) {
@@ -741,12 +717,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                   decoration: BoxDecoration(
                     color: AppColors.screenCard,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: AppColors.screenShadow,
-                          blurRadius: 12,
-                          offset: Offset(0, 4)),
-                    ],
+                    boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
                   child: Row(
                     children: [

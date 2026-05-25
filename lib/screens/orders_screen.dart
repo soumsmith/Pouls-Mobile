@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../models/cart_item.dart';
@@ -214,13 +215,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       decoration: BoxDecoration(
         color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.screenShadowThemed(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: _isSearching
           ? Row(
@@ -293,13 +288,7 @@ class _OrdersScreenState extends State<OrdersScreen>
             decoration: BoxDecoration(
               color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.screenShadowThemed(context),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: Icon(
               _isSearching ? Icons.close_rounded : Icons.search_rounded,
@@ -346,13 +335,7 @@ class _OrdersScreenState extends State<OrdersScreen>
         color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.screenDividerThemed(context).withOpacity(0.5), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -762,13 +745,7 @@ class _OrdersScreenState extends State<OrdersScreen>
           decoration: BoxDecoration(
             color: AppColors.screenCardThemed(context),
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
+            boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1267,12 +1244,7 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 12,
-                offset: Offset(0, 4)),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),

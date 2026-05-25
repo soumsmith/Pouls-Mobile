@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
 import '../models/cart_item.dart';
 import '../models/lieu_livraison.dart';
@@ -190,13 +191,7 @@ class _CartScreenState extends State<CartScreen>
               decoration: BoxDecoration(
                 color: AppColors.screenCardThemed(context),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.screenShadowThemed(context),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: Icon(
                 Icons.delete_outline_rounded,
@@ -287,13 +282,7 @@ class _CartScreenState extends State<CartScreen>
                     color: AppColors.screenDividerThemed(context),
                     width: 1,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.screenShadowThemed(context),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: AppDimensions.getSettingsCardShadow(context),
                 ),
                 child: Text(
                   'Continuer les achats',
@@ -339,13 +328,7 @@ class _CartScreenState extends State<CartScreen>
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenShadowThemed(context),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -516,13 +499,7 @@ class _CartScreenState extends State<CartScreen>
       decoration: BoxDecoration(
         color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.screenShadowThemed(context),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         children: [

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/cart_service.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
@@ -171,7 +172,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         color: AppColors.bottomNavBg(context),
         borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
         border: Border.all(color: AppColors.bottomNavBorder(context), width: 0.8),
-        boxShadow: [
+        /*boxShadow: [
           BoxShadow(
             color: AppColors.bottomNavShadow1(context),
             blurRadius: 24,
@@ -184,7 +185,8 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
             offset: const Offset(0, 20),
             spreadRadius: -4,
           ),
-        ],
+        ],*/
+        boxShadow: AppDimensions.getBottomSheetShadow(context),
       ),
       child: ClipRRect(
         borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),

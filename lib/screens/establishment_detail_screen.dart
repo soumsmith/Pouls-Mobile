@@ -358,6 +358,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   String _selectedStatutAff = 'Affecté';
   String _searchQuery = '';
   String? _expandedBranche;
+  bool _isOverviewExpanded = false;
+  bool _isQRCodeExpanded = false;
+  bool _isContactExpanded = false;
+  bool _isAcademicExpanded = false;
   late TextEditingController _searchController;
   late FocusNode _searchFocusNode;
 
@@ -3378,7 +3382,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       case 'consult_requests':
         return _buildConsultRequestsContent(headerColor);
       case 'informations':
-        return _buildInformationsContent(headerColor);
+        return _buildInformationsContent(headerColor, setSheetState);
       case 'communication':
         return _buildCommunicationTab(headerColor);
       case 'niveaux':
@@ -3608,13 +3612,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             borderRadius: BorderRadius.circular(
               AppDimensions.getLargeCardBorderRadius(context),
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.screenShadow,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
+             boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3769,7 +3767,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         decoration: BoxDecoration(
           color: AppColors.screenCard,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: AppDimensions.getMainShadow(context),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4092,6 +4090,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 headerColor,
               );
             }).toList(),
+            const SizedBox(height: 70),
           ],
         );
       },
@@ -4110,10 +4109,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       decoration: BoxDecoration(
         color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.screenBorder(context),
-          width: 1,
-        ),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5025,7 +5021,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                 )
                 .toList(),
-            const SizedBox(height: 50),
+            const SizedBox(height: 70),
           ],
         );
       },
@@ -5052,7 +5048,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: AppDimensions.getMainShadow(context),
+          border: Border.all(
+            color: isExpanded
+                ? AppColors.screenBorder(context)
+                : Colors.transparent,
+            width: isExpanded ? 1.5 : 1,
+          ),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Column(
           children: [
@@ -5569,13 +5571,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             borderRadius: BorderRadius.circular(
               AppDimensions.getHeroCardBorderRadius(context),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
+             boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -6160,13 +6156,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   bottomLeft: Radius.circular(4),
                   bottomRight: Radius.circular(18),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                 boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -6330,13 +6320,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF0288D1),
                     borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0288D1).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+                     boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
                   child: const Icon(
                     Icons.send_rounded,
@@ -6508,192 +6492,219 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Informations content ───────────────────────────────────────────────────
-  Widget _buildInformationsContent(Color headerColor) {
+  Widget _buildInformationsContent(Color headerColor, StateSetter setSheetState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSimplifiedOverviewSection(),
+        _buildSimplifiedOverviewSection(setSheetState),
         const SizedBox(height: 16),
-        _buildQRCodeSection(),
+        _buildQRCodeSection(setSheetState),
         const SizedBox(height: 16),
-        _buildContactInfoSection(),
+        _buildContactInfoSection(setSheetState),
         const SizedBox(height: 16),
-        _buildAcademicInfoSection(),
+        _buildAcademicInfoSection(setSheetState),
         const SizedBox(height: 20),
       ],
     );
   }
 
   // ── Overview section ────────────────────────────────────────────────────────
-  Widget _buildSimplifiedOverviewSection() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.screenOrange.withOpacity(0.08),
-            AppColors.screenOrange.withOpacity(0.03),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildSimplifiedOverviewSection(StateSetter setSheetState) {
+    final isExpanded = _isOverviewExpanded;
+    return GestureDetector(
+      onTap: () {
+        setSheetState(() {
+          _isOverviewExpanded = !isExpanded;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isExpanded
+                ? AppColors.screenOrange.withOpacity(0.4)
+                : Colors.transparent,
+            width: isExpanded ? 1.5 : 1,
+          ),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.screenOrange.withOpacity(0.15)),
-        boxShadow: AppDimensions.getLightShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.screenOrange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.school_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Aperçu',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(18),
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.screenOrange,
-                      ),
-                    ),
-                    Text(
-                      widget.ecole.parametreNom ?? 'Établissement',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondaryThemed(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Type',
-                  widget.ecole.typePrincipal,
-                  Icons.category_rounded,
-                  _getTypeColor(widget.ecole.typePrincipal),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Statut',
-                  widget.ecole.statut ?? 'Actif',
-                  Icons.verified_rounded,
-                  Colors.green,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Code Établissement',
-                  _ecoleDetail?.data.codedren ??
-                      widget.ecole.codedren ??
-                      'Non spécifié',
-                  Icons.code_rounded,
-                  AppColors.screenOrange,
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    final latitude =
-                        _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
-                    final longitude =
-                        _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
-                    if (latitude != null &&
-                        longitude != null &&
-                        latitude != 0.0 &&
-                        longitude != 0.0) {
-                      _openInMaps(latitude, longitude);
-                    }
-                  },
-                  child: _buildStatCard(
-                    'Localisation',
-                    (_ecoleDetail?.data.latitude != 0.0 &&
-                            _ecoleDetail?.data.longitude != 0.0)
-                        ? 'Voir sur la carte'
-                        : 'Non disponible',
-                    Icons.location_on_rounded,
-                    Colors.red,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Numéro d’autorisation',
-                  _ecoleDetail?.data.numautorisation?.isNotEmpty == true
-                      ? _ecoleDetail!.data.numautorisation
-                      : 'Non renseigné',
-                  Icons.confirmation_num_rounded,
-                  AppColors.screenOrange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.screenCard,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                const Text(
-                  'Description',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.screenOrange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.school_rounded,
+                    color: AppColors.screenOrange,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  widget.ecole.parametreNom ?? 'Aucune description disponible',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(13),
-                    color: AppColors.screenTextSecondary,
-                    height: 1.5,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Aperçu',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      Text(
+                        widget.ecole.parametreNom ?? 'Établissement',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          color: AppColors.screenTextSecondaryThemed(context),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    Icons.expand_more,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                    size: 24,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
+              child: isExpanded
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Type',
+                                widget.ecole.typePrincipal,
+                                Icons.category_rounded,
+                                _getTypeColor(widget.ecole.typePrincipal),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Statut',
+                                widget.ecole.statut ?? 'Actif',
+                                Icons.verified_rounded,
+                                Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Code Établissement',
+                                _ecoleDetail?.data.codedren ??
+                                    widget.ecole.codedren ??
+                                    'Non spécifié',
+                                Icons.code_rounded,
+                                AppColors.screenOrange,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  final latitude =
+                                      _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
+                                  final longitude =
+                                      _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
+                                  if (latitude != null &&
+                                      longitude != null &&
+                                      latitude != 0.0 &&
+                                      longitude != 0.0) {
+                                    _openInMaps(latitude, longitude);
+                                  }
+                                },
+                                child: _buildStatCard(
+                                  'Localisation',
+                                  (_ecoleDetail?.data.latitude != 0.0 &&
+                                          _ecoleDetail?.data.longitude != 0.0)
+                                      ? 'Voir sur la carte'
+                                      : 'Non disponible',
+                                  Icons.location_on_rounded,
+                                  Colors.red,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Numéro d’autorisation',
+                                _ecoleDetail?.data.numautorisation?.isNotEmpty == true
+                                    ? _ecoleDetail!.data.numautorisation
+                                    : 'Non renseigné',
+                                Icons.confirmation_num_rounded,
+                                AppColors.screenOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.screenSurfaceThemed(context),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Description',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.screenTextPrimaryThemed(context),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                widget.ecole.parametreNom ?? 'Aucune description disponible',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(13),
+                                  color: AppColors.screenTextSecondaryThemed(context),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox(width: double.infinity, height: 0),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -6838,100 +6849,120 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Section QR Code ───────────────────────────────────────────────
-  Widget _buildQRCodeSection() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.screenOrange,
-                      AppColors.screenOrangeDark,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.qr_code_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'QR Code',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(18),
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.screenOrange,
-                      ),
-                    ),
-                    Text(
-                      'Informations de l\'établissement',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondaryThemed(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+  Widget _buildQRCodeSection(StateSetter setSheetState) {
+    final isExpanded = _isQRCodeExpanded;
+    return GestureDetector(
+      onTap: () {
+        setSheetState(() {
+          _isQRCodeExpanded = !isExpanded;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isExpanded
+                ? AppColors.screenOrange.withOpacity(0.4)
+                : Colors.transparent,
+            width: isExpanded ? 1.5 : 1,
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.screenCard,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: AppDimensions.getLightShadow(context),
-            ),
-            child: Column(
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        child: Column(
+          children: [
+            Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.screenOrange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.screenOrange.withOpacity(0.3),
-                    ),
                   ),
-                  child: Center(
-                    child: QrImageView(
-                      data: _generateQRCodeData(),
-                      version: QrVersions.auto,
-                      size: 150.0,
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                    ),
+                  child: const Icon(
+                    Icons.qr_code_rounded,
+                    color: AppColors.screenOrange,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Scannez pour obtenir les informations',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.screenTextSecondary,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'QR Code',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      Text(
+                        'Informations de l\'établissement',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          color: AppColors.screenTextSecondaryThemed(context),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    Icons.expand_more,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                    size: 24,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
+              child: isExpanded
+                  ? Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.screenOrange.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Center(
+                            child: QrImageView(
+                              data: _generateQRCodeData(),
+                              version: QrVersions.auto,
+                              size: 150.0,
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Scannez pour obtenir les informations',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.screenTextSecondaryThemed(context),
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox(width: double.infinity, height: 0),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -7319,91 +7350,112 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.15),
+          color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.12),
         ),
-        boxShadow: isDark ? null : AppDimensions.getLightShadow(context),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête (Année)
-          Text(
-            annee,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14), // Plus grand
-              color: AppColors.screenTextPrimaryThemed(context),
-              fontWeight: FontWeight.w800,
+          // En-tête (Année) avec fond subtil et contour inférieur occupant toute la largeur
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.screenOrange.withOpacity(0.12)
+                  : AppColors.screenOrange.withOpacity(0.06),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(11),
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.grey.withOpacity(0.15),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Text(
+              annee,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(13),
+                color: AppColors.screenOrange,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
           // Liste des niveaux en 2 colonnes strictes
           Expanded(
-            child: GridView.builder(
-              padding: EdgeInsets.zero,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 7.5, // Ratio plus grand = hauteur de ligne plus petite
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 1.0, // Aucun espacement vertical supplémentaire
-              ),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final res = items[index];
-                final niveau = res["niveau"]?.toString() ?? '';
-                final admis = res["admis"]?.toString() ?? '0';
-                final total = res["total"]?.toString() ?? '0';
-                final taux = res["taux_reussite"]?.toString() ?? '0.00';
-                
-                final double tauxValue = double.tryParse(taux) ?? 0.0;
-                final Color tauxColor = tauxValue >= 50.0 ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              child: GridView.builder(
+                padding: EdgeInsets.zero,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 7.5,
+                  crossAxisSpacing: 8.0,
+                  mainAxisSpacing: 1.0,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final res = items[index];
+                  final niveau = res["niveau"]?.toString() ?? '';
+                  final admis = res["admis"]?.toString() ?? '0';
+                  final total = res["total"]?.toString() ?? '0';
+                  final taux = res["taux_reussite"]?.toString() ?? '0.00';
+                  
+                  final double tauxValue = double.tryParse(taux) ?? 0.0;
+                  final Color tauxColor = tauxValue >= 50.0 ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
 
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: RichText(
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '$niveau ',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(12),
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.screenTextPrimaryThemed(context),
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: RichText(
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$niveau ',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(12),
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.screenTextPrimaryThemed(context),
+                                ),
                               ),
-                            ),
-                            TextSpan(
-                              text: '($admis/$total)',
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(11),
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.screenTextSecondaryThemed(context),
+                              TextSpan(
+                                text: '($admis/$total)',
+                                style: TextStyle(
+                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.screenTextSecondaryThemed(context),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${tauxValue.toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(12), // Plus grand
-                        fontWeight: FontWeight.bold,
-                        color: tauxColor,
+                      const SizedBox(width: 4),
+                      Text(
+                        '${tauxValue.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          fontWeight: FontWeight.bold,
+                          color: tauxColor,
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -8327,185 +8379,241 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   //  Simplified contact info section
-  Widget _buildContactInfoSection() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF3B82F6).withOpacity(0.08),
-            const Color(0xFF3B82F6).withOpacity(0.03),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildContactInfoSection(StateSetter setSheetState) {
+    final isExpanded = _isContactExpanded;
+    return GestureDetector(
+      onTap: () {
+        setSheetState(() {
+          _isContactExpanded = !isExpanded;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isExpanded
+                ? const Color(0xFF3B82F6).withOpacity(0.4)
+                : Colors.transparent,
+            width: isExpanded ? 1.5 : 1,
+          ),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.15)),
-        boxShadow: AppDimensions.getLightShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6),
-                  borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.contact_phone_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.contact_phone_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Contact',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(18),
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF3B82F6),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Contact',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                          letterSpacing: -0.2,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Informations de contact',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondaryThemed(context),
+                      Text(
+                        'Informations de contact',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          color: AppColors.screenTextSecondaryThemed(context),
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildContactInfoCard(
-            'Adresse',
-            '${widget.ecole.adresse ?? 'Non disponible'}, ${widget.ecole.ville ?? ''}, ${widget.ecole.pays ?? ''}',
-            Icons.location_on_rounded,
-            const Color(0xFF3B82F6),
-          ),
-          const SizedBox(height: 8),
-          if (widget.ecole.telephone?.isNotEmpty == true) ...[
-            _buildContactInfoCard(
-              'Téléphone',
-              widget.ecole.telephone!,
-              Icons.phone_rounded,
-              Colors.green,
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    Icons.expand_more,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                    size: 24,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
+              child: isExpanded
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildContactInfoCard(
+                          'Adresse',
+                          '${widget.ecole.adresse ?? 'Non disponible'}, ${widget.ecole.ville ?? ''}, ${widget.ecole.pays ?? ''}',
+                          Icons.location_on_rounded,
+                          const Color(0xFF3B82F6),
+                        ),
+                        const SizedBox(height: 8),
+                        if (widget.ecole.telephone?.isNotEmpty == true) ...[
+                          _buildContactInfoCard(
+                            'Téléphone',
+                            widget.ecole.telephone!,
+                            Icons.phone_rounded,
+                            Colors.green,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        FutureBuilder<EcoleDetail>(
+                          future: EcoleApiService.getEcoleDetail(
+                            widget.ecole.parametreCode ?? '',
+                          ),
+                          builder: (_, snap) {
+                            if (!snap.hasData) return const SizedBox.shrink();
+                            final d = snap.data!.data;
+                            return Column(
+                              children: [
+                                if (d.email?.isNotEmpty == true) ...[
+                                  _buildContactInfoCard(
+                                    'Email',
+                                    d.email!,
+                                    Icons.email_rounded,
+                                    Colors.orange,
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+                                if (d.site?.isNotEmpty == true)
+                                  _buildContactInfoCard(
+                                    'Site web',
+                                    d.site!,
+                                    Icons.web_rounded,
+                                    Colors.purple,
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    )
+                  : const SizedBox(width: double.infinity, height: 0),
+            ),
           ],
-          FutureBuilder<EcoleDetail>(
-            future: EcoleApiService.getEcoleDetail(
-              widget.ecole.parametreCode ?? '',
-            ),
-            builder: (_, snap) {
-              if (!snap.hasData) return const SizedBox.shrink();
-              final d = snap.data!.data;
-              return Column(
-                children: [
-                  if (d.email?.isNotEmpty == true) ...[
-                    _buildContactInfoCard(
-                      'Email',
-                      d.email!,
-                      Icons.email_rounded,
-                      Colors.orange,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  if (d.site?.isNotEmpty == true)
-                    _buildContactInfoCard(
-                      'Site web',
-                      d.site!,
-                      Icons.web_rounded,
-                      Colors.purple,
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
 
   //  Academic info section
-  Widget _buildAcademicInfoSection() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.green.withOpacity(0.08),
-            Colors.green.withOpacity(0.03),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.withOpacity(0.15)),
-        boxShadow: AppDimensions.getLightShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.school_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Informations académiques',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(18),
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                    Text(
-                      'Détails de l\'établissement',
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(13),
-                        color: AppColors.screenTextSecondaryThemed(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+  Widget _buildAcademicInfoSection(StateSetter setSheetState) {
+    final isExpanded = _isAcademicExpanded;
+    return GestureDetector(
+      onTap: () {
+        setSheetState(() {
+          _isAcademicExpanded = !isExpanded;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isExpanded
+                ? Colors.green.withOpacity(0.4)
+                : Colors.transparent,
+            width: isExpanded ? 1.5 : 1,
           ),
-          const SizedBox(height: 8),
-          if (widget.ecole.filiereNom.isNotEmpty)
-            _buildInfoDetailCard(
-              'Filières',
-              widget.ecole.filiereNom.join(', '),
-              Icons.school_rounded,
-              const Color(0xFF10B981),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.school_rounded,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Informations académiques',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(14),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      Text(
+                        'Détails de l\'établissement',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          color: AppColors.screenTextSecondaryThemed(context),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    Icons.expand_more,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                    size: 24,
+                  ),
+                ),
+              ],
             ),
-        ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
+              child: isExpanded
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        if (widget.ecole.filiereNom.isNotEmpty)
+                          _buildInfoDetailCard(
+                            'Filières',
+                            widget.ecole.filiereNom.join(', '),
+                            Icons.school_rounded,
+                            const Color(0xFF10B981),
+                          ),
+                      ],
+                    )
+                  : const SizedBox(width: double.infinity, height: 0),
+            ),
+          ],
+        ),
       ),
     );
   }

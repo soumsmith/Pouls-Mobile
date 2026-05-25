@@ -588,13 +588,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           borderRadius: BorderRadius.circular(
             AppDimensions.getButtonBorderRadius(context),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenShadowThemed(context),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Icon(
           icon,
@@ -1755,13 +1749,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 24,
-              offset: const Offset(0, -6),
-            ),
-          ],
+          boxShadow: AppDimensions.getBottomSheetShadow(context),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

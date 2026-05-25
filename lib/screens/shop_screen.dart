@@ -471,13 +471,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               borderRadius: BorderRadius.circular(
                 AppDimensions.getSmallCardBorderRadius(context),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.screenShadowThemed(context),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: Icon(icon, size: 18, color: color),
           ),

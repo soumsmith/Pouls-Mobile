@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../main.dart';
 
@@ -13,16 +14,28 @@ enum NotificationType {
 
 /// Helper centralisé pour afficher des notifications dans toute l'application.
 ///
-/// Utilise le [scaffoldMessengerKey] global défini dans main.dart pour
-/// pouvoir afficher des notifications depuis n'importe quel service,
-/// même sans accès direct à un BuildContext.
+/// Utilise un Overlay Entry global (via le [navigatorKey] de main.dart) pour s'afficher
+/// au tout premier plan, au-dessus de tous les bottom sheets, modales et claviers.
+///
+/// Possède un mécanisme de repli (fallback) sur [ScaffoldMessenger] si l'overlay n'est pas disponible.
 class NotificationHelper {
   NotificationHelper._();
 
-  /// Affiche une notification globale (sans besoin de BuildContext)
-  ///
-  /// Utilise le [scaffoldMessengerKey] global pour afficher la notification.
-  /// Peut être appelée depuis n'importe quel service ou écran.
+  static OverlayEntry? _currentOverlayEntry;
+  static Timer? _autoDismissTimer;
+
+  /// Annule et ferme la notification active avec une animation
+  static void dismiss() {
+    _autoDismissTimer?.cancel();
+    _autoDismissTimer = null;
+
+    if (_currentOverlayEntry != null) {
+      _currentOverlayEntry!.remove();
+      _currentOverlayEntry = null;
+    }
+  }
+
+  /// Affiche une notification globale (sans besoin de BuildContext) au premier plan
   static void show({
     required String message,
     NotificationType type = NotificationType.info,
@@ -30,26 +43,103 @@ class NotificationHelper {
     String? actionText,
     VoidCallback? onActionPressed,
   }) {
-    final state = scaffoldMessengerKey.currentState;
-    if (state == null) {
-      debugPrint('⚠️ NotificationHelper: ScaffoldMessengerState non disponible');
+    // 1. Annuler la notification précédente
+    dismiss();
+
+    // 2. Tenter d'afficher via un Overlay global (au-dessus des bottomsheets)
+    final overlay = navigatorKey.currentState?.overlay;
+    if (overlay == null) {
+      // Repli (fallback) sur le ScaffoldMessenger classique si l'overlay n'est pas disponible
+      _showFallbackSnackBar(
+        message: message,
+        type: type,
+        duration: duration,
+        actionText: actionText,
+        onActionPressed: onActionPressed,
+      );
       return;
     }
 
-    // Configuration visuelle selon le type
-    final config = _getConfig(type);
+    final GlobalKey<_NotificationOverlayCardState> cardKey = GlobalKey<_NotificationOverlayCardState>();
 
-    // Masquer la notification précédente
+    final overlayEntry = OverlayEntry(
+      builder: (context) {
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
+        return Positioned(
+          bottom: bottomPadding + 24,
+          left: 16,
+          right: 16,
+          child: Material(
+            color: Colors.transparent,
+            child: _NotificationOverlayCard(
+              key: cardKey,
+              message: message,
+              type: type,
+              actionText: actionText,
+              onActionPressed: onActionPressed,
+              onDismiss: () {
+                if (_currentOverlayEntry != null) {
+                  _currentOverlayEntry!.remove();
+                  _currentOverlayEntry = null;
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    _currentOverlayEntry = overlayEntry;
+    overlay.insert(overlayEntry);
+
+    // 3. Fermeture automatique après la durée
+    _autoDismissTimer = Timer(duration, () {
+      if (cardKey.currentState != null) {
+        cardKey.currentState!.dismiss();
+      } else {
+        dismiss();
+      }
+    });
+  }
+
+  /// Affiche une notification avec un BuildContext (alternative locale)
+  static void showWithContext({
+    required BuildContext context,
+    required String message,
+    NotificationType type = NotificationType.info,
+    Duration duration = const Duration(seconds: 4),
+    String? actionText,
+    VoidCallback? onActionPressed,
+  }) {
+    show(
+      message: message,
+      type: type,
+      duration: duration,
+      actionText: actionText,
+      onActionPressed: onActionPressed,
+    );
+  }
+
+  /// Méthode de repli utilisant l'ancien système de SnackBar
+  static void _showFallbackSnackBar({
+    required String message,
+    required NotificationType type,
+    required Duration duration,
+    String? actionText,
+    VoidCallback? onActionPressed,
+  }) {
+    final state = scaffoldMessengerKey.currentState;
+    if (state == null) return;
+
+    final config = _getConfig(type);
     state.hideCurrentSnackBar();
 
     state.showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            // Icône animée
             _AnimatedIcon(icon: config.icon, color: config.iconColor),
             const SizedBox(width: 12),
-            // Message
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -79,7 +169,6 @@ class NotificationHelper {
                 ],
               ),
             ),
-            // Bouton d'action optionnel
             if (actionText != null && onActionPressed != null) ...[
               const SizedBox(width: 8),
               TextButton(
@@ -127,28 +216,8 @@ class NotificationHelper {
     );
   }
 
-  /// Affiche une notification avec un BuildContext (alternative locale)
-  static void showWithContext({
-    required BuildContext context,
-    required String message,
-    NotificationType type = NotificationType.info,
-    Duration duration = const Duration(seconds: 4),
-    String? actionText,
-    VoidCallback? onActionPressed,
-  }) {
-    // Essayer d'abord avec le global
-    show(
-      message: message,
-      type: type,
-      duration: duration,
-      actionText: actionText,
-      onActionPressed: onActionPressed,
-    );
-  }
-
   // ─── Méthodes de raccourci ─────────────────────────────────────────
 
-  /// Notification de timeout
   static void showTimeout({String? customMessage}) {
     show(
       message: customMessage ?? 'Le serveur met trop de temps à répondre. Vérifiez votre connexion et réessayez.',
@@ -157,7 +226,6 @@ class NotificationHelper {
     );
   }
 
-  /// Notification de perte de connexion
   static void showNoConnection({String? customMessage}) {
     show(
       message: customMessage ?? 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.',
@@ -166,7 +234,6 @@ class NotificationHelper {
     );
   }
 
-  /// Notification d'erreur serveur
   static void showServerError({String? customMessage, int? statusCode}) {
     final msg = customMessage ?? 
       (statusCode != null 
@@ -179,22 +246,18 @@ class NotificationHelper {
     );
   }
 
-  /// Notification de succès
   static void showSuccess(String message) {
     show(message: message, type: NotificationType.success);
   }
 
-  /// Notification d'information
   static void showInfo(String message) {
     show(message: message, type: NotificationType.info);
   }
 
-  /// Notification d'avertissement
   static void showWarning(String message) {
     show(message: message, type: NotificationType.warning);
   }
 
-  /// Notification d'erreur générique
   static void showError(String message) {
     show(message: message, type: NotificationType.error);
   }
@@ -340,6 +403,180 @@ class _AnimatedIconState extends State<_AnimatedIcon>
           widget.icon,
           color: widget.color,
           size: 22,
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget de carte de notification affiché en Overlay (au tout premier plan)
+class _NotificationOverlayCard extends StatefulWidget {
+  final String message;
+  final NotificationType type;
+  final String? actionText;
+  final VoidCallback? onActionPressed;
+  final VoidCallback onDismiss;
+
+  const _NotificationOverlayCard({
+    super.key,
+    required this.message,
+    required this.type,
+    this.actionText,
+    this.onActionPressed,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_NotificationOverlayCard> createState() => _NotificationOverlayCardState();
+}
+
+class _NotificationOverlayCardState extends State<_NotificationOverlayCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.4),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Méthode d'animation de sortie fluide
+  void dismiss() {
+    if (mounted) {
+      _controller.reverse().then((_) {
+        widget.onDismiss();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final config = NotificationHelper._getConfig(widget.type);
+    
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: GestureDetector(
+          onHorizontalDragEnd: (details) {
+            // Dismiss on swipe left or right!
+            if (details.primaryVelocity != null && details.primaryVelocity!.abs() > 250) {
+              dismiss();
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: config.backgroundColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: config.borderColor,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Icône
+                _AnimatedIcon(
+                  icon: config.icon,
+                  color: config.iconColor,
+                ),
+                const SizedBox(width: 12),
+                // Message
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        config.title,
+                        style: TextStyle(
+                          color: config.textColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.message,
+                        style: TextStyle(
+                          color: config.textColor.withOpacity(0.85),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w400,
+                          height: 1.3,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                // Bouton d'action optionnel
+                if (widget.actionText != null && widget.onActionPressed != null) ...[
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      dismiss();
+                      widget.onActionPressed!();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: config.textColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: config.textColor.withOpacity(0.3),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      widget.actionText!,
+                      style: TextStyle(
+                        color: config.textColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/coulisse_excellence.dart';
 import '../models/ecole.dart';
+import '../models/ecole_detail.dart';
 import '../models/video_rating.dart';
 import '../models/interaction.dart';
 import '../services/ecole_api_service.dart';
@@ -12,6 +13,7 @@ import '../services/theme_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
+import '../widgets/snackbar.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -62,19 +64,27 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       print('Traitement vidéo: ${video.id} - VideoID: $videoId');
       if (videoId.isNotEmpty) {
         final isInitialVideo = widget.videos.indexOf(video) == widget.initialIndex;
-        controllers.add(
-          YoutubePlayerController(
-            initialVideoId: videoId,
-            flags: YoutubePlayerFlags(
-              autoPlay: isInitialVideo,
-              mute: false,
-              enableCaption: false,
-              forceHD: false,
-              loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
-              hideControls: true, // Masquer les contrôles natifs (et le titre/logo de la chaîne en haut)
-            ),
+        final controller = YoutubePlayerController(
+          initialVideoId: videoId,
+          flags: YoutubePlayerFlags(
+            autoPlay: isInitialVideo,
+            mute: false,
+            enableCaption: false,
+            forceHD: false,
+            loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
+            hideControls: true, // Masquer les contrôles natifs (et le titre/logo de la chaîne en haut)
           ),
         );
+        // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
+        controller.addListener(() {
+          if (mounted) {
+            final activeIndex = widget.videos.indexOf(video);
+            if (activeIndex == _currentIndex) {
+              setState(() {});
+            }
+          }
+        });
+        controllers.add(controller);
       } else {
         print('VideoID vide pour vidéo ${video.id} - ${video.titre}');
         controllers.add(null);
@@ -171,9 +181,13 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        CartSnackBar.showOverlay(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+          productName: '',
+          message: 'Erreur: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
+        );
       }
     }
   }
@@ -376,21 +390,28 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             child: Column(
               children: [
                 _ActionButton(
-                  icon: Icons.play_arrow,
-                  label: 'Lecture',
+                  icon: (_youtubeControllers.isNotEmpty &&
+                          _currentIndex < _youtubeControllers.length &&
+                          _youtubeControllers[_currentIndex] != null &&
+                          _youtubeControllers[_currentIndex]!.value.isPlaying)
+                      ? Icons.pause
+                      : Icons.play_arrow,
+                  label: (_youtubeControllers.isNotEmpty &&
+                          _currentIndex < _youtubeControllers.length &&
+                          _youtubeControllers[_currentIndex] != null &&
+                          _youtubeControllers[_currentIndex]!.value.isPlaying)
+                      ? 'Pause'
+                      : 'Lecture',
                   onTap: () {
-                    if (_youtubeControllers[_currentIndex] != null) {
-                      _youtubeControllers[_currentIndex]!.play();
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                _ActionButton(
-                  icon: Icons.pause,
-                  label: 'Pause',
-                  onTap: () {
-                    if (_youtubeControllers[_currentIndex] != null) {
-                      _youtubeControllers[_currentIndex]!.pause();
+                    if (_youtubeControllers.isNotEmpty &&
+                        _currentIndex < _youtubeControllers.length &&
+                        _youtubeControllers[_currentIndex] != null) {
+                      final controller = _youtubeControllers[_currentIndex]!;
+                      if (controller.value.isPlaying) {
+                        controller.pause();
+                      } else {
+                        controller.play();
+                      }
                     }
                   },
                 ),
@@ -472,16 +493,37 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   }
 }
 
-class _SchoolLogo extends StatelessWidget {
+class _SchoolLogo extends StatefulWidget {
   final String code;
   final String fallbackName;
 
   const _SchoolLogo({required this.code, required this.fallbackName});
 
   @override
+  State<_SchoolLogo> createState() => _SchoolLogoState();
+}
+
+class _SchoolLogoState extends State<_SchoolLogo> {
+  late Future<EcoleDetail> _ecoleDetailFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SchoolLogo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.code != widget.code) {
+      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: EcoleApiService.getEcoleDetail(code),
+    return FutureBuilder<EcoleDetail>(
+      future: _ecoleDetailFuture,
       builder: (context, snapshot) {
         String? logoUrl;
         if (snapshot.hasData) {
@@ -512,7 +554,7 @@ class _SchoolLogo extends StatelessWidget {
                     logoUrl.isEmpty ||
                     (!logoUrl.startsWith('http://') && !logoUrl.startsWith('https://'))
                 ? Text(
-                    fallbackName.isNotEmpty ? fallbackName[0].toUpperCase() : 'E',
+                    widget.fallbackName.isNotEmpty ? widget.fallbackName[0].toUpperCase() : 'E',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -527,7 +569,7 @@ class _SchoolLogo extends StatelessWidget {
   }
 }
 
-class _VideoPage extends StatelessWidget {
+class _VideoPage extends StatefulWidget {
   final CoulisseExcellence video;
   final YoutubePlayerController? youtubeController;
   final bool isActive;
@@ -539,25 +581,79 @@ class _VideoPage extends StatelessWidget {
   });
 
   @override
+  State<_VideoPage> createState() => _VideoPageState();
+}
+
+class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMixin {
+  bool _showPlayPauseOverlay = false;
+  bool _overlayIsPlayIcon = false;
+  late AnimationController _overlayAnimationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _overlayAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _overlayAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    if (widget.youtubeController != null) {
+      final isPlaying = widget.youtubeController!.value.isPlaying;
+      setState(() {
+        if (isPlaying) {
+          widget.youtubeController!.pause();
+          _overlayIsPlayIcon = false; // Show pause icon
+        } else {
+          widget.youtubeController!.play();
+          _overlayIsPlayIcon = true; // Show play icon
+        }
+        _showPlayPauseOverlay = true;
+      });
+
+      _overlayAnimationController.forward(from: 0.0).then((_) {
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) {
+            setState(() {
+              _showPlayPauseOverlay = false;
+            });
+          }
+        });
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
         // Vidéo YouTube
-        if (youtubeController != null)
-          YoutubePlayer(
-            controller: youtubeController!,
-            showVideoProgressIndicator: true,
-            progressIndicatorColor: Colors.red,
-            progressColors: const ProgressBarColors(
-              playedColor: Colors.red,
-              handleColor: Colors.redAccent,
+        if (widget.youtubeController != null)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _handleTap,
+            child: YoutubePlayer(
+              controller: widget.youtubeController!,
+              showVideoProgressIndicator: true,
+              progressIndicatorColor: Colors.red,
+              progressColors: const ProgressBarColors(
+                playedColor: Colors.red,
+                handleColor: Colors.redAccent,
+              ),
+              onReady: () {
+                if (widget.isActive) {
+                  widget.youtubeController!.play();
+                }
+              },
             ),
-            onReady: () {
-              if (isActive) {
-                youtubeController!.play();
-              }
-            },
           )
         else
           Container(
@@ -567,6 +663,38 @@ class _VideoPage extends StatelessWidget {
                 Icons.play_circle_outline,
                 color: Colors.white54,
                 size: 80,
+              ),
+            ),
+          ),
+
+        // Transient Play/Pause Overlay Icon
+        if (_showPlayPauseOverlay)
+          IgnorePointer(
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _overlayAnimationController,
+                builder: (context, child) {
+                  final scale = 1.0 + (1.0 - _overlayAnimationController.value) * 0.5;
+                  final opacity = 1.0 - _overlayAnimationController.value;
+                  return Opacity(
+                    opacity: opacity,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _overlayIsPlayIcon ? Icons.play_arrow : Icons.pause,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -598,13 +726,13 @@ class _VideoPage extends StatelessWidget {
                 Row(
                   children: [
                     _SchoolLogo(
-                      code: video.code,
-                      fallbackName: video.etablissement,
+                      code: widget.video.code,
+                      fallbackName: widget.video.etablissement,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        video.etablissement,
+                        widget.video.etablissement,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
@@ -625,7 +753,7 @@ class _VideoPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  video.titre,
+                  widget.video.titre,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -643,7 +771,7 @@ class _VideoPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${video.fullName} · ${video.classe}',
+                  '${widget.video.fullName} · ${widget.video.classe}',
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
@@ -651,7 +779,7 @@ class _VideoPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _ExpandableDescription(text: video.description),
+                _ExpandableDescription(text: widget.video.description),
               ],
             ),
           ),
@@ -830,10 +958,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   Future<void> _addComment() async {
     if (_commentController.text.trim().isEmpty) return;
     if (_currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vous devez être connecté pour commenter'),
-        ),
+      CartSnackBar.showOverlay(
+        context,
+        productName: '',
+        message: 'Vous devez être connecté pour commenter',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
       );
       return;
     }
@@ -854,8 +984,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       // Si l'API retourne un succès mais sans données, on recharge la liste
       await _loadComments();
       _commentController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Commentaire ajouté avec succès')),
+      CartSnackBar.showOverlay(
+        context,
+        productName: '',
+        message: 'Commentaire ajouté avec succès',
+        backgroundColor: Colors.green,
+        icon: Icons.check_circle_outline,
       );
     }
   }
@@ -1726,8 +1860,12 @@ class _ShareOptionsSheet extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).pop();
                     // Copy link logic would go here
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Lien copié!')),
+                    CartSnackBar.showOverlay(
+                      context,
+                      productName: '',
+                      message: 'Lien copié !',
+                      backgroundColor: Colors.blue,
+                      icon: Icons.link,
                     );
                   },
                 ),

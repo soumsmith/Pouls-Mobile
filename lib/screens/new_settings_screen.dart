@@ -5,6 +5,7 @@ import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_config.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../screens/login_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/help_support_screen.dart';
@@ -322,10 +323,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
             decoration: BoxDecoration(
               color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: AppColors.screenShadowThemed(context), blurRadius: 12, offset: Offset(0, 4)),
-              ],
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: Column(
               children: items.asMap().entries.map((entry) {

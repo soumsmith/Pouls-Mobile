@@ -497,13 +497,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 24,
-                  offset: const Offset(0, -8),
-                ),
-              ],
+              boxShadow: AppDimensions.getBottomSheetShadow(context),
             ),
             padding: EdgeInsets.fromLTRB(
               20,
@@ -642,13 +636,7 @@ class _AddChildScreenState extends State<AddChildScreen>
           borderRadius: BorderRadius.circular(
             AppDimensions.getSmallCardBorderRadius(context),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenShadowThemed(context),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: const Icon(
           Icons.help_outline,
@@ -697,13 +685,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 24,
-                  offset: const Offset(0, -8),
-                ),
-              ],
+              boxShadow: AppDimensions.getBottomSheetShadow(context),
             ),
             padding: EdgeInsets.fromLTRB(
               16,
@@ -1338,13 +1320,7 @@ class _AddChildScreenState extends State<AddChildScreen>
         color: AppColors.screenCard,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.screenDivider.withOpacity(0.6)),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

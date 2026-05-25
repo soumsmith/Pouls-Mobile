@@ -234,12 +234,7 @@ class _SchoolEventBottomSheetState extends State<SchoolEventBottomSheet> {
                 ? const Color(0xFF2A2A2A)
                 : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: AppDimensions.getMainShadow(context),
-            border: Border.all(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white10
-                  : Colors.grey.shade100,
-            ),
+            boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Padding(
             padding: EdgeInsets.all(AppDimensions.getEventCardPadding(context)),

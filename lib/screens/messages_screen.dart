@@ -10,11 +10,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
-import '../services/message_api_service.dart';
 import '../services/mock_api_service.dart';
 import '../models/conversation.dart';
 import '../models/child.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
@@ -78,7 +78,6 @@ class _MessagesScreenState extends State<MessagesScreen>
   bool _isLoading = true;
   bool _isLoadingChildren = true;
   final TextSizeService _textSizeService = TextSizeService();
-  final MessageApiService _messageApiService = MessageApiService();
   final MessageService _messageService = MessageService();
   final ScrollController _scrollController = ScrollController();
 
@@ -218,7 +217,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       final currentUser = AuthService.instance.getCurrentUser();
       if (currentUser == null) throw Exception('Aucun utilisateur connecté');
 
-      final result = await _messageApiService.getMessagesForStudent(
+      final result = await _messageService.getMessagesForStudent(
         currentUser.phone,
         _args?.studentMatricule ?? '',
       );
@@ -229,7 +228,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       final conversationId = result['conversationId'] as int?;
 
       if (conversationId != null) {
-        await _messageApiService.markMessagesAsRead(
+        await _messageService.markMessagesAsRead(
           numeroParent: currentUser.phone,
           conversationId: conversationId,
         );
@@ -411,13 +410,7 @@ class _MessagesScreenState extends State<MessagesScreen>
           decoration: BoxDecoration(
             color: AppColors.screenCardThemed(context),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.screenShadowThemed(context),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Icon(
             Icons.refresh_outlined,

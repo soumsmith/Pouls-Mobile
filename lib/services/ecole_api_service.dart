@@ -145,8 +145,16 @@ class EcoleApiService {
     }
   }
 
+  /// Cache en mémoire pour éviter les requêtes HTTP répétitives et les erreurs 429
+  static final Map<String, EcoleDetail> _detailCache = {};
+
   /// Récupère les détails d'une école spécifique
   static Future<EcoleDetail> getEcoleDetail(String parametreCode) async {
+    if (_detailCache.containsKey(parametreCode)) {
+      print('📥 [CACHE] Détails de l\'école récupérés depuis le cache pour: $parametreCode');
+      return _detailCache[parametreCode]!;
+    }
+
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🏫 DÉTAILS DE L\'ÉCOLE');
@@ -179,7 +187,9 @@ class EcoleApiService {
         print('✅ Détails de l\'école récupérés avec succès');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        return EcoleDetail.fromJson(data);
+        final detail = EcoleDetail.fromJson(data);
+        _detailCache[parametreCode] = detail;
+        return detail;
       } else {
         print('❌ Erreur HTTP ${response.statusCode}');
         print('❌ Corps de la réponse: ${response.body}');

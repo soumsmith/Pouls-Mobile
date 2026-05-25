@@ -110,15 +110,21 @@ class HttpService {
 
   /// Traite la réponse HTTP
   static Map<String, dynamic> _handleResponse(http.Response response) {
+    // Cas spécial : L'API retourne parfois un code 500 avec {"somme_reservation":0,"status":false}
+    // au lieu d'un 200 OK quand il n'y a pas de réservation. On traite cela comme un succès.
+    final bool isSpecialReservationNoContent = response.statusCode == 500 &&
+        response.body.contains('"somme_reservation":0') &&
+        response.body.contains('"status":false');
+
     // Vérifier les erreurs HTTP et notifier l'utilisateur
     ApiExceptionHandler.handleHttpStatus(
       response.statusCode,
       responseBody: response.body,
       context: 'la requête API',
-      showNotification: response.statusCode >= 500, // Notifier seulement pour les erreurs serveur
+      showNotification: response.statusCode >= 500 && !isSpecialReservationNoContent, // Notifier seulement pour les erreurs réelles du serveur
     );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if ((response.statusCode >= 200 && response.statusCode < 300) || isSpecialReservationNoContent) {
       try {
         return json.decode(response.body) as Map<String, dynamic>;
       } catch (e) {

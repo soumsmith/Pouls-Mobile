@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 
 class SearchBarWidget extends StatefulWidget {
   final bool isSearching;
@@ -48,13 +49,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                 border: Border.all(
                   color: AppColors.screenCardThemed(context),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.screenOrange.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: TextField(
                 controller: widget.searchController,

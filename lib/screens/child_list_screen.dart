@@ -48,6 +48,7 @@ import '../models/student_message.dart';
 import '../models/student_scolarite.dart';
 import '../widgets/bottom_sheets/enhanced_scolarite_bottom_sheet.dart';
 import '../widgets/bottom_sheets/my_reservations_bottom_sheet.dart';
+import '../widgets/components/custom_date_input.dart';
 import 'my_tickets_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
@@ -1790,7 +1791,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               description: 'Envoyez vos suggestions et feedback',
               onClose: () => Navigator.of(context).pop(),
             ),
-            Expanded(child: _buildSimpleSuggestionsTab()),
+            Expanded(child: _buildComingSoonContent()),
           ],
         ),
       ),
@@ -3526,9 +3527,15 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       // Naviguer vers l'écran d'accueil et rafraîchir la liste
       if (mounted) {
-        MainScreenWrapper.of(context).navigateToHome();
-        // Forcer le rafraîchissement de l'écran d'accueil
-        MainScreenWrapper.of(context).refreshCurrentUser();
+        final wrapper = MainScreenWrapper.maybeOf(context);
+        
+        // Retourner à l'écran principal en fermant tous les écrans superposés
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        
+        if (wrapper != null) {
+          wrapper.navigateToHome();
+          wrapper.refreshCurrentUser();
+        }
       }
     } catch (e) {
       // Afficher un message d'erreur
@@ -11197,8 +11204,20 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Filtres pour la liste des absences
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
+  final TextEditingController _filterStartDateController = TextEditingController();
+  final TextEditingController _filterEndDateController = TextEditingController();
   int? _filterType; // null = tous, 0 = absent, 1 = présent
   bool _isFilterExpanded = false;
+
+  DateTime? _parseDateString(String text) {
+    if (text.length == 10) {
+      try {
+        final parts = text.split('/');
+        return DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+      } catch (_) {}
+    }
+    return null;
+  }
 
   Widget _buildAbsencesList() {
     // Appliquer les filtres
@@ -11213,39 +11232,83 @@ class _ChildListScreenState extends State<ChildListScreen>
         // Bouton pour charger les données de présence
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _loadPresenceData(),
-              icon: _isLoadingPresence
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+          child: Row(
+            children: [
+              if (_filterStartDateController.text.isNotEmpty || 
+                  _filterEndDateController.text.isNotEmpty || 
+                  _filterType != null) ...[
+                Expanded(
+                  flex: 1,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final effectiveModalSetState = _presenceModalSetState;
+                      if (effectiveModalSetState != null && mounted) {
+                        effectiveModalSetState(() {
+                          _filterStartDateController.clear();
+                          _filterEndDateController.clear();
+                          _filterStartDate = null;
+                          _filterEndDate = null;
+                          _filterType = null;
+                        });
+                      }
+                      if (mounted) {
+                        setState(() {
+                          _filterStartDateController.clear();
+                          _filterEndDateController.clear();
+                          _filterStartDate = null;
+                          _filterEndDate = null;
+                          _filterType = null;
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.clear_rounded, size: 20),
+                    label: const Text('Effacer', style: TextStyle(fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    )
-                  : const Icon(Icons.refresh_rounded),
-              label: Text(
-                _isLoadingPresence
-                    ? 'Chargement en cours...'
-                    : 'Actualiser les données',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1565C0),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
+                    ),
+                  ),
                 ),
-                elevation: 2,
-                shadowColor: const Color(0xFF1565C0).withOpacity(0.3),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: () => _loadPresenceData(),
+                  icon: _isLoadingPresence
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 20),
+                  label: Text(
+                    _isLoadingPresence
+                        ? 'Chargement...'
+                        : 'Actualiser',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1565C0),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 2,
+                    shadowColor: const Color(0xFF1565C0).withOpacity(0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
 
@@ -11561,6 +11624,9 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _applyPresenceFilters() {
+    _filterStartDate = _parseDateString(_filterStartDateController.text);
+    _filterEndDate = _parseDateString(_filterEndDateController.text);
+
     _filteredPresenceEntries = _presenceEntries.where((entry) {
       // Filtre par type
       if (_filterType != null) {
@@ -11708,122 +11774,27 @@ class _ChildListScreenState extends State<ChildListScreen>
                   Row(
                     children: [
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => _selectDate(context, true),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ), // Réduit padding
-                            decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? Colors.grey[700]
-                                  : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: Colors.grey[600],
-                                ),
-                                const SizedBox(width: 6), // Réduit de 8 à 6
-                                Text(
-                                  _filterStartDate != null
-                                      ? '${_filterStartDate!.day}/${_filterStartDate!.month}/${_filterStartDate!.year}'
-                                      : 'Date début',
-                                  style: TextStyle(
-                                    fontSize: _textSizeService
-                                        .getScaledFontSize(12),
-                                    color: isDarkMode
-                                        ? Colors.white70
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        child: CustomDateInput(
+                          label: 'Date début',
+                          hint: 'JJ/MM/AAAA',
+                          icon: Icons.calendar_today,
+                          controller: _filterStartDateController,
+                          inputFormatters: [DateInputFormatter()],
                         ),
                       ),
-                      const SizedBox(width: 6), // Réduit de 8 à 6
-                      Icon(
-                        Icons.arrow_forward,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 6), // Réduit de 8 à 6
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => _selectDate(context, false),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ), // Réduit padding
-                            decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? Colors.grey[700]
-                                  : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: Colors.grey[600],
-                                ),
-                                const SizedBox(width: 6), // Réduit de 8 à 6
-                                Text(
-                                  _filterEndDate != null
-                                      ? '${_filterEndDate!.day}/${_filterEndDate!.month}/${_filterEndDate!.year}'
-                                      : 'Date fin',
-                                  style: TextStyle(
-                                    fontSize: _textSizeService
-                                        .getScaledFontSize(12),
-                                    color: isDarkMode
-                                        ? Colors.white70
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        child: CustomDateInput(
+                          label: 'Date fin',
+                          hint: 'JJ/MM/AAAA',
+                          icon: Icons.calendar_today,
+                          controller: _filterEndDateController,
+                          inputFormatters: [DateInputFormatter()],
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 8), // Réduit de 12 à 8
-                  if (_filterStartDate != null ||
-                      _filterEndDate != null ||
-                      _filterType != null)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              final effectiveModalSetState =
-                                  _presenceModalSetState;
-                              if (effectiveModalSetState != null && mounted) {
-                                effectiveModalSetState(() {
-                                  _filterStartDate = null;
-                                  _filterEndDate = null;
-                                  _filterType = null;
-                                });
-                              }
-                            },
-                            icon: const Icon(Icons.clear),
-                            label: const Text('Effacer les filtres'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[600],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                 ],
               ),
             ),

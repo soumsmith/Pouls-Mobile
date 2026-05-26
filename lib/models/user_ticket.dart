@@ -27,9 +27,9 @@ class UserTicket {
 
   factory UserTicket.fromJson(Map<String, dynamic> json) {
     String formatCurrency(dynamic value) {
-      if (value == null) return '0 €';
+      if (value == null) return '0 FCFA';
       final String valStr = value.toString().trim();
-      if (valStr.isEmpty) return '0 €';
+      if (valStr.isEmpty) return '0 FCFA';
       
       // Clean non-numeric characters except decimal points
       final cleaned = valStr.replaceAll(RegExp(r'[^0-9.]'), '');
@@ -38,7 +38,7 @@ class UserTicket {
         if (parsed >= 100) {
           return '${parsed.toStringAsFixed(0)} FCFA';
         }
-        return '${parsed.toStringAsFixed(0)} €';
+        return '${parsed.toStringAsFixed(0)} FCFA';
       }
       return valStr;
     }

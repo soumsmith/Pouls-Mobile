@@ -4,6 +4,25 @@ import '../models/event_rating_comment.dart';
 
 class EventRatingService {
   static const String baseUrl = 'https://api2.vie-ecoles.com/api';
+
+  static String _parseError(http.Response response) {
+    String errorMessage = 'Erreur HTTP ${response.statusCode}';
+    try {
+      final errorData = json.decode(response.body);
+      if (errorData['message'] != null && errorData['message'].toString().isNotEmpty) {
+        errorMessage = errorData['message'];
+      } else if (errorData['exception'] != null) {
+        errorMessage = 'Erreur serveur (${errorData['exception'].toString().split('\\').last})';
+      }
+    } catch (_) {
+      if (response.statusCode == 404) {
+        errorMessage = 'Service indisponible ou introuvable (404)';
+      } else if (response.statusCode >= 500) {
+        errorMessage = 'Erreur interne du serveur (${response.statusCode})';
+      }
+    }
+    return errorMessage;
+  }
   
   // Récupérer tous les commentaires et notations d'un événement
   static Future<List<EventRatingComment>> getEventComments(String eventSlug) async {
@@ -20,7 +39,7 @@ class EventRatingService {
         final List<dynamic> data = json.decode(response.body);
         return data.map((item) => EventRatingComment.fromJson(item as Map<String, dynamic>)).toList();
       } else {
-        throw Exception('Erreur HTTP: ${response.statusCode}');
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       throw Exception('Erreur lors de la récupération des commentaires: $e');
@@ -68,8 +87,12 @@ class EventRatingService {
         'comment': comment,
       };
 
+      final url = Uri.parse('$baseUrl/evenements/comments');
+      print('🌐 POST $url');
+      print('📦 Payload: ${json.encode(commentData)}');
+
       final response = await http.post(
-        Uri.parse('$baseUrl/evenements/comments'),
+        url,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -77,11 +100,13 @@ class EventRatingService {
         body: json.encode(commentData),
       );
 
-      if (response.statusCode == 201) {
+      print('📥 Response [${response.statusCode}]: ${response.body}');
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         return EventRatingComment.fromJson(data);
       } else {
-        throw Exception('Erreur HTTP: ${response.statusCode}');
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       throw Exception('Erreur lors de l\'ajout du commentaire: $e');
@@ -113,7 +138,7 @@ class EventRatingService {
         final Map<String, dynamic> data = json.decode(response.body);
         return EventRatingComment.fromJson(data);
       } else {
-        throw Exception('Erreur HTTP: ${response.statusCode}');
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       throw Exception('Erreur lors de la mise à jour du commentaire: $e');
@@ -154,7 +179,7 @@ class EventRatingService {
       } else if (response.statusCode == 404) {
         return null; // L'utilisateur n'a pas encore commenté
       } else {
-        throw Exception('Erreur HTTP: ${response.statusCode}');
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       throw Exception('Erreur lors de la vérification du commentaire utilisateur: $e');

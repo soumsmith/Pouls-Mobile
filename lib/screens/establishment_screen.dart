@@ -992,14 +992,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: _getCrossAxisCount(context),
-              crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
-                context,
-              ),
-              childAspectRatio:
-                  AppDimensions.getProductsGridChildAspectRatio(
-                    context,
-                    imageFlex: AppDimensions.getGridImageFlex(context),
-                  ),
+              crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+              mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
             ),
             delegate: SliverChildBuilderDelegate((_, i) {
               if (i == items.length && _hasMoreEcoles) {

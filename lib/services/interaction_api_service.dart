@@ -26,14 +26,20 @@ class InteractionApiService {
         '💬 Création d\'une interaction: video=$videoId, user=$userId, type=$type',
       );
 
+      final endpoint = '/vie-ecoles/interactions/store';
+      final body = {
+        'video_id': videoId,
+        'user_id': userId,
+        'type': type,
+        if (content != null) 'content': content,
+      };
+
+      print('🌐 POST URL: ${HttpService.baseUrl}$endpoint');
+      print('📦 POST Data: $body');
+
       final response = await HttpService.post(
-        '$_baseUrl/vie-ecoles/interactionsstore',
-        body: {
-          'video_id': videoId,
-          'user_id': userId,
-          'type': type,
-          if (content != null) 'content': content,
-        },
+        endpoint,
+        body: body,
       );
 
       print('💬 Réponse de l\'API: $response');
@@ -52,14 +58,13 @@ class InteractionApiService {
         print('✅ Interaction créée avec succès (message de confirmation)');
         return null;
       } else {
-        print(
-          '❌ Échec de la création d\'interaction: ${response['message'] ?? 'Erreur inconnue'}',
-        );
-        return null;
+        final errorMsg = response['message'] ?? 'Erreur inconnue';
+        print('❌ Échec de la création d\'interaction: $errorMsg');
+        throw Exception(errorMsg);
       }
     } catch (e) {
       print('❌ Erreur lors de la création d\'interaction: $e');
-      return null;
+      rethrow;
     }
   }
 
@@ -75,7 +80,7 @@ class InteractionApiService {
       print('💬 Récupération des interactions: video=$videoId, type=$type');
 
       final response = await HttpService.get(
-        '$_baseUrl/vie-ecoles/interactionslist?video_id=$videoId&type=$type',
+        '/vie-ecoles/interactions/list?video_id=$videoId&type=$type',
         showNotification: false,
       );
 
@@ -109,11 +114,11 @@ class InteractionApiService {
   }) async {
     try {
       print('🗑️ Suppression du commentaire: id=$commentId, user=$userId');
-      print('🌐 URL: $_baseUrl/vie-ecoles/interactionscomment/$commentId?user_id=$userId');
+      print('🌐 URL: ${HttpService.baseUrl}/vie-ecoles/interactions/comment/$commentId?user_id=$userId');
 
       try {
         final response = await HttpService.delete(
-          '$_baseUrl/vie-ecoles/interactionscomment/$commentId?user_id=$userId',
+          '/vie-ecoles/interactions/comment/$commentId?user_id=$userId',
         );
 
         if (response['status'] == 'success' || response['success'] == true) {
@@ -162,10 +167,10 @@ class InteractionApiService {
   }) async {
     try {
       print('✏️ Modification du commentaire: id=$commentId, user=$userId');
-      print('🌐 URL: $_baseUrl/vie-ecoles/interactionscomment/update/$commentId');
+      print('🌐 URL: ${HttpService.baseUrl}/vie-ecoles/interactions/comment/update/$commentId');
 
       final response = await HttpService.post(
-        '$_baseUrl/vie-ecoles/interactionscomment/update/$commentId',
+        '/vie-ecoles/interactions/comment/update/$commentId',
         body: {'user_id': userId, 'content': content},
       );
 
@@ -199,10 +204,10 @@ class InteractionApiService {
   }) async {
     try {
       print('👍 Enregistrement interaction: video=$videoId, user=$userId, type=$type');
-      print('🌐 URL: $_baseUrl/vie-ecoles/interactionslike');
+      print('🌐 URL: ${HttpService.baseUrl}/vie-ecoles/interactions/like');
 
       final response = await HttpService.post(
-        '$_baseUrl/vie-ecoles/interactionslike',
+        '/vie-ecoles/interactions/like',
         body: {
           'video_id': videoId,
           'user_id': userId,

@@ -35,6 +35,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   int _currentIndex = 0;
   List<YoutubePlayerController?> _youtubeControllers = [];
   final Set<int> _likedVideoIds = <int>{};
+  final Map<int, int> _videoCommentsCount = <int, int>{};
+  final Map<int, int> _videoLikesCount = <int, int>{};
 
   @override
   void initState() {
@@ -43,7 +45,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     _pageController = PageController(initialPage: widget.initialIndex);
     _initializeControllers();
     if (widget.videos.isNotEmpty) {
-      _fetchVideoLikes(widget.videos[_currentIndex].id);
+      _fetchVideoInteractions(widget.videos[_currentIndex].id);
     }
   }
 
@@ -96,7 +98,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     });
   }
 
-  Future<void> _fetchVideoLikes(int videoId) async {
+  Future<void> _fetchVideoInteractions(int videoId) async {
     final userId = InteractionApiService.getCurrentUserId();
     if (userId == null) return;
 
@@ -106,7 +108,12 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
         type: 'like',
       );
       
-      final hasLiked = likes.any((like) => like.userId == userId);
+      final comments = await InteractionApiService.listInteractions(
+        videoId: videoId,
+        type: 'comment',
+      );
+      
+      final hasLiked = userId != null && likes.any((like) => like.userId == userId);
       
       if (mounted) {
         setState(() {
@@ -115,10 +122,12 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
           } else {
             _likedVideoIds.remove(videoId);
           }
+          _videoCommentsCount[videoId] = comments.length;
+          _videoLikesCount[videoId] = likes.length;
         });
       }
     } catch (e) {
-      print('⚠️ Erreur lors de la récupération des likes pour la vidéo $videoId: $e');
+      print('⚠️ Erreur lors de la récupération des interactions pour la vidéo $videoId: $e');
     }
   }
 
@@ -128,7 +137,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     });
 
     if (widget.videos.isNotEmpty && index < widget.videos.length) {
-      _fetchVideoLikes(widget.videos[index].id);
+      _fetchVideoInteractions(widget.videos[index].id);
     }
 
     // Lecture instantanée de la vidéo active dès le swipe
@@ -253,50 +262,61 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     if (widget.videos.isEmpty) return;
 
     final video = widget.videos[_currentIndex];
+    final videoId = video.id;
     final userId = InteractionApiService.getCurrentUserId();
     if (userId == null) {
       print('⚠️ Aucun utilisateur connecté pour aimer la vidéo.');
       return;
     }
 
-    final isLike = !_likedVideoIds.contains(video.id);
+    final isLike = !_likedVideoIds.contains(videoId);
 
-    // Optimistic UI: update locally immediately
+    // Optimistic UI update
     setState(() {
-      if (isLike) {
-        _likedVideoIds.add(video.id);
+      if (_likedVideoIds.contains(videoId)) {
+        _likedVideoIds.remove(videoId);
+        _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 1) - 1;
       } else {
-        _likedVideoIds.remove(video.id);
+        _likedVideoIds.add(videoId);
+        _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 0) + 1;
       }
     });
 
     try {
       final success = await InteractionApiService.toggleLike(
-        videoId: video.id,
+        videoId: videoId,
         userId: userId,
         type: isLike ? 'like' : 'dislike',
       );
 
       if (!success) {
-        // Rollback on failure
-        setState(() {
-          if (isLike) {
-            _likedVideoIds.remove(video.id);
-          } else {
-            _likedVideoIds.add(video.id);
-          }
-        });
+        // Revert if API failed
+        if (mounted) {
+          setState(() {
+            if (!isLike) {
+              _likedVideoIds.add(videoId);
+              _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 0) + 1;
+            } else {
+              _likedVideoIds.remove(videoId);
+              _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 1) - 1;
+            }
+          });
+        }
       }
     } catch (e) {
       print('❌ Erreur lors de l\'envoi du like: $e');
       // Rollback on exception
-      setState(() {
-        if (isLike) {
-          _likedVideoIds.remove(video.id);
-        } else {
-          _likedVideoIds.add(video.id);
-        }
-      });
+      if (mounted) {
+        setState(() {
+          if (!isLike) {
+            _likedVideoIds.add(videoId);
+            _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 0) + 1;
+          } else {
+            _likedVideoIds.remove(videoId);
+            _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 1) - 1;
+          }
+        });
+      }
     }
   }
 
@@ -426,14 +446,12 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
-                  icon:
-                      widget.videos.isNotEmpty &&
-                          _likedVideoIds.contains(
-                            widget.videos[_currentIndex].id,
-                          )
+                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].id)
                       ? Icons.favorite
                       : Icons.favorite_border,
-                  label: 'J\'aime',
+                  label: widget.videos.isNotEmpty && _videoLikesCount.containsKey(widget.videos[_currentIndex].id) && _videoLikesCount[widget.videos[_currentIndex].id]! > 0
+                      ? '${_videoLikesCount[widget.videos[_currentIndex].id]}'
+                      : 'J\'aime',
                   onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
                 ),
                 const SizedBox(height: 16),
@@ -445,7 +463,9 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 const SizedBox(height: 16),
                 _ActionButton(
                   icon: Icons.comment,
-                  label: 'Commenter',
+                  label: widget.videos.isNotEmpty && _videoCommentsCount.containsKey(widget.videos[_currentIndex].id) && _videoCommentsCount[widget.videos[_currentIndex].id]! > 0
+                      ? '${_videoCommentsCount[widget.videos[_currentIndex].id]}'
+                      : 'Commenter',
                   onTap: _showComments,
                 ),
                 const SizedBox(height: 16),
@@ -968,29 +988,34 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       return;
     }
 
-    final newComment = await InteractionApiService.createInteraction(
-      videoId: widget.videoId,
-      userId: _currentUserId!,
-      type: 'comment',
-      content: _commentController.text.trim(),
-    );
-
-    if (newComment != null) {
-      setState(() {
-        _comments.insert(0, newComment);
-        _commentController.clear();
-      });
-    } else {
-      // Si l'API retourne un succès mais sans données, on recharge la liste
-      await _loadComments();
-      _commentController.clear();
-      CartSnackBar.showOverlay(
-        context,
-        productName: '',
-        message: 'Commentaire ajouté avec succès',
-        backgroundColor: Colors.green,
-        icon: Icons.check_circle_outline,
+    try {
+      final newComment = await InteractionApiService.createInteraction(
+        videoId: widget.videoId,
+        userId: _currentUserId!,
+        type: 'comment',
+        content: _commentController.text.trim(),
       );
+
+      if (newComment != null) {
+        setState(() {
+          _comments.insert(0, newComment);
+          _commentController.clear();
+        });
+      } else {
+        // Si l'API retourne un succès mais sans données, on recharge la liste
+        await _loadComments();
+        _commentController.clear();
+        CartSnackBar.showOverlay(
+          context,
+          productName: '',
+          message: 'Commentaire ajouté avec succès',
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
+        );
+      }
+    } catch (e) {
+      // L'erreur est déjà gérée et affichée par HttpService (ApiExceptionHandler)
+      print('Erreur lors de l\'ajout du commentaire: $e');
     }
   }
 

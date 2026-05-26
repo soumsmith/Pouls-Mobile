@@ -7,6 +7,28 @@ import '../models/user_ticket.dart';
 class TicketService {
   static const String baseUrl = 'https://api2.vie-ecoles.com/api';
 
+  static String _parseError(http.Response response) {
+    String errorMessage = 'Erreur HTTP ${response.statusCode}';
+    try {
+      final errorData = json.decode(response.body);
+      if (errorData['message'] != null && errorData['message'].toString().isNotEmpty) {
+        return errorData['message'];
+      }
+      if (errorData['error'] != null && errorData['error'].toString().isNotEmpty) {
+        return errorData['error'];
+      }
+    } catch (_) {}
+    
+    if (response.statusCode == 404) {
+      errorMessage = 'Service indisponible ou introuvable (404)';
+    } else if (response.statusCode == 409) {
+      errorMessage = 'Conflit: l\'action ne peut pas aboutir (409)';
+    } else if (response.statusCode >= 500) {
+      errorMessage = 'Erreur interne du serveur (${response.statusCode})';
+    }
+    return errorMessage;
+  }
+
   /// Récupérer les catégories de tickets pour un événement
   static Future<List<TicketCategory>> getTicketCategories(
     String eventId, {
@@ -79,13 +101,12 @@ class TicketService {
         final Map<String, dynamic> data = json.decode(response.body);
         return data;
       } else {
-        throw Exception(
-          'Erreur HTTP: ${response.statusCode} - ${response.body}',
-        );
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       developer.log('Erreur lors de la commande du ticket: $e');
-      throw Exception('Erreur lors de la commande du ticket: $e');
+      final msg = e.toString().replaceAll('Exception: ', '');
+      throw Exception(msg);
     }
   }
 

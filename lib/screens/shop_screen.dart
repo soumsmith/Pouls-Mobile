@@ -544,7 +544,10 @@ class _LibraryScreenState extends State<LibraryScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildAdvancedSearchBottomSheet(),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _buildAdvancedSearchBottomSheet(),
+      ),
     );
   }
 

@@ -43,3 +43,65 @@ class CustomDateInput extends StatelessWidget {
     );
   }
 }
+
+class DateInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.length < oldValue.text.length) {
+      String text = newValue.text.replaceAll(RegExp(r'[^0-9/]'), '');
+      if (oldValue.selection.baseOffset > 0 &&
+          oldValue.text.length > newValue.text.length) {
+        int deletedIndex = newValue.selection.baseOffset;
+        if (deletedIndex > 0 && deletedIndex <= text.length) {
+          if (deletedIndex > 0 && text[deletedIndex - 1] == '/') {
+            text = text.substring(0, deletedIndex - 1) +
+                (deletedIndex < text.length ? text.substring(deletedIndex) : '');
+          }
+        }
+      }
+      return TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    }
+
+    String text = newValue.text.replaceAll(RegExp(r'[^0-9/]'), '');
+    if (newValue.text.contains('-') && !newValue.text.contains('/')) {
+      text = text.replaceAll('-', '/');
+    }
+    if (text.length > 10) text = text.substring(0, 10);
+
+    if (text.length >= 2 && !text.contains('/')) {
+      text = text.substring(0, 2) + '/' + text.substring(2);
+    }
+    if (text.length >= 5 && text.indexOf('/', text.indexOf('/') + 1) == -1) {
+      int firstSlash = text.indexOf('/');
+      if (firstSlash != -1) {
+        String day = text.substring(0, firstSlash);
+        String monthYear = text.substring(firstSlash + 1);
+        if (monthYear.length >= 2) {
+          text = day + '/' + monthYear.substring(0, 2) + '/' + monthYear.substring(2);
+        }
+      }
+    }
+
+    List<String> parts = text.split('/');
+    if (parts.length >= 3) {
+      if (parts[0].length == 2 && int.tryParse(parts[0]) != null) {
+        if (int.parse(parts[0]) > 31) parts[0] = '31';
+      }
+      if (parts[1].length == 2 && int.tryParse(parts[1]) != null) {
+        if (int.parse(parts[1]) > 12) parts[1] = '12';
+      }
+      text = parts.join('/');
+    }
+
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+}

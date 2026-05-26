@@ -1,10 +1,12 @@
 class VisiteGuideeVideo {
+  final int? id;
   final String typeVideo;
   final String youtubeUrl;
   final String? title;
   final String? description;
 
   VisiteGuideeVideo({
+    this.id,
     required this.typeVideo,
     required this.youtubeUrl,
     this.title,
@@ -13,6 +15,7 @@ class VisiteGuideeVideo {
 
   factory VisiteGuideeVideo.fromJson(Map<String, dynamic> json) {
     return VisiteGuideeVideo(
+      id: json['id'] as int?,
       typeVideo: (json['typevideo'] ?? json['type_video'] ?? '') as String,
       youtubeUrl: (json['youtube_url'] ?? '') as String,
       title: json['title'] as String?,
@@ -22,6 +25,7 @@ class VisiteGuideeVideo {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'typevideo': typeVideo,
       'youtube_url': youtubeUrl,
       'title': title,

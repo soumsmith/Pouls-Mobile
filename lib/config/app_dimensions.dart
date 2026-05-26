@@ -12,6 +12,57 @@ class AppDimensions {
   static const double largeTabletBreakpoint = 1024.0;
   static const double desktopBreakpoint = 1200.0;
 
+  // ===========================================================================
+  // RÉSOLUTIONS D'ÉCRANS STANDARDS (En points/dp logiques)
+  // Utiles pour des vérifications spécifiques, pour initialiser un package 
+  // comme flutter_screenutil, ou servir de référence pour les maquettes.
+  // ===========================================================================
+
+  // --- Apple (iOS / iPadOS) ---
+  /// Petits iPhone (SE 1ère gen, 5, 5s)
+  static const Size iphoneSmall = Size(320, 568);
+  /// iPhone standards classiques (8, SE 2/3)
+  static const Size iphoneStandard = Size(375, 667);
+  /// iPhone X, XS, 11 Pro, 12/13 Mini
+  static const Size iphoneXFamily = Size(375, 812);
+  /// iPhone 12, 13, 14, 11, XR
+  static const Size iphone12Family = Size(390, 844);
+  /// iPhone 14 Pro, 15, 15 Pro
+  static const Size iphone14ProFamily = Size(393, 852);
+  /// iPhone 8 Plus, 11 Pro Max, XS Max
+  static const Size iphoneMaxOld = Size(414, 896);
+  /// iPhone 12 Pro Max, 13 Pro Max, 14 Plus
+  static const Size iphoneMaxNew = Size(428, 926);
+  /// iPhone 14 Pro Max, 15 Plus, 15 Pro Max
+  static const Size iphone14ProMaxFamily = Size(430, 932);
+  
+  /// iPad Mini / classiques
+  static const Size ipadMini = Size(768, 1024);
+  /// iPad Air / Pro 11"
+  static const Size ipadPro11 = Size(834, 1194);
+  /// iPad Pro 12.9"
+  static const Size ipadPro12_9 = Size(1024, 1366);
+
+  // --- Android ---
+  /// Petits téléphones Android (anciens modèles ou bas de gamme)
+  static const Size androidSmall = Size(360, 640);
+  /// Smartphones Android standards (ex: séries Galaxy S de base)
+  static const Size androidStandard = Size(360, 800);
+  /// Smartphones Android modernes (ex: séries Google Pixel)
+  static const Size androidModern = Size(393, 851);
+  /// Phablettes et grands écrans Android (ex: Galaxy Ultra)
+  static const Size androidLarge = Size(412, 915);
+  /// Petites tablettes Android (7-8 pouces)
+  static const Size androidTabletSmall = Size(600, 960);
+  /// Grandes tablettes Android (10 pouces)
+  static const Size androidTabletLarge = Size(800, 1280);
+
+
+
+   // ===========================================================================
+  // RÉSOLUTIONS D'ÉCRANS STANDARDS (En points/dp logiques)
+  // ===========================================================================
+
   // Dimensions générales
   static const double defaultPadding = 24.0;
   static const double defaultMargin = 16.0;
@@ -93,6 +144,75 @@ class AppDimensions {
     final size = MediaQuery.of(context).size;
     final smallestDimension = size.width < size.height ? size.width : size.height;
     return smallestDimension >= desktopBreakpoint;
+  }
+
+  // ===========================================================================
+  // NOUVELLES FONCTIONS DE DÉTECTION (Étape 1 de la migration)
+  // ===========================================================================
+
+  /// Détecte un petit téléphone (ex: iPhone SE, vieux Androids)
+  static bool isCompactMobile(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return width <= androidSmall.width; // 360 ou moins
+  }
+
+  /// Détecte un téléphone standard (ex: iPhone 13, Pixel)
+  static bool isStandardMobile(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return width > androidSmall.width && width <= iphone12Family.width; // entre 361 et 390
+  }
+
+  /// Détecte un grand téléphone / phablette (ex: iPhone Pro Max, Galaxy Ultra)
+  static bool isLargeMobile(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return width > iphone12Family.width && width < tabletBreakpoint; // entre 391 et 767
+  }
+
+  // ===========================================================================
+  // NOUVELLES FONCTIONS DE DIMENSIONNEMENT DYNAMIQUE (Étape 2 de la migration)
+  // ===========================================================================
+
+  /// Calcule une échelle relative à un écran de référence (ex: iPhone 12/13/14).
+  /// Permet d'agrandir proportionnellement le texte et les espaces sur les grands écrans,
+  /// et de les réduire sur les petits écrans.
+  static double getScaleFactor(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // On prend iphone12Family (390px) comme base de calcul (standard actuel)
+    final double baseWidth = iphone12Family.width;
+    
+    // Si on est sur tablette ou desktop, on capte l'échelle pour ne pas avoir de textes géants
+    if (screenWidth >= tabletBreakpoint) {
+      // Sur tablette, l'échelle maximale est basée sur la largeur d'un grand mobile
+      // pour éviter que les éléments de base deviennent caricaturaux.
+      return (iphone14ProMaxFamily.width / baseWidth) * 1.1; 
+    }
+    
+    return screenWidth / baseWidth;
+  }
+
+  /// Retourne une valeur redimensionnée proportionnellement à la taille de l'écran.
+  /// Pratique pour les polices (fontSize) ou les marges.
+  static double getScaledSize(BuildContext context, double baseSize) {
+    return baseSize * getScaleFactor(context);
+  }
+
+  /// Calcule dynamiquement le nombre de colonnes d'une grille pour s'assurer
+  /// que chaque élément fait AU MOINS [minItemWidth] de large, en tenant compte de l'espacement.
+  static int getDynamicGridColumns(
+    BuildContext context, {
+    required double minItemWidth,
+    double spacing = 16.0,
+    double horizontalPadding = 32.0, // 16 de chaque côté par défaut
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - horizontalPadding;
+    
+    // Formule mathématique pour calculer le nombre de colonnes n :
+    // n * minItemWidth + (n - 1) * spacing <= availableWidth
+    int columns = ((availableWidth + spacing) / (minItemWidth + spacing)).floor();
+    
+    // On s'assure d'avoir toujours au moins 1 colonne
+    return columns > 0 ? columns : 1;
   }
 
   // Méthodes utilitaires pour l'orientation de l'écran
@@ -605,9 +725,9 @@ class AppDimensions {
       }
     } else if (isTablet(context)) {
       if (isPortrait(context)) {
-        return 5; // iPad portrait : 5 colonnes
+        return 4; // iPad portrait : 4 colonnes
       } else {
-        return 6; // iPad paysage : 6 colonnes
+        return 5; // iPad paysage : 5 colonnes
       }
     } else {
       if (isPortrait(context)) {
@@ -747,11 +867,11 @@ class AppDimensions {
       // Pour mobile, différencier portrait et paysage
       return orientation == Orientation.portrait ? 120.0 : 120.0;
     } else if (isSmallTablet(context)) {
-      return 150.0; // iPad Mini : hauteur intermédiaire
+      return 190.0; // iPad Mini : hauteur intermédiaire plus grande
     } else if (isTablet(context)) {
-      return 150.0; // iPad : hauteur standard
+      return 210.0; // iPad : hauteur nettement plus grande
     } else {
-      return 150.0; // Desktop : hauteur plus généreuse
+      return 220.0; // Desktop : hauteur plus généreuse
     }
   }
 
@@ -760,11 +880,11 @@ class AppDimensions {
     if (isMobile(context)) {
       return 120.0; // Mobile : plus étroit
     } else if (isSmallTablet(context)) {
-      return 150.0; // iPad Mini : largeur intermédiaire
+      return 190.0; // iPad Mini : largeur plus grande
     } else if (isTablet(context)) {
-      return 150.0; // iPad : largeur standard
+      return 210.0; // iPad : largeur nettement plus grande
     } else {
-      return 150.0; // Desktop : largeur plus généreuse
+      return 220.0; // Desktop : largeur plus généreuse
     }
   }
 
@@ -997,24 +1117,22 @@ class AppDimensions {
           return 155.0; // Par défaut : hauteur standard
       }
     } else if (isSmallTablet(context)) {
-      // iPad Mini : hauteur selon le nombre de colonnes
       switch (columns) {
         case 4:
-          return 160.0; // 4 colonnes : hauteur modérée
+          return 260.0; 
         case 5:
-          return 140.0; // 5 colonnes : hauteur réduite
+          return 240.0; 
         default:
-          return 160.0;
+          return 240.0;
       }
     } else if (isTablet(context)) {
-      // iPad : hauteur selon le nombre de colonnes
       switch (columns) {
+        case 4:
+          return 280.0; 
         case 5:
-          return 150.0; // 5 colonnes : hauteur équilibrée
-        case 6:
-          return 130.0; // 6 colonnes : hauteur optimisée
+          return 260.0; 
         default:
-          return 150.0;
+          return 260.0;
       }
     } else {
       // Desktop : hauteur selon le nombre de colonnes
@@ -1235,32 +1353,29 @@ class AppDimensions {
       }
     } else if (isSmallTablet(context)) {
       if (isLandscape(context)) {
-        // iPad Mini paysage
         switch (columns) {
-          case 5: return 8.0;  // 5 colonnes : espacement très réduit
-          case 4: return 10.0; // 4 colonnes : espacement réduit
-          default: return 10.0;
+          case 5: return 32.0;  // Espacement horizontal encore augmenté
+          case 4: return 36.0; 
+          default: return 36.0;
         }
       } else {
-        // iPad Mini portrait
         switch (columns) {
-          case 4: return 12.0; // 4 colonnes : espacement standard
-          default: return 12.0;
+          case 4: return 40.0; 
+          default: return 40.0;
         }
       }
     } else if (isTablet(context)) {
       if (isLandscape(context)) {
-        // iPad paysage
         switch (columns) {
-          case 6: return 10.0; // 6 colonnes : espacement réduit
-          case 5: return 12.0; // 5 colonnes : espacement standard
-          default: return 12.0;
+          case 6: return 32.0; 
+          case 5: return 40.0; 
+          default: return 40.0;
         }
       } else {
-        // iPad portrait
         switch (columns) {
-          case 5: return 16.0; // 5 colonnes : espacement confortable
-          default: return 16.0;
+          case 5: return 46.0; 
+          case 4: return 46.0; 
+          default: return 46.0;
         }
       }
     } else {
@@ -1712,30 +1827,26 @@ class AppDimensions {
 
   /// Facteur de proportion pour les cartes carrées selon la taille de l'écran
   static double getSquareCardScaleFactor(BuildContext context) {
-    if (isMobile(context)) {
-      return 0.7; // Mobile : 70% de la taille de base
-    } else if (isSmallTablet(context)) {
-      return 0.85; // iPad Mini : 85% de la taille de base
-    } else if (isTablet(context)) {
-      return 0.95; // iPad : 95% de la taille de base
-    } else {
-      return 1.0; // Desktop : 100% de la taille de base
-    }
+    return getScaleFactor(context); // Utilise la nouvelle fonction de migration
   }
 
   /// Dimensions carrées selon l'appareil (pour les cartes carrées)
   static double getSquareCardSize(BuildContext context, {double baseSize = 140.0}) {
-    return baseSize * getSquareCardScaleFactor(context);
+    return getScaledSize(context, baseSize); // Utilise la nouvelle fonction de migration
   }
 
   /// Largeur des cartes carrées selon l'appareil
   static double getSquareCardWidthSize(BuildContext context) {
-    return getSquareCardSize(context, baseSize: 110.0);
+    // Réduire considérablement la largeur (et donc la hauteur de l'image) sur les petits écrans
+    double base = isCompactMobile(context) ? 45.0 : (isStandardMobile(context) ? 60.0 : 75.0);
+    return getSquareCardSize(context, baseSize: base);
   }
 
   /// Hauteur des cartes carrées selon l'appareil
   static double getSquareCardHeightSize(BuildContext context) {
-    return getSquareCardSize(context, baseSize: 156.0);
+    // Augmenter légèrement l'espace total pour éviter l'overflow du texte sur 2 lignes
+    double base = isCompactMobile(context) ? 140.0 : 160.0;
+    return getSquareCardSize(context, baseSize: base);
   }
 
   /// Taille des images des enfants selon la taille de l'écran

@@ -6,8 +6,11 @@ import '../models/visite_guidee_video.dart';
 import '../models/video_comment.dart';
 import '../models/video_rating.dart';
 import '../services/theme_service.dart';
+import '../services/interaction_api_service.dart';
+import '../models/interaction.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
+import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
@@ -28,6 +31,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
   int _currentIndex = 0;
   List<YoutubePlayerController?> _youtubeControllers = [];
   final Set<int> _likedVideoIds = <int>{};
+  final Map<int, int> _videoCommentsCount = <int, int>{};
+  final Map<int, int> _videoLikesCount = <int, int>{};
 
   @override
   void initState() {
@@ -86,6 +91,39 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
     });
   }
 
+  Future<void> _fetchVideoInteractions(int videoId) async {
+    final userId = InteractionApiService.getCurrentUserId();
+    if (userId == null) return;
+
+    try {
+      final likes = await InteractionApiService.listInteractions(
+        videoId: videoId,
+        type: 'like',
+      );
+      
+      final comments = await InteractionApiService.listInteractions(
+        videoId: videoId,
+        type: 'comment',
+      );
+      
+      final hasLiked = likes.any((like) => like.userId == userId);
+      
+      if (mounted) {
+        setState(() {
+          if (hasLiked) {
+            _likedVideoIds.add(videoId);
+          } else {
+            _likedVideoIds.remove(videoId);
+          }
+          _videoCommentsCount[videoId] = comments.length;
+          _videoLikesCount[videoId] = likes.length;
+        });
+      }
+    } catch (e) {
+      print('⚠️ Erreur lors de la récupération des interactions pour la vidéo $videoId: $e');
+    }
+  }
+
   void _onPageChanged(int index) {
     setState(() {
       _currentIndex = index;
@@ -101,6 +139,11 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       if (i != index && _youtubeControllers[i] != null) {
         _youtubeControllers[i]!.pause();
       }
+    }
+
+    if (widget.videos.isNotEmpty && index < widget.videos.length) {
+      final videoId = widget.videos[index].id ?? widget.videos[index].typeVideo.hashCode;
+      _fetchVideoInteractions(videoId);
     }
   }
 
@@ -147,7 +190,7 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _CommentsSheet(videoId: video.typeVideo),
+      builder: (context) => _CommentsSheet(videoId: video.id ?? video.typeVideo.hashCode),
     );
   }
 
@@ -169,18 +212,57 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
     );
   }
 
-  void _toggleLike() {
+  Future<void> _toggleLike() async {
     if (widget.videos.isEmpty) return;
     
     final video = widget.videos[_currentIndex];
-    final videoId = video.typeVideo.hashCode; // Utiliser le hash du type comme ID
+    final videoId = video.id ?? video.typeVideo.hashCode;
+    
+    final userId = InteractionApiService.getCurrentUserId();
+    if (userId == null) {
+      CartSnackBar.showOverlay(
+        context,
+        productName: '',
+        message: 'Vous devez être connecté pour aimer une vidéo',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
+      );
+      return;
+    }
+
+    // Optimistic UI update
     setState(() {
       if (_likedVideoIds.contains(videoId)) {
         _likedVideoIds.remove(videoId);
+        _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 1) - 1;
       } else {
         _likedVideoIds.add(videoId);
+        _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 0) + 1;
       }
     });
+
+    // API Call
+    final type = _likedVideoIds.contains(videoId) ? 'like' : 'dislike';
+    final success = await InteractionApiService.toggleLike(
+      videoId: videoId,
+      userId: userId,
+      type: type,
+    );
+
+    if (!success) {
+      // Revert if API failed
+      if (mounted) {
+        setState(() {
+          if (type == 'like') {
+            _likedVideoIds.remove(videoId);
+            _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 1) - 1;
+          } else {
+            _likedVideoIds.add(videoId);
+            _videoLikesCount[videoId] = (_videoLikesCount[videoId] ?? 0) + 1;
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -317,10 +399,12 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
-                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].typeVideo.hashCode)
+                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode)
                       ? Icons.favorite
                       : Icons.favorite_border,
-                  label: 'J\'aime',
+                  label: widget.videos.isNotEmpty && _videoLikesCount.containsKey(widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode) && _videoLikesCount[widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode]! > 0
+                      ? '${_videoLikesCount[widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode]}'
+                      : 'J\'aime',
                   onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
                 ),
                 const SizedBox(height: 16),
@@ -332,7 +416,9 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                 const SizedBox(height: 16),
                 _ActionButton(
                   icon: Icons.comment,
-                  label: 'Commenter',
+                  label: widget.videos.isNotEmpty && _videoCommentsCount.containsKey(widget.videos[_currentIndex].typeVideo.hashCode) && _videoCommentsCount[widget.videos[_currentIndex].typeVideo.hashCode]! > 0
+                      ? '${_videoCommentsCount[widget.videos[_currentIndex].typeVideo.hashCode]}'
+                      : 'Commenter',
                   onTap: _showComments,
                 ),
                 const SizedBox(height: 16),
@@ -607,7 +693,7 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _CommentsSheet extends StatefulWidget {
-  final String videoId;
+  final int videoId;
 
   const _CommentsSheet({required this.videoId});
 
@@ -617,12 +703,14 @@ class _CommentsSheet extends StatefulWidget {
 
 class _CommentsSheetState extends State<_CommentsSheet> {
   final TextEditingController _commentController = TextEditingController();
-  List<VideoComment> _comments = [];
+  List<Interaction> _comments = [];
   bool _isLoading = false;
+  int? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _currentUserId = InteractionApiService.getCurrentUserId();
     _loadComments();
   }
 
@@ -633,158 +721,198 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _loadComments() async {
+    if (_currentUserId == null) {
+      print('⚠️ Utilisateur non connecté');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
-    // Simuler le chargement des commentaires
-    await Future.delayed(const Duration(seconds: 1));
-    
+    final comments = await InteractionApiService.listInteractions(
+      videoId: widget.videoId,
+      type: 'comment',
+    );
+
     setState(() {
-      _comments = [
-        VideoComment(
-          id: '1',
-          videoId: widget.videoId,
-          userId: 'user1',
-          userName: 'Marie Dupont',
-          userAvatar: '',
-          content: 'Visite guidée vraiment bien réalisée !',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          likes: 5,
-        ),
-        VideoComment(
-          id: '2',
-          videoId: widget.videoId,
-          userId: 'user2',
-          userName: 'Jean Martin',
-          userAvatar: '',
-          content: 'Excellent travail, les installations sont impressionnantes.',
-          timestamp: DateTime.now().subtract(const Duration(hours: 5)),
-          likes: 3,
-        ),
-      ];
+      _comments = comments;
       _isLoading = false;
     });
   }
 
   Future<void> _addComment() async {
     if (_commentController.text.trim().isEmpty) return;
+    if (_currentUserId == null) {
+      CartSnackBar.showOverlay(
+        context,
+        productName: '',
+        message: 'Vous devez être connecté pour commenter',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
+      );
+      return;
+    }
 
-    final newComment = VideoComment(
-      id: DateTime.now().toString(),
-      videoId: widget.videoId,
-      userId: 'current_user',
-      userName: 'Vous',
-      userAvatar: '',
-      content: _commentController.text.trim(),
-      timestamp: DateTime.now(),
-    );
+    try {
+      final newComment = await InteractionApiService.createInteraction(
+        videoId: widget.videoId,
+        userId: _currentUserId!,
+        type: 'comment',
+        content: _commentController.text.trim(),
+      );
 
-    setState(() {
-      _comments.insert(0, newComment);
-      _commentController.clear();
-    });
-
-    // Simuler l'envoi au serveur
-    await Future.delayed(const Duration(milliseconds: 500));
+      if (newComment != null) {
+        setState(() {
+          _comments.insert(0, newComment);
+          _commentController.clear();
+        });
+      } else {
+        await _loadComments();
+        _commentController.clear();
+        CartSnackBar.showOverlay(
+          context,
+          productName: '',
+          message: 'Commentaire ajouté avec succès',
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
+        );
+      }
+    } catch (e) {
+      print('Erreur lors de l\'ajout du commentaire: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = ThemeService().isDarkMode;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final subtextColor = isDarkMode ? Colors.white54 : Colors.black54;
+    final dividerColor = isDarkMode ? Colors.white24 : Colors.black12;
+    final inputBorderColor = isDarkMode ? Colors.white24 : Colors.black12;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2),
-            ),
+          BottomSheetHeader(
+            icon: Icons.comment_rounded,
+            iconColor: const Color(0xFF0288D1),
+            title: 'Commentaires',
+            description: 'Échangez sur cette vidéo',
+            onClose: () => Navigator.of(context).pop(),
           ),
-          
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Text(
-                  'Commentaires',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          
-          const Divider(color: Colors.white24),
-          
-          // Comments list
           Expanded(
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: isDarkMode ? Colors.white : Theme.of(context).primaryColor,
+                    ),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _comments.length,
                     itemBuilder: (context, index) {
                       final comment = _comments[index];
-                      return _CommentItem(comment: comment);
+                      return _CommentItem(
+                        comment: comment,
+                        currentUserId: _currentUserId,
+                        onDelete: () => _deleteComment(comment.id),
+                        onEdit: (newContent) =>
+                            _editComment(comment.id, newContent),
+                      );
                     },
                   ),
           ),
-          
-          // Comment input
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.black87,
-              border: Border(top: BorderSide(color: Colors.white24)),
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 10,
+              bottom: MediaQuery.of(context).viewInsets.bottom +
+                  (MediaQuery.of(context).viewInsets.bottom > 0
+                      ? 16
+                      : (MediaQuery.of(context).padding.bottom > 0
+                          ? MediaQuery.of(context).padding.bottom + 12
+                          : 24)),
+            ),
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              border: Border(
+                top: BorderSide(
+                  color: dividerColor,
+                  width: 0.5,
+                ),
+              ),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Ajouter un commentaire...',
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                        borderSide: const BorderSide(color: Colors.white24),
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minHeight: 44,
+                      maxHeight: 120,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? const Color(0xFF2C2C2C) : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: inputBorderColor,
+                        width: 0.5,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                        borderSide: const BorderSide(color: Colors.white24),
+                    ),
+                    child: TextField(
+                      controller: _commentController,
+                      maxLines: null,
+                      textInputAction: TextInputAction.newline,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: textColor,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                        borderSide: const BorderSide(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Ajouter un commentaire...',
+                        hintStyle: TextStyle(
+                          fontSize: 14,
+                          color: subtextColor,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _addComment,
-                  icon: const Icon(Icons.send, color: Colors.white),
+                GestureDetector(
+                  onTap: _addComment,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0288D1),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0288D1).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -793,15 +921,76 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       ),
     );
   }
+
+  Future<void> _deleteComment(int commentId) async {
+    if (_currentUserId == null) return;
+
+    setState(() {
+      _comments.removeWhere((c) => c.id == commentId);
+    });
+
+    try {
+      await InteractionApiService.deleteComment(
+        commentId: commentId,
+        userId: _currentUserId!,
+      );
+    } catch (e) {
+      print('⚠️ Erreur lors de la suppression API: $e');
+    }
+
+    await _loadComments();
+  }
+
+  Future<void> _editComment(int commentId, String newContent) async {
+    if (_currentUserId == null) return;
+
+    setState(() {
+      final index = _comments.indexWhere((c) => c.id == commentId);
+      if (index != -1) {
+        _comments[index] = _comments[index].copyWith(content: newContent);
+      }
+    });
+
+    try {
+      await InteractionApiService.updateComment(
+        commentId: commentId,
+        userId: _currentUserId!,
+        content: newContent,
+      );
+    } catch (e) {
+      print('⚠️ Erreur lors de la modification API: $e');
+    }
+
+    await _loadComments();
+  }
 }
 
 class _CommentItem extends StatelessWidget {
-  final VideoComment comment;
+  final Interaction comment;
+  final int? currentUserId;
+  final VoidCallback onDelete;
+  final Function(String) onEdit;
 
-  const _CommentItem({required this.comment});
+  const _CommentItem({
+    required this.comment,
+    this.currentUserId,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = ThemeService().isDarkMode;
+    final isCurrentUser =
+        currentUserId != null && comment.userId == currentUserId;
+    final displayName = comment.userName ?? 'Utilisateur';
+
+    final nameColor = isDarkMode ? Colors.white : Colors.black87;
+    final textColor = isDarkMode ? Colors.white70 : Colors.black54;
+    final timeColor = isDarkMode ? Colors.white54 : Colors.black45;
+    final avatarBgColor = isDarkMode ? Colors.white24 : Colors.grey[300];
+    final avatarTextColor = isDarkMode ? Colors.white : Colors.black87;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -811,10 +1000,10 @@ class _CommentItem extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: Colors.white24,
+                backgroundColor: avatarBgColor,
                 child: Text(
-                  comment.userName.isNotEmpty ? comment.userName[0].toUpperCase() : 'U',
-                  style: const TextStyle(color: Colors.white),
+                  displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
+                  style: TextStyle(color: avatarTextColor),
                 ),
               ),
               const SizedBox(width: 12),
@@ -823,52 +1012,100 @@ class _CommentItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      comment.userName,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      displayName,
+                      style: TextStyle(
+                        color: nameColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     Text(
-                      _formatTimestamp(comment.timestamp),
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      _formatTimestamp(comment.createdAt),
+                      style: TextStyle(
+                        color: timeColor,
                         fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
+              if (isCurrentUser) ...[
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: timeColor,
+                    size: 20,
+                  ),
+                  color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isDarkMode ? Colors.white10 : Colors.black12,
+                      width: 1,
+                    ),
+                  ),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEditDialog(context);
+                    } else if (value == 'delete') {
+                      _showDeleteDialog(context);
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit, color: Colors.amber, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Modifier',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white : Colors.black87,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.delete, color: Colors.redAccent, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Supprimer',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white : Colors.black87,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            comment.content,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.thumb_up_outlined, color: Colors.white54, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                '${comment.likes}',
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(width: 16),
-              const Text(
-                'Répondre',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(left: 52),
+            child: Text(
+              comment.content ?? '',
+              style: TextStyle(color: textColor, fontSize: 14),
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _formatTimestamp(DateTime timestamp) {
+  String _formatTimestamp(DateTime? timestamp) {
+    if (timestamp == null) return '';
+
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
@@ -879,6 +1116,96 @@ class _CommentItem extends StatelessWidget {
     } else {
       return 'Il y a ${difference.inDays} j';
     }
+  }
+
+  void _showEditDialog(BuildContext context) {
+    final isDarkMode = ThemeService().isDarkMode;
+    final controller = TextEditingController(text: comment.content ?? '');
+    
+    final dialogBgColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final hintColor = isDarkMode ? Colors.white54 : Colors.black38;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: dialogBgColor,
+        title: Text(
+          'Modifier le commentaire',
+          style: TextStyle(color: textColor),
+        ),
+        content: TextField(
+          controller: controller,
+          style: TextStyle(color: textColor),
+          decoration: InputDecoration(
+            hintText: 'Votre commentaire...',
+            hintStyle: TextStyle(color: hintColor),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                Navigator.of(context).pop();
+                onEdit(controller.text.trim());
+              }
+            },
+            child: const Text(
+              'Enregistrer',
+              style: TextStyle(color: Colors.amber),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context) {
+    final isDarkMode = ThemeService().isDarkMode;
+    final dialogBgColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: dialogBgColor,
+        title: Text(
+          'Supprimer le commentaire',
+          style: TextStyle(color: textColor),
+        ),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer ce commentaire ?',
+          style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onDelete();
+            },
+            child: const Text(
+              'Supprimer',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

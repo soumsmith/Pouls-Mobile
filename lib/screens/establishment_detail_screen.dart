@@ -5570,7 +5570,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withOpacity(0.4),
-      builder: (_) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
         child: Container(
@@ -5635,69 +5635,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               ),
               const SizedBox(height: 20),
 
-              // Numéro de suivi
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FF),
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.getMediumCardBorderRadius(context),
-                  ),
-                  border: Border.all(color: const Color(0xFFEEEFF5)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: AppColors.screenOrange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.getSmallCardBorderRadius(context),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.tag_rounded,
-                            color: AppColors.screenOrange,
-                            size: 15,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Numéro de suivi',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF8A8A9A),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      demandeUid,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenOrange,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
               const SizedBox(height: 20),
 
               // Bouton
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(dialogContext),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,

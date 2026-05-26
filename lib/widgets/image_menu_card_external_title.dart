@@ -98,194 +98,214 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           offset: Offset(20 * (1 - v), 0),
           child: GestureDetector(
             onTap: onTap,
-            child: Column(
-              crossAxisAlignment: centerTitle
-                  ? CrossAxisAlignment.center
-                  : CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start, // Toujours aligner en haut
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: height != null ? height! * 0.7 : 70,
-                  child: _buildCardWithDoubleBorder(context),
-                ),
-                if (title?.isNotEmpty == true) ...[
-                  SizedBox(height: externalTitleSpacing ?? 4),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: width ?? double.infinity,
+            child: SizedBox(
+              height: height,
+              child: Column(
+                crossAxisAlignment: centerTitle
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start, // Toujours aligner en haut
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (height != null)
+                    Expanded(
+                      child: _buildCardWithDoubleBorder(context),
+                    )
+                  else
+                    SizedBox(
+                      height: width ?? 70,
+                      child: _buildCardWithDoubleBorder(context),
                     ),
-                    child: Padding(
-                      padding: EdgeInsets.only(right: centerTitle ? 0 : 4),
-                      child: Column(
-                        crossAxisAlignment: centerTitle
-                            ? CrossAxisAlignment.center
-                            : CrossAxisAlignment.start,
-                        mainAxisSize: centerTitle
-                            ? MainAxisSize.max
-                            : MainAxisSize.min,
-                        children: [
-                          Builder(
-                            builder: (context) {
-                              final fs = textSizeService.getScaledFontSize(
-                                titleFontSize ?? 11,
-                              );
-                              final maxL = allowLineBreak ? titleMaxLines : 1;
-                              final titleHeight = fs * maxL * 1.4;
-                              return SizedBox(
-                                width: centerTitle ? double.infinity : null,
-                                height: titleHeight,
-                                child: Align(
-                                  alignment: centerTitle
-                                      ? Alignment.topCenter
-                                      : Alignment.topLeft,
-                                  child: Text(
-                                    title!,
-                                    style: TextStyle(
-                                      fontSize: fs,
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor ??
-                                          AppColors.screenTextPrimaryThemed(
-                                            context,
-                                          ),
-                                    ),
-                                    textAlign:
-                                        centerTitle ? TextAlign.center : null,
-                                    maxLines: maxL,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          if (subtitle?.isNotEmpty == true) ...[
-                            const SizedBox(height: 1),
-                            SizedBox(
-                              width: centerTitle ? double.infinity : null,
-                              child: Text(
-                                subtitle!,
-                                style: TextStyle(
-                                  fontSize:
-                                      textSizeService.getScaledFontSize(9),
-                                  fontWeight: FontWeight.w500,
-                                  color: textColor?.withOpacity(0.7) ??
-                                      AppColors.screenTextSecondaryThemed(context),
-                                ),
-                                textAlign:
-                                    centerTitle ? TextAlign.center : null,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                          if (actionText != null) ...[
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    actionText!,
-                                    style: TextStyle(
-                                      fontSize: textSizeService
-                                          .getScaledFontSize(10),
-                                      fontWeight: FontWeight.w700,
-                                      color: actionTextColor ??
-                                          color ??
-                                          AppColors.screenOrange,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (buttonText != null) ...[
-                                  const SizedBox(width: 4),
-                                  _buildSmallButton(textSizeService),
-                                ],
-                              ],
-                            ),
-                          ] else if (location != null) ...[
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.location_on_outlined,
-                                        size: 10,
-                                        color: textColor?.withOpacity(0.5) ??
-                                            AppColors.screenTextTertiary(context),
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Flexible(
-                                        child: Text(
-                                          location!,
-                                          style: TextStyle(
-                                            fontSize: textSizeService
-                                                .getScaledFontSize(9),
-                                            color: textColor?.withOpacity(0.5) ??
-                                                AppColors.screenTextTertiary(context),
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (buttonText != null) ...[
-                                  const SizedBox(width: 4),
-                                  _buildSmallButton(textSizeService),
-                                ],
-                              ],
-                            ),
-                          ] else if (buttonText != null) ...[
-                            const SizedBox(height: 2),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 26,
-                              child: ElevatedButton(
-                                onPressed: onButtonTap ?? () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: buttonColor ??
-                                      color ??
-                                      AppColors.screenOrange,
-                                  foregroundColor:
-                                      buttonTextColor ?? Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                ),
-                                child: Text(
-                                  buttonText!,
-                                  style: TextStyle(
-                                    fontSize: textSizeService
-                                        .getScaledFontSize(10),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+                  if (title?.isNotEmpty == true) ...[
+                    SizedBox(height: externalTitleSpacing ?? 4),
+                    if (height != null)
+                      Flexible(
+                        child: SingleChildScrollView(
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: _buildTextContent(context, textSizeService),
+                        ),
+                      )
+                    else
+                      _buildTextContent(context, textSizeService),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextContent(BuildContext context, TextSizeService textSizeService) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: width ?? double.infinity,
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(right: centerTitle ? 0 : 4),
+        child: Column(
+          crossAxisAlignment: centerTitle
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
+          mainAxisSize: centerTitle
+              ? MainAxisSize.max
+              : MainAxisSize.min,
+          children: [
+            Builder(
+              builder: (context) {
+                final fs = textSizeService.getScaledFontSize(
+                  titleFontSize ?? 11,
+                );
+                final maxL = allowLineBreak ? titleMaxLines : 1;
+                final titleHeight = fs * maxL * 1.4;
+                return SizedBox(
+                  width: centerTitle ? double.infinity : null,
+                  height: titleHeight,
+                  child: Align(
+                    alignment: centerTitle
+                        ? Alignment.topCenter
+                        : Alignment.topLeft,
+                    child: Text(
+                      title!,
+                      style: TextStyle(
+                        fontSize: fs,
+                        fontWeight: FontWeight.w700,
+                        color: textColor ??
+                            AppColors.screenTextPrimaryThemed(
+                              context,
+                            ),
+                      ),
+                      textAlign:
+                          centerTitle ? TextAlign.center : null,
+                      maxLines: maxL,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                );
+              },
+            ),
+            if (subtitle?.isNotEmpty == true) ...[
+              const SizedBox(height: 1),
+              SizedBox(
+                width: centerTitle ? double.infinity : null,
+                child: Text(
+                  subtitle!,
+                  style: TextStyle(
+                    fontSize:
+                        textSizeService.getScaledFontSize(9),
+                    fontWeight: FontWeight.w500,
+                    color: textColor?.withOpacity(0.7) ??
+                        AppColors.screenTextSecondaryThemed(context),
+                  ),
+                  textAlign:
+                      centerTitle ? TextAlign.center : null,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+            if (actionText != null) ...[
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      actionText!,
+                      style: TextStyle(
+                        fontSize: textSizeService
+                            .getScaledFontSize(10),
+                        fontWeight: FontWeight.w700,
+                        color: actionTextColor ??
+                            color ??
+                            AppColors.screenOrange,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (buttonText != null) ...[
+                    const SizedBox(width: 4),
+                    _buildSmallButton(textSizeService),
+                  ],
+                ],
+              ),
+            ] else if (location != null) ...[
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 10,
+                          color: textColor?.withOpacity(0.5) ??
+                              AppColors.screenTextTertiary(context),
+                        ),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            location!,
+                            style: TextStyle(
+                              fontSize: textSizeService
+                                  .getScaledFontSize(9),
+                              color: textColor?.withOpacity(0.5) ??
+                                  AppColors.screenTextTertiary(context),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (buttonText != null) ...[
+                    const SizedBox(width: 4),
+                    _buildSmallButton(textSizeService),
+                  ],
+                ],
+              ),
+            ] else if (buttonText != null) ...[
+              const SizedBox(height: 2),
+              SizedBox(
+                width: double.infinity,
+                height: 26,
+                child: ElevatedButton(
+                  onPressed: onButtonTap ?? () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: buttonColor ??
+                        color ??
+                        AppColors.screenOrange,
+                    foregroundColor:
+                        buttonTextColor ?? Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: Text(
+                    buttonText!,
+                    style: TextStyle(
+                      fontSize: textSizeService
+                          .getScaledFontSize(10),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

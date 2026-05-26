@@ -14,76 +14,6 @@ import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/snackbar.dart';
 
-// ── Date Input Formatter ───────────────────────────────────────────────────────
-class _DateInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.length < oldValue.text.length) {
-      String text = newValue.text.replaceAll(RegExp(r'[^0-9/]'), '');
-      if (oldValue.selection.baseOffset > 0 &&
-          oldValue.text.length > newValue.text.length) {
-        int deletedIndex = newValue.selection.baseOffset;
-        if (deletedIndex > 0 && deletedIndex <= text.length) {
-          if (deletedIndex > 0 && text[deletedIndex - 1] == '/') {
-            text =
-                text.substring(0, deletedIndex - 1) +
-                (deletedIndex < text.length
-                    ? text.substring(deletedIndex)
-                    : '');
-          }
-        }
-      }
-      return TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-    }
-
-    String text = newValue.text.replaceAll(RegExp(r'[^0-9/]'), '');
-    if (newValue.text.contains('-') && !newValue.text.contains('/')) {
-      text = text.replaceAll('-', '/');
-    }
-    if (text.length > 10) text = text.substring(0, 10);
-
-    if (text.length >= 2 && !text.contains('/')) {
-      text = text.substring(0, 2) + '/' + text.substring(2);
-    }
-    if (text.length >= 5 && text.indexOf('/', text.indexOf('/') + 1) == -1) {
-      int firstSlash = text.indexOf('/');
-      if (firstSlash != -1) {
-        String day = text.substring(0, firstSlash);
-        String monthYear = text.substring(firstSlash + 1);
-        if (monthYear.length >= 2) {
-          text =
-              day +
-              '/' +
-              monthYear.substring(0, 2) +
-              '/' +
-              monthYear.substring(2);
-        }
-      }
-    }
-
-    List<String> parts = text.split('/');
-    if (parts.length >= 3) {
-      if (parts[0].length == 2 && int.tryParse(parts[0]) != null) {
-        if (int.parse(parts[0]) > 31) parts[0] = '31';
-      }
-      if (parts[1].length == 2 && int.tryParse(parts[1]) != null) {
-        if (int.parse(parts[1]) > 12) parts[1] = '12';
-      }
-      text = parts.join('/');
-    }
-
-    return TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  showIntegrationBottomSheet — Fonction utilitaire d'affichage
@@ -343,6 +273,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   bool _studentFirstNameError = false;
   bool _matriculeError = false;
   bool _birthDateError = false;
+  bool _lieuNaissanceError = false;
   bool _adresseError = false;
   bool _contact1Error = false;
   bool _nomPereError = false;
@@ -381,7 +312,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       }
       setState(() {});
     });
-    _lieuNaissanceController.addListener(() => setState(() {}));
+    _lieuNaissanceController.addListener(() {
+      if (_lieuNaissanceController.text.isNotEmpty && _lieuNaissanceError) {
+        setState(() => _lieuNaissanceError = false);
+      }
+      setState(() {});
+    });
     _nationaliteController.addListener(() => setState(() {}));
     _adresseController.addListener(() {
       if (_adresseController.text.isNotEmpty && _adresseError) {
@@ -554,6 +490,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             _studentFirstNameController.text.isEmpty ||
             _matriculeController.text.isEmpty ||
             _birthDateController.text.isEmpty ||
+            _lieuNaissanceController.text.isEmpty ||
             _adresseController.text.isEmpty) {
           CartSnackBar.showOverlay(
             context,
@@ -637,6 +574,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       _studentFirstNameError = false;
       _matriculeError = false;
       _birthDateError = false;
+      _lieuNaissanceError = false;
       _adresseError = false;
       _contact1Error = false;
       _nomPereError = false;
@@ -658,6 +596,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     }
     if (_birthDateController.text.isEmpty) {
       setState(() => _birthDateError = true);
+      hasError = true;
+    }
+    if (_lieuNaissanceController.text.isEmpty) {
+      setState(() => _lieuNaissanceError = true);
       hasError = true;
     }
     if (_adresseController.text.isEmpty) {
@@ -808,7 +750,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withOpacity(0.4),
-      builder: (_) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
         child: Container(
@@ -871,85 +813,13 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FF),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFEEEFF5)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: AppColors.screenOrange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.tag_rounded,
-                            color: AppColors.screenOrange,
-                            size: 15,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Numéro de suivi',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF8A8A9A),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            demandeUid,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.screenOrange,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Clipboard.setData(ClipboardData(text: demandeUid));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Numéro copié !')),
-                            );
-                          },
-                          child: const Icon(
-                            Icons.copy_rounded,
-                            size: 16,
-                            color: AppColors.screenOrange,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (mounted) {
-                      Navigator.pop(context);
-                    }
+                    Navigator.pop(dialogContext);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.screenOrange,
@@ -1476,13 +1346,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           controller: _birthDateController,
           required: true,
           hasError: _birthDateError,
-          inputFormatters: [_DateInputFormatter()],
+          inputFormatters: [DateInputFormatter()],
         ),
         CustomTextInput(
           label: 'Lieu de naissance',
           hint: 'Entrez le lieu de naissance',
           icon: Icons.location_on_rounded,
           controller: _lieuNaissanceController,
+          required: true,
+          hasError: _lieuNaissanceError,
         ),
         CustomTextInput(
           label: 'Nationalité',

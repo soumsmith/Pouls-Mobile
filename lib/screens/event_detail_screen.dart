@@ -257,11 +257,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _ActionIcon(
-            icon: Icons.confirmation_num_rounded,
-            label: 'Ticket',
+            icon: Icons.rate_review_rounded,
+            label: 'Avis',
             bgColor: _AppColors.rose,
             iconColor: Colors.white,
-            onTap: _showTicketBottomSheet,
+            onTap: _showAddCommentDialog,
           ),
           _ActionIcon(
             icon: Icons.share_rounded,
@@ -863,7 +863,8 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        _showSnack('Erreur: ${e.toString()}', Colors.red);
+        final msg = e.toString().replaceAll('Exception: ', '');
+        _showSnack('Erreur: $msg', Colors.red);
       }
     }
   }
@@ -1583,7 +1584,7 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('${category.price}€',
+                    Text('${category.price} FCFA',
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w800, color: _AppColors.rose)),
                     Text('${category.quantity} dispo',
@@ -1748,10 +1749,10 @@ class _ConfirmTicketDialog extends StatelessWidget {
                         style: const TextStyle(fontSize: 12, color: _AppColors.slate500)),
                   ],
                   const SizedBox(height: 12),
-                  _SummaryRow(label: 'Prix unitaire', value: '${category.price}€'),
+                  _SummaryRow(label: 'Prix unitaire', value: '${category.price} FCFA'),
                   _SummaryRow(label: 'Quantité', value: '$quantity'),
                   const Divider(height: 16, color: _AppColors.slate300),
-                  _SummaryRow(label: 'Total', value: '$total€', bold: true, valueColor: _AppColors.rose),
+                  _SummaryRow(label: 'Total', value: '$total FCFA', bold: true, valueColor: _AppColors.rose),
                 ],
               ),
             ),
@@ -2075,6 +2076,7 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
             controller: _controller,
             maxLines: 4,
             textInputAction: TextInputAction.newline,
+            onChanged: (_) => setState(() {}),
             style: const TextStyle(fontSize: 14, color: _AppColors.slate900),
             decoration: InputDecoration(
               hintText: 'Partagez votre expérience avec cet événement…',

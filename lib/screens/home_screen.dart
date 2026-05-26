@@ -1309,7 +1309,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final availableWidth = MediaQuery.of(context).size.width - 32.0; // padding 16 left, 16 right
       return (availableWidth / 5.2) - rightMargin;
     }
-    return 120.0;
+    return AppDimensions.getScaledSize(context, 120.0);
   }
 
   Widget _buildCoulisseSection() {
@@ -1321,7 +1321,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
 
     return Container(
-      height: isTablet ? 200 : 160,
+      height: AppDimensions.getScaledSize(context, 175.0), // Hauteur dynamique augmentée pour éviter l'overflow
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1363,11 +1363,11 @@ class _HomeScreenState extends State<HomeScreen> {
         color: schoolData['color'] as Color,
         //location: schoolData['location'] as String?, // Permettre null
         //tag: schoolData['tag'] as String?, // Permettre null
-        titleMaxLines: 1,
+        titleMaxLines: 2,
         externalTitleSpacing: 4,
-        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 180 : 140, // Hauteur réduite pour éviter l'overflow
+        height: null, // null force l'image à être un carré parfait basé sur sa largeur
         width: _getCardWidth(context, 16.0),
-        allowLineBreak: false,
+        allowLineBreak: true,
         centerTitle: false,
         showPlayIcon: true, // Activer l'icône de play pour les vidéos
         onTap: () {
@@ -1465,7 +1465,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: _handleSeeMoreVideos,
         icon: Icons.play_arrow,
         width: _getCardWidth(context, 16.0),
-        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 120 : 100,
+        height: AppDimensions.getScaledSize(context, 100.0), // Hauteur dynamique
       ),
     );
   }
@@ -1480,7 +1480,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
 
     return Container(
-      height: isTablet ? 200 : 160,
+      height: AppDimensions.getScaledSize(context, 175.0), // Hauteur dynamique augmentée pour éviter l'overflow
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1516,7 +1516,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: _handleSeeMoreVisiteGuidee,
       icon: Icons.play_circle_outline,
       width: _getCardWidth(context, 0.0),
-      height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 100 : 80,
+      height: AppDimensions.getScaledSize(context, 80.0), // Hauteur dynamique
     );
   }
 
@@ -1535,7 +1535,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: const Color(0xFF3B82F6),
         titleMaxLines: 2,
         externalTitleSpacing: 4,
-        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 180 : 140,
+        height: null, // null force l'image à être un carré parfait basé sur sa largeur
         width: _getCardWidth(context, 16.0),
         allowLineBreak: true,
         centerTitle: false,
@@ -1709,7 +1709,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Bouton notifications
               _darkIconButton(
                 icon: Icons.notifications_outlined,
-                onTap: () {},
+                onTap: _showNotificationsMenu,
                 showBadge: _unreadNotificationsCount > 0,
                 badgeCount: _unreadNotificationsCount,
               ),
@@ -2068,6 +2068,62 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ─── NOTIFICATIONS MENU ───────────────────────────────────────────────────
+  void _showNotificationsMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: 350,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppColors.grey800 
+              : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Notifications',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(17),
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : _kTextPrimary,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.notifications_off_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Contenu bientot disponible',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(14),
+                color: _kTextSecondary,
+              ),
+            ),
+            const Spacer(),
+          ],
         ),
       ),
     );
@@ -2512,7 +2568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   SizedBox(
                     height:
-                        AppDimensions.getPaymentBannerCardHeight(context) + 20,
+                        AppDimensions.getSquareCardHeightSize(context) + 20,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       padding: EdgeInsets.symmetric(
@@ -2710,7 +2766,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _buildCard(
                           index: 6,
                           cardKey: 'recommendation',
-                          title: 'Recommand-\ner une école',
+                          title: 'Proposer\nune école',
                           imagePath: 'assets/images/recommander.jpg',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFFCFAFF),
@@ -2775,7 +2831,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       children: [
                         const SizedBox(height: 24),
-                        SectionRow(title: 'ACTUALITÉS'),
+                        SectionRow(
+                          title: 'ACTUALITÉS',
+                          onSeeMore: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AllBlogsScreen(),
+                              ),
+                            );
+                          },
+                        ),
                         const SizedBox(height: 16),
                         _buildBlogsSection(),
                       ],
@@ -2783,7 +2849,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Section Visite guidée
                   const SizedBox(height: 24),
-                  SectionRow(title: 'VISITE GUIDÉE'),
+                  SectionRow(
+                    title: 'VISITE GUIDÉE',
+                    onSeeMore: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AllVisiteGuideeVideosScreen(
+                            videos: _visiteGuideeVideos,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 16),
                   _buildVisiteGuideeSection(),
 
@@ -2828,12 +2906,12 @@ class _HomeScreenState extends State<HomeScreen> {
           cardKey: cardKey,
           title: title,
           width: width,
-          height: height,
+          height: null, // Force l'image à être un carré (hauteur = largeur)
           imageFlex: 2,
           imagePath: imagePath,
           isDark: isDark,
-          titleFontSize: AppDimensions.getBottomSheetCardTextSize(context),
-          imageBorderRadius: imageBorderRadius,
+          titleFontSize: AppDimensions.getScaledSize(context, 13.0),
+          imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
           doubleBorderGap: doubleBorderGap,
           color: color,
           backgroundColor: isDark
@@ -2849,7 +2927,7 @@ class _HomeScreenState extends State<HomeScreen> {
           centerTitle: centerTitle,
           allowLineBreak: allowLineBreak,
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: AppDimensions.getScaledSize(context, 16.0)),
       ],
     );
   }

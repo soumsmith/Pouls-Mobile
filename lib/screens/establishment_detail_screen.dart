@@ -3384,7 +3384,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       case 'informations':
         return _buildInformationsContent(headerColor, setSheetState);
       case 'communication':
-        return _buildCommunicationTab(headerColor);
+        return _buildCommunicationTab(headerColor, setSheetState);
       case 'niveaux':
         return _buildLevelsTab(headerColor);
       /*case 'school_events':
@@ -3702,7 +3702,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
 
   // ── Communication tab ─────────────────────────────────────────────────────
-  Widget _buildCommunicationTab(Color headerColor) {
+  Widget _buildCommunicationTab(Color headerColor, StateSetter setSheetState) {
     final ecoleCode = widget.ecole.parametreCode ?? '';
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _blogService.getBlogsForUI('grand', ecoleCode),
@@ -3739,7 +3739,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             else if (snapshot.hasError)
               _buildTabError(
                 snapshot.error.toString(),
-                () => setState(() {}),
+                () => setSheetState(() {}),
                 _kActions['communication']!.color,
               )
             else if (!snapshot.hasData || snapshot.data!.isEmpty)
@@ -3765,9 +3765,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.screenBorder(context) : const Color(0xFFF1F1F1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? const Color(0x1A000000) : const Color(0x08000000),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -7381,13 +7390,23 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 ),
               ),
             ),
-            child: Text(
-              annee,
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(13),
-                color: AppColors.screenOrange,
-                fontWeight: FontWeight.w800,
-              ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_month_rounded,
+                  color: isDark ? Colors.white : Colors.black,
+                  size: _textSizeService.getScaledFontSize(14),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  annee,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(13),
+                    color: AppColors.screenOrange,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
           // Liste des niveaux en 2 colonnes strictes

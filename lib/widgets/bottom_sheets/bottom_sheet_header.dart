@@ -62,19 +62,15 @@ class BottomSheetHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
-                // Icon container with gradient (like paiement)
+                // Icon container with subtle background
                 Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [iconColor, iconColor.withOpacity(0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: iconColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: Colors.white, size: iconSize ?? 18),
+                  child: Icon(icon, color: iconColor, size: iconSize ?? 18),
                 ),
 
                 const SizedBox(width: 8),

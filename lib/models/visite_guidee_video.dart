@@ -1,23 +1,31 @@
 class VisiteGuideeVideo {
   final String typeVideo;
   final String youtubeUrl;
+  final String? title;
+  final String? description;
 
   VisiteGuideeVideo({
     required this.typeVideo,
     required this.youtubeUrl,
+    this.title,
+    this.description,
   });
 
   factory VisiteGuideeVideo.fromJson(Map<String, dynamic> json) {
     return VisiteGuideeVideo(
-      typeVideo: json['type_video'] as String,
-      youtubeUrl: json['youtube_url'] as String,
+      typeVideo: (json['typevideo'] ?? json['type_video'] ?? '') as String,
+      youtubeUrl: (json['youtube_url'] ?? '') as String,
+      title: json['title'] as String?,
+      description: json['description'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'type_video': typeVideo,
+      'typevideo': typeVideo,
       'youtube_url': youtubeUrl,
+      'title': title,
+      'description': description,
     };
   }
 
@@ -47,6 +55,7 @@ class VisiteGuideeVideo {
   }
 
   String get displayTitle {
+    if (title != null && title!.isNotEmpty) return title!;
     switch (typeVideo.toLowerCase()) {
       case 'visiteguide':
         return 'Visite Guidée';
@@ -58,6 +67,7 @@ class VisiteGuideeVideo {
   }
 
   String get displayDescription {
+    if (description != null && description!.isNotEmpty) return description!;
     switch (typeVideo.toLowerCase()) {
       case 'visiteguide':
         return 'Découvrez nos installations lors d\'une visite guidée';

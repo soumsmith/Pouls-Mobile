@@ -25,15 +25,15 @@ class Blog {
 
   factory Blog.fromJson(Map<String, dynamic> json) {
     return Blog(
-      slug: json['slug'] as String,
-      codeecole: json['codeecole'] as String,
-      nomecole: json['nomecole'] as String,
+      slug: json['slug']?.toString() ?? '',
+      codeecole: json['codeecole']?.toString() ?? '',
+      nomecole: json['nomecole']?.toString() ?? '',
       categories: List<String>.from(json['categories'] as List? ?? []),
-      title: json['title'] as String,
-      content: json['content'] as String,
-      publishedAt: json['published_at'] as String,
-      image: json['image'] as String?,
-      auteur: json['auteur'] as String?,
+      title: json['title']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      publishedAt: json['published_at']?.toString() ?? '',
+      image: json['image']?.toString(),
+      auteur: json['auteur']?.toString(),
     );
   }
 
@@ -142,14 +142,21 @@ class BlogsResponse {
   });
 
   factory BlogsResponse.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic value, int defaultValue) {
+      if (value == null) return defaultValue;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? defaultValue;
+      return defaultValue;
+    }
+
     return BlogsResponse(
-      data: (json['data'] as List)
-          .map((item) => Blog.fromJson(item as Map<String, dynamic>))
-          .toList(),
-      currentPage: json['current_page'] as int? ?? 1,
-      perPage: json['per_page'] as int? ?? 20,
-      total: json['total'] as int? ?? 0,
-      totalPages: json['total_pages'] as int? ?? 0,
+      data: (json['data'] as List?)
+          ?.map((item) => Blog.fromJson(item as Map<String, dynamic>))
+          .toList() ?? [],
+      currentPage: parseInt(json['current_page'], 1),
+      perPage: parseInt(json['per_page'], 20),
+      total: parseInt(json['total'], 0),
+      totalPages: parseInt(json['total_pages'], 0),
     );
   }
 }

@@ -4,8 +4,10 @@ import '../config/app_colors.dart';
 import '../config/app_typography.dart';
 import '../utils/image_helper.dart';
 import '../services/event_service.dart';
+import '../widgets/filter_row_widget.dart';
 import '../models/event.dart';
 import 'event_detail_screen.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -42,6 +44,11 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   List<Map<String, dynamic>> _allEvents = [];
   bool _isLoading = true;
   String? _error;
+  
+  // Pagination
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
 
   // ── Animations ──────────────────────────────────────────
   late AnimationController _fadeController;
@@ -75,22 +82,45 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   }
 
   // ── Données ──────────────────────────────────────────────
-  Future<void> _loadEvents() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final events = await EventService.getEventsForUI();
+  Future<void> _loadEvents({bool loadMore = false}) async {
+    if (loadMore) {
+      if (_isLoadingMore || !_hasMore) return;
+      setState(() => _isLoadingMore = true);
+      _currentPage++;
+    } else {
       setState(() {
-        _allEvents = events;
-        _isLoading = false;
+        _isLoading = true;
+        _error = null;
+        _currentPage = 1;
+        _hasMore = true;
       });
-      _fadeController.forward(from: 0);
+    }
+
+    try {
+      final response = await EventService.getEvents(page: _currentPage, perPage: 10);
+      final newEvents = response.data.map((e) => e.toUiMap()).toList();
+      
+      setState(() {
+        if (loadMore) {
+          _allEvents.addAll(newEvents);
+          _isLoadingMore = false;
+        } else {
+          _allEvents = newEvents;
+          _isLoading = false;
+        }
+        _hasMore = response.currentPage < response.totalPages;
+      });
+      
+      if (!loadMore) _fadeController.forward(from: 0);
     } catch (e) {
       setState(() {
-        _error = e.toString();
-        _isLoading = false;
+        if (loadMore) {
+          _isLoadingMore = false;
+          _currentPage--;
+        } else {
+          _error = e.toString();
+          _isLoading = false;
+        }
       });
     }
   }
@@ -116,7 +146,6 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     return events;
   }
 
-  // ── Build ────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -127,82 +156,50 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     );
 
     return Scaffold(
-      backgroundColor: AppColors.screenSurface,
-      body: Column(
+      backgroundColor: AppColors.screenSurfaceThemed(context),
+      body: Stack(
         children: [
-          _buildHeader(),
-          _buildSearchBar(),
-          _buildFilterRow(),
-          Expanded(child: _buildBody()),
-        ],
-      ),
-    );
-  }
-
-  // ── Header ───────────────────────────────────────────────
-  Widget _buildHeader() {
-    return Container(
-      color: AppColors.screenCard,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
-        left: 20,
-        right: 12,
-        bottom: 12,
-      ),
-      child: Row(
-        children: [
-          // Bouton retour
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.screenCard,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: AppColors.screenCardShadow,
+          CustomScrollView(
+            slivers: [
+              CustomSliverAppBar(
+                title: 'Événements scolaires',
+                isDark: Theme.of(context).brightness == Brightness.dark,
+                actions: [
+                  IconButton(
+                    icon: Icon(
+                      _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                    onPressed: () => setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) _searchController.clear();
+                    }),
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
+              SliverToBoxAdapter(child: _buildSearchBar()),
+              SliverToBoxAdapter(child: _buildFilterRow()),
+              ..._buildBodySlivers(),
+            ],
           ),
-
-          const SizedBox(width: 12),
-
-          // Titre
-          const Expanded(
-            child: Text(
-              'Événements scolaires',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
-                letterSpacing: -0.5,
-              ),
-            ),
-          ),
-
-          // Bouton recherche
-          GestureDetector(
-            onTap: () => setState(() {
-              _isSearching = !_isSearching;
-              if (!_isSearching) _searchController.clear();
-            }),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.screenCard,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: AppColors.screenCardShadow,
-              ),
-              child: Icon(
-                _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                size: 20,
-                color: const Color(0xFF1A1A1A),
+          // Fondu bas
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 100,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0x00F8F8F8),
+                      AppColors.screenSurfaceThemed(context),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -210,6 +207,8 @@ class _AllEventsScreenState extends State<AllEventsScreen>
       ),
     );
   }
+
+  // _buildHeader() removed to use CustomSliverAppBar
 
   // ── Barre de recherche animée ────────────────────────────
   Widget _buildSearchBar() {
@@ -217,29 +216,23 @@ class _AllEventsScreenState extends State<AllEventsScreen>
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       height: _isSearching ? 60 : 0,
-      color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: _isSearching
           ? Container(
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.screenSurface,
+                color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.screenOrange.withOpacity(0.4),
+                  color: AppColors.screenBorder(context),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.screenOrange.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: AppColors.screenCardShadowThemed(context),
               ),
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
                 onChanged: (_) => setState(() {}),
+                style: TextStyle(color: AppColors.screenTextPrimaryThemed(context)),
                 decoration: InputDecoration(
                   hintText: 'Rechercher un événement...',
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -273,66 +266,30 @@ class _AllEventsScreenState extends State<AllEventsScreen>
 
   // ── Filtres ──────────────────────────────────────────────
   Widget _buildFilterRow() {
-    return Container(
-      color: AppColors.screenCard,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: SizedBox(
-        height: 36,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _filters.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final f = _filters[i];
-            final selected = f == _selectedFilter;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: Duration(milliseconds: 300 + i * 40),
-              builder: (_, v, child) => Opacity(opacity: v, child: child),
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedFilter = f),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: selected ? AppColors.screenOrangeGradient : null,
-                    color: selected ? null : AppColors.screenSurface,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.screenOrange.withOpacity(0.30),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    f,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? Colors.white : const Color(0xFF666666),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+    return FilterRowWidget(
+      filters: _filters,
+      selectedFilter: _selectedFilter,
+      onFilterSelected: (f) => setState(() => _selectedFilter = f),
     );
   }
 
   // ── Corps ────────────────────────────────────────────────
-  Widget _buildBody() {
-    if (_isLoading) return _buildLoadingState();
-    if (_error != null) return _buildErrorState();
-    return _buildContent();
+  List<Widget> _buildBodySlivers() {
+    if (_isLoading) {
+      return [
+        SliverFillRemaining(
+          child: _buildLoadingState(),
+        )
+      ];
+    }
+    if (_error != null) {
+      return [
+        SliverFillRemaining(
+          child: _buildErrorState(),
+        )
+      ];
+    }
+    return _buildContentSlivers();
   }
 
   Widget _buildLoadingState() {
@@ -442,226 +399,244 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   // Alias pour cohérence
   void _loadEcoles() => _loadEvents();
 
-  Widget _buildContent() {
+  List<Widget> _buildContentSlivers() {
     final items = _filteredEvents;
 
-    return Stack(
-      children: [
-        FadeTransition(
+    return [
+      // ── En-tête résultats ────────────────────────
+      SliverToBoxAdapter(
+        child: FadeTransition(
           opacity: _fadeAnim,
-          child: CustomScrollView(
-            slivers: [
-              // ── En-tête résultats ────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                  child: Row(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Row(
+              children: [
+                RichText(
+                  text: TextSpan(
                     children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '${items.length} ',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.screenOrange,
-                              ),
-                            ),
-                            const TextSpan(
-                              text: 'événement',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF666666),
-                              ),
-                            ),
-                            TextSpan(
-                              text: items.length > 1 ? 's' : '',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF666666),
-                              ),
-                            ),
-                          ],
+                      TextSpan(
+                        text: '${items.length} ',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.screenOrange,
                         ),
                       ),
-                      if (_selectedFilter != 'Tous') ...[
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => setState(() => _selectedFilter = 'Tous'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.screenOrangeLight,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _selectedFilter,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.screenOrange,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.close_rounded,
-                                  size: 12,
-                                  color: AppColors.screenOrange,
-                                ),
-                              ],
-                            ),
-                          ),
+                      const TextSpan(
+                        text: 'événement',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF666666),
                         ),
-                      ],
+                      ),
+                      TextSpan(
+                        text: items.length > 1 ? 's' : '',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-
-              // ── État vide ────────────────────────────────
-              if (items.isEmpty)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.screenOrangeLight,
-                            borderRadius: BorderRadius.circular(24),
+                if (_selectedFilter != 'Tous') ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedFilter = 'Tous'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.screenOrangeLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _selectedFilter,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.screenOrange,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.event_busy_rounded,
-                            size: 40,
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.close_rounded,
+                            size: 12,
                             color: AppColors.screenOrange,
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Aucun événement',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Aucun résultat pour ce filtre',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF999999),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedFilter = 'Tous';
-                            _searchController.clear();
-                          }),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.screenOrangeGradient,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.screenOrange.withOpacity(
-                                    0.3,
-                                  ),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: const Text(
-                              'Réinitialiser les filtres',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                )
-              else
-                // ── Liste d'événements ───────────────────────
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((ctx, i) {
-                      final event = items[i];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: 1),
-                          duration: Duration(milliseconds: 300 + (i % 6) * 50),
-                          curve: Curves.easeOutCubic,
-                          builder: (_, v, child) => Opacity(
-                            opacity: v,
-                            child: Transform.translate(
-                              offset: Offset(0, 16 * (1 - v)),
-                              child: child,
-                            ),
-                          ),
-                          child: _EventCard(
-                            event: event,
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => EventDetailScreen(
-                                    event: Event.fromJson(event),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    }, childCount: items.length),
-                  ),
-                ),
-            ],
+                ],
+              ],
+            ),
           ),
         ),
+      ),
 
-        // Fondu bas
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 100,
-          child: IgnorePointer(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x00F8F8F8), AppColors.screenSurface],
+      // ── État vide ────────────────────────────────
+      if (items.isEmpty)
+        SliverFillRemaining(
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrangeLight,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Icon(
+                      Icons.event_busy_rounded,
+                      size: 40,
+                      color: AppColors.screenOrange,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Aucun événement',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Aucun résultat pour ce filtre',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF999999),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedFilter = 'Tous';
+                      _searchController.clear();
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.screenOrangeGradient,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.screenOrange.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Réinitialiser les filtres',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )
+      else
+        // ── Liste d'événements ───────────────────────
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((ctx, i) {
+              if (i == items.length) {
+                return _buildLoadMoreButton();
+              }
+              final event = items[i];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: Duration(milliseconds: 300 + (i % 6) * 50),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, v, child) => Opacity(
+                      opacity: v,
+                      child: Transform.translate(
+                        offset: Offset(0, 16 * (1 - v)),
+                        child: child,
+                      ),
+                    ),
+                    child: _EventCard(
+                      event: event,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => EventDetailScreen(
+                              event: Event.fromJson(event),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
+              );
+            }, childCount: items.length + (_hasMore ? 1 : 0)),
+          ),
+        ),
+    ];
+  }
+
+  Widget _buildLoadMoreButton() {
+    if (_isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.screenOrange),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: GestureDetector(
+          onTap: () => _loadEvents(loadMore: true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.screenCardThemed(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.screenBorder(context)),
+              boxShadow: AppColors.screenCardShadow,
+            ),
+            child: const Text(
+              'Voir plus d\'événements',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.screenOrange,
               ),
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -677,21 +652,30 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color color = event['color'] as Color;
     final String? imageUrl = event['image'] as String?;
-    final bool isAvailable = event['available'] as bool? ?? true;
     final String title = event['title'] as String? ?? '';
     final String subtitle =
         event['subtitle'] as String? ?? event['establishment'] as String? ?? '';
-    final String price = event['price'] as String? ?? 'Gratuit';
     final String date = event['date'] as String? ?? '';
-    final String time = event['time'] as String? ?? '';
+    final String status = event['statutevent'] as String? ?? 'en cours';
+    
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: AppColors.screenCardShadow,
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.screenBorder(context) : const Color(0xFFF1F1F1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -699,224 +683,124 @@ class _EventCard extends StatelessWidget {
           children: [
             // ── Vignette image (gauche) ───────────────────
             ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               child: SizedBox(
-                width: 90,
-                height: 90,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    imageUrl != null
-                        ? ImageHelper.buildNetworkImage(
-                            imageUrl: imageUrl,
-                            placeholder: title,
-                            width: 90,
-                            height: 90,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  color.withOpacity(0.85),
-                                  color.withOpacity(0.45),
-                                ],
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                event['icon'] as IconData? ??
-                                    Icons.event_rounded,
-                                size: 36,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                            ),
-                          ),
-
-                    // Badge COMPLET
-                    if (!isAvailable)
-                      Positioned(
-                        top: 6,
-                        left: 0,
-                        right: 0,
+                width: 80,
+                height: 80,
+                child: imageUrl != null
+                    ? ImageHelper.buildNetworkImage(
+                        imageUrl: imageUrl,
+                        placeholder: title,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        color: color.withOpacity(0.1),
                         child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'COMPLET',
-                              style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
+                          child: Icon(
+                            event['icon'] as IconData? ?? Icons.event_rounded,
+                            size: 32,
+                            color: color,
                           ),
                         ),
                       ),
-                  ],
-                ),
               ),
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
 
             // ── Infos (droite) ────────────────────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Ligne titre + bouton delete (icône poubelle)
+                  // Ligne titre
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  // Sous-titre (établissement)
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Icon(Icons.business, size: 12, color: AppColors.screenTextSecondaryThemed(context)),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
-                            height: 1.25,
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.screenTextSecondaryThemed(context),
                           ),
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      // Icône info/détail
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.info_outline_rounded,
-                          size: 16,
-                          color: color,
-                        ),
-                      ),
                     ],
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // Sous-titre (établissement)
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF999999),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
 
                   const SizedBox(height: 10),
 
-                  // Prix + date + stepper
+                  // Ligne Date et Statut
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Prix
-                      Text(
-                        price,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: color,
-                          letterSpacing: 0.2,
+                      // Badge Date
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.calendar_today_rounded, size: 10, color: color),
+                            const SizedBox(width: 4),
+                            Text(
+                              date,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: color,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-
-                      const Spacer(),
-
-                      // Badge date
+                      
+                      // Statut
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(8),
+                          color: status.toLowerCase() == 'terminé' 
+                              ? Colors.grey.withOpacity(0.1) 
+                              : const Color(0xFF22C55E).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          date,
+                          status.toUpperCase(),
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: color,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: status.toLowerCase() == 'terminé' 
+                                ? Colors.grey 
+                                : const Color(0xFF22C55E),
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Heure + disponibilité dot
-                  Row(
-                    children: [
-                      Icon(Icons.schedule_rounded, size: 12, color: color),
-                      const SizedBox(width: 4),
-                      Text(
-                        time,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: color,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (isAvailable) ...[
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF22C55E),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'Disponible',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF22C55E),
-                          ),
-                        ),
-                      ] else ...[
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'Complet',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFFEF4444),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ],

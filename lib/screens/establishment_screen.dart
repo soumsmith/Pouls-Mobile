@@ -1234,7 +1234,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       centerTitle: true,
       color: color,
       backgroundColor: isDark ? backgroundColor.withOpacity(0.15) : backgroundColor,
-      textColor: isDark ? color.withOpacity(0.75) : textColor,
+      textColor: isDark ? Colors.white : textColor,
       enableInnerBorder: false,
       enableOuterBorder: false,
       allowLineBreak: allowLineBreak,

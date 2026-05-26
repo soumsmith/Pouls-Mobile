@@ -29,10 +29,6 @@ Tous les fichiers de ce dossier sont indispensables au fonctionnement global de 
 
 Ce dossier a servi au prototypage local d'éléments visuels mais n'a aucun lien avec la production.
 
-| Fichier | Statut | Rôle dans l'application | Action recommandée |
-| :--- | :---: | :--- | :--- |
-| `subtle_retry_button_examples.dart` | 🔴 | Démonstrations et cas d'usage visuels du bouton de reconnexion et d'essai. | **Supprimer** |
-
 ---
 
 ## 🏗️ 3. Fichiers et Fichiers Temporaires du Dossier Services (`lib/services/`)
@@ -44,12 +40,6 @@ C'est ici qu'on trouve le plus grand nombre de fichiers de test obsolètes et de
 | Fichier | Statut | Rôle dans l'application | Action recommandée |
 | :--- | :---: | :--- | :--- |
 | `auth_service copy.dart` | 🔴 | Copie de sauvegarde obsolète d'une ancienne version de l'authentification. | **Supprimer** |
-| `mock_api_service.dart` | 🔴 | Contient des réponses d'API simulées et codées en dur, utilisées pendant la phase de maquettage initial. | **Supprimer** |
-| `pouls_scolaire_example.dart` | 🔴 | Code d'exemple d'implémentation de requêtes API obsolète. | **Supprimer** |
-| `jsonOptimise.json` | 🔴 | Fichier de données JSON temporaire resté dans le dossier de code. | **Supprimer** |
-| `testObjet.json` | 🔴 | Exemple de réponse brute JSON restée dans le dossier de code. | **Supprimer** |
-| `testObjet.optimized.json` | 🔴 | Fichier JSON de test optimisé volumineux. | **Supprimer** |
-| `testObjet.optimized copy.json` | 🔴 | Doublon du fichier JSON de test. | **Supprimer** |
 
 ### 🟡 Doublons et Fichiers à Regrouper (À Fusionner)
 
@@ -128,7 +118,6 @@ Ce dossier contient les vues et pages. Un vieil écran inutile et un écran au n
 
 | Écran | Statut | Rôle dans l'application | Recommandation |
 | :--- | :---: | :--- | :--- |
-| `fees_screen.dart` | 🔴 | Ancien écran de tarifs scolaires statiques. | **À supprimer**. Remplacé avantageusement par `student_scolarite_screen.dart` qui charge les données financières dynamiquement ! |
 | `notes_screen_json.dart` | 🟢 | **Écran principal des notes scolaires (Bulletins).** | **Garder précieusement**. Malgré la présence de `_json` dans son nom, c'est l'écran actif qui est importé pour afficher les notes ! |
 | `child_list_screen.dart` | 🟢 | **Cœur de l'application (470 Ko+).** Gère le tableau de bord complet avec les onglets de détails des enfants (Absences, Emploi du temps, Scolarité). | **Garder absolument** |
 | `new_settings_screen.dart`| 🟢 | Nouvel écran de paramètres complet (préférences, taille texte, dark mode). | **Garder** |
@@ -144,26 +133,3 @@ Ces deux répertoires contiennent vos outils partagés et vos composants d'inter
 * **`lib/widgets/`** : Tous les composants partagés comme `SearchableDropdown` (🟢), `CustomTextField` (🟢), `BottomSheetHeader` (🟢), `PaymentBottomSheet` (🟢), et les sous-dossiers comme `lib/widgets/bottom_sheets/` (🟢) et `lib/widgets/components/` (🟢) sont **activement utilisés**.
 
 ---
-
-## 🚀 Plan d'action recommandé pour le Nettoyage
-
-Pour faire un nettoyage propre de votre projet, vous pouvez ouvrir votre terminal et exécuter ces étapes simples de suppression :
-
-```bash
-# 1. Suppression des fichiers d'exemples et d'écrans obsolètes
-rm lib/examples/subtle_retry_button_examples.dart
-rm lib/screens/fees_screen.dart
-
-# 2. Suppression des copies de sauvegarde et fichiers de mock temporaires
-rm lib/services/auth_service\ copy.dart
-rm lib/services/mock_api_service.dart
-rm lib/services/pouls_scolaire_example.dart
-
-# 3. Suppression des fichiers de test JSON volumineux
-rm lib/services/jsonOptimise.json
-rm lib/services/testObjet.json
-rm lib/services/testObjet.optimized.json
-rm lib/services/testObjet.optimized\ copy.json
-```
-
-Ce nettoyage vous permettra de libérer de l'espace, d'accélérer la compilation et de conserver un projet Flutter 100 % propre et structuré !

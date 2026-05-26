@@ -7,7 +7,7 @@ class VisiteGuideeService {
 
   static Future<List<VisiteGuideeVideo>> getVideosByEcole(String ecoleCode) async {
     try {
-      final url = '$baseUrl/videos?ecole=$ecoleCode';
+      final url = '$baseUrl/videos?ecole=$ecoleCode&type_video=visiteguide';
       print('=== API VISITES GUIDÉES ===');
       print('URL: $url');
       
@@ -25,7 +25,7 @@ class VisiteGuideeService {
         final Map<String, dynamic> jsonData = json.decode(response.body);
         print('Response Body: ${response.body}');
         
-        if (jsonData['status'] == true && jsonData['data'] != null) {
+        if (jsonData['data'] != null) {
           final List<dynamic> videosData = jsonData['data'];
           print('Videos Data Length: ${videosData.length}');
           
@@ -38,7 +38,7 @@ class VisiteGuideeService {
           
           return videos;
         } else {
-          print('Status false or data null');
+          print('data is null');
           return [];
         }
       } else {

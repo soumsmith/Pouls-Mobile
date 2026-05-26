@@ -102,6 +102,13 @@ class AppColors {
   static const Color customDarkBlueDark = Color(0xFF285A9C);
   static const Color customDarkBlueSurface = Color(0xFFE6F0FF);
 
+  // ================= COULEURS DU LOGO =================
+  static const Color logoSkyBlue = Color(0xFF009EDB);
+  static const Color logoOrange = Color(0xFFF08B21);
+  static const Color logoGreen = Color(0xFF80C241);
+  static const Color logoDarkBlue = Color(0xFF1A63A5);
+  static const Color logoGrey = Color(0xFF999999);
+
   // ================= BACKGROUND & SURFACE =================
 
   static const Color backgroundLight = Color(0xFFF8FAFC);

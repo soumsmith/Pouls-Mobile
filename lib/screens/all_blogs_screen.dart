@@ -5,7 +5,9 @@ import '../config/app_dimensions.dart';
 import '../utils/image_helper.dart';
 import '../services/blog_service.dart';
 import '../models/blog.dart';
+import '../widgets/filter_row_widget.dart';
 import 'blog_detail_screen.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -28,6 +30,11 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   List<Blog> _allBlogs = [];
   bool    _isLoading        = true;
   String? _error;
+
+  // Pagination
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
 
   // ── Animations ──────────────────────────────────────────
   late AnimationController _fadeController;
@@ -56,15 +63,46 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     super.dispose();
   }
 
-  // ── Données ──────────────────────────────────────────────
-  Future<void> _loadBlogs() async {
-    setState(() { _isLoading = true; _error = null; });
+  Future<void> _loadBlogs({bool loadMore = false}) async {
+    if (loadMore) {
+      if (_isLoadingMore || !_hasMore) return;
+      setState(() => _isLoadingMore = true);
+      _currentPage++;
+    } else {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+        _currentPage = 1;
+        _hasMore = true;
+      });
+    }
+
     try {
-      final blogs = await BlogService.getBlogsList();
-      setState(() { _allBlogs = blogs; _isLoading = false; });
-      _fadeController.forward(from: 0);
+      final response = await BlogService.getBlogs(page: _currentPage, perPage: 10);
+      final newBlogs = response.data;
+      
+      setState(() {
+        if (loadMore) {
+          _allBlogs.addAll(newBlogs);
+          _isLoadingMore = false;
+        } else {
+          _allBlogs = newBlogs;
+          _isLoading = false;
+        }
+        _hasMore = response.currentPage < response.totalPages;
+      });
+      
+      if (!loadMore) _fadeController.forward(from: 0);
     } catch (e) {
-      setState(() { _error = e.toString(); _isLoading = false; });
+      setState(() {
+        if (loadMore) {
+          _isLoadingMore = false;
+          _currentPage--;
+        } else {
+          _error = e.toString();
+          _isLoading = false;
+        }
+      });
     }
   }
 
@@ -91,85 +129,58 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   // ── Build ────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
 
     return Scaffold(
-      backgroundColor: AppColors.screenSurface,
-      body: Column(
+      backgroundColor: AppColors.screenSurfaceThemed(context),
+      body: Stack(
         children: [
-          _buildHeader(),
-          _buildSearchBar(),
-          _buildFilterRow(),
-          Expanded(child: _buildBody()),
-        ],
-      ),
-    );
-  }
-
-  // ── Header ───────────────────────────────────────────────
-  Widget _buildHeader() {
-    return Container(
-      color: AppColors.screenCard,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
-        left: 20,
-        right: 12,
-        bottom: 12,
-      ),
-      child: Row(
-        children: [
-          // Bouton retour
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.screenCard,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: AppDimensions.getSettingsCardShadow(context),
+          CustomScrollView(
+            slivers: [
+              CustomSliverAppBar(
+                title: 'Actualités',
+                isDark: Theme.of(context).brightness == Brightness.dark,
+                actions: [
+                  IconButton(
+                    icon: Icon(
+                      _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                    onPressed: () => setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) _searchController.clear();
+                    }),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded,
-                  size: 18, color: Color(0xFF1A1A1A)),
-            ),
+              SliverToBoxAdapter(child: _buildSearchBar()),
+              SliverToBoxAdapter(child: _buildFilterRow()),
+              ..._buildBodySlivers(),
+            ],
           ),
-
-          const SizedBox(width: 12),
-
-          // Titre
-          const Expanded(
-            child: Text(
-              'Actualités',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
-                letterSpacing: -0.5,
-              ),
-            ),
-          ),
-
-          // Bouton recherche
-          GestureDetector(
-            onTap: () => setState(() {
-              _isSearching = !_isSearching;
-              if (!_isSearching) _searchController.clear();
-            }),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.screenCard,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: AppDimensions.getSettingsCardShadow(context),
-              ),
-              child: Icon(
-                _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                size: 20,
-                color: const Color(0xFF1A1A1A),
+          // Fondu bas
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 100,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0x00F8F8F8),
+                      AppColors.screenSurfaceThemed(context),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -177,6 +188,8 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       ),
     );
   }
+
+  // _buildHeader() removed to use CustomSliverAppBar
 
   // ── Barre de recherche animée ────────────────────────────
   Widget _buildSearchBar() {
@@ -184,21 +197,21 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       height: _isSearching ? 60 : 0,
-      color: AppColors.screenCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: _isSearching
           ? Container(
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.screenSurface,
+                color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.screenOrange.withOpacity(0.4)),
-                boxShadow: AppDimensions.getSettingsCardShadow(context),
+                border: Border.all(color: AppColors.screenBorder(context)),
+                boxShadow: AppColors.screenCardShadowThemed(context),
               ),
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
                 onChanged: (_) => setState(() {}),
+                style: TextStyle(color: AppColors.screenTextPrimaryThemed(context)),
                 decoration: InputDecoration(
                   hintText: 'Rechercher une actualité...',
                   hintStyle:
@@ -225,69 +238,30 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
 
   // ── Filtres ──────────────────────────────────────────────
   Widget _buildFilterRow() {
-    return Container(
-      color: AppColors.screenCard,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: SizedBox(
-        height: 36,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _filters.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final f        = _filters[i];
-            final selected = f == _selectedFilter;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: Duration(milliseconds: 300 + i * 40),
-              builder: (_, v, child) =>
-                  Opacity(opacity: v, child: child),
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedFilter = f),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: selected ? AppColors.screenOrangeGradient : null,
-                    color: selected ? null : AppColors.screenSurface,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.screenOrange.withOpacity(0.30),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            )
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    f,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: selected
-                          ? Colors.white
-                          : const Color(0xFF666666),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+    return FilterRowWidget(
+      filters: _filters,
+      selectedFilter: _selectedFilter,
+      onFilterSelected: (f) => setState(() => _selectedFilter = f),
     );
   }
 
   // ── Corps ────────────────────────────────────────────────
-  Widget _buildBody() {
-    if (_isLoading) return _buildLoadingState();
-    if (_error != null) return _buildErrorState();
-    return _buildContent();
+  List<Widget> _buildBodySlivers() {
+    if (_isLoading) {
+      return [
+        SliverFillRemaining(
+          child: _buildLoadingState(),
+        )
+      ];
+    }
+    if (_error != null) {
+      return [
+        SliverFillRemaining(
+          child: _buildErrorState(),
+        )
+      ];
+    }
+    return _buildContentSlivers();
   }
 
   Widget _buildLoadingState() {
@@ -387,215 +361,234 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     );
   }
 
-  Widget _buildContent() {
+  List<Widget> _buildContentSlivers() {
     final items = _filteredBlogs;
 
-    return Stack(
-      children: [
-        FadeTransition(
+    return [
+      // ── En-tête résultats ────────────────────────
+      SliverToBoxAdapter(
+        child: FadeTransition(
           opacity: _fadeAnim,
-          child: CustomScrollView(
-            slivers: [
-              // ── En-tête résultats ────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                  child: Row(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Row(
+              children: [
+                RichText(
+                  text: TextSpan(
                     children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '${items.length} ',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.screenOrange,
-                              ),
-                            ),
-                            const TextSpan(
-                              text: 'actualité',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF666666),
-                              ),
-                            ),
-                            TextSpan(
-                              text: items.length > 1 ? 's' : '',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF666666),
-                              ),
-                            ),
-                          ],
+                      TextSpan(
+                        text: '${items.length} ',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.screenOrange,
                         ),
                       ),
-                      if (_selectedFilter != 'Tous') ...[
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => _selectedFilter = 'Tous'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.screenOrangeLight,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _selectedFilter,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.screenOrange,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.close_rounded,
-                                    size: 12, color: AppColors.screenOrange),
-                              ],
-                            ),
-                          ),
+                      const TextSpan(
+                        text: 'actualité',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF666666),
                         ),
-                      ],
+                      ),
+                      TextSpan(
+                        text: items.length > 1 ? 's' : '',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-
-              // ── État vide ────────────────────────────────
-              if (items.isEmpty)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.screenOrangeLight,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: const Icon(Icons.article_outlined,
-                              size: 40, color: AppColors.screenOrange),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Aucune actualité',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Aucun résultat pour ce filtre',
-                          style: TextStyle(
-                              fontSize: 13, color: Color(0xFF999999)),
-                        ),
-                        const SizedBox(height: 24),
-                        GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedFilter = 'Tous';
-                            _searchController.clear();
-                          }),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.screenOrangeGradient,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.screenOrange.withOpacity(0.3),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: const Text(
-                              'Réinitialiser les filtres',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
+                if (_selectedFilter != 'Tous') ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedFilter = 'Tous'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.screenOrangeLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _selectedFilter,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.screenOrange,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          const Icon(Icons.close_rounded,
+                              size: 12, color: AppColors.screenOrange),
+                        ],
+                      ),
                     ),
                   ),
-                )
-              else
-                // ── Liste de blogs ───────────────────────
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) {
-                        final blog = items[i];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0, end: 1),
-                            duration: Duration(
-                                milliseconds: 300 + (i % 6) * 50),
-                            curve: Curves.easeOutCubic,
-                            builder: (_, v, child) => Opacity(
-                              opacity: v,
-                              child: Transform.translate(
-                                offset: Offset(0, 16 * (1 - v)),
-                                child: child,
-                              ),
-                            ),
-                            child: _BlogCard(
-                              blog: blog,
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => BlogDetailScreen(blog: blog),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                      childCount: items.length,
-                    ),
-                  ),
-                ),
-            ],
+                ],
+              ],
+            ),
           ),
         ),
+      ),
 
-        // Fondu bas
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 100,
-          child: IgnorePointer(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x00F8F8F8), AppColors.screenSurface],
-                ),
+      // ── État vide ────────────────────────────────
+      if (items.isEmpty)
+        SliverFillRemaining(
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrangeLight,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Icon(Icons.article_outlined,
+                        size: 40, color: AppColors.screenOrange),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Aucune actualité',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aucun résultat pour ce filtre',
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
+                  ),
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedFilter = 'Tous';
+                      _searchController.clear();
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.screenOrangeGradient,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.screenOrange.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Réinitialiser les filtres',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )
+      else
+        // ── Liste de blogs ───────────────────────
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (ctx, i) {
+                if (i == items.length) {
+                  return _buildLoadMoreButton();
+                }
+                final blog = items[i];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: FadeTransition(
+                    opacity: _fadeAnim,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: 1),
+                      duration: Duration(
+                          milliseconds: 300 + (i % 6) * 50),
+                      curve: Curves.easeOutCubic,
+                      builder: (_, v, child) => Opacity(
+                        opacity: v,
+                        child: Transform.translate(
+                          offset: Offset(0, 16 * (1 - v)),
+                          child: child,
+                        ),
+                      ),
+                      child: _BlogCard(
+                        blog: blog,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => BlogDetailScreen(blog: blog),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+              childCount: items.length + (_hasMore ? 1 : 0),
+            ),
+          ),
+        ),
+    ];
+  }
+
+  Widget _buildLoadMoreButton() {
+    if (_isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.screenOrange),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: GestureDetector(
+          onTap: () => _loadBlogs(loadMore: true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.screenCardThemed(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.screenBorder(context)),
+              boxShadow: AppColors.screenCardShadowThemed(context),
+            ),
+            child: const Text(
+              'Voir plus d\'actualités',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.screenOrange,
               ),
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -617,13 +610,24 @@ class _BlogCard extends StatelessWidget {
     final String date      = uiData['date'] as String;
     final String type      = uiData['type'] as String;
 
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.screenBorder(context) : const Color(0xFFF1F1F1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? const Color(0x1A000000) : const Color(0x08000000),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -686,10 +690,10 @@ class _BlogCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
+                            color: AppColors.screenTextPrimaryThemed(context),
                             height: 1.25,
                           ),
                           maxLines: 2,
@@ -722,9 +726,9 @@ class _BlogCard extends StatelessWidget {
                   // Sous-titre (établissement)
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF999999),
+                      color: AppColors.screenTextSecondaryThemed(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -14,6 +14,8 @@ import '../services/ticket_service.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -145,9 +147,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     final typeColor = uiData['color'] as Color;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: Theme.of(context).brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: _AppColors.surface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
@@ -205,9 +207,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   // ── Body ────────────────────────────────────
   Widget _buildBody(Color typeColor) {
     return Container(
-      decoration: const BoxDecoration(
-        color: _AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurfaceThemed(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,12 +235,13 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Widget _buildDragHandle() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Container(
         width: 36,
         height: 4,
         decoration: BoxDecoration(
-          color: _AppColors.slate300,
+          color: isDark ? const Color(0xFF333333) : _AppColors.slate300,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -247,6 +250,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   // ── Action Bar (icônes) ─────────────────────
   Widget _buildActionBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -283,7 +287,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           _ActionIcon(
             icon: Icons.calendar_month_rounded,
             label: 'Agenda',
-            bgColor: _AppColors.slate900,
+            bgColor: isDark ? const Color(0xFF333333) : _AppColors.slate900,
             iconColor: Colors.white,
             onTap: _addToCalendar,
           ),
@@ -339,12 +343,12 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'À propos',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: _AppColors.slate900,
+              color: AppColors.screenTextPrimaryThemed(context),
               letterSpacing: -0.3,
             ),
           ),
@@ -379,12 +383,12 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Avis & commentaires',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: _AppColors.slate900,
+                  color: AppColors.screenTextPrimaryThemed(context),
                   letterSpacing: -0.3,
                 ),
               ),
@@ -446,6 +450,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Widget _buildEmptyComments() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -455,16 +460,16 @@ class _EventDetailScreenState extends State<EventDetailScreen>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: _AppColors.slate100,
+                color: isDark ? const Color(0xFF1E1E2A) : _AppColors.slate100,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.chat_bubble_outline_rounded,
-                  size: 28, color: _AppColors.slate500),
+              child: Icon(Icons.chat_bubble_outline_rounded,
+                  size: 28, color: AppColors.screenTextSecondaryThemed(context)),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Soyez le premier à donner votre avis',
-              style: TextStyle(fontSize: 13, color: _AppColors.slate500),
+              style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
             ),
           ],
         ),
@@ -474,12 +479,13 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   Widget _buildRatingSummary() {
     if (_ratingSummary == null) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _AppColors.slate300.withOpacity(0.5)),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Row(
         children: [
@@ -488,10 +494,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             children: [
               Text(
                 _ratingSummary!.formattedRating,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.w800,
-                  color: _AppColors.slate900,
+                  color: AppColors.screenTextPrimaryThemed(context),
                   letterSpacing: -1,
                 ),
               ),
@@ -499,7 +505,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
               const SizedBox(height: 4),
               Text(
                 '${_ratingSummary!.totalRatings} avis',
-                style: const TextStyle(fontSize: 11, color: _AppColors.slate500),
+                style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
               ),
             ],
           ),
@@ -517,7 +523,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                   padding: const EdgeInsets.symmetric(vertical: 2.5),
                   child: Row(
                     children: [
-                      Text('$star', style: const TextStyle(fontSize: 11, color: _AppColors.slate500)),
+                      Text('$star', style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
                       const SizedBox(width: 4),
                       const Icon(Icons.star_rounded, color: _AppColors.gold, size: 12),
                       const SizedBox(width: 6),
@@ -527,7 +533,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                           child: LinearProgressIndicator(
                             value: pct.toDouble(),
                             minHeight: 5,
-                            backgroundColor: _AppColors.slate100,
+                            backgroundColor: isDark ? const Color(0xFF1E1E2A) : _AppColors.slate100,
                             valueColor: const AlwaysStoppedAnimation(_AppColors.gold),
                           ),
                         ),
@@ -537,7 +543,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                         width: 18,
                         child: Text(
                           '${_ratingSummary!.ratingDistribution[star] ?? 0}',
-                          style: const TextStyle(fontSize: 11, color: _AppColors.slate500),
+                          style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
                         ),
                       ),
                     ],
@@ -552,12 +558,13 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Widget _buildCommentCard(EventRatingComment comment) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _AppColors.slate300.withOpacity(0.4)),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,7 +573,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: _AppColors.indigoLight,
+                backgroundColor: isDark ? _AppColors.indigo.withOpacity(0.2) : _AppColors.indigoLight,
                 backgroundImage: comment.userAvatar.isNotEmpty
                     ? NetworkImage(comment.userAvatar)
                     : null,
@@ -590,15 +597,15 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                   children: [
                     Text(
                       comment.userName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: _AppColors.slate900,
+                        color: AppColors.screenTextPrimaryThemed(context),
                       ),
                     ),
                     Text(
                       comment.formattedDate,
-                      style: const TextStyle(fontSize: 11, color: _AppColors.slate500),
+                      style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
                     ),
                   ],
                 ),
@@ -612,9 +619,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           const SizedBox(height: 10),
           Text(
             comment.comment,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13.5,
-              color: _AppColors.slate700,
+              color: AppColors.screenTextPrimaryThemed(context),
               height: 1.55,
             ),
           ),
@@ -632,12 +639,12 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: const Text(
+          child: Text(
             'Autres événements',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: _AppColors.slate900,
+              color: AppColors.screenTextPrimaryThemed(context),
               letterSpacing: -0.3,
             ),
           ),
@@ -666,9 +673,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       child: Container(
         width: 155,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _AppColors.slate300.withOpacity(0.5)),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         clipBehavior: Clip.hardEdge,
         child: Column(
@@ -688,10 +695,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 children: [
                   Text(
                     event.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _AppColors.slate900,
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -1118,10 +1125,10 @@ class _ActionIcon extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: _AppColors.slate500,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
           ),
         ],
@@ -1150,9 +1157,9 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _AppColors.slate300.withOpacity(0.5)),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Row(
         children: [
@@ -1169,17 +1176,17 @@ class _InfoCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: _AppColors.slate900,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 11, color: _AppColors.slate500),
+                  style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
                 ),
               ],
             ),
@@ -1867,17 +1874,17 @@ class _ExpandableTextState extends State<_ExpandableText> {
             widget.text,
             maxLines: widget.maxLines,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14.5,
-              color: _AppColors.slate700,
+              color: AppColors.screenTextPrimaryThemed(context),
               height: 1.65,
             ),
           ),
           secondChild: Text(
             widget.text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14.5,
-              color: _AppColors.slate700,
+              color: AppColors.screenTextPrimaryThemed(context),
               height: 1.65,
             ),
           ),

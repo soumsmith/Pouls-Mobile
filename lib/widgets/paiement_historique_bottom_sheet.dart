@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../models/paiement_historique.dart';
 import '../services/paiement_historique_service.dart';
 import 'bottom_sheets/bottom_sheet_header.dart';
@@ -311,273 +312,260 @@ class _PaymentCard extends StatelessWidget {
           color: cardBgColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: borderColor,
+            color: isExpanded ? borderColor : Colors.transparent,
             width: 1.2,
           ),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Orange left indicator bar
-                Container(
-                  width: 5,
-                  color: AppColors.screenOrange,
+                // Collapsed Header Row: Amount & Arrow Icon
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        PaiementHistoriqueBottomSheet._formatCurrency(paiement.montant),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : Colors.black,
+                          fontSize: 18,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Expand/collapse indicator icon
+                    Icon(
+                      isExpanded 
+                          ? Icons.keyboard_arrow_up_rounded 
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: AppColors.screenOrange,
+                      size: 24,
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 8),
+
+                // Date & Time (always shown)
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.screenOrange.withOpacity(0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 11,
+                        color: AppColors.screenOrange,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Le ${paiement.formattedDate} à ${paiement.formattedTime}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.grey[400] : const Color(0xFF475569),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Expanded Area
+                if (isExpanded) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 1,
+                    color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Receipt number badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Collapsed Header Row: Amount & Arrow Icon
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                PaiementHistoriqueBottomSheet._formatCurrency(paiement.montant),
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.screenOrange,
-                                  fontSize: 18,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Expand/collapse indicator icon
-                            Icon(
-                              isExpanded 
-                                  ? Icons.keyboard_arrow_up_rounded 
-                                  : Icons.keyboard_arrow_down_rounded,
-                              color: AppColors.screenOrange,
-                              size: 24,
-                            ),
-                          ],
+                        const Icon(
+                          Icons.receipt_long_rounded,
+                          color: AppColors.screenOrange,
+                          size: 13,
                         ),
-                        const SizedBox(height: 8),
-
-                        // Date & Time (always shown)
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: AppColors.screenOrange.withOpacity(0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.calendar_today_rounded,
-                                size: 11,
-                                color: AppColors.screenOrange,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Le ${paiement.formattedDate} à ${paiement.formattedTime}',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.grey[400] : const Color(0xFF475569),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 4),
+                        Text(
+                          'Reçu N° ${paiement.numeroRecu}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.screenOrange,
+                            fontSize: 11,
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
 
-                        // Expanded Area
-                        if (isExpanded) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            height: 1,
-                            color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9),
+                  // Mode de paiement & Exercice
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: detailBgColor,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          const SizedBox(height: 12),
-
-                          // Receipt number badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.screenOrange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.receipt_long_rounded,
-                                  color: AppColors.screenOrange,
-                                  size: 13,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Reçu N° ${paiement.numeroRecu}',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.screenOrange,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Mode de paiement & Exercice
-                          Row(
+                          child: Row(
                             children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: detailBgColor,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        modeIcon,
-                                        size: 13,
-                                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          paiement.modePaiementLibelle,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.grey[300] : const Color(0xFF475569),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              Icon(
+                                modeIcon,
+                                size: 13,
+                                color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: detailBgColor,
-                                    borderRadius: BorderRadius.circular(10),
+                                child: Text(
+                                  paiement.modePaiementLibelle,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.grey[300] : const Color(0xFF475569),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.school_rounded,
-                                        size: 13,
-                                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          paiement.exercice,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.grey[300] : const Color(0xFF475569),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-
-                          // Caissier row
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: detailBgColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.badge_rounded,
-                                  size: 13,
-                                  color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: detailBgColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.school_rounded,
+                                size: 13,
+                                color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  paiement.exercice,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: RichText(
-                                    text: TextSpan(
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
-                                      ),
-                                      children: [
-                                        const TextSpan(text: 'Enregistré par : '),
-                                        TextSpan(
-                                          text: paiement.caissier,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: isDark ? Colors.grey[200] : const Color(0xFF334155),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Caissier row
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: detailBgColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.badge_rounded,
+                          size: 13,
+                          color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                              ),
+                              children: [
+                                const TextSpan(text: 'Enregistré par : '),
+                                TextSpan(
+                                  text: paiement.caissier,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? Colors.grey[200] : const Color(0xFF334155),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-
-                          // Montant en lettres section
-                          if (paiement.montantLettres.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF262626) : const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.spellcheck_rounded,
-                                    size: 14,
-                                    color: isDark ? Colors.grey[500] : const Color(0xFF64748B),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      paiement.montantLettres.toUpperCase(),
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontStyle: FontStyle.italic,
-                                        color: isDark ? Colors.grey[400] : const Color(0xFF475569),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 10,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
                       ],
                     ),
                   ),
-                ),
+
+                  // Montant en lettres section
+                  if (paiement.montantLettres.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF262626) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.spellcheck_rounded,
+                            size: 14,
+                            color: isDark ? Colors.grey[500] : const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              paiement.montantLettres.toUpperCase(),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: isDark ? Colors.grey[400] : const Color(0xFF475569),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ],
             ),
           ),

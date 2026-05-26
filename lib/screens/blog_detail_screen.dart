@@ -9,6 +9,7 @@ import '../services/ecole_api_service.dart';
 import '../widgets/components/section_row.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../config/app_dimensions.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens (cohérents avec EventDetailScreen)
@@ -175,9 +176,9 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
     final typeColor = uiData['color'] as Color;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: Theme.of(context).brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: _C.surface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: CustomScrollView(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
@@ -235,9 +236,9 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
   // ── Body ────────────────────────────────────
   Widget _buildBody(Color typeColor, Map<String, dynamic> uiData) {
     return Container(
-      decoration: const BoxDecoration(
-        color: _C.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurfaceThemed(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,18 +259,22 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
     );
   }
 
-  Widget _buildDragHandle() => Center(
-    child: Container(
-      width: 36, height: 4,
-      decoration: BoxDecoration(
-        color: _C.slate300,
-        borderRadius: BorderRadius.circular(2),
+  Widget _buildDragHandle() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: Container(
+        width: 36, height: 4,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF333333) : _C.slate300,
+          borderRadius: BorderRadius.circular(2),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   // ── Action Bar ──────────────────────────────
   Widget _buildActionBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -299,7 +304,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
           _ActionIcon(
             icon: Icons.school_rounded,
             label: 'École',
-            bgColor: _C.slate900,
+            bgColor: isDark ? const Color(0xFF333333) : _C.slate900,
             iconColor: _C.white,
             onTap: _visitSchool,
           ),
@@ -345,12 +350,12 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Contenu',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: _C.slate900,
+              color: AppColors.screenTextPrimaryThemed(context),
               letterSpacing: -0.3,
             ),
           ),
@@ -359,9 +364,9 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: _C.white,
+              color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _C.slate300.withOpacity(0.5)),
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: _ExpandableText(text: _stripHtmlTags(widget.blog.content)),
           ),
@@ -372,17 +377,18 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
 
   // ── Ratings & Comments ──────────────────────
   Widget _buildRatingAndComments() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: const Text(
+          child: Text(
             'Avis & commentaires',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: _C.slate900,
+              color: AppColors.screenTextPrimaryThemed(context),
               letterSpacing: -0.3,
             ),
           ),
@@ -395,9 +401,9 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _C.white,
+              color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _C.slate300.withOpacity(0.5)),
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,30 +414,30 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                     Container(
                       width: 38, height: 38,
                       decoration: BoxDecoration(
-                        color: _C.indigoLight,
+                        color: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.rate_review_rounded, color: _C.indigo, size: 19),
                     ),
                     const SizedBox(width: 10),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Votre avis',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _C.slate900)),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimaryThemed(context))),
                         Text('Partagez votre opinion',
-                            style: TextStyle(fontSize: 11, color: _C.slate500)),
+                            style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                Divider(height: 1, color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9)),
                 const SizedBox(height: 16),
 
                 // Étoiles
-                const Text('Note',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.slate500)),
+                Text('Note',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondaryThemed(context))),
                 const SizedBox(height: 10),
                 Row(
                   children: List.generate(5, (i) {
@@ -448,7 +454,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                           child: Icon(
                             filled ? Icons.star_rounded : Icons.star_outline_rounded,
                             key: ValueKey('$i-$filled'),
-                            color: filled ? _C.gold : _C.slate300,
+                            color: filled ? _C.gold : (isDark ? const Color(0xFF444444) : _C.slate300),
                             size: 36,
                           ),
                         ),
@@ -464,7 +470,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                       key: ValueKey(_userRating),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _C.amberLight,
+                        color: isDark ? _C.amber.withOpacity(0.2) : _C.amberLight,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -477,18 +483,18 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                 const SizedBox(height: 16),
 
                 // Commentaire
-                const Text('Commentaire',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.slate500)),
+                Text('Commentaire',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondaryThemed(context))),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _commentController,
                   maxLines: 3,
-                  style: const TextStyle(fontSize: 14, color: _C.slate900),
+                  style: TextStyle(fontSize: 14, color: AppColors.screenTextPrimaryThemed(context)),
                   decoration: InputDecoration(
                     hintText: 'Partagez votre avis sur ce blog…',
-                    hintStyle: const TextStyle(color: _C.slate500, fontSize: 13),
+                    hintStyle: TextStyle(color: AppColors.screenTextSecondaryThemed(context), fontSize: 13),
                     filled: true,
-                    fillColor: _C.slate100,
+                    fillColor: isDark ? const Color(0xFF1E1E2A) : _C.slate100,
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -510,7 +516,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _C.indigo,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: _C.slate300,
+                      disabledBackgroundColor: isDark ? const Color(0xFF444444) : _C.slate300,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -543,13 +549,13 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const Text('Commentaires récents',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _C.slate900)),
+                Text('Commentaires récents',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimaryThemed(context))),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _C.indigoLight,
+                    color: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -579,14 +585,14 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                   Container(
                     width: 52, height: 52,
                     decoration: BoxDecoration(
-                      color: _C.slate100,
+                      color: isDark ? const Color(0xFF1E1E2A) : _C.slate100,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.chat_bubble_outline_rounded, size: 26, color: _C.slate500),
+                    child: Icon(Icons.chat_bubble_outline_rounded, size: 26, color: AppColors.screenTextSecondaryThemed(context)),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Soyez le premier à commenter',
-                      style: TextStyle(fontSize: 12, color: _C.slate500)),
+                  Text('Soyez le premier à commenter',
+                      style: TextStyle(fontSize: 12, color: AppColors.screenTextSecondaryThemed(context))),
                 ],
               ),
             ),
@@ -597,14 +603,15 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
   }
 
   Widget _buildCommentCard(Map<String, dynamic> comment) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final rating = (comment['rating'] as double).toInt();
     final author = comment['author'] as String;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _C.white,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _C.slate300.withOpacity(0.4)),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -613,7 +620,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: _C.indigoLight,
+                backgroundColor: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
                 child: Text(
                   author.isNotEmpty ? author[0].toUpperCase() : '?',
                   style: const TextStyle(
@@ -629,9 +636,9 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(author,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _C.slate900)),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.screenTextPrimaryThemed(context))),
                     Text(_formatDate(comment['date'] as String),
-                        style: const TextStyle(fontSize: 11, color: _C.slate500)),
+                        style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
                   ],
                 ),
               ),
@@ -649,7 +656,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
           const SizedBox(height: 10),
           Text(
             comment['comment'] as String,
-            style: const TextStyle(fontSize: 13.5, color: _C.slate700, height: 1.55),
+            style: TextStyle(fontSize: 13.5, color: AppColors.screenTextPrimaryThemed(context), height: 1.55),
           ),
         ],
       ),
@@ -890,10 +897,10 @@ class _ActionIcon extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: _C.slate500,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
           ),
         ],
@@ -922,9 +929,9 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _C.slate300.withOpacity(0.5)),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Row(
         children: [
@@ -939,11 +946,11 @@ class _InfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.slate900),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextPrimaryThemed(context)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 Text(subtitle,
-                    style: const TextStyle(fontSize: 11, color: _C.slate500)),
+                    style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
               ],
             ),
           ),
@@ -983,11 +990,11 @@ class _ExpandableTextState extends State<_ExpandableText> {
             widget.text,
             maxLines: widget.maxLines,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14.5, color: _C.slate700, height: 1.65),
+            style: TextStyle(fontSize: 14.5, color: AppColors.screenTextPrimaryThemed(context), height: 1.65),
           ),
           secondChild: Text(
             widget.text,
-            style: const TextStyle(fontSize: 14.5, color: _C.slate700, height: 1.65),
+            style: TextStyle(fontSize: 14.5, color: AppColors.screenTextPrimaryThemed(context), height: 1.65),
           ),
         ),
         const SizedBox(height: 10),

@@ -3836,7 +3836,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       backgroundColor: isDark
           ? backgroundColor.withOpacity(0.15)
           : backgroundColor,
-      textColor: isDark ? color.withOpacity(0.75) : textColor,
+      textColor: isDark ? Colors.white : textColor,
       actionText: actionText,
       onTap: onTap,
       enableInnerBorder: enableInnerBorder,
@@ -4371,8 +4371,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'key': 'homework',
               },
               {
-                'title': 'Difficultés',
-                'subtitle': 'Suivi des difficultés',
+                'title': 'Performance scolaire',
+                'subtitle': 'Amélioration de resultats',
                 'imagePath': null,
                 'iconData': Icons.psychology_rounded,
                 'color': const Color(0xFF9C27B0),
@@ -4493,6 +4493,19 @@ class _ChildListScreenState extends State<ChildListScreen>
                       ),
                     ),
                   );
+                }
+              },
+            ),
+            EstablishmentAction(
+              key: 'notifications',
+              title: 'Notifications',
+              subtitle: 'Voir alertes',
+              iconData: Icons.notifications_active_rounded,
+              color: const Color(0xFFE53935),
+              actionText: 'Voir notifications',
+              onTap: () {
+                if (mounted) {
+                  _showNotificationsBottomSheet();
                 }
               },
             ),
@@ -4986,7 +4999,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (_moyGeneral != null) {
       cards.add(
         _buildEnhancedSummaryCard(
-          'Moyenne',
+          'Moy. Annuelle',
           '${_moyGeneral!.toStringAsFixed(2)}',
           Colors.green,
           Icons.trending_up,
@@ -5017,7 +5030,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       final isPresent = _eleveDetail!['pt_in_jour'] == 1;
       cards.add(
         _buildEnhancedSummaryCard(
-          'Présence',
+          'Nbre Absent',
           isPresent ? 'Présent' : 'Absent',
           isPresent ? AppColors.success : AppColors.error,
           isPresent ? Icons.check_circle : Icons.cancel,

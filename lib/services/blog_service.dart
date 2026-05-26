@@ -12,7 +12,7 @@ class BlogService {
   /// Récupère la liste des blogs/communications depuis l'API
   ///
   /// Endpoint: GET /api/ecoles/blogs-list?titre={titre}&ecole={ecole}
-  Future<BlogsResponse> getBlogsByEcole(String titre, String ecole) async {
+  Future<BlogsResponse> getBlogsByEcole(String titre, String ecole, {int page = 1, int perPage = 20}) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('📝 CHARGEMENT DES BLOGS/COMMUNICATIONS');
@@ -21,7 +21,7 @@ class BlogService {
     print('🏫 École: $ecole');
 
     final url =
-        '$baseUrl/ecoles/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}';
+        '$baseUrl/ecoles/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}&page=$page&per_page=$perPage';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 
@@ -116,26 +116,40 @@ class BlogService {
   }
 
   /// Récupère la liste des blogs depuis l'API (sans filtres)
-  static Future<BlogsResponse> getBlogs() async {
+  static Future<BlogsResponse> getBlogs({int page = 1, int perPage = 20}) async {
     try {
-      final url = '$baseUrl/ecoles/blogs-list';
-      developer.log('GET Request URL: $url');
-
+      final url = '$baseUrl/ecoles/blogs-list?page=$page&per_page=$perPage';
+      print('');
+      print('═══════════════════════════════════════════════════════════');
+      print('📝 CHARGEMENT DES ACTUALITÉS (HOME PAGE)');
+      print('═══════════════════════════════════════════════════════════');
+      print('🔗 URL: $url');
+      print('📡 Envoi de la requête...');
+      
       final response = await http.get(
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 30));
 
+      print('📥 Réponse reçue:');
+      print('   - Status Code: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
+        print('✅ Données reçues et parsées avec succès');
+        print('═══════════════════════════════════════════════════════════');
         return BlogsResponse.fromJson(data);
       } else {
+        print('❌ Erreur HTTP ${response.statusCode}');
+        print('═══════════════════════════════════════════════════════════');
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
+      print('💥 Exception lors de la récupération des actualités (Home): $e');
+      print('═══════════════════════════════════════════════════════════');
       throw Exception('Erreur lors de la récupération des blogs: $e');
     }
   }

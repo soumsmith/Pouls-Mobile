@@ -9,6 +9,9 @@ import '../screens/messages_screen.dart';
 import '../screens/my_tickets_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../services/auth_service.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
@@ -56,18 +59,39 @@ class BottomSheetMenu extends StatefulWidget {
 class _BottomSheetMenuState extends State<BottomSheetMenu> {
   final CartService _cartService = MockCartService();
   int _cartItemCount = 0;
-  int _unreadMessages = 5; // demo
-  int _ticketCount = 2; // demo
+  int _ticketCount = 0; 
 
   @override
   void initState() {
     super.initState();
     _loadCartCount();
+    _loadTicketCount();
   }
 
   Future<void> _loadCartCount() async {
     final cart = await _cartService.getCurrentCart();
     if (mounted) setState(() => _cartItemCount = cart.totalItems);
+  }
+
+  Future<void> _loadTicketCount() async {
+    final user = AuthService.instance.getCurrentUser();
+    if (user != null && user.phone.isNotEmpty) {
+      try {
+        final url = 'https://api2.vie-ecoles.com/api/vie-ecoles/billetterie/ticket-commande/${user.phone}';
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final nonUtilise = data['stats']?['non_utilise'] ?? 0;
+          if (mounted) {
+            setState(() {
+              _ticketCount = nonUtilise;
+            });
+          }
+        }
+      } catch (e) {
+        // fail silently
+      }
+    }
   }
 
   // ── Build ─────────────────────────────────────────────────
@@ -128,7 +152,6 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       subtitle: 'Vos messages et communications',
       icon: Icons.message_rounded,
       color: const Color(0xFF2196F3),
-      badgeCount: _unreadMessages,
       onTap: () {
         Navigator.of(context).pop();
         Navigator.of(
@@ -154,7 +177,6 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       subtitle: 'Trouver un tuteur pour vos enfants',
       icon: Icons.school_rounded,
       color: const Color(0xFF8B5CF6),
-      badgeCount: 1,
       onTap: () async {
         Navigator.of(context).pop();
         final url = Uri.parse('http://46.105.52.105:3002/');

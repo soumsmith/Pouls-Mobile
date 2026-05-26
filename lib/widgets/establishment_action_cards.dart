@@ -87,7 +87,7 @@ class EstablishmentActionSection extends StatelessWidget {
             backgroundColor: isDark
                 ? action.color.withOpacity(0.15)
                 : action.color.withOpacity(0.1),
-            textColor: isDark ? action.color.withOpacity(0.75) : Colors.black,
+            textColor: isDark ? Colors.white : Colors.black,
             allowLineBreak: true,
             centerTitle: true,
             onTap: action.onTap,

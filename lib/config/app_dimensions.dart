@@ -5,9 +5,17 @@ class AppDimensions {
   // Private constructor pour empêcher l'instanciation
   AppDimensions._();
 
-  // Breakpoints pour les différents types d'appareils
+  // Breakpoints basés sur les résolutions d'écrans réelles
+  // Utilisent les largeurs des appareils définis ci-dessous
+  static double get mobileMaxWidth => androidTabletSmall.width;        // 600 - Tout ce qui est < 600 = mobile
+  static double get smallTabletMaxWidth => ipadMini.width;             // 768 - iPad Mini
+  static double get tabletMaxWidth => ipadPro11.width;                 // 834 - iPad Air / Pro 11"
+  static double get largeTabletMaxWidth => ipadPro12_9.width;          // 1024 - iPad Pro 12.9"
+  static double get desktopMinWidth => 1200.0;                         // Desktop
+
+  // Breakpoints legacy (conservés pour compatibilité)
   static const double mobileBreakpoint = 600.0;
-  static const double smallTabletBreakpoint = 700.0; // iPad Mini
+  static const double smallTabletBreakpoint = 700.0;
   static const double tabletBreakpoint = 768.0;
   static const double largeTabletBreakpoint = 1024.0;
   static const double desktopBreakpoint = 1200.0;
@@ -89,15 +97,7 @@ class AppDimensions {
 
   // Dimensions pour les boutons d'action (header)
   static double getActionButtonSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 40.0; // Mobile : taille standard
-    } else if (isSmallTablet(context)) {
-      return 44.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 48.0; // iPad : taille plus grande
-    } else {
-      return 52.0; // Desktop : taille maximum
-    }
+    return getScaledSize(context, 40.0);
   }
 
   // Dimensions pour les champs de texte
@@ -172,19 +172,17 @@ class AppDimensions {
   // NOUVELLES FONCTIONS DE DIMENSIONNEMENT DYNAMIQUE (Étape 2 de la migration)
   // ===========================================================================
 
-  /// Calcule une échelle relative à un écran de référence (ex: iPhone 12/13/14).
+  /// Calcule une échelle relative à un écran de référence (iPhone 12/13/14 = 390px).
   /// Permet d'agrandir proportionnellement le texte et les espaces sur les grands écrans,
   /// et de les réduire sur les petits écrans.
   static double getScaleFactor(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    // On prend iphone12Family (390px) comme base de calcul (standard actuel)
-    final double baseWidth = iphone12Family.width;
+    final double baseWidth = iphone12Family.width; // 390px de référence
     
-    // Si on est sur tablette ou desktop, on capte l'échelle pour ne pas avoir de textes géants
-    if (screenWidth >= tabletBreakpoint) {
-      // Sur tablette, l'échelle maximale est basée sur la largeur d'un grand mobile
-      // pour éviter que les éléments de base deviennent caricaturaux.
-      return (iphone14ProMaxFamily.width / baseWidth) * 1.1; 
+    // Dès qu'on dépasse la zone mobile (>= 600px), on capte l'échelle
+    // pour éviter que les éléments deviennent disproportionnés
+    if (screenWidth >= mobileMaxWidth) {
+      return (iphone14ProMaxFamily.width / baseWidth) * 1.1; // ~1.21
     }
     
     return screenWidth / baseWidth;
@@ -227,7 +225,7 @@ class AppDimensions {
   // Méthodes pour détecter la résolution exacte des mobiles
   static int getMobileColumnsByResolution(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    return width < 600 ? 2 : 3;
+    return width < mobileMaxWidth ? 2 : 3;
   }
 
   static double getScreenWidth(BuildContext context) {
@@ -258,15 +256,16 @@ class AppDimensions {
   // Dimensions pour les cartes de connexion
   static double getLoginCardWidth(BuildContext context) {
     final screenWidth = getScreenWidth(context);
-    if (screenWidth < 600) return screenWidth - (defaultPadding * 2);
-    if (screenWidth < 850) return screenWidth * 0.7;
-    if (screenWidth < 1100) return screenWidth * 0.6;
+    if (screenWidth < mobileMaxWidth) return screenWidth - (defaultPadding * 2);
+    if (screenWidth < smallTabletMaxWidth) return screenWidth * 0.75; // Petite tablette Android
+    if (screenWidth < tabletMaxWidth) return screenWidth * 0.7;
+    if (screenWidth < largeTabletMaxWidth) return screenWidth * 0.6;
     return screenWidth * 0.4;
   }
 
   static double getLoginCardMaxWidth(BuildContext context) {
     final screenWidth = getScreenWidth(context);
-    return screenWidth < 600 ? double.infinity : 500.0;
+    return screenWidth < mobileMaxWidth ? double.infinity : 500.0;
   }
 
   // Dimensions pour les formulaires
@@ -286,8 +285,7 @@ class AppDimensions {
   // Pour le composant ImageMenuCardExternalTitle
   static double getProductCardImageFlex(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    // Si mobile ou paysage, image réduite
-    return width < 600 || isLandscape(context) ? 3.0 : 4.0;
+    return width < mobileMaxWidth || isLandscape(context) ? 3.0 : 4.0;
   }
 
   // Pour le calcul du ratio de la grille selon le nombre de colonnes
@@ -301,22 +299,23 @@ class AppDimensions {
   // Dimensions pour le contenu responsive
   static double getResponsiveWidth(BuildContext context) {
     final screenWidth = getScreenWidth(context);
-    if (screenWidth < 600) return screenWidth;
-    if (screenWidth < 850) return screenWidth * 0.8;
-    if (screenWidth < 1100) return screenWidth * 0.7;
+    if (screenWidth < mobileMaxWidth) return screenWidth;
+    if (screenWidth < smallTabletMaxWidth) return screenWidth * 0.85; // Petite tablette Android
+    if (screenWidth < tabletMaxWidth) return screenWidth * 0.8;
+    if (screenWidth < largeTabletMaxWidth) return screenWidth * 0.7;
     return screenWidth * 0.6;
   }
 
   static EdgeInsets getResponsivePadding(BuildContext context) {
     final screenWidth = getScreenWidth(context);
-    if (isMobile(context)) {
+    if (screenWidth < mobileMaxWidth) {
       return const EdgeInsets.all(24.0);
-    } else if (isSmallTablet(context)) {
+    } else if (screenWidth < smallTabletMaxWidth) {
       return EdgeInsets.symmetric(
         horizontal: screenWidth * 0.15,
         vertical: 40.0,
       );
-    } else if (isTablet(context)) {
+    } else if (screenWidth < tabletMaxWidth) {
       return EdgeInsets.symmetric(
         horizontal: screenWidth * 0.2,
         vertical: 48.0,
@@ -331,21 +330,21 @@ class AppDimensions {
 
   static EdgeInsets getHomePageResponsivePadding(BuildContext context) {
     final screenWidth = getScreenWidth(context);
-    if (isMobile(context)) {
+    if (screenWidth < mobileMaxWidth) {
       return const EdgeInsets.all(0);
-    } else if (isSmallTablet(context)) {
-      return EdgeInsets.symmetric(
-        horizontal: 0, //screenWidth * 0.15,
+    } else if (screenWidth < smallTabletMaxWidth) {
+      return const EdgeInsets.symmetric(
+        horizontal: 0,
         vertical: 40.0,
       );
-    } else if (isTablet(context)) {
-      return EdgeInsets.symmetric(
-        horizontal: 0, //screenWidth * 0.2
+    } else if (screenWidth < tabletMaxWidth) {
+      return const EdgeInsets.symmetric(
+        horizontal: 0,
         vertical: 48.0,
       );
     } else {
-      return EdgeInsets.symmetric(
-        horizontal: 0, // screenWidth * 0.25,
+      return const EdgeInsets.symmetric(
+        horizontal: 0,
         vertical: 56.0,
       );
     }
@@ -381,9 +380,10 @@ class AppDimensions {
   /// Nombre d'éléments par page selon le type d'appareil
   static int getEventsPerPage(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width < 600) return 4;
-    if (width < 850) return 6;
-    if (width < 1100) return 8;
+    if (width < mobileMaxWidth) return 4;
+    if (width < smallTabletMaxWidth) return 5;  // Petite tablette Android
+    if (width < tabletMaxWidth) return 6;
+    if (width < largeTabletMaxWidth) return 8;
     return 12;
   }
 
@@ -418,9 +418,10 @@ class AppDimensions {
   /// Nombre d'écoles par page selon le type d'appareil
   static int getEcolesPerPage(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width < 600) return 6;
-    if (width < 850) return 9;
-    if (width < 1100) return 12;
+    if (width < mobileMaxWidth) return 6;
+    if (width < smallTabletMaxWidth) return 8;  // Petite tablette Android
+    if (width < tabletMaxWidth) return 9;
+    if (width < largeTabletMaxWidth) return 12;
     return 16;
   }
 
@@ -449,12 +450,14 @@ class AppDimensions {
     final width = MediaQuery.sizeOf(context).width;
     
     if (isPortrait(context)) {
-      if (width < 600) return getMobileColumnsByResolution(context); // Mobile (2 ou 3)
-      if (width < 850) return 4; // iPad
-      return 6; // Desktop
+      if (width < mobileMaxWidth) return getMobileColumnsByResolution(context);
+      if (width < smallTabletMaxWidth) return 3;  // Petite tablette Android
+      if (width < tabletMaxWidth) return 4;
+      return 4; // 4 en portrait pour les grandes tablettes également
     } else {
-      if (width < 850) return 5; // Mobile/iPad paysage
-      return 8; // Desktop paysage
+      if (width < mobileMaxWidth) return 3;
+      if (width < tabletMaxWidth) return 6; // 6 en paysage pour les tablettes
+      return 6; // 6 en paysage pour les grandes tablettes également
     }
   }
 
@@ -765,40 +768,31 @@ class AppDimensions {
   static int getProductsGridColumns(BuildContext context) {
     // Calcul proportionnel basé sur l'espace disponible
     final width = MediaQuery.sizeOf(context).width;
-    return width < 800 ? 3 : 4;
+    return width < smallTabletMaxWidth ? 3 : 4;
   }
 
   /// Ratio d'aspect dynamique pour les cartes de produits selon imageFlex et l'orientation
   /// Calcule le ratio proportionnellement à imageFlex pour un design équilibré
   static double getProductsGridChildAspectRatio(BuildContext context, {int imageFlex = 7}) {
     final orientation = MediaQuery.of(context).orientation;
+    final width = MediaQuery.sizeOf(context).width;
     
     // BaseRatio dynamique calculé en fonction de imageFlex et de l'orientation
     double baseRatio;
-    if (isMobile(context)) {
-      if (orientation == Orientation.portrait) {
-        // Mode portrait : imageFlex: 4 = ratio plus compact
-        baseRatio = 0.25 * imageFlex; // imageFlex: 4 = 1.0
-      } else {
-        // Mode paysage : imageFlex: 4 = ratio plus large
-        baseRatio = 0.35 * imageFlex; // imageFlex: 4 = 1.4
-      }
-    } else if (isSmallTablet(context)) {
-      // iPad Mini : calcul dynamique selon orientation
-      if (orientation == Orientation.portrait) {
-        baseRatio = 0.3 * imageFlex; // imageFlex: 4 = 1.2
-      } else {
-        baseRatio = 0.4 * imageFlex; // imageFlex: 4 = 1.6
-      }
-    } else if (isTablet(context)) {
-      if (orientation == Orientation.portrait) {
-        baseRatio = 0.28 * imageFlex; // imageFlex: 4 = 1.12
-      } else {
-        baseRatio = 0.38 * imageFlex; // imageFlex: 4 = 1.52
-      }
+    if (width < mobileMaxWidth) {
+      baseRatio = orientation == Orientation.portrait
+          ? 0.25 * imageFlex
+          : 0.35 * imageFlex;
+    } else if (width < smallTabletMaxWidth) {
+      baseRatio = orientation == Orientation.portrait
+          ? 0.3 * imageFlex
+          : 0.4 * imageFlex;
+    } else if (width < tabletMaxWidth) {
+      baseRatio = orientation == Orientation.portrait
+          ? 0.28 * imageFlex
+          : 0.38 * imageFlex;
     } else {
-      // Desktop : moins impacté par l'orientation
-      baseRatio = 0.30 * imageFlex; // imageFlex: 4 = 1.2
+      baseRatio = 0.30 * imageFlex;
     }
     
     final defaultFlex = imageFlex * 1.9;
@@ -1010,16 +1004,13 @@ class AppDimensions {
   /// Largeur pour les éléments de détail en mode deux colonnes
   static double getProfileDetailItemWidth(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double padding =
-        getProfileDetailsPadding(context) * 2; // Padding gauche et droite
-    double spacing =
-        getProfileDetailsSpacing(context) / 2; // Espacement entre colonnes
+    double padding = getProfileDetailsPadding(context) * 2;
+    double spacing = getProfileDetailsSpacing(context) / 2;
 
-    if (isMobile(context)) {
+    if (screenWidth < mobileMaxWidth) {
       return screenWidth - padding - 32; // Mobile : pleine largeur
     } else {
-      return (screenWidth - padding - spacing) /
-          2; // Tablettes : moitié de largeur
+      return (screenWidth - padding - spacing) / 2; // Tablettes : moitié de largeur
     }
   }
 
@@ -1073,221 +1064,98 @@ class AppDimensions {
 
   /// Largeur des cartes carrées selon l'appareil
   static double getSquareCardWidthSize(BuildContext context) {
-    if (isMobile(context)) {
-      // Calcul dynamique pour afficher environ 4 boutons pleins (4.2 pour l'indice de défilement)
-      final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    if (screenWidth < mobileMaxWidth) {
       final horizontalPadding = getPaymentBannerCardSpacing(context) * 0.9 * 2;
-      // Espacement entre les éléments du ListView
       final externalSpacing = getPaymentBannerCardSpacing(context);
-      final totalSpacingPerItem = externalSpacing;
       
-      // En divisant par 4.2, on affiche 4 boutons entiers et un bout du 5ème.
-      // Cela augmente considérablement la taille par rapport aux petites valeurs codées en dur.
-      final cardWidth = (screenWidth - horizontalPadding) / 4.2 - totalSpacingPerItem;
-      return cardWidth;
+      return (screenWidth - horizontalPadding) / 4.2 - externalSpacing;
     }
 
-    // Par défaut pour tablettes et desktop
     return getSquareCardSize(context, baseSize: 75.0);
   }
 
   /// Hauteur des cartes carrées selon l'appareil
   static double getSquareCardHeightSize(BuildContext context) {
-    if (isMobile(context)) {
-      // Puisque la largeur de l'image (qui est carrée) est calculée dynamiquement,
-      // la hauteur de la carte doit suivre cette largeur plus l'espace du texte
-      // pour éviter de laisser un grand espace vide en dessous.
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    if (screenWidth < mobileMaxWidth) {
       final imageSize = getSquareCardWidthSize(context);
-      // Espace estimé pour le titre sur 2 ou 3 lignes avec son espacement (augmenté pour éviter l'overflow)
       final textSpace = getScaledSize(context, 55.0); 
       return imageSize + textSpace;
     }
 
-    // Augmenter légèrement l'espace total pour éviter l'overflow du texte sur 2 lignes
-    double base = isCompactMobile(context) ? 140.0 : 160.0;
+    double base = screenWidth < androidStandard.width ? 140.0 : 160.0;
     return getSquareCardSize(context, baseSize: base);
   }
 
   /// Taille des images des enfants selon la taille de l'écran
   static double getChildImageSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 60.0; // Mobile : taille actuelle (bonne pour téléphone)
-    } else if (isSmallTablet(context)) {
-      return 75.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 90.0; // iPad : plus grand
-    } else {
-      return 100.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 60.0);
   }
 
   /// Border radius pour les images selon la taille de l'écran
   static double getImageBorderRadius(BuildContext context) {
-    if (isMobile(context)) {
-      return 40.0; // Mobile : plus petit
-    } else if (isSmallTablet(context)) {
-      return 45.0; // iPad Mini : standard
-    } else if (isTablet(context)) {
-      return 20.0; // iPad : plus grand
-    } else {
-      return 55.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 40.0);
   }
 
   /// Taille du texte pour les cartes selon la taille de l'écran
   static double getCardTextSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 10.0; // Mobile : plus petit
-    } else if (isSmallTablet(context)) {
-      return 11.0; // iPad Mini : standard
-    } else if (isTablet(context)) {
-      return 12.0; // iPad : plus grand
-    } else {
-      return 13.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 10.0);
   }
 
   /// Taille du texte pour les titres des cartes selon la taille de l'écran
   static double getCardTitleTextSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 11.0; // Mobile : plus petit
-    } else if (isSmallTablet(context)) {
-      return 12.0; // iPad Mini : standard
-    } else if (isTablet(context)) {
-      return 13.0; // iPad : plus grand
-    } else {
-      return 14.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 11.0);
   }
 
   /// Taille du texte pour les cartes du bottom sheet selon la taille de l'écran
   static double getBottomSheetCardTextSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 11.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 15.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 14.0; // iPad : plus grand
-    } else {
-      return 18.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 11.0);
   }
 
   /// Taille du texte pour les noms des enfants selon la taille de l'écran
   static double getChildNameTextSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 10.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 11.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 12.0; // iPad : plus grand
-    } else {
-      return 13.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 10.0);
   }
 
   /// Taille du texte pour les classes des enfants selon la taille de l'écran
   static double getChildGradeTextSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 9.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 10.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 11.0; // iPad : plus grand
-    } else {
-      return 12.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 9.0);
   }
 
   /// Taille du texte pour les badges de notification selon la taille de l'écran
   static double getNotificationBadgeTextSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 8.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 9.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 10.0; // iPad : plus grand
-    } else {
-      return 11.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 8.0);
   }
 
   /// Taille du conteneur des badges de notification selon la taille de l'écran
   static double getNotificationBadgeSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 16.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 18.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 20.0; // iPad : plus grand
-    } else {
-      return 22.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 16.0);
   }
 
   /// Taille du texte pour les titres de sections selon la taille de l'écran
   static double getSectionTitleTextSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 11.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 12.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 13.0; // iPad : plus grand
-    } else {
-      return 14.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 11.0);
   }
 
   /// Taille de l'icône chevron des sections selon la taille de l'écran
   static double getSectionIconSize(BuildContext context) {
-    if (isMobile(context)) {
-      return 18.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 20.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 22.0; // iPad : plus grand
-    } else {
-      return 24.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 18.0);
   }
 
   /// Espacement horizontal pour les sections selon la taille de l'écran
   static double getSectionHorizontalPadding(BuildContext context) {
-    if (isMobile(context)) {
-      return 16.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 20.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 24.0; // iPad : plus grand
-    } else {
-      return 28.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 16.0);
   }
 
   /// Marge verticale pour les sections selon la taille de l'écran
   static double getSectionVerticalMargin(BuildContext context) {
-    if (isMobile(context)) {
-      return 8.0; // Mobile : taille par défaut
-    } else if (isSmallTablet(context)) {
-      return 10.0; // iPad Mini : légèrement plus grand
-    } else if (isTablet(context)) {
-      return 12.0; // iPad : plus grand
-    } else {
-      return 14.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 8.0);
   }
 
   /// Espacement horizontal entre les cartes du PaymentBannerCard selon l'appareil
   static double getPaymentBannerCardSpacing(BuildContext context) {
-    if (isMobile(context)) {
-      return 12.0; // Mobile : standard
-    } else if (isSmallTablet(context)) {
-      return 16.0; // iPad Mini : plus grand
-    } else if (isTablet(context)) {
-      return 45.0; // iPad : encore plus grand
-    } else {
-      return 24.0; // Desktop : maximum
-    }
+    return getScaledSize(context, 12.0);
   }
 
   /// Espacement plus aéré entre les boutons d'actions rapides
@@ -1296,16 +1164,7 @@ class AppDimensions {
   }
 
   /// Largeur maximale recommandée pour les BottomSheets et Dialogues
-  /// Permet d'éviter l'étirement plein écran inesthétique sur tablette.
   static double getBottomSheetMaxWidth(BuildContext context) {
-    if (isMobile(context)) {
-      return double.infinity; // Pleine largeur sur mobile
-    } else if (isSmallTablet(context)) {
-      return 500.0; // Restreint sur iPad Mini
-    } else if (isTablet(context)) {
-      return 600.0; // Restreint sur iPad
-    } else {
-      return 700.0; // Restreint sur Desktop
-    }
+    return double.infinity; // Pleine largeur pour tous les écrans (tablettes incluses) pour supprimer les bordures noires
   }
 }

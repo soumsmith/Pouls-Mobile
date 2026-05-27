@@ -1068,7 +1068,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     event.title,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context) || AppDimensions.isDesktop(context)) ? 16 : 14,
                       fontWeight: FontWeight.bold,
                       color: isDarkMode ? Colors.white : Color(0xFF1A1A2A),
                     ),
@@ -1307,9 +1307,12 @@ class _HomeScreenState extends State<HomeScreen> {
         AppDimensions.isDesktop(context);
     if (isTablet) {
       final availableWidth = MediaQuery.sizeOf(context).width - 32.0;
-      return (availableWidth / 5.2) - rightMargin;
+      final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
+      // En paysage, on montre ~5.2 éléments. En portrait, on montre ~3.2 éléments.
+      final itemsCount = isLandscape ? 5.2 : 3.2;
+      return (availableWidth / itemsCount) - rightMargin;
     }
-    return AppDimensions.getScaledSize(context, 120.0);
+    return AppDimensions.getScaledSize(context, 105.0); // Réduit de 120.0 à 105.0
   }
 
   Widget _buildCoulisseSection() {
@@ -1320,8 +1323,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
 
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageHeight = cardWidth * 0.62; // Format rectangulaire
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0); // Espace suffisant pour le texte
+    final double containerHeight = imageHeight + textHeight;
+
     return Container(
-      height: AppDimensions.getScaledSize(context, 175.0), // Hauteur dynamique augmentée pour éviter l'overflow
+      height: containerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1365,7 +1373,11 @@ class _HomeScreenState extends State<HomeScreen> {
         //tag: schoolData['tag'] as String?, // Permettre null
         titleMaxLines: 2,
         externalTitleSpacing: 4,
-        height: null, // null force l'image à être un carré parfait basé sur sa largeur
+        titleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 16.0 : null,
+        subtitleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 14.0 : null,
+        height: null, 
+        imageHeight: _getCardWidth(context, 16.0) * 
+            ((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 0.62 : 0.9), // Plus haut sur téléphone
         width: _getCardWidth(context, 16.0),
         allowLineBreak: true,
         centerTitle: false,
@@ -1479,8 +1491,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
 
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageHeight = cardWidth * 0.62; // Format rectangulaire
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0); // Espace suffisant pour le texte
+    final double containerHeight = imageHeight + textHeight;
+
     return Container(
-      height: AppDimensions.getScaledSize(context, 175.0), // Hauteur dynamique augmentée pour éviter l'overflow
+      height: containerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1535,7 +1552,11 @@ class _HomeScreenState extends State<HomeScreen> {
         color: const Color(0xFF3B82F6),
         titleMaxLines: 2,
         externalTitleSpacing: 4,
-        height: null, // null force l'image à être un carré parfait basé sur sa largeur
+        titleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 18.0 : null,
+        subtitleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 14.0 : null,
+        height: null, 
+        imageHeight: _getCardWidth(context, 16.0) * 
+            ((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 0.62 : 0.8), // Plus haut sur téléphone
         width: _getCardWidth(context, 16.0),
         allowLineBreak: true,
         centerTitle: false,
@@ -1605,20 +1626,39 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final bool isMobileLandscape = AppDimensions.isLandscape(context) && 
+        MediaQuery.sizeOf(context).width < AppDimensions.smallTabletMaxWidth;
+
+    Widget bodyContent;
+    if (isMobileLandscape) {
+      bodyContent = RefreshIndicator(
+        onRefresh: _refreshHome,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              _buildDarkHeader(),
+              _buildBottomSheet(isMobileLandscape: true),
+            ],
+          ),
+        ),
+      );
+    } else {
+      bodyContent = Column(
+        children: [
+          _buildDarkHeader(),
+          Expanded(child: _buildBottomSheet(isMobileLandscape: false)),
+        ],
+      );
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Column(
-          children: [
-            // ── Dark top section ──
-            _buildDarkHeader(),
-            // ── Light bottom sheet ──
-            Expanded(child: _buildBottomSheet()),
-          ],
-        ),
+        body: bodyContent,
       ),
     );
   }
@@ -2542,7 +2582,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
-  Widget _buildBottomSheet() {
+  Widget _buildBottomSheet({bool isMobileLandscape = false}) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -2560,14 +2600,34 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 20), // ← fixe, ne scroll pas
-                child: RefreshIndicator(
-              onRefresh: _refreshHome,
-              child: ListView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                children: [
-                  SectionRow(title: 'ACTIONS RAPIDES'),
+                child: isMobileLandscape
+                    ? ListView(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        children: _buildBottomSheetChildren(),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _refreshHome,
+                        child: ListView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          children: _buildBottomSheetChildren(),
+                        ),
+                      ),
+              ),
+              const BottomFadeGradient(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildBottomSheetChildren() {
+    return [
+      SectionRow(title: 'ACTIONS RAPIDES'),
                   const SizedBox(height: 16),
                   SizedBox(
                     height:
@@ -2867,17 +2927,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   _buildVisiteGuideeSection(),
 
-                  const SizedBox(height: 125),
-                ],
-              ),
-            ),
-          ),
-          const BottomFadeGradient(),
-        ],
-      ),
-      ),
-      ),
-    );
+      const SizedBox(height: 125),
+    ];
   }
 
   // ─── CARD BUILDER (wrapper ImageMenuCardExternalTitle) ─────────────────────

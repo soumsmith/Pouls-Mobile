@@ -206,7 +206,11 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: AppDimensions.getEcolesGridColumns(context),
                       mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
-                      crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+                      crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
+                          (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+                                  AppDimensions.isLandscape(context))
+                              ? 1.8
+                              : 1.0),
                       mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
                     ),
                     delegate: SliverChildBuilderDelegate(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart';
+import '../config/app_dimensions.dart';
 
 class ImageMenuCardExternalTitle extends StatelessWidget {
   final int index;
@@ -20,11 +21,13 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final String? tag;
   final double? width;
   final double? height;
+  final double? imageHeight;
   final double? externalTitleSpacing;
   final int titleMaxLines;
   final double imageFlex;
   final double? imageBorderRadius;
   final double? titleFontSize;
+  final double? subtitleFontSize;
   final String? buttonText;
   final Color? buttonColor;
   final Color? buttonTextColor;
@@ -61,11 +64,13 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.tag,
     this.width,
     this.height,
+    this.imageHeight,
     this.externalTitleSpacing = 8.0,
     this.titleMaxLines = 3,
     this.imageFlex = 7.0,
     this.imageBorderRadius = 20.0,
     this.titleFontSize = 12.0,
+    this.subtitleFontSize,
     this.buttonText,
     this.buttonColor,
     this.buttonTextColor,
@@ -87,6 +92,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
+    final bool isTablet = AppDimensions.isTablet(context) ||
+        AppDimensions.isLargeTablet(context) ||
+        AppDimensions.isDesktop(context);
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -113,7 +121,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                     )
                   else
                     SizedBox(
-                      height: width ?? 70,
+                      height: imageHeight ?? width ?? 70,
                       child: _buildCardWithDoubleBorder(context),
                     ),
                   if (title?.isNotEmpty == true) ...[
@@ -130,6 +138,10 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   }
 
   Widget _buildTextContent(BuildContext context, TextSizeService textSizeService) {
+    final bool isTablet = AppDimensions.isTablet(context) ||
+        AppDimensions.isLargeTablet(context) ||
+        AppDimensions.isDesktop(context);
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxWidth: width ?? double.infinity,
@@ -146,8 +158,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
           children: [
             Builder(
               builder: (context) {
+                final double defaultFontSize = isTablet ? 14 : 11;
                 final fs = textSizeService.getScaledFontSize(
-                  titleFontSize ?? 11,
+                  titleFontSize ?? defaultFontSize,
                 );
                 final maxL = allowLineBreak ? titleMaxLines : 1;
                 final titleHeight = fs * maxL * 1.4;
@@ -184,8 +197,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                 child: Text(
                   subtitle!,
                   style: TextStyle(
-                    fontSize:
-                        textSizeService.getScaledFontSize(9),
+                    fontSize: textSizeService.getScaledFontSize(
+                      subtitleFontSize ?? (isTablet ? 11 : 9),
+                    ),
                     fontWeight: FontWeight.w500,
                     color: textColor?.withOpacity(0.7) ??
                         AppColors.screenTextSecondaryThemed(context),

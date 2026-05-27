@@ -835,9 +835,11 @@ class _LibraryScreenState extends State<LibraryScreen>
                   // image + texte externe pour éviter tout overflow.
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
-                      context,
-                    ),
+                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
+                        (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+                                AppDimensions.isLandscape(context))
+                            ? 1.8
+                            : 1.0), // Plus d'espace horizontal uniquement sur tablette en paysage
                     mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
                       context,
                     ),

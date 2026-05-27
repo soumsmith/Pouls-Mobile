@@ -7,6 +7,7 @@ import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import 'visite_guidee_video_feed_screen.dart';
 
 class AllVisiteGuideeVideosScreen extends StatefulWidget {
@@ -137,11 +138,11 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                 SliverPadding(
                   padding: const EdgeInsets.all(16),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 350,
-                      mainAxisExtent: 230,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: AppDimensions.getEcolesGridColumns(context),
+                      mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
+                      crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+                      mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
                     ),
                     delegate: SliverChildBuilderDelegate((context, index) {
                       return _buildVideoCard(context, _filteredVideos[index]);
@@ -173,11 +174,10 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
           : null,
       iconData: Icons.play_circle_outline,
       color: const Color(0xFF3B82F6),
-      width: double.infinity,
-      height: 220,
+      height: AppDimensions.getEcoleCardHeight(context),
       imageFlex: 7.0,
-      imageBorderRadius: 16.0,
-      titleFontSize: 14.0,
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      titleFontSize: AppDimensions.getScaledSize(context, 14.0),
       externalTitleSpacing: 8.0,
       centerTitle: false,
       allowLineBreak: true,

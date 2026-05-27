@@ -1072,8 +1072,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1117,7 +1120,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           }
 
           return Container(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.sizeOf(context).height * 0.8,
             decoration: BoxDecoration(
               color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
               borderRadius: const BorderRadius.vertical(
@@ -1204,7 +1207,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           }
 
           return Container(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.sizeOf(context).height * 0.8,
             decoration: BoxDecoration(
               color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
               borderRadius: const BorderRadius.vertical(
@@ -1237,8 +1240,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1264,8 +1270,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1296,8 +1305,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1344,7 +1356,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           }
 
           return Container(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.sizeOf(context).height * 0.8,
             decoration: BoxDecoration(
               color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
               borderRadius: const BorderRadius.vertical(
@@ -1394,7 +1406,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           }
 
           return Container(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.sizeOf(context).height * 0.8,
             decoration: BoxDecoration(
               color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
               borderRadius: const BorderRadius.vertical(
@@ -1453,8 +1465,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1480,8 +1495,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1507,8 +1525,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1534,8 +1555,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1612,7 +1636,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             }
 
             return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
+              height: MediaQuery.sizeOf(context).height * 0.8,
               decoration: BoxDecoration(
                 color: _themeService.isDarkMode
                     ? Colors.grey[900]
@@ -1716,7 +1740,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         builder: (context, setModalState) {
           _ordersModalSetState = setModalState;
           return Container(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.sizeOf(context).height * 0.8,
             decoration: BoxDecoration(
               color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
               borderRadius: const BorderRadius.vertical(
@@ -1749,8 +1773,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1776,8 +1803,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1803,8 +1833,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         decoration: BoxDecoration(
           color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -3295,6 +3328,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Container(
         margin: const EdgeInsets.only(top: 100),
         decoration: BoxDecoration(
@@ -3832,12 +3868,12 @@ class _ChildListScreenState extends State<ChildListScreen>
       cardKey: cardKey,
       title: title,
       width: width,
-      height: height,
+      height: null, // Force l'image à être un carré (hauteur = largeur)
       imageFlex: 2,
       imagePath: imagePath,
       isDark: isDark,
-      titleFontSize: 11,
-      imageBorderRadius: imageBorderRadius,
+      titleFontSize: AppDimensions.getScaledSize(context, 11.0),
+      imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
       doubleBorderGap: doubleBorderGap,
       color: color,
       backgroundColor: isDark
@@ -3887,7 +3923,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             children: [
               Builder(
                 builder: (context) {
-                  final isTablet = MediaQuery.of(context).size.width > 600;
+                  final isTablet = AppDimensions.isSmallTablet(context) || AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
                   final crossAxisCount = isTablet ? 6 : 4;
 
                   final List<Widget> cards = [

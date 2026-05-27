@@ -65,6 +65,8 @@ class EstablishmentActionSection extends StatelessWidget {
   }
 
   Widget _buildActionCard(BuildContext context, EstablishmentAction action, int index) {
+    final effectiveWidth = cardWidth ?? 80;
+    
     if (useExternalTitle) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -73,16 +75,14 @@ class EstablishmentActionSection extends StatelessWidget {
             index: index,
             cardKey: action.key,
             title: action.title,
-            //subtitle: action.subtitle,
             imagePath: action.imagePath,
             iconData: action.iconData,
             isDark: isDark,
             color: action.color,
-            titleFontSize: 12,
-            imageBorderRadius: 14,
-            width: cardWidth ?? 80,
-            height: cardHeight ?? 100,
-            //actionText: action.actionText,
+            titleFontSize: AppDimensions.getScaledSize(context, 11.0),
+            imageBorderRadius: effectiveWidth / 2,
+            width: effectiveWidth,
+            height: null,
             titleMaxLines: 2,
             backgroundColor: isDark
                 ? action.color.withOpacity(0.15)
@@ -107,13 +107,12 @@ class EstablishmentActionSection extends StatelessWidget {
           iconData: action.iconData,
           isDark: isDark,
           color: action.color,
-          titleFontSize: 12,
-          imageBorderRadius: 15,
-          width: cardWidth ?? 80,
-          height: cardHeight ?? 100,
+          titleFontSize: AppDimensions.getScaledSize(context, 11.0),
+          imageBorderRadius: effectiveWidth / 2,
+          width: effectiveWidth,
+          height: null,
           externalTitleSpacing: 10.0,
           titleMaxLines: 2,
-          //actionText: action.actionText,
           backgroundColor: action.color.withOpacity(0.1),
           allowLineBreak: true,
           centerTitle: true,

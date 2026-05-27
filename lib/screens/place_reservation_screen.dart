@@ -5,6 +5,7 @@ import '../services/place_reservation_service.dart';
 import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
+import '../config/app_dimensions.dart';
 import '../widgets/main_screen_wrapper.dart';
 
 /// Écran de gestion des réservations de places
@@ -1360,7 +1361,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
+        width: AppDimensions.isTablet(context) || AppDimensions.isSmallTablet(context) || AppDimensions.isLargeTablet(context) ? 400.0 : MediaQuery.sizeOf(context).width * 0.9,
         constraints: const BoxConstraints(maxHeight: 600),
         padding: const EdgeInsets.all(20),
         child: Column(

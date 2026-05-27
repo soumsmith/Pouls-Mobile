@@ -1306,7 +1306,7 @@ class _HomeScreenState extends State<HomeScreen> {
         AppDimensions.isLargeTablet(context) ||
         AppDimensions.isDesktop(context);
     if (isTablet) {
-      final availableWidth = MediaQuery.of(context).size.width - 32.0; // padding 16 left, 16 right
+      final availableWidth = MediaQuery.sizeOf(context).width - 32.0;
       return (availableWidth / 5.2) - rightMargin;
     }
     return AppDimensions.getScaledSize(context, 120.0);
@@ -2544,20 +2544,23 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
   Widget _buildBottomSheet() {
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.75,
-      ),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFF14141C)
             : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 20), // ← fixe, ne scroll pas
-            child: RefreshIndicator(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 20), // ← fixe, ne scroll pas
+                child: RefreshIndicator(
               onRefresh: _refreshHome,
               child: ListView(
                 controller: _scrollController,
@@ -2601,7 +2604,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => InscriptionBottomSheet.show(context),
                         ),
                         SizedBox(
-                          width: AppDimensions.getPaymentBannerCardSpacing(
+                          width: AppDimensions.getActionButtonsSpacing(
                             context,
                           ),
                         ),
@@ -2634,7 +2637,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         SizedBox(
-                          width: AppDimensions.getPaymentBannerCardSpacing(
+                          width: AppDimensions.getActionButtonsSpacing(
                             context,
                           ),
                         ),
@@ -2663,7 +2666,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               IntegrationRequestBottomSheet.show(context),
                         ),
                         SizedBox(
-                          width: AppDimensions.getPaymentBannerCardSpacing(
+                          width: AppDimensions.getActionButtonsSpacing(
                             context,
                           ),
                         ),
@@ -2691,7 +2694,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => showSponsorshipBottomSheet(context),
                         ),
                         SizedBox(
-                          width: AppDimensions.getPaymentBannerCardSpacing(
+                          width: AppDimensions.getActionButtonsSpacing(
                             context,
                           ),
                         ),
@@ -2725,7 +2728,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
                         SizedBox(
-                          width: AppDimensions.getPaymentBannerCardSpacing(
+                          width: AppDimensions.getActionButtonsSpacing(
                             context,
                           ),
                         ),
@@ -2759,7 +2762,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
                         SizedBox(
-                          width: AppDimensions.getPaymentBannerCardSpacing(
+                          width: AppDimensions.getActionButtonsSpacing(
                             context,
                           ),
                         ),
@@ -2792,7 +2795,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Section Coulisses de l'Excellence
                   if (_hasCoulisseExcellenceData) ...[
-                    const SizedBox(height: 12),
                     SectionRow(
                       title: 'COULISSES DE L\'EXCELLENCE',
                       onSeeMore: () {
@@ -2873,6 +2875,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const BottomFadeGradient(),
         ],
       ),
+      ),
+      ),
     );
   }
 
@@ -2898,37 +2902,31 @@ class _HomeScreenState extends State<HomeScreen> {
     bool allowLineBreak = false,
   }) {
     final isDark = _themeService.isDarkMode;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ImageMenuCardExternalTitle(
-          index: index,
-          cardKey: cardKey,
-          title: title,
-          width: width,
-          height: null, // Force l'image à être un carré (hauteur = largeur)
-          imageFlex: 2,
-          imagePath: imagePath,
-          isDark: isDark,
-          titleFontSize: AppDimensions.getScaledSize(context, 13.0),
-          imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
-          doubleBorderGap: doubleBorderGap,
-          color: color,
-          backgroundColor: isDark
-              ? backgroundColor.withOpacity(0.15)
-              : backgroundColor,
-          textColor: isDark ? Colors.white : textColor,
-          actionText: actionText,
-          //actionTextColor: color,
-          onTap: onTap,
-          enableInnerBorder: enableInnerBorder,
-          enableOuterBorder: enableOuterBorder,
-          innerBorderColor: innerBorderColor,
-          centerTitle: centerTitle,
-          allowLineBreak: allowLineBreak,
-        ),
-        SizedBox(width: AppDimensions.getScaledSize(context, 16.0)),
-      ],
+    return ImageMenuCardExternalTitle(
+      index: index,
+      cardKey: cardKey,
+      title: title,
+      width: width,
+      height: null, // Force l'image à être un carré (hauteur = largeur)
+      imageFlex: 2,
+      imagePath: imagePath,
+      isDark: isDark,
+      titleFontSize: AppDimensions.getScaledSize(context, 11.0),
+      imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
+      doubleBorderGap: doubleBorderGap,
+      color: color,
+      backgroundColor: isDark
+          ? backgroundColor.withOpacity(0.15)
+          : backgroundColor,
+      textColor: isDark ? Colors.white : textColor,
+      actionText: actionText,
+      //actionTextColor: color,
+      onTap: onTap,
+      enableInnerBorder: enableInnerBorder,
+      enableOuterBorder: enableOuterBorder,
+      innerBorderColor: innerBorderColor,
+      centerTitle: centerTitle,
+      allowLineBreak: allowLineBreak,
     );
   }
 

@@ -2790,7 +2790,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         AppDimensions.isDesktop(context);
 
     if (isTablet) {
-      final screenWidth = MediaQuery.of(context).size.width;
+      final screenWidth = MediaQuery.sizeOf(context).width;
       // Afficher exactement 5 éléments pleins, le 6ème déborde légèrement
       final availableWidth = screenWidth - 15 - 15; // Paddings gauche/droite
       return (availableWidth / 5.2) - horizontalSpacing;
@@ -3304,7 +3304,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               return Container(
                 constraints: BoxConstraints(
                   minHeight: 100,
-                  maxHeight: MediaQuery.of(context).size.height * 0.9,
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.9,
                 ),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
@@ -6099,7 +6099,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           Flexible(
             child: Container(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.75,
+                maxWidth: AppDimensions.isTablet(context) || AppDimensions.isSmallTablet(context) || AppDimensions.isLargeTablet(context) ? 400.0 : MediaQuery.sizeOf(context).width * 0.75,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
@@ -6954,6 +6954,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _buildServicesComplementairesBottomSheet(),
     );
   }
@@ -6961,7 +6964,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Widget _buildServicesComplementairesBottomSheet() {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.8,
       ),
       decoration: BoxDecoration(
         color: AppColors.screenSurfaceThemed(context),

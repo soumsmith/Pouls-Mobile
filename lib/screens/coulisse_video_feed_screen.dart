@@ -14,6 +14,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/snackbar.dart';
+import '../config/app_dimensions.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -215,6 +216,9 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _ShareOptionsSheet(video: video),
     );
   }
@@ -234,6 +238,9 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _CommentsSheet(videoId: video.id),
     );
   }
@@ -254,6 +261,9 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _RatingSheet(video: video),
     );
   }
@@ -484,7 +494,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             left: 0,
             right: 0,
             child: SizedBox(
-              height: 56 + MediaQuery.of(context).padding.top,
+              height: 56 + MediaQuery.paddingOf(context).top,
               child: CustomScrollView(
                 physics: const NeverScrollableScrollPhysics(),
                 slivers: [

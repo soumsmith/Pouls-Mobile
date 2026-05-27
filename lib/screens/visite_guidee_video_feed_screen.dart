@@ -11,6 +11,7 @@ import '../models/interaction.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
+import '../config/app_dimensions.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
@@ -190,6 +191,9 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _CommentsSheet(videoId: video.id ?? video.typeVideo.hashCode),
     );
   }
@@ -208,6 +212,9 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _RatingSheet(video: video),
     );
   }
@@ -437,7 +444,7 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
             left: 0,
             right: 0,
             child: SizedBox(
-              height: 56 + MediaQuery.of(context).padding.top,
+              height: 56 + MediaQuery.paddingOf(context).top,
               child: CustomScrollView(
                 physics: const NeverScrollableScrollPhysics(),
                 slivers: [
@@ -793,7 +800,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final inputBorderColor = isDarkMode ? Colors.white24 : Colors.black12;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
+      height: MediaQuery.sizeOf(context).height * 0.7,
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),

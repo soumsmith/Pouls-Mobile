@@ -118,15 +118,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                     ),
                   if (title?.isNotEmpty == true) ...[
                     SizedBox(height: externalTitleSpacing ?? 4),
-                    if (height != null)
-                      Flexible(
-                        child: SingleChildScrollView(
-                          physics: const NeverScrollableScrollPhysics(),
-                          child: _buildTextContent(context, textSizeService),
-                        ),
-                      )
-                    else
-                      _buildTextContent(context, textSizeService),
+                    _buildTextContent(context, textSizeService),
                   ],
                 ],
               ),
@@ -216,7 +208,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                       actionText!,
                       style: TextStyle(
                         fontSize: textSizeService
-                            .getScaledFontSize(10),
+                            .getScaledFontSize(13),
                         fontWeight: FontWeight.w700,
                         color: actionTextColor ??
                             color ??

@@ -785,7 +785,7 @@ class _MessagesScreenState extends State<MessagesScreen>
               opacity: isPending ? 0.65 : 1.0,
               child: Container(
                 constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.72,
+                  maxWidth: AppDimensions.isTablet(context) || AppDimensions.isSmallTablet(context) || AppDimensions.isLargeTablet(context) ? 400.0 : MediaQuery.sizeOf(context).width * 0.72,
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,

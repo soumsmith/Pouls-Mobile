@@ -993,6 +993,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: _getCrossAxisCount(context),
               crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+              mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
               mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
             ),
             delegate: SliverChildBuilderDelegate((_, i) {
@@ -1128,7 +1129,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Action buttons (quick actions) ─────────────────────────────────────────
   Widget _buildActionButtons(bool isDark) {
     return SizedBox(
-      height: AppDimensions.getPaymentBannerCardHeight(context) + 20,
+      height: AppDimensions.getSquareCardHeightSize(context) + 20,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -1151,7 +1152,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               _kActions['integration']!,
             ),
           ),
-          SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+          SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
           _buildActionButton(
             index: 1,
             cardKey: 'rating',
@@ -1165,7 +1166,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             allowLineBreak: true,
             onTap: () => _showActionBottomSheet('rating', _kActions['rating']!),
           ),
-          SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+          SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
           _buildActionButton(
             index: 2,
             cardKey: 'recommend',
@@ -1180,7 +1181,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             onTap: () =>
                 _showActionBottomSheet('recommend', _kActions['recommend']!),
           ),
-          SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
+          SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
           _buildActionButton(
             index: 3,
             cardKey: 'events',
@@ -1214,17 +1215,18 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     required VoidCallback onTap,
     bool allowLineBreak = false,
   }) {
+    final width = AppDimensions.getSquareCardWidthSize(context);
     return ImageMenuCardExternalTitle(
       index: index,
       cardKey: cardKey,
       title: title,
-      width: AppDimensions.getSquareCardWidthSize(context),
-      height: AppDimensions.getSquareCardHeightSize(context),
+      width: width,
+      height: null, // Force l'image à être carrée (hauteur = largeur)
       imageFlex: 2,
       imagePath: imagePath,
       isDark: isDark,
-      titleFontSize: AppDimensions.getBottomSheetCardTextSize(context),
-      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      titleFontSize: AppDimensions.getScaledSize(context, 11.0),
+      imageBorderRadius: 16.0, // Bords arrondis pour avoir une image carrée
       centerTitle: true,
       color: color,
       backgroundColor: isDark ? backgroundColor.withOpacity(0.15) : backgroundColor,

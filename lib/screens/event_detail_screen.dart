@@ -735,6 +735,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _ShareBottomSheet(event: widget.event),
     );
   }
@@ -788,6 +791,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => _TicketBottomSheet(
         ticketCategories: _ticketCategories,
         ticketsLoading: _ticketsLoading,
@@ -891,8 +897,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: _CommentBottomSheet(
           existingComment: _userComment,
           onSave: (rating, comment) async {
@@ -1480,7 +1489,7 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
           else
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.55,
+                maxHeight: MediaQuery.sizeOf(context).height * 0.55,
               ),
               child: ListView.separated(
                 shrinkWrap: true,

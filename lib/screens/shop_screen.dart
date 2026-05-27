@@ -838,11 +838,10 @@ class _LibraryScreenState extends State<LibraryScreen>
                     crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
                       context,
                     ),
-                    childAspectRatio:
-                        AppDimensions.getProductsGridChildAspectRatio(
-                          context,
-                          imageFlex: AppDimensions.getGridImageFlex(context),
-                        ),
+                    mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
+                      context,
+                    ),
+                    mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {

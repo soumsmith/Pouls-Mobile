@@ -135,7 +135,32 @@ flutter:
     - assets/services/
     - assets/images/img-shcool-not-found.jpg
     - assets/images/video-placeholder.jpg
+    - assets/images/icons/controle_acces.png
     - assets/images/icons/
+
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/consulter_demande.png
+    - assets/images/icons/paiement_scolarite.png
+    - assets/images/icons/historique_paiement.png
+    - assets/images/icons/inscription_en_ligne.png
+    - assets/images/icons/echeancier_scolarite.png
+    - assets/images/icons/demande_integration.png
+    - assets/images/icons/historique.png
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/inscription_en_ligne.png
+    - assets/images/icons/historique.png
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/historique.png
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/historique.png
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/historique.png
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/historique.png
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/historique.png
+    - assets/images/icons/reservation_en_ligne.png
+    - assets/images/icons/historique.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

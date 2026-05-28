@@ -213,7 +213,7 @@ class SchoolLifeItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
     final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
-    final double imageSize = isTablet ? 64.0 : 40.0;
+    final double imageSize = isTablet ? 64.0 : 75.0;
     
     return InkWell(
       onTap: onTap,

@@ -3620,6 +3620,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     required Color iconColor,
     required List<Widget> children,
   }) {
+    final validChildren = children.where((child) => child is! SizedBox).toList();
+    if (validChildren.isEmpty) return const SizedBox.shrink();
+
     final isDarkMode = _themeService.isDarkMode;
 
     return Column(
@@ -3647,7 +3650,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           ],
         ),
         const SizedBox(height: 16),
-        ...children,
+        ...validChildren,
       ],
     );
   }
@@ -3732,13 +3735,18 @@ class _ChildListScreenState extends State<ChildListScreen>
     bool isClickable = false,
     VoidCallback? onTap,
   }) {
+    final val = value.trim().toLowerCase();
+    if (val.isEmpty || val == 'n/a' || val == 'null' || val == '-') {
+      return const SizedBox.shrink();
+    }
+
     final isDarkMode = _themeService.isDarkMode;
 
     return GestureDetector(
       onTap: isClickable && onTap != null ? onTap : null,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isClickable
               ? (isDarkMode ? Colors.grey[700] : Colors.blue[50])
@@ -3931,7 +3939,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       index: 0,
                       cardKey: 'reservations',
                       title: 'Réservation\nen ligne',
-                      imagePath: 'assets/images/icons/reservation.png',
+                      imagePath: 'assets/images/icons/reservation_en_ligne.png',
                       color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFF8FCFF),
                       textColor: const Color(0xFF333333),
@@ -3952,7 +3960,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       index: 6,
                       cardKey: 'mes_reservations',
                       title: 'Mes\nréservations',
-                      imagePath: 'assets/images/icons/reservation.png',
+                      imagePath: 'assets/images/icons/consulter_demande.png',
                       color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFF0FDF4),
                       textColor: const Color(0xFF333333),
@@ -3979,7 +3987,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       index: 3,
                       cardKey: 'paiement',
                       title: 'Paiement\nscolarité',
-                      imagePath: 'assets/images/icons/reservation.png',
+                      imagePath: 'assets/images/icons/paiement_scolarite.png',
                       color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFE8F5E9),
                       textColor: const Color(0xFF333333),
@@ -4000,7 +4008,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       index: 1,
                       cardKey: 'historique_paiements',
                       title: 'Historique \n paiement',
-                      imagePath: 'assets/images/icons/historique.png',
+                      imagePath: 'assets/images/icons/historique_paiement.png',
                       backgroundColor: const Color.fromARGB(255, 253, 253, 253),
                       textColor: const Color(0xFF333333),
                       actionText: '',
@@ -4026,7 +4034,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       index: 2,
                       cardKey: 'inscription',
                       title: 'Inscription \n en ligne',
-                      imagePath: 'assets/images/icons/inscription.png',
+                      imagePath: 'assets/images/icons/inscription_en_ligne.png',
                       color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFF7FEFC),
                       textColor: const Color(0xFF333333),
@@ -4064,7 +4072,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       index: 4,
                       cardKey: 'scolarite',
                       title: 'Échéancier\n Scolarité',
-                      imagePath: 'assets/images/icons/scolarite.png',
+                      imagePath: 'assets/images/icons/echeancier_scolarite.png',
                       color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFFFFEF7),
                       textColor: const Color(0xFF333333),
@@ -4106,7 +4114,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       index: 5,
                       cardKey: 'integration_requests',
                       title: 'Demandes\n intégration',
-                      imagePath: 'assets/images/icons/consulter.png',
+                      imagePath: 'assets/images/icons/demande_integration.png',
                       color: AppColors.cardLightGrey,
                       backgroundColor: const Color(0xFFFCFAFF),
                       textColor: const Color(0xFF333333),
@@ -4169,7 +4177,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'access_control',
               title: 'Contrôle d\'accès',
               subtitle: 'Voir accès',
-              imagePath: 'assets/images/controle-acces.jpg',
+              imagePath: 'assets/images/icons/controle_acces.png',
               iconData: Icons.fingerprint_rounded,
               color: const Color(0xFFC2185B),
               actionText: 'Voir accès',
@@ -4224,8 +4232,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           ],
           isDark: isDark,
           useExternalTitle: true,
-          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
-          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+          cardWidth: AppDimensions.getSquareCardWidthSize(context),
+          cardHeight: AppDimensions.getSquareCardHeightSize(context) + 30,
         ),
 
         // ════════════════════════════════════════════════════════════════
@@ -4486,9 +4494,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   ],
                   isDark: isDark,
                   useExternalTitle: true,
-                  cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
+                  cardWidth: AppDimensions.getSquareCardWidthSize(context),
                   cardHeight:
-                      AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+                      AppDimensions.getSquareCardHeightSize(context) + 30,
                 ),
                 const SizedBox(height: 16),
                 buildGroupContainer(group3Items),
@@ -4572,8 +4580,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           ],
           isDark: isDark,
           useExternalTitle: true,
-          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
-          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+          cardWidth: AppDimensions.getSquareCardWidthSize(context),
+          cardHeight: AppDimensions.getSquareCardHeightSize(context) + 30,
         ),
         // ════════════════════════════════════════════════════════════════
         // SECTION 5 : Services
@@ -4646,8 +4654,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           ],
           isDark: isDark,
           useExternalTitle: true,
-          cardWidth: AppDimensions.getHorizontalMenuCardWidth(context),
-          cardHeight: AppDimensions.getHorizontalMenuCardHeight(context) + 30,
+          cardWidth: AppDimensions.getSquareCardWidthSize(context),
+          cardHeight: AppDimensions.getSquareCardHeightSize(context) + 30,
         ),
       ],
     );
@@ -13513,7 +13521,7 @@ class _PulseAnimatedButtonState extends State<_PulseAnimatedButton>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Plus d\'action',
+                    'Plus d\'infos',
                     style: TextStyle(
                       fontSize: 12,
                       color: const Color(0xFFFF6B2C),

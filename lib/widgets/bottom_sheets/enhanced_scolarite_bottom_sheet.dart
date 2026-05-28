@@ -26,6 +26,9 @@ class EnhancedScolariteBottomSheet extends StatefulWidget {
   // Paramètres de personnalisation du design
   final Color? primaryColor;
   final Color? backgroundColor;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
   final Color? iconColor;
   final IconData? iconData;
   final double? height;
@@ -45,6 +48,9 @@ class EnhancedScolariteBottomSheet extends StatefulWidget {
     this.scrollController,
     this.primaryColor,
     this.backgroundColor,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
     this.iconColor,
     this.iconData,
     this.height,
@@ -113,6 +119,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
     return BottomSheetHeader(
       icon: _iconData,
       iconColor: _primaryColor,
+      imagePath: widget.imagePath,
+      imageBackgroundColor: widget.imageBackgroundColor,
+      imageBorderRadius: widget.imageBorderRadius,
       title: _defaultTitle,
       description: _defaultDescription,
       titleColor: isDarkMode ? Colors.white : Colors.black87,
@@ -884,6 +893,9 @@ void showEnhancedScolariteBottomSheet(
   String? description,
   Color? primaryColor,
   Color? backgroundColor,
+  String? imagePath,
+  Color? imageBackgroundColor,
+  double? imageBorderRadius,
   Color? iconColor,
   IconData? iconData,
   double? height,
@@ -910,6 +922,9 @@ void showEnhancedScolariteBottomSheet(
         description: description,
         primaryColor: primaryColor,
         backgroundColor: backgroundColor,
+        imagePath: imagePath,
+        imageBackgroundColor: imageBackgroundColor,
+        imageBorderRadius: imageBorderRadius,
         iconColor: iconColor,
         iconData: iconData,
         height: height,
@@ -944,6 +959,7 @@ void showFeesBottomSheet(
     description: 'Consultez les frais de scolarité et paiements',
     primaryColor: const Color(0xFF10B981),
     backgroundColor: const Color(0xFFECFDF5),
+    imagePath: 'assets/images/icons/echeancier_scolarite.png',
     iconColor: const Color(0xFF065F46),
     iconData: Icons.payments_rounded,
     height: MediaQuery.of(context).size.height * 0.8,

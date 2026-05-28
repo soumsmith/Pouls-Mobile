@@ -31,6 +31,10 @@ class RecommendationBottomSheet extends StatefulWidget {
 
   final String title;
   final String subtitle;
+  final IconData? icon;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
   const RecommendationBottomSheet({
     super.key,
@@ -51,6 +55,10 @@ class RecommendationBottomSheet extends StatefulWidget {
     required this.onSubmit,
     this.title = 'Recommander un établissement',
     this.subtitle = 'Suggérez une école à la communauté',
+    this.icon,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
   });
 
   @override
@@ -189,23 +197,31 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxAvailableHeight = (screenHeight * 0.95) - keyboardHeight;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenSurface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: maxAvailableHeight > 0 ? maxAvailableHeight : 0,
         ),
-      ),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenSurface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           BottomSheetHeader(
-            icon: Icons.thumb_up_alt_rounded,
+            icon: widget.icon ?? Icons.thumb_up_alt_rounded,
+            imagePath: widget.imagePath,
+            imageBackgroundColor: widget.imageBackgroundColor,
+            imageBorderRadius: widget.imageBorderRadius,
             iconColor: widget.accentColor,
             title: widget.title,
             description: widget.subtitle,
@@ -224,7 +240,6 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
 
           Expanded(
             child: SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,8 +264,9 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildProgressIndicator() {
     final isDark = Theme.of(context).brightness == Brightness.dark;

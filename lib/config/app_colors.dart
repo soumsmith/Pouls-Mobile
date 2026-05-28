@@ -307,9 +307,16 @@ class AppColors {
     return isDarkMode(context) ? Colors.white70 : const Color(0xFF1A1A2A);
   }
 
+  // Fond pour les cartes de menu d'action
+  static Color actionMenuCardBg(BuildContext context) {
+    return isDarkMode(context)
+        ? const Color(0xFFF4F4F4).withValues(alpha: 0.15)
+        : const Color(0xFFF4F4F4);
+  }
+
   // Bottom sheets et modales
   static Color bottomSheetBg(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF1E1E2A) : Colors.white;
+    return isDarkMode(context) ? const Color(0xFF141414) : Colors.white;
   }
 
   static Color bottomSheetHandle(BuildContext context) {

@@ -26,6 +26,9 @@ void showIntegrationBottomSheet({
   GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey,
   void Function(String demandeUid)? onSuccess,
   void Function(String error)? onError,
+  String? imagePath,
+  Color? imageBackgroundColor,
+  double? imageBorderRadius,
 }) {
   showModalBottomSheet(
     context: context,
@@ -37,6 +40,9 @@ void showIntegrationBottomSheet({
       scaffoldMessengerKey: scaffoldMessengerKey,
       onSuccess: onSuccess,
       onError: onError,
+      imagePath: imagePath,
+      imageBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
     ),
   );
 }
@@ -50,6 +56,9 @@ class IntegrationBottomSheet extends StatefulWidget {
   final GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
   final void Function(String demandeUid)? onSuccess;
   final void Function(String error)? onError;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
   const IntegrationBottomSheet({
     super.key,
@@ -57,6 +66,9 @@ class IntegrationBottomSheet extends StatefulWidget {
     this.scaffoldMessengerKey,
     this.onSuccess,
     this.onError,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
   });
 
   @override
@@ -146,6 +158,9 @@ class _IntegrationBottomSheetState extends State<IntegrationBottomSheet>
             children: [
               BottomSheetHeader(
                 icon: Icons.person_add_alt_1_rounded,
+                imagePath: widget.imagePath,
+                imageBackgroundColor: widget.imageBackgroundColor,
+                imageBorderRadius: widget.imageBorderRadius,
                 iconColor: const Color(0xFF3B82F6),
                 title: 'Intégrer',
                 description: 'Nous rejoindre',

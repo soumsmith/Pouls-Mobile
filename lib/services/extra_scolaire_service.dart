@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../utils/api_exception_handler.dart';
+import '../config/app_config.dart';
 
 class ExtraScolaireService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api';
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   /// 1.10 Récupération des produits scolaires souscrits (abonnements actifs)
   static Future<List<dynamic>> getSubscribedServices({

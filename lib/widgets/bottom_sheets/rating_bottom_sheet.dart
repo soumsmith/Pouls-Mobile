@@ -8,8 +8,10 @@ class RatingBottomSheet extends StatefulWidget {
   final String schoolName;
   final Color schoolColor;
   final Function(String rating, String comment)? onRatingSubmitted;
-  final bool
-  allowRating; // Permet de contrôler si l'utilisateur peut donner une note
+  final bool allowRating; // Permet de contrôler si l'utilisateur peut donner une note
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
   const RatingBottomSheet({
     Key? key,
@@ -18,6 +20,9 @@ class RatingBottomSheet extends StatefulWidget {
     required this.schoolColor,
     this.onRatingSubmitted,
     this.allowRating = true,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
   }) : super(key: key);
 
   @override
@@ -169,6 +174,9 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> with WidgetsBindi
                   // Header
                   BottomSheetHeader(
                     icon: Icons.rate_review_outlined,
+                    imagePath: widget.imagePath,
+                    imageBackgroundColor: widget.imageBackgroundColor,
+                    imageBorderRadius: widget.imageBorderRadius,
                     iconColor: widget.schoolColor,
                     title: widget.schoolName,
                     description: 'Avis et notes',
@@ -605,6 +613,9 @@ void showRatingBottomSheet(
   required Color schoolColor,
   Function(String rating, String comment)? onRatingSubmitted,
   bool allowRating = true,
+  String? imagePath,
+  Color? imageBackgroundColor,
+  double? imageBorderRadius,
 }) {
   showModalBottomSheet(
     context: context,
@@ -617,6 +628,9 @@ void showRatingBottomSheet(
       schoolColor: schoolColor,
       onRatingSubmitted: onRatingSubmitted,
       allowRating: allowRating,
+      imagePath: imagePath,
+      imageBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
     ),
   );
 }

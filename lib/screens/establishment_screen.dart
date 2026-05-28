@@ -35,6 +35,7 @@ import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/snackbar.dart';
+import '../widgets/skeleton_box.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -186,14 +187,21 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   bool _isLoadingVideos = false;
   String? _videoError;
 
-  final List<String> _filters = [
-    'Tous',
-    'Primaire',
-    'Collège',
-    'Lycée',
-    'Privé',
-    'Public',
+  static const List<Map<String, String>> typeOptions = [
+    {'value': 'tous', 'label': 'Tous'},
+    {'value': 'maternelle', 'label': 'Maternelle'},
+    {'value': 'primaire', 'label': 'Primaire'},
+    {'value': 'secondaire', 'label': 'Secondaire'},
+    {'value': 'superieur', 'label': 'Supérieur'},
+    {'value': 'groupe_scolaire', 'label': 'Groupe scolaire (ex: maternelle + primaire)'},
+    {'value': 'technique', 'label': 'Technique'},
+    {'value': 'professionnel', 'label': 'Professionnel'},
+    {'value': 'grande_ecole', 'label': 'Grande école'},
+    {'value': 'universite', 'label': 'Université'},
+    {'value': 'autre', 'label': 'Autre'},
   ];
+
+  late final List<String> _filters = typeOptions.map((e) => e['label']!).toList();
 
   // ── Lifecycle ──────────────────────────────────────────────
   @override
@@ -840,22 +848,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           ),
         )
       else if (_isLoadingVideos)
-        // Shimmer ou loading léger pour les vidéos sans bloquer le reste
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Container(
-              height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.screenCardThemed(context),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.screenOrange),
-                ),
-              ),
-            ),
+            child: _SliderSkeleton(),
           ),
         ),
 
@@ -882,7 +878,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           onFilterSelected: (filter) {
             setState(() {
               _selectedFilter = filter;
-              _categorie = filter == 'Tous' ? null : filter.toLowerCase();
+              final selectedValue = typeOptions.firstWhere((e) => e['label'] == filter)['value'];
+              _categorie = selectedValue == 'tous' ? null : selectedValue;
             });
             _loadEcoles();
           },
@@ -891,14 +888,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
       // ── Contenu conditionnel des établissements ───────
       if (_isLoading)
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 60),
-          sliver: SliverToBoxAdapter(
-            child: Center(
-              child: _buildLoadingState(),
-            ),
-          ),
-        )
+        const _EstablishmentGridSkeleton()
       else if (_error != null)
         SliverPadding(
           padding: const EdgeInsets.symmetric(vertical: 40),
@@ -1174,7 +1164,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           _buildActionButton(
             index: 2,
             cardKey: 'recommend',
-            title: 'Recommand-\nation',
+            title: 'Proposer\nune école',
             actionText: '',
             imagePath: 'assets/images/ecole.jpg',
             color: AppColors.cardLightGrey,
@@ -1261,6 +1251,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         return _buildShareForm();
       case 'recommend':
         return RecommendationBottomSheet(
+          icon: _kActions['recommend']!.icon,
+          imagePath: 'assets/images/ecole.jpg',
+          imageBackgroundColor: const Color(0xFFE3F2FD),
+          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
           accentColor: _kActions['recommend']!.color,
           recommenderNameController: _recommenderNameController,
           etablissementController: _etablissementController,
@@ -1628,6 +1622,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     if (actionType == 'integration') {
       showIntegrationBottomSheet(
         context: context,
+        imagePath: 'assets/images/icons/demande_integration.png',
+        imageBackgroundColor: const Color(0xFFF7FEFC),
+        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
         onSuccess: (demandeUid) {},
         onError: (error) {},
       );
@@ -1640,6 +1637,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         schoolId: 'general',
         schoolName: 'Établissements',
         schoolColor: def.color,
+        // Since we don't have a specific image for rating, we leave imagePath null to fallback to icon
         onRatingSubmitted: (rating, comment) async {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2701,3 +2699,52 @@ class _FeaturedSchoolCard extends StatelessWidget {
     );
   }
 }
+
+// ─── Skeleton Loader pour le Slider ───────────────────────────────────────────
+class _SliderSkeleton extends StatelessWidget {
+  const _SliderSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonBox(
+      height: AppDimensions.getCarouselHeight(context),
+      borderRadius: AppDimensions.getHeroCardBorderRadius(context),
+    );
+  }
+}
+
+// ─── Skeleton Loader pour la grille d'établissements ───────────────────────
+class _EstablishmentGridSkeleton extends StatelessWidget {
+  final int itemCount;
+  
+  const _EstablishmentGridSkeleton({
+    super.key,
+    this.itemCount = 16,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: AppDimensions.getEcolesGridColumns(context),
+          crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
+              (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+                      AppDimensions.isLandscape(context))
+                  ? 1.8
+                  : 1.0),
+          mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+          mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            return const SkeletonBox();
+          },
+          childCount: itemCount,
+        ),
+      ),
+    );
+  }
+}
+

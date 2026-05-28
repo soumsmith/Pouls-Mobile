@@ -16,7 +16,16 @@ import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
 
 class SponsorshipBottomSheet extends StatefulWidget {
-  const SponsorshipBottomSheet({super.key});
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
+
+  const SponsorshipBottomSheet({
+    super.key,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
+  });
 
   @override
   State<SponsorshipBottomSheet> createState() => _SponsorshipBottomSheetState();
@@ -63,6 +72,9 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         children: [
           BottomSheetHeader(
             icon: Icons.card_giftcard_rounded,
+            imagePath: widget.imagePath,
+            imageBackgroundColor: widget.imageBackgroundColor,
+            imageBorderRadius: widget.imageBorderRadius,
             iconColor: const Color(0xFFFF7A3C),
             title: 'Parrainer',
             description: 'Invitez vos amis',
@@ -435,13 +447,21 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
   }
 }
 
-// Helper function pour afficher le bottom sheet
-void showSponsorshipBottomSheet(BuildContext context) {
+void showSponsorshipBottomSheet(
+  BuildContext context, {
+  String? imagePath,
+  Color? imageBackgroundColor,
+  double? imageBorderRadius,
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withOpacity(0.40),
-    builder: (_) => const SponsorshipBottomSheet(),
+    builder: (_) => SponsorshipBottomSheet(
+      imagePath: imagePath,
+      imageBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
+    ),
   );
 }

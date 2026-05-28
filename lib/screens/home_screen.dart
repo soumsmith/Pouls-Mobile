@@ -399,6 +399,10 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => RecommendationBottomSheet(
+        icon: Icons.recommend_rounded,
+        imagePath: 'assets/images/icons/recommander_une_ecole.png',
+        imageBackgroundColor: const Color(0xFFFCFAFF),
+        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
         accentColor: _kOrange,
         recommenderNameController: _recommenderNameController,
         etablissementController: _etablissementController,
@@ -1324,7 +1328,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
 
     final double cardWidth = _getCardWidth(context, 16.0);
-    final double imageHeight = cardWidth * 0.62; // Format rectangulaire
+    final double imageRatio = isTablet ? 0.62 : 0.9;
+    final double imageHeight = cardWidth * imageRatio; // Format dynamique
     final double textHeight = AppDimensions.getScaledSize(context, 85.0); // Espace suffisant pour le texte
     final double containerHeight = imageHeight + textHeight;
 
@@ -1492,7 +1497,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final limit = isTablet ? 6 : 5;
 
     final double cardWidth = _getCardWidth(context, 16.0);
-    final double imageHeight = cardWidth * 0.62; // Format rectangulaire
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio; // Format dynamique
     final double textHeight = AppDimensions.getScaledSize(context, 85.0); // Espace suffisant pour le texte
     final double containerHeight = imageHeight + textHeight;
 
@@ -2529,7 +2535,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _defaultChildIcon() {
     return Container(
-      color: const Color(0xFF22223A),
+      color: const Color(0xFF141414), // Toujours sombre car le header est toujours noir
       child: const Icon(Icons.person, color: Color(0xFF8A8AFF), size: 26),
     );
   }
@@ -2581,14 +2587,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
-  // ─── BOTTOM SHEET (white panel) ────────────────────────────────────────────
   Widget _buildBottomSheet({bool isMobileLandscape = false}) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF14141C)
-            : Colors.white,
+        color: AppColors.bottomSheetBg(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       child: Center(
@@ -2644,7 +2647,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           index: 0,
                           cardKey: 'inscription',
                           title: 'Inscription \n en ligne',
-                          imagePath: 'assets/images/icons/inscription.png',
+                          imagePath: 'assets/images/icons/inscription_en_ligne.png',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFF8FCFF),
                           textColor: const Color(0xFF333333),
@@ -2661,7 +2664,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                           ),
                           centerTitle: true,
-                          onTap: () => InscriptionBottomSheet.show(context),
+                          onTap: () => InscriptionBottomSheet.show(
+                            context,
+                            imagePath: 'assets/images/icons/inscription_en_ligne.png',
+                            imageBackgroundColor: const Color(0xFFF8FCFF),
+                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          ),
                         ),
                         SizedBox(
                           width: AppDimensions.getActionButtonsSpacing(
@@ -2672,7 +2680,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           index: 1,
                           cardKey: 'integration',
                           title: 'Demande\nintégration',
-                          imagePath: 'assets/images/icons/integration.png',
+                          imagePath: 'assets/images/icons/demande_integration.png',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFF7FEFC),
                           textColor: const Color(0xFF333333),
@@ -2693,7 +2701,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             context: context,
                             isScrollControlled: true,
                             backgroundColor: Colors.transparent,
-                            builder: (_) => const IntegrationBottomSheet(),
+                            builder: (_) => IntegrationBottomSheet(
+                              imagePath: 'assets/images/icons/demande_integration.png',
+                              imageBackgroundColor: const Color(0xFFF7FEFC),
+                              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                            ),
                           ),
                         ),
                         SizedBox(
@@ -2705,7 +2717,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           index: 2,
                           cardKey: 'consulter_demande',
                           title: 'Consulter\ndemande',
-                          imagePath: 'assets/images/icons/consulter.png',
+                          imagePath: 'assets/images/icons/consulter_demande.png',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFFFFEF7),
                           textColor: const Color(0xFF333333),
@@ -2722,8 +2734,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                           ),
                           centerTitle: true,
-                          onTap: () =>
-                              IntegrationRequestBottomSheet.show(context),
+                          onTap: () => IntegrationRequestBottomSheet.show(
+                            context,
+                            imagePath: 'assets/images/icons/consulter_demande.png',
+                            imageBackgroundColor: const Color(0xFFFFFEF7),
+                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          ),
                         ),
                         SizedBox(
                           width: AppDimensions.getActionButtonsSpacing(
@@ -2734,7 +2750,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           index: 3,
                           cardKey: 'parrainage',
                           title: 'Parrainer\nutilisateur',
-                          imagePath: 'assets/images/icons/parrainer.png',
+                          imagePath: 'assets/images/icons/parrainer_utilisateur.png',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFFCFAFF),
                           textColor: const Color(0xFF333333),
@@ -2751,7 +2767,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                           ),
                           centerTitle: true,
-                          onTap: () => showSponsorshipBottomSheet(context),
+                          onTap: () => showSponsorshipBottomSheet(
+                            context,
+                            imagePath: 'assets/images/icons/parrainer_utilisateur.png',
+                            imageBackgroundColor: const Color(0xFFFCFAFF),
+                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          ),
                         ),
                         SizedBox(
                           width: AppDimensions.getActionButtonsSpacing(
@@ -2762,7 +2783,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           index: 4,
                           cardKey: 'panier',
                           title: 'Mon\npanier',
-                          imagePath: 'assets/images/mon-panier.jpg',
+                          imagePath: 'assets/images/icons/mon_panier.png',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFFCFAFF),
                           textColor: const Color(0xFF333333),
@@ -2796,7 +2817,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           index: 5,
                           cardKey: 'commandes',
                           title: 'Mes\ncommandes',
-                          imagePath: 'assets/images/mes-commandes.jpg',
+                          imagePath: 'assets/images/icons/mes_commandes.png',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFFCFAFF),
                           textColor: const Color(0xFF333333),
@@ -2830,7 +2851,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           index: 6,
                           cardKey: 'recommendation',
                           title: 'Proposer\nune école',
-                          imagePath: 'assets/images/recommander.jpg',
+                          imagePath: 'assets/images/icons/recommander_une_ecole.png',
                           color: AppColors.cardLightGrey,
                           backgroundColor: const Color(0xFFFCFAFF),
                           textColor: const Color(0xFF333333),

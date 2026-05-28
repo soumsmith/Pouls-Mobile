@@ -72,9 +72,7 @@ class ImageMenuCard extends StatelessWidget {
           height: height ?? width ?? 120, // Utiliser la width comme height si height non spécifié pour préserver le carré
           margin: EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
-            color:
-                backgroundColor ??
-                (isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard),
+            color: AppColors.actionMenuCardBg(context),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -97,9 +95,7 @@ class ImageMenuCard extends StatelessWidget {
                           Container(
                             width: double.infinity,
                             height: double.infinity,
-                            color:
-                                color?.withOpacity(0.1) ??
-                                AppColors.screenCard.withOpacity(0.1),
+                            color: Colors.transparent,
                             // Afficher l'image si disponible, sinon l'icône
                             child: _buildImageOrIcon(context),
                           ),

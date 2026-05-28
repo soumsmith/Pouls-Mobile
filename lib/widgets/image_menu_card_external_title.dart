@@ -8,6 +8,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final String cardKey;
   final String? title;
   final String? subtitle;
+  final String? overtitle;
+  final Color? overtitleColor;
   final String? imagePath;
   final IconData? iconData;
   final bool isDark;
@@ -51,6 +53,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     required this.cardKey,
     this.title,
     this.subtitle,
+    this.overtitle,
+    this.overtitleColor,
     this.imagePath,
     this.iconData,
     this.isDark = false, // Gardé pour compatibilité mais ne sera plus utilisé
@@ -108,28 +112,43 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
             onTap: onTap,
             child: SizedBox(
               height: height,
-              child: Column(
-                crossAxisAlignment: centerTitle
-                    ? CrossAxisAlignment.center
-                    : CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start, // Toujours aligner en haut
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (height != null)
-                    Expanded(
-                      child: _buildCardWithDoubleBorder(context),
+              child: height == null
+                  ? SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: centerTitle
+                            ? CrossAxisAlignment.center
+                            : CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: imageHeight ?? width ?? 70,
+                            child: _buildCardWithDoubleBorder(context),
+                          ),
+                          if (title?.isNotEmpty == true) ...[
+                            SizedBox(height: externalTitleSpacing ?? 4),
+                            _buildTextContent(context, textSizeService),
+                          ],
+                        ],
+                      ),
                     )
-                  else
-                    SizedBox(
-                      height: imageHeight ?? width ?? 70,
-                      child: _buildCardWithDoubleBorder(context),
+                  : Column(
+                      crossAxisAlignment: centerTitle
+                          ? CrossAxisAlignment.center
+                          : CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Expanded(
+                          child: _buildCardWithDoubleBorder(context),
+                        ),
+                        if (title?.isNotEmpty == true) ...[
+                          SizedBox(height: externalTitleSpacing ?? 4),
+                          _buildTextContent(context, textSizeService),
+                        ],
+                      ],
                     ),
-                  if (title?.isNotEmpty == true) ...[
-                    SizedBox(height: externalTitleSpacing ?? 4),
-                    _buildTextContent(context, textSizeService),
-                  ],
-                ],
-              ),
             ),
           ),
         ),
@@ -156,6 +175,26 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
               ? MainAxisSize.max
               : MainAxisSize.min,
           children: [
+            if (overtitle?.isNotEmpty == true) ...[
+              SizedBox(
+                width: centerTitle ? double.infinity : null,
+                child: Text(
+                  overtitle!,
+                  style: TextStyle(
+                    fontSize: textSizeService.getScaledFontSize(9),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: overtitleColor ??
+                        textColor?.withOpacity(0.6) ??
+                        AppColors.screenTextSecondaryThemed(context),
+                  ),
+                  textAlign: centerTitle ? TextAlign.center : null,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 2),
+            ],
             Builder(
               builder: (context) {
                 final double defaultFontSize = isTablet ? 14 : 11;
@@ -374,7 +413,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.screenCardThemed(context),
+        color: AppColors.actionMenuCardBg(context),
         borderRadius: BorderRadius.circular(radius),
       ),
       child: Stack(
@@ -385,8 +424,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
               children: [
                 Positioned.fill(
                   child: ColoredBox(
-                    color: color?.withOpacity(0.1) ??
-                        AppColors.screenCardThemed(context).withOpacity(0.1),
+                    color: Colors.transparent,
                     child: _buildImageOrIcon(context),
                   ),
                 ),

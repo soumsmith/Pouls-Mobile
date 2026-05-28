@@ -12,6 +12,9 @@ class PaymentBottomSheet extends StatefulWidget {
   final String? title;
   final String? description;
   final IconData? icon;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
   final dynamic montantReservation;
   final Future<Map<String, dynamic>?> Function()? loadReservationData;
 
@@ -32,6 +35,9 @@ class PaymentBottomSheet extends StatefulWidget {
     this.title,
     this.description,
     this.icon,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
     this.montantReservation,
     this.loadReservationData,
     required this.onPayment,
@@ -46,6 +52,9 @@ class PaymentBottomSheet extends StatefulWidget {
     String? title,
     String? description,
     IconData? icon,
+    String? imagePath,
+    Color? imageBackgroundColor,
+    double? imageBorderRadius,
     dynamic montantReservation,
     Future<Map<String, dynamic>?> Function()? loadReservationData,
     required Future<PaymentResult> Function(String montant, String matricule)
@@ -64,6 +73,9 @@ class PaymentBottomSheet extends StatefulWidget {
           title: title,
           description: description,
           icon: icon,
+          imagePath: imagePath,
+          imageBackgroundColor: imageBackgroundColor,
+          imageBorderRadius: imageBorderRadius,
           montantReservation: montantReservation,
           loadReservationData: loadReservationData,
           onPayment: onPayment,
@@ -351,6 +363,9 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
           BottomSheetHeader(
             icon: widget.icon ?? Icons.payment,
             iconColor: const Color(0xFFFF7A3C),
+            imagePath: widget.imagePath,
+            imageBackgroundColor: widget.imageBackgroundColor,
+            imageBorderRadius: widget.imageBorderRadius,
             title: widget.title ?? 'Paiement en ligne',
             description: widget.description ?? (widget.childName != null
                 ? 'Entrez le montant à payer pour ${widget.childName}'

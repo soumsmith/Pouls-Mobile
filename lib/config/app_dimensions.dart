@@ -969,6 +969,13 @@ class AppDimensions {
 
   /// Hauteur du carrousel
   static double getCarouselHeight(BuildContext context) {
+    if (isDesktop(context) || isLargeTablet(context)) {
+      return getScaledSize(context, 320.0);
+    } else if (isTablet(context)) {
+      return getScaledSize(context, 260.0);
+    } else if (isSmallTablet(context)) {
+      return getScaledSize(context, 200.0);
+    }
     return getScaledSize(context, 140.0);
   }
 
@@ -1080,7 +1087,7 @@ class AppDimensions {
     final screenWidth = MediaQuery.sizeOf(context).width;
     if (screenWidth < mobileMaxWidth) {
       final imageSize = getSquareCardWidthSize(context);
-      final textSpace = getScaledSize(context, 55.0); 
+      final textSpace = getScaledSize(context, 65.0); // Augmenté pour éviter l'overflow
       return imageSize + textSpace;
     }
 

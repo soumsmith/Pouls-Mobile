@@ -2578,7 +2578,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'informations',
         title: 'Informations de l\'école',
         subtitle: 'Détails',
-        imagePath: 'assets/images/ecole.jpg',
+        imagePath: 'assets/images/icons/informations_ecole.png',
         color: _kActions['informations']!.color,
         actionText: 'Voir',
         onTap: () =>
@@ -2588,7 +2588,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'niveaux',
         title: 'Nos niveaux scolaires',
         subtitle: 'Classes',
-        imagePath: 'assets/images/niveau-scolaire.jpg',
+        imagePath: 'assets/images/icons/niveaux_scolaires.png',
         color: _kActions['niveaux']!.color,
         actionText: 'Voir',
         onTap: () => _showActionBottomSheet('niveaux', _kActions['niveaux']!),
@@ -2597,7 +2597,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'consult_requests',
         title: 'Consulter une demande',
         subtitle: 'Consulter',
-        imagePath: 'assets/images/mes-demande.jpg',
+        imagePath: 'assets/images/icons/consulter_une_demande_etablissement.png',
         color: _kActions['consult_requests']!.color,
         actionText: 'Consulter',
         onTap: () => _showActionBottomSheet(
@@ -2609,7 +2609,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'scolarite',
         title: 'Scolarité',
         subtitle: 'Frais',
-        imagePath: 'assets/images/scolarite.jpg',
+        imagePath: 'assets/images/icons/scolarite_tarifs.png',
         color: _kActions['scolarite']!.color,
         actionText: 'Voir',
         onTap: () =>
@@ -2619,7 +2619,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'services_complementaires',
         title: 'Services complémentaires',
         subtitle: 'Options',
-        imagePath: 'assets/images/services.jpg',
+        imagePath: 'assets/images/icons/services_complementaires.png',
         color: Colors.purple,
         actionText: 'Découvrir',
         onTap: () => _showServicesComplementairesBottomSheet(),
@@ -2632,7 +2632,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'school_events',
         title: 'Événements scolaires',
         subtitle: 'Calendrier',
-        imagePath: 'assets/images/school-event.jpg',
+        imagePath: 'assets/images/icons/evenements_scolaires.png',
         color: _kActions['school_events']!.color,
         actionText: 'Voir',
         onTap: () => _showActionBottomSheet(
@@ -2644,7 +2644,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'communication',
         title: 'Notre actualités',
         subtitle: 'Annonces',
-        imagePath: 'assets/images/actualite-2.jpg',
+        imagePath: 'assets/images/icons/actualites.png',
         color: _kActions['communication']!.color,
         actionText: 'Voir',
         onTap: () => _showActionBottomSheet(
@@ -2660,7 +2660,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'galeries',
         title: 'Galeries Écoles',
         subtitle: 'Découvrez nos galeries photos',
-        imagePath: 'assets/images/messages.jpg',
+        imagePath: 'assets/images/icons/galeries_photos.png',
         color: const Color(0xFF00796B),
         actionText: 'Voir galeries',
         onTap: () => Navigator.of(context).push(

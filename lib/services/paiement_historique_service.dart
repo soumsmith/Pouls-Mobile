@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/paiement_historique.dart';
+import '../config/app_config.dart';
 
 class PaiementHistoriqueService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/vie-ecoles';
+  static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles';
 
   /// Récupère l'historique des paiements d'un élève
   static Future<PaiementHistoriqueResponse> getHistoriquePaiements({

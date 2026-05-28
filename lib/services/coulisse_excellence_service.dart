@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 import '../models/coulisse_excellence.dart';
+import '../config/app_config.dart';
 
 class CoulisseExcellenceService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/ecoles';
+  static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles';
 
   static Future<List<CoulisseExcellence>> getCoulisseExcellenceList(
     String ecoleId,

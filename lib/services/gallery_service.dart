@@ -5,7 +5,7 @@ import '../models/gallery_image.dart';
 
 /// Service pour la gestion des galeries d'images des écoles
 class GalleryService {
-  static const String _baseUrl = 'https://api2.vie-ecoles.com/api/ecoles/imagegaleries';
+  static String get _baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/imagegaleries';
 
   /// Récupère la liste des images de la galerie pour une école
   /// 

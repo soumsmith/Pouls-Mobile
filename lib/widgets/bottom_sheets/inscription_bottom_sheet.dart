@@ -12,17 +12,36 @@ import '../../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/snackbar.dart';
+import '../../config/app_colors.dart';
 import '../../screens/inscription_screen.dart' as inscription;
 
 class InscriptionBottomSheet extends StatefulWidget {
-  const InscriptionBottomSheet({super.key});
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
-  static void show(BuildContext context) {
+  const InscriptionBottomSheet({
+    super.key,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
+  });
+
+  static void show(
+    BuildContext context, {
+    String? imagePath,
+    Color? imageBackgroundColor,
+    double? imageBorderRadius,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const InscriptionBottomSheet(),
+      builder: (_) => InscriptionBottomSheet(
+        imagePath: imagePath,
+        imageBackgroundColor: imageBackgroundColor,
+        imageBorderRadius: imageBorderRadius,
+      ),
     );
   }
 
@@ -259,7 +278,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141414) : _kSheetCard,
+            color: AppColors.bottomSheetBg(context),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
@@ -274,6 +293,9 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
               // Header
               BottomSheetHeader(
                 icon: Icons.school,
+                imagePath: widget.imagePath,
+                imageBackgroundColor: widget.imageBackgroundColor,
+                imageBorderRadius: widget.imageBorderRadius,
                 iconColor: const Color(0xFF4CAF50),
                 title: 'Nouvelle Inscription',
                 description: 'Sélectionnez une école et entrez le matricule',

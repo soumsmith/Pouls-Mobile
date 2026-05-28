@@ -7,17 +7,26 @@ import '../custom_loader.dart';
 class MyReservationsBottomSheet extends StatefulWidget {
   final String childName;
   final String matricule;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
   const MyReservationsBottomSheet({
     Key? key,
     required this.childName,
     required this.matricule,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
   }) : super(key: key);
 
   static Future<void> show({
     required BuildContext context,
     required String childName,
     required String matricule,
+    String? imagePath,
+    Color? imageBackgroundColor,
+    double? imageBorderRadius,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -26,6 +35,9 @@ class MyReservationsBottomSheet extends StatefulWidget {
       builder: (context) => MyReservationsBottomSheet(
         childName: childName,
         matricule: matricule,
+        imagePath: imagePath,
+        imageBackgroundColor: imageBackgroundColor,
+        imageBorderRadius: imageBorderRadius,
       ),
     );
   }
@@ -112,6 +124,9 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
           BottomSheetHeader(
             icon: Icons.list_alt_rounded,
             iconColor: const Color(0xFF4CAF50),
+            imagePath: widget.imagePath,
+            imageBackgroundColor: widget.imageBackgroundColor,
+            imageBorderRadius: widget.imageBorderRadius,
             title: 'Mes réservations',
             description: 'Réservations pour ${widget.childName}',
             onClose: () => Navigator.of(context).pop(),

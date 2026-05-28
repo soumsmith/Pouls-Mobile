@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 import '../models/video.dart';
+import '../config/app_config.dart';
 
 class VideoService {
-  static const String baseUrl =
-      'https://api2.vie-ecoles.com/api/vie-ecoles/videos';
+  static String get baseUrl =>
+      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/videos';
 
   static Future<List<Video>> getVideosByType(String type) async {
     try {

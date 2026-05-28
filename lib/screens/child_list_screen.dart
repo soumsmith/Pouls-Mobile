@@ -1085,6 +1085,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.bar_chart_rounded,
+              imagePath: 'assets/images/icons/notes.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF1976D2),
               title: 'Mes Notes',
               description: 'Consultez les notes et évaluations de votre enfant',
@@ -1131,6 +1133,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               children: [
                 BottomSheetHeader(
                   icon: Icons.description_rounded,
+                  imagePath: 'assets/images/icons/bulletins.png',
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                   iconColor: const Color(0xFF2E7D32),
                   title: 'Bulletins',
                   description: 'Accédez aux bulletins trimestriels et annuels',
@@ -1218,6 +1222,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               children: [
                 BottomSheetHeader(
                   icon: Icons.calendar_today_rounded,
+                  imagePath: 'assets/images/icons/emploi_du_temps.png',
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                   iconColor: const Color(0xFFF57C00),
                   title: 'Emploi du temps',
                   description: 'Consultez l\'emploi du temps et les horaires',
@@ -1253,6 +1259,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.edit_note_rounded,
+              imagePath: 'assets/images/icons/devoirs.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF7B1FA2),
               title: 'Devoirs',
               description: 'Suivez les devoirs et exercices à faire',
@@ -1283,6 +1291,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.trending_up_rounded,
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF1976D2),
               title: 'Progression',
               description: 'Suivi de la progression',
@@ -1318,6 +1327,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.assignment_rounded,
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF2E7D32),
               title: 'Programme de devoirs',
               description: 'Planning des devoirs',
@@ -1367,6 +1377,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               children: [
                 BottomSheetHeader(
                   icon: Icons.person_off_rounded,
+                  imagePath: 'assets/images/icons/presence_conduite.png',
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                   iconColor: const Color(0xFF00796B),
                   title: 'Présence',
                   description: 'Vérifiez la présence et la conduite',
@@ -1417,6 +1429,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               children: [
                 BottomSheetHeader(
                   icon: Icons.fingerprint_rounded,
+                  imagePath: 'assets/images/icons/controle_acces.png',
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                   iconColor: const Color(0xFFC2185B),
                   title: 'Contrôle d\'accès',
                   description: 'Contrôlez les accès et les pointages',
@@ -1454,6 +1468,8 @@ class _ChildListScreenState extends State<ChildListScreen>
             matricule: matricule,
             childName: widget.child.fullName,
             textSizeService: _textSizeService,
+            imagePath: 'assets/images/icons/services_scolaires.png',
+            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
           );
         },
       ),
@@ -1478,6 +1494,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.warning_rounded,
+              imagePath: 'assets/images/icons/sanctions.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFFD32F2F),
               title: 'Sanctions',
               description: 'Consultez les sanctions et avertissements',
@@ -1508,6 +1526,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.message_rounded,
+              imagePath: 'assets/images/icons/messages.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF0288D1),
               title: 'Messages',
               description: 'Lisez les messages et communications',
@@ -1538,6 +1558,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.psychology_rounded,
+              imagePath: 'assets/images/icons/performance_scolaire.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF9C27B0),
               title: 'Difficultés',
               description: 'Suivez les difficultés et le soutien',
@@ -1568,6 +1590,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.event_rounded,
+              imagePath: 'assets/images/icons/evenements_scolaires.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF3F51B5),
               title: 'Événements',
               description: 'Participez aux événements et activités',
@@ -1649,6 +1673,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 children: [
                   BottomSheetHeader(
                     icon: Icons.inventory_2_rounded,
+                    imagePath: 'assets/images/icons/fournitures.png',
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                     iconColor: const Color(0xFF795548),
                     title: 'Fournitures',
                     description: 'Gérez les fournitures scolaires',
@@ -1751,6 +1777,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               children: [
                 BottomSheetHeader(
                   icon: Icons.shopping_cart_rounded,
+                  imagePath: 'assets/images/icons/mes_commandes.png',
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                   iconColor: const Color(0xFF00ACC1),
                   title: 'Commandes',
                   description: 'Suivez vos commandes et achats',
@@ -1786,6 +1814,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.security_rounded,
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF9C27B0),
               title: 'Logs d\'accès',
               description: 'Consultez les logs d\'accès et sécurité',
@@ -1816,6 +1845,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.lightbulb_rounded,
+              imagePath: 'assets/images/icons/suggestions.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFFFFB300),
               title: 'Suggestions',
               description: 'Envoyez vos suggestions et feedback',
@@ -1846,6 +1877,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.event_seat_rounded,
+              imagePath: 'assets/images/icons/reservation_en_ligne.png',
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF2E7D32),
               title: 'Réservations',
               description: 'Gérez vos réservations et places',
@@ -2011,6 +2044,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   // Header
                   BottomSheetHeader(
                     icon: Icons.notifications_rounded,
+                    imagePath: 'assets/images/icons/notifications.png',
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                     iconColor: const Color(0xFF1976D2),
                     title: 'Notifications',
                     description: (_isLoadingNotifications || _isLoadingEcheance)
@@ -3884,9 +3919,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
       doubleBorderGap: doubleBorderGap,
       color: color,
-      backgroundColor: isDark
-          ? backgroundColor.withOpacity(0.15)
-          : backgroundColor,
       textColor: isDark ? Colors.white : textColor,
       actionText: actionText,
       onTap: onTap,
@@ -3980,6 +4012,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                           context: context,
                           childName: widget.child.firstName,
                           matricule: widget.child.matricule ?? _matricule ?? '',
+                          imagePath: 'assets/images/icons/consulter_demande.png',
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                         );
                       },
                     ),
@@ -4104,6 +4138,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 'Consultez les informations de scolarité',
                             primaryColor: const Color(0xFFF59E0B),
                             backgroundColor: const Color(0xFFFFFEF7),
+                            imagePath: 'assets/images/icons/echeancier_scolarite.png',
+                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                             iconColor: const Color(0xFFD97706),
                             iconData: Icons.school_rounded,
                           );
@@ -4133,6 +4169,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                         context,
                         matricule: widget.child.matricule,
                         childFullName: widget.child.fullName,
+                        imagePath: 'assets/images/icons/demande_integration.png',
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                       ),
                     ),
                   ];
@@ -4192,7 +4230,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'services_extras',
               title: 'Services scolaires',
               subtitle: 'Suivre',
-              imagePath: 'assets/images/service-scolaire.jpg',
+              imagePath: 'assets/images/icons/services_scolaires.png',
               iconData: Icons.playlist_add_check_rounded,
               color: const Color(0xFF7B1FA2),
               actionText: 'Suivre',
@@ -4204,7 +4242,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'events',
               title: 'Événements',
               subtitle: 'Voir events',
-              imagePath: 'assets/images/school-event.jpg',
+              imagePath: 'assets/images/icons/evenements_scolaires.png',
               iconData: Icons.event_rounded,
               color: const Color(0xFF3F51B5),
               actionText: 'Voir events',
@@ -4389,24 +4427,21 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
               );
             }
-
             final group1Items = [
               {
+                'overtitle': 'ÉVALUATIONS',
                 'title': 'Mes Notes',
-                'subtitle': 'Notes et évaluations',
-                'imagePath': 'assets/images/notes.jpg',
-                'iconData': null,
+                'subtitle': 'Consultez les moyennes et évaluations de votre enfant.',
+                'imagePath': 'assets/images/icons/notes.png',
                 'color': const Color(0xFF1976D2),
-                'buttonText': 'Consulter',
                 'key': 'notes',
               },
               {
+                'overtitle': 'BILAN TRIMESTRIEL',
                 'title': 'Mes bulletins',
-                'subtitle': 'Notes et évaluations',
-                'imagePath': null,
-                'iconData': Icons.assessment_rounded,
+                'subtitle': 'Accédez aux bulletins de l\'année en cours.',
+                'imagePath': 'assets/images/icons/bulletins.png',
                 'color': const Color(0xFF4CAF50),
-                'buttonText': 'Voir bulletin',
                 'key': 'bulletins',
               },
             ];
@@ -4415,7 +4450,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               {
                 'title': 'Devoirs',
                 'subtitle': 'Travail à la maison',
-                'imagePath': null,
+                'imagePath': 'assets/images/icons/devoirs.png',
                 'iconData': Icons.edit_note_rounded,
                 'color': const Color(0xFF7B1FA2),
                 'buttonText': 'Voir devoirs',
@@ -4424,7 +4459,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               {
                 'title': 'Performance scolaire',
                 'subtitle': 'Amélioration de resultats',
-                'imagePath': null,
+                'imagePath': 'assets/images/icons/performance_scolaire.png',
                 'iconData': Icons.psychology_rounded,
                 'color': const Color(0xFF9C27B0),
                 'buttonText': 'Voir difficultés',
@@ -4450,16 +4485,72 @@ class _ChildListScreenState extends State<ChildListScreen>
               },
             ];
 
+            final cardWidth = screenWidth > 600 ? 340.0 : screenWidth * 0.75;
+            final cardHeight = cardWidth * 0.45; // Ratio plus réduit pour une image moins haute
+            final containerHeight = cardHeight + 65.0; // Espace pour le texte ajusté
+
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                buildGroupContainer(group1Items),
+                SizedBox(
+                  height: containerHeight,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: group1Items.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                    itemBuilder: (context, index) {
+                      final item = group1Items[index];
+                      return ImageMenuCardExternalTitle(
+                        index: index,
+                        cardKey: item['key'] as String,
+                        overtitle: item['overtitle'] as String,
+                        title: item['title'] as String,
+                        subtitle: item['subtitle'] as String,
+                        imagePath: item['imagePath'] as String?,
+                        width: cardWidth,
+                        height: null, // null permet à Column de prendre la hauteur de l'image + texte
+                        imageHeight: cardHeight,
+                        imageBorderRadius: 16.0,
+                        enableInnerBorder: true,
+                        enableOuterBorder: true,
+                        innerBorderWidth: 0.5, // Très petit contour
+                        outerBorderWidth: 0.5,
+                        innerBorderColor: (item['color'] as Color).withOpacity(0.3),
+                        color: item['color'] as Color,
+                        onTap: () {
+                          if (item['key'] == 'notes') {
+                            if (_matricule != null && _anneeId != null && _classeId != null) {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => NotesScreenJson(
+                                  matricule: _matricule!,
+                                  anneeId: _anneeId!.toString(),
+                                  classeId: _classeId!.toString(),
+                                  anneeLibelle: 'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+                                  ecoleId: _ecoleId?.toString(),
+                                ),
+                              ));
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Informations élève non disponibles')),
+                              );
+                            }
+                          } else if (item['key'] == 'bulletins') {
+                            _showBulletinsBottomSheet();
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
                 EstablishmentActionSection(
                   actions: [
                     EstablishmentAction(
                       key: 'timetable',
                       title: 'Emploi du temps',
                       subtitle: 'Planning des cours',
-                      imagePath: 'assets/images/emploi-du-temps.jpg',
+                      imagePath: 'assets/images/icons/emploi_du_temps.png',
                       iconData: null,
                       color: const Color(0xFFF57C00),
                       actionText: 'Voir emploi',
@@ -4471,7 +4562,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       key: 'attendance',
                       title: 'Présence & Conduite',
                       subtitle: 'Suivi des absences et retards',
-                      imagePath: 'assets/images/messages.jpg',
+                      imagePath: 'assets/images/icons/presence_conduite.png',
                       iconData: null,
                       color: const Color(0xFF00796B),
                       actionText: 'Voir présence',
@@ -4483,7 +4574,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       key: 'sanctions',
                       title: 'Sanctions',
                       subtitle: 'Rapports de comportement',
-                      imagePath: null,
+                      imagePath: 'assets/images/icons/sanctions.png',
                       iconData: Icons.warning_rounded,
                       color: const Color(0xFFD32F2F),
                       actionText: 'Voir sanctions',
@@ -4519,7 +4610,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'communication',
               title: 'Messages',
               subtitle: 'Voir messages',
-              imagePath: 'assets/images/messages.jpg',
+              imagePath: 'assets/images/icons/messages.png',
               iconData: Icons.message_rounded,
               color: const Color(0xFF0288D1),
               actionText: 'Voir messages',
@@ -4551,6 +4642,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'notifications',
               title: 'Notifications',
               subtitle: 'Voir alertes',
+              imagePath: 'assets/images/icons/notifications.png',
               iconData: Icons.notifications_active_rounded,
               color: const Color(0xFFE53935),
               actionText: 'Voir notifications',
@@ -4565,7 +4657,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               title: 'Suggestions',
               subtitle: 'Voir suggestions',
               iconData: Icons.lightbulb_rounded,
-              imagePath: 'assets/images/suggestion.jpg',
+              imagePath: 'assets/images/icons/suggestions.png',
               color: const Color(0xFFFFB300),
               actionText: 'Voir suggestions',
               onTap: () async {
@@ -4595,7 +4687,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'niveaux',
               title: 'Fournitures',
               subtitle: 'Voir liste',
-              imagePath: 'assets/images/foutnitures-scolaire.jpg',
+              imagePath: 'assets/images/icons/fournitures.png',
               iconData: Icons.inventory_2_rounded,
               color: const Color(0xFF795548),
               actionText: 'Voir liste',
@@ -4605,7 +4697,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'consult_requests',
               title: 'Commandes',
               subtitle: 'Voir commandes',
-              imagePath: 'assets/images/mes-commandes.jpg',
+              imagePath: 'assets/images/icons/mes_commandes.png',
               iconData: Icons.shopping_cart_rounded,
               color: const Color(0xFF00ACC1),
               actionText: 'Voir commandes',
@@ -4615,7 +4707,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'tickets',
               title: 'Tickets',
               subtitle: 'Voir tickets',
-              imagePath: 'assets/images/ticket.jpg',
+              imagePath: 'assets/images/icons/tickets.png',
               iconData: Icons.confirmation_number_rounded,
               color: const Color(0xFFE91E63),
               actionText: 'Voir tickets',
@@ -4632,7 +4724,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'tuteur_adom',
               title: 'Tuteur Adom',
               subtitle: 'Voir tuteur',
-              imagePath: 'assets/images/tuteur-adom.jpg',
+              imagePath: 'assets/images/icons/tuteur_adom.png',
               iconData: Icons.person_search_rounded,
               color: const Color(0xFF9C27B0),
               actionText: 'Voir tuteur',
@@ -4682,6 +4774,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       childName: widget.child.firstName,
       matricule: _matricule,
+      imagePath: 'assets/images/icons/reservation_en_ligne.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
       debutReservation: debutReservation,
       finReservation: finReservation,
       montantReservation: montantReservation,
@@ -4749,6 +4843,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       title: 'Paiement de scolarité',
       description: 'Réglez la scolarité de ${widget.child.firstName}',
       icon: Icons.account_balance_wallet,
+      imagePath: 'assets/images/icons/paiement_scolarite.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
       // On ne passe pas debutReservation ni finReservation pour désactiver la vérification
       onPayment: (montant, matricule) async {
         // Créer des fonctions factices pour setState et setLoading
@@ -4798,6 +4894,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       childName: widget.child.fullName,
       matricule: matricule,
       ecoleCode: ecoleCode,
+      imagePath: 'assets/images/icons/historique_paiement.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
     );
   }
 
@@ -5012,12 +5110,21 @@ class _ChildListScreenState extends State<ChildListScreen>
     final cards = _buildAvailableSummaryCards();
     if (cards.isEmpty) return const SizedBox.shrink();
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isTablet = screenWidth > 600;
+    // Padding: 8*2 (Container) + 4*2 (ListView) = 24
+    // Gaps: (cards.length - 1) * 10
+    final double cardWidth = isTablet
+        ? (screenWidth - 24 - (cards.length - 1) * 10) / cards.length
+        : 90.0;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: SizedBox(
         height: 86,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
+          physics: isTablet ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           itemCount: cards.length,
           itemBuilder: (context, index) {
@@ -5030,7 +5137,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 child: Opacity(opacity: value, child: child),
               ),
               child: Container(
-                width: 90,
+                width: cardWidth,
                 margin: EdgeInsets.only(
                   right: index < cards.length - 1 ? 10.0 : 0.0,
                 ),
@@ -12517,6 +12624,9 @@ class _ExtraScolaireSheetContent extends StatefulWidget {
   final String matricule;
   final String childName;
   final TextSizeService textSizeService;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
   const _ExtraScolaireSheetContent({
     required this.isDark,
@@ -12524,6 +12634,9 @@ class _ExtraScolaireSheetContent extends StatefulWidget {
     required this.matricule,
     required this.childName,
     required this.textSizeService,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
   });
 
   @override
@@ -12652,84 +12765,15 @@ class _ExtraScolaireSheetContentState
       ),
       child: Column(
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4.5,
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              decoration: BoxDecoration(
-                color: widget.isDark ? Colors.grey[800] : Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: const Color(
-                      0xFF7B1FA2,
-                    ).withOpacity(widget.isDark ? 0.2 : 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.playlist_add_check_rounded,
-                    color: Color(0xFF7B1FA2),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Services scolaires',
-                        style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(
-                            18,
-                          ),
-                          fontWeight: FontWeight.bold,
-                          color: themeHeaderColor,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Suivi de ${widget.childName}',
-                        style: TextStyle(
-                          fontSize: widget.textSizeService.getScaledFontSize(
-                            12,
-                          ),
-                          color: AppColors.screenTextSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: widget.isDark
-                          ? Colors.grey[900]
-                          : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.close, size: 16),
-                  ),
-                ),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.playlist_add_check_rounded,
+            imagePath: widget.imagePath,
+            imageBackgroundColor: widget.imageBackgroundColor,
+            imageBorderRadius: widget.imageBorderRadius,
+            iconColor: const Color(0xFF7B1FA2),
+            title: 'Services scolaires',
+            description: 'Suivi de ${widget.childName}',
+            onClose: () => Navigator.of(context).pop(),
           ),
           const Divider(height: 1, thickness: 1),
 

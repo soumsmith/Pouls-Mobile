@@ -9,35 +9,14 @@ import android.view.WindowInsetsController
 import android.view.View
 import android.graphics.Color
 
+import androidx.core.view.WindowCompat
+
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Enable edge-to-edge display for Android 15+ (SDK 35) and backward compatibility
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // For Android 11+ (R) and above
-            window.setDecorFitsSystemWindows(false)
-            
-            // Set system bar colors to transparent for edge-to-edge
-            window.statusBarColor = Color.TRANSPARENT
-            window.navigationBarColor = Color.TRANSPARENT
-            
-            // Configure system UI visibility
-            val controller = window.insetsController
-            controller?.let {
-                it.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE)
-                it.show(WindowInsets.Type.systemBars())
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // For Android 5.0+ (LOLLIPOP) to Android 10
-            window.statusBarColor = Color.TRANSPARENT
-            window.navigationBarColor = Color.TRANSPARENT
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
-        }
+        // Setup modern edge-to-edge display (resolves Android 15 / SDK 35 warnings)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
     }
     
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

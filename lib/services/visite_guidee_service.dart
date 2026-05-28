@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/visite_guidee_video.dart';
+import '../config/app_config.dart';
 
 class VisiteGuideeService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api/vie-ecoles';
+  static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles';
 
   static Future<List<VisiteGuideeVideo>> getVideosByEcole(String ecoleCode) async {
     try {

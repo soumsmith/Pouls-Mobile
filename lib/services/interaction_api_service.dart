@@ -4,7 +4,7 @@ import 'auth_service.dart';
 
 /// Service pour la gestion des interactions (commentaires, partages, notes) via l'API vie-ecoles
 class InteractionApiService {
-  static const String _baseUrl = 'https://api2.vie-ecoles.com/api';
+  // L'URL de base est gérée par HttpService qui utilise AppConfig
 
   /// Créer une nouvelle interaction (commentaire, partage, note)
   ///

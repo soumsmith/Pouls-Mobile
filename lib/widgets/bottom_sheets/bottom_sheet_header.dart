@@ -1,7 +1,12 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../config/app_colors.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final IconData icon;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
   final Color iconColor;
   final String title;
   final String description;
@@ -19,6 +24,9 @@ class BottomSheetHeader extends StatelessWidget {
   const BottomSheetHeader({
     Key? key,
     required this.icon,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
     required this.iconColor,
     required this.title,
     required this.description,
@@ -64,13 +72,21 @@ class BottomSheetHeader extends StatelessWidget {
               children: [
                 // Icon container with subtle background
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: imagePath != null ? 44 : 36,
+                  height: imagePath != null ? 44 : 36,
+                  padding: imagePath != null ? const EdgeInsets.all(4) : null,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: imagePath != null 
+                        ? AppColors.actionMenuCardBg(context) 
+                        : (imageBackgroundColor ?? iconColor.withOpacity(0.15)),
+                    borderRadius: BorderRadius.circular(imagePath != null ? (imageBorderRadius ?? 14) : 10),
                   ),
-                  child: Icon(icon, color: iconColor, size: iconSize ?? 18),
+                  child: imagePath != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(math.max(0.0, (imageBorderRadius ?? 14.0) - 4.0)),
+                          child: Image.asset(imagePath!, fit: BoxFit.contain),
+                        )
+                      : Icon(icon, color: iconColor, size: iconSize ?? 18),
                 ),
 
                 const SizedBox(width: 8),

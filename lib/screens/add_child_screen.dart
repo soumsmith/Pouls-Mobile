@@ -116,6 +116,7 @@ class _AddChildScreenState extends State<AddChildScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => RecommendationBottomSheet(
+        icon: Icons.recommend_rounded,
         accentColor: AppColors.screenOrange,
         recommenderNameController: _recommenderNameController,
         etablissementController: _etablissementController,

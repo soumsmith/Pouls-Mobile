@@ -23,6 +23,8 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_row_widget.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/snackbar.dart';
+import '../widgets/skeleton_box.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -811,11 +813,22 @@ class _LibraryScreenState extends State<LibraryScreen>
   // ─── GRID ──────────────────────────────────────────────────────────────────
   Widget _buildGrid() {
     if (_isLoading) {
-      return CustomLoader(
-        message: 'Chargement des produits...',
-        loaderColor: AppColors.shopGreen,
-        backgroundColor: AppColors.screenSurface,
-        showBackground: false,
+      return GridView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _getCrossAxisCount(context),
+          crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
+              (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+                      AppDimensions.isLandscape(context))
+                  ? 1.8
+                  : 1.0),
+          mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+          mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
+        ),
+        itemCount: 16,
+        itemBuilder: (context, index) {
+          return const SkeletonBox();
+        },
       );
     }
 

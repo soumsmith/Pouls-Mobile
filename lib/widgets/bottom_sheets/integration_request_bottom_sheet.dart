@@ -25,11 +25,17 @@ class IntegrationRequestBottomSheet extends StatefulWidget {
 
   /// Nom complet de l'élève (utilisé dans les labels).
   final String? childFullName;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
   const IntegrationRequestBottomSheet({
     super.key,
     this.matricule,
     this.childFullName,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
   });
 
   // ── Méthode statique d'affichage ──────────────────────────────────────────
@@ -47,6 +53,9 @@ class IntegrationRequestBottomSheet extends StatefulWidget {
     BuildContext context, {
     String? matricule,
     String? childFullName,
+    String? imagePath,
+    Color? imageBackgroundColor,
+    double? imageBorderRadius,
   }) {
     showModalBottomSheet(
       context: context,
@@ -55,6 +64,9 @@ class IntegrationRequestBottomSheet extends StatefulWidget {
       builder: (_) => IntegrationRequestBottomSheet(
         matricule: matricule,
         childFullName: childFullName,
+        imagePath: imagePath,
+        imageBackgroundColor: imageBackgroundColor,
+        imageBorderRadius: imageBorderRadius,
       ),
     );
   }
@@ -183,6 +195,9 @@ class _IntegrationRequestBottomSheetState
           // ── En-tête du bottom sheet ──────────────────────────────────────
           BottomSheetHeader(
             icon: Icons.school_rounded,
+            imagePath: widget.imagePath,
+            imageBackgroundColor: widget.imageBackgroundColor,
+            imageBorderRadius: widget.imageBorderRadius,
             iconColor: const Color(0xFF1565C0),
             title: 'Consultation demande',
             description: 'Vérifier le statut d\'intégration scolaire',

@@ -3,9 +3,10 @@ import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 import '../models/ticket_category.dart';
 import '../models/user_ticket.dart';
+import '../config/app_config.dart';
 
 class TicketService {
-  static const String baseUrl = 'https://api2.vie-ecoles.com/api';
+  static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
   static String _parseError(http.Response response) {
     String errorMessage = 'Erreur HTTP ${response.statusCode}';

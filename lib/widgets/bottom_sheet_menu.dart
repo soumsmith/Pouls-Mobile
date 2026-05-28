@@ -12,6 +12,7 @@ import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
+import '../config/app_config.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
@@ -77,7 +78,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
     final user = AuthService.instance.getCurrentUser();
     if (user != null && user.phone.isNotEmpty) {
       try {
-        final url = 'https://api2.vie-ecoles.com/api/vie-ecoles/billetterie/ticket-commande/${user.phone}';
+        final url = '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/billetterie/ticket-commande/${user.phone}';
         final response = await http.get(Uri.parse(url));
         if (response.statusCode == 200) {
           final data = json.decode(response.body);

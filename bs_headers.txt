@@ -1,0 +1,170 @@
+1084-        child: Column(
+1085-          children: [
+1086:            BottomSheetHeader(
+1087-              icon: Icons.bar_chart_rounded,
+1088-              iconColor: const Color(0xFF1976D2),
+1089-              title: 'Mes Notes',
+1090-              description: 'Consultez les notes et évaluations de votre enfant',
+1091-              onClose: () => Navigator.of(context).pop(),
+--
+1130-            child: Column(
+1131-              children: [
+1132:                BottomSheetHeader(
+1133-                  icon: Icons.description_rounded,
+1134-                  iconColor: const Color(0xFF2E7D32),
+1135-                  title: 'Bulletins',
+1136-                  description: 'Accédez aux bulletins trimestriels et annuels',
+1137-                  onClose: () => Navigator.of(context).pop(),
+--
+1217-            child: Column(
+1218-              children: [
+1219:                BottomSheetHeader(
+1220-                  icon: Icons.calendar_today_rounded,
+1221-                  iconColor: const Color(0xFFF57C00),
+1222-                  title: 'Emploi du temps',
+1223-                  description: 'Consultez l\'emploi du temps et les horaires',
+1224-                  onClose: () => Navigator.of(context).pop(),
+--
+1252-        child: Column(
+1253-          children: [
+1254:            BottomSheetHeader(
+1255-              icon: Icons.edit_note_rounded,
+1256-              iconColor: const Color(0xFF7B1FA2),
+1257-              title: 'Devoirs',
+1258-              description: 'Suivez les devoirs et exercices à faire',
+1259-              onClose: () => Navigator.of(context).pop(),
+--
+1282-        child: Column(
+1283-          children: [
+1284:            BottomSheetHeader(
+1285-              icon: Icons.trending_up_rounded,
+1286-              iconColor: const Color(0xFF1976D2),
+1287-              title: 'Progression',
+1288-              description: 'Suivi de la progression',
+1289-              onClose: () => Navigator.of(context).pop(),
+--
+1317-        child: Column(
+1318-          children: [
+1319:            BottomSheetHeader(
+1320-              icon: Icons.assignment_rounded,
+1321-              iconColor: const Color(0xFF2E7D32),
+1322-              title: 'Programme de devoirs',
+1323-              description: 'Planning des devoirs',
+1324-              onClose: () => Navigator.of(context).pop(),
+--
+1366-            child: Column(
+1367-              children: [
+1368:                BottomSheetHeader(
+1369-                  icon: Icons.person_off_rounded,
+1370-                  iconColor: const Color(0xFF00796B),
+1371-                  title: 'Présence',
+1372-                  description: 'Vérifiez la présence et la conduite',
+1373-                  onClose: () => Navigator.of(context).pop(),
+--
+1416-            child: Column(
+1417-              children: [
+1418:                BottomSheetHeader(
+1419-                  icon: Icons.fingerprint_rounded,
+1420-                  iconColor: const Color(0xFFC2185B),
+1421-                  title: 'Contrôle d\'accès',
+1422-                  description: 'Contrôlez les accès et les pointages',
+1423-                  onClose: () {
+--
+1477-        child: Column(
+1478-          children: [
+1479:            BottomSheetHeader(
+1480-              icon: Icons.warning_rounded,
+1481-              iconColor: const Color(0xFFD32F2F),
+1482-              title: 'Sanctions',
+1483-              description: 'Consultez les sanctions et avertissements',
+1484-              onClose: () => Navigator.of(context).pop(),
+--
+1507-        child: Column(
+1508-          children: [
+1509:            BottomSheetHeader(
+1510-              icon: Icons.message_rounded,
+1511-              iconColor: const Color(0xFF0288D1),
+1512-              title: 'Messages',
+1513-              description: 'Lisez les messages et communications',
+1514-              onClose: () => Navigator.of(context).pop(),
+--
+1537-        child: Column(
+1538-          children: [
+1539:            BottomSheetHeader(
+1540-              icon: Icons.psychology_rounded,
+1541-              iconColor: const Color(0xFF9C27B0),
+1542-              title: 'Difficultés',
+1543-              description: 'Suivez les difficultés et le soutien',
+1544-              onClose: () => Navigator.of(context).pop(),
+--
+1567-        child: Column(
+1568-          children: [
+1569:            BottomSheetHeader(
+1570-              icon: Icons.event_rounded,
+1571-              iconColor: const Color(0xFF3F51B5),
+1572-              title: 'Événements',
+1573-              description: 'Participez aux événements et activités',
+1574-              onClose: () => Navigator.of(context).pop(),
+--
+1648-              child: Column(
+1649-                children: [
+1650:                  BottomSheetHeader(
+1651-                    icon: Icons.inventory_2_rounded,
+1652-                    iconColor: const Color(0xFF795548),
+1653-                    title: 'Fournitures',
+1654-                    description: 'Gérez les fournitures scolaires',
+1655-                    onClose: () => Navigator.of(context).pop(),
+--
+1750-            child: Column(
+1751-              children: [
+1752:                BottomSheetHeader(
+1753-                  icon: Icons.shopping_cart_rounded,
+1754-                  iconColor: const Color(0xFF00ACC1),
+1755-                  title: 'Commandes',
+1756-                  description: 'Suivez vos commandes et achats',
+1757-                  onClose: () => Navigator.of(context).pop(),
+--
+1785-        child: Column(
+1786-          children: [
+1787:            BottomSheetHeader(
+1788-              icon: Icons.security_rounded,
+1789-              iconColor: const Color(0xFF9C27B0),
+1790-              title: 'Logs d\'accès',
+1791-              description: 'Consultez les logs d\'accès et sécurité',
+1792-              onClose: () => Navigator.of(context).pop(),
+--
+1815-        child: Column(
+1816-          children: [
+1817:            BottomSheetHeader(
+1818-              icon: Icons.lightbulb_rounded,
+1819-              iconColor: const Color(0xFFFFB300),
+1820-              title: 'Suggestions',
+1821-              description: 'Envoyez vos suggestions et feedback',
+1822-              onClose: () => Navigator.of(context).pop(),
+--
+1845-        child: Column(
+1846-          children: [
+1847:            BottomSheetHeader(
+1848-              icon: Icons.event_seat_rounded,
+1849-              iconColor: const Color(0xFF2E7D32),
+1850-              title: 'Réservations',
+1851-              description: 'Gérez vos réservations et places',
+1852-              onClose: () => Navigator.of(context).pop(),
+--
+2010-                children: [
+2011-                  // Header
+2012:                  BottomSheetHeader(
+2013-                    icon: Icons.notifications_rounded,
+2014-                    iconColor: const Color(0xFF1976D2),
+2015-                    title: 'Notifications',
+2016-                    description: (_isLoadingNotifications || _isLoadingEcheance)
+2017-                        ? 'Chargement en cours...'
+--
+3100-          child: Column(
+3101-            children: [
+3102:              BottomSheetHeader(
+3103-                icon: Icons.info_outline,
+3104-                title: 'Informations complètes',
+3105-                description: 'Détails complets sur l\'élève et sa scolarité',
+3106-                iconColor: Colors.blue,
+3107-                onClose: () => Navigator.of(context).pop(),

@@ -11,6 +11,9 @@ class PaiementHistoriqueBottomSheet {
     required String childName,
     required String matricule,
     required String ecoleCode,
+    String? imagePath,
+    Color? imageBackgroundColor,
+    double? imageBorderRadius,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
@@ -22,6 +25,9 @@ class PaiementHistoriqueBottomSheet {
         childName: childName,
         matricule: matricule,
         ecoleCode: ecoleCode,
+        imagePath: imagePath,
+        imageBackgroundColor: imageBackgroundColor,
+        imageBorderRadius: imageBorderRadius,
         isDark: isDark,
       ),
     );
@@ -47,12 +53,18 @@ class _PaiementHistoriqueSheetContent extends StatefulWidget {
   final String childName;
   final String matricule;
   final String ecoleCode;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
   final bool isDark;
 
   const _PaiementHistoriqueSheetContent({
     required this.childName,
     required this.matricule,
     required this.ecoleCode,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
     required this.isDark,
   });
 
@@ -113,6 +125,9 @@ class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueShee
             BottomSheetHeader(
               icon: Icons.history_rounded,
               iconColor: AppColors.screenOrange,
+              imagePath: widget.imagePath,
+              imageBackgroundColor: widget.imageBackgroundColor,
+              imageBorderRadius: widget.imageBorderRadius,
               title: 'Historique des paiements',
               description: widget.childName,
               onClose: () => Navigator.of(context).pop(),

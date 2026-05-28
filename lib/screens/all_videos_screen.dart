@@ -7,7 +7,9 @@ import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../config/app_colors.dart';
+import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
+import '../widgets/skeleton_box.dart';
 import 'coulisse_video_feed_screen.dart';
 
 class AllVideosScreen extends StatefulWidget {
@@ -121,9 +123,25 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                 ),
               ),
               if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(),
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: AppDimensions.getEcolesGridColumns(context),
+                      mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
+                      crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
+                          (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+                                  AppDimensions.isLandscape(context))
+                              ? 1.8
+                              : 1.0),
+                      mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return const SkeletonBox();
+                      },
+                      childCount: 16,
+                    ),
                   ),
                 )
               else if (_error != null)

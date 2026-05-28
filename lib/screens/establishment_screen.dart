@@ -43,11 +43,13 @@ class _ActionDef {
   final String label;
   final String subtitle;
   final Color color;
+  final String? imagePath;
   const _ActionDef({
     required this.icon,
     required this.label,
     required this.subtitle,
     required this.color,
+    this.imagePath,
   });
 }
 
@@ -57,12 +59,14 @@ const _kActions = <String, _ActionDef>{
     label: 'Intégrer',
     subtitle: 'Inscrire',
     color: Color(0xFFF59E0B),
+    imagePath: 'assets/images/icons/demande_integration.png',
   ),
   'rating': _ActionDef(
     icon: Icons.star_rate_rounded,
     label: 'Noter',
     subtitle: 'Évaluer',
     color: Color(0xFF10B981),
+    imagePath: 'assets/images/icons/note-avis.png',
   ),
   'sponsorship': _ActionDef(
     icon: Icons.card_giftcard_rounded,
@@ -81,12 +85,14 @@ const _kActions = <String, _ActionDef>{
     label: 'Recommander',
     subtitle: 'Suggérer',
     color: Color(0xFF8B5CF6),
+    imagePath: 'assets/images/icons/recommander_une_ecole.png',
   ),
   'events': _ActionDef(
     icon: Icons.event_rounded,
     label: 'Événements',
     subtitle: 'Découvrir',
     color: Color(0xFF6366F1),
+    imagePath: 'assets/images/icons/evenements_scolaires.png',
   ),
 };
 
@@ -1135,7 +1141,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             cardKey: 'integration',
             title: 'Demande\nintégration',
             actionText: '',
-            imagePath: 'assets/images/icons/integration.png',
+            imagePath: 'assets/images/icons/demande_integration.png',
             color: AppColors.cardLightGrey,
             backgroundColor: const Color(0xFFF7FEFC),
             textColor: const Color(0xFF333333),
@@ -1152,7 +1158,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             cardKey: 'rating',
             title: 'Donner un\navis',
             actionText: '',
-            imagePath: 'assets/images/avis-2.jpg',
+            imagePath: 'assets/images/icons/note-avis.png',
             color: AppColors.cardLightGrey,
             backgroundColor: const Color(0xFFFFFEF7),
             textColor: const Color(0xFF333333),
@@ -1166,7 +1172,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             cardKey: 'recommend',
             title: 'Proposer\nune école',
             actionText: '',
-            imagePath: 'assets/images/ecole.jpg',
+            imagePath: 'assets/images/icons/recommander_une_ecole.png',
             color: AppColors.cardLightGrey,
             backgroundColor: const Color(0xFFE3F2FD),
             textColor: const Color(0xFF333333),
@@ -1181,7 +1187,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             cardKey: 'events',
             title: 'Événement\nscolaire',
             actionText: '',
-            imagePath: 'assets/images/school-event.jpg',
+            imagePath: 'assets/images/icons/evenements_scolaires.png',
             color: AppColors.cardLightGrey,
             backgroundColor: const Color(0xFFFCFAFF),
             textColor: const Color(0xFF333333),
@@ -1220,7 +1226,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       imagePath: imagePath,
       isDark: isDark,
       titleFontSize: AppDimensions.getScaledSize(context, 11.0),
-      imageBorderRadius: 16.0, // Bords arrondis pour avoir une image carrée
+      imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
       centerTitle: true,
       color: color,
       backgroundColor: isDark ? backgroundColor.withOpacity(0.15) : backgroundColor,
@@ -1622,8 +1628,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     if (actionType == 'integration') {
       showIntegrationBottomSheet(
         context: context,
-        imagePath: 'assets/images/icons/demande_integration.png',
-        imageBackgroundColor: const Color(0xFFF7FEFC),
+        imagePath: def.imagePath ?? 'assets/images/icons/demande_integration.png',
+        imageBackgroundColor: def.color.withOpacity(0.1),
         imageBorderRadius: AppDimensions.getImageBorderRadius(context),
         onSuccess: (demandeUid) {},
         onError: (error) {},
@@ -1637,7 +1643,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         schoolId: 'general',
         schoolName: 'Établissements',
         schoolColor: def.color,
-        // Since we don't have a specific image for rating, we leave imagePath null to fallback to icon
+        imagePath: def.imagePath,
+        imageBackgroundColor: def.color.withOpacity(0.1),
+        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
         onRatingSubmitted: (rating, comment) async {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1656,15 +1664,16 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => Padding(
-          padding: MediaQuery.of(context).viewInsets,
-          child: RecommendationBottomSheet(
-            accentColor: def.color,
-            recommenderNameController: _recommenderNameController,
-            etablissementController: _etablissementController,
-            paysRecommendController: _paysRecommendController,
-            villeRecommendController: _villeRecommendController,
-            parentNomController: _parentNomController,
+        builder: (context) => RecommendationBottomSheet(
+          accentColor: def.color,
+          imagePath: def.imagePath,
+          imageBackgroundColor: def.color.withOpacity(0.1),
+          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+          recommenderNameController: _recommenderNameController,
+          etablissementController: _etablissementController,
+          paysRecommendController: _paysRecommendController,
+          villeRecommendController: _villeRecommendController,
+          parentNomController: _parentNomController,
             parentPrenomController: _parentPrenomController,
             parentTelephoneController: _parentTelephoneController,
             parentEmailController: _parentEmailController,
@@ -1719,7 +1728,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               }
             },
           ),
-        ),
       );
       return;
     }

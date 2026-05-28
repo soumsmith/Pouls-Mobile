@@ -238,7 +238,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
             child: _buildProgressIndicator(),
           ),
 
-          Expanded(
+          Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(

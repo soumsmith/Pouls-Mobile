@@ -199,11 +199,13 @@ class _ActionDef {
   final String label;
   final String subtitle;
   final Color color;
+  final String? imagePath;
   const _ActionDef({
     required this.icon,
     required this.label,
     required this.subtitle,
     required this.color,
+    this.imagePath,
   });
 }
 
@@ -213,6 +215,7 @@ const _kActions = <String, _ActionDef>{
     label: 'Intégrer',
     subtitle: 'Inscrire',
     color: Color(0xFFF59E0B),
+    imagePath: 'assets/images/icons/demande_integration.png',
   ),
   'rating': _ActionDef(
     icon: Icons.star_rate_rounded,
@@ -225,30 +228,35 @@ const _kActions = <String, _ActionDef>{
     label: 'Informations',
     subtitle: 'Détails',
     color: Color(0xFF3B82F6),
+    imagePath: 'assets/images/icons/informations_ecole.png',
   ),
   'communication': _ActionDef(
     icon: Icons.chat_rounded,
     label: 'Communication',
     subtitle: 'Annonces',
     color: Color(0xFF10B981),
+    imagePath: 'assets/images/icons/actualites.png',
   ),
   'niveaux': _ActionDef(
     icon: Icons.layers_rounded,
     label: 'Niveaux',
     subtitle: 'Classes',
     color: Color(0xFFF59E0B),
+    imagePath: 'assets/images/icons/niveaux_scolaires.png',
   ),
   'school_events': _ActionDef(
     icon: Icons.event_rounded,
     label: 'Événements',
     subtitle: 'Calendrier',
     color: Color(0xFF8B5CF6),
+    imagePath: 'assets/images/icons/evenements_scolaires.png',
   ),
   'scolarite': _ActionDef(
     icon: Icons.school_rounded,
     label: 'Scolarité',
     subtitle: 'Frais',
     color: Color(0xFFEF4444),
+    imagePath: 'assets/images/icons/scolarite_tarifs.png',
   ),
   'voir_les_avis': _ActionDef(
     icon: Icons.grade_rounded,
@@ -261,12 +269,14 @@ const _kActions = <String, _ActionDef>{
     label: 'Consulter une demande',
     subtitle: 'Consulter',
     color: Color(0xFF06B6D4),
+    imagePath: 'assets/images/icons/consulter_une_demande_etablissement.png',
   ),
   'galeries': _ActionDef(
     icon: Icons.photo_library_rounded,
     label: 'Galeries',
     subtitle: 'Photos',
     color: Color(0xFF00796B),
+    imagePath: 'assets/images/icons/galeries_photos.png',
   ),
   'coulisses': _ActionDef(
     icon: Icons.star_rounded,
@@ -3249,6 +3259,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         builder: (context) => SchoolEventBottomSheet(
           schoolCode: widget.ecole.parametreCode,
           schoolName: widget.ecole.parametreNom,
+          imagePath: def.imagePath ?? 'assets/images/icons/evenements_scolaires.png',
+          imageBackgroundColor: def.color,
+          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
         ),
       );
       return; // On arrête ici pour ce cas
@@ -3323,6 +3336,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   children: [
                     BottomSheetHeader(
                       icon: def.icon,
+                      imagePath: def.imagePath,
+                      imageBackgroundColor: def.color,
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                       iconColor: def.color,
                       title: def.label,
                       description: def.subtitle,
@@ -6976,73 +6992,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.grey300Adaptive(context),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.miscellaneous_services_rounded,
-                    color: Colors.purple,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Services complémentaires',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimaryThemed(context),
-                        ),
-                      ),
-                      Text(
-                        'Options et services additionnels',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.screenTextSecondaryThemed(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.grey100Adaptive(context),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 20,
-                      color: AppColors.grey666Adaptive(context),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          BottomSheetHeader(
+            icon: Icons.miscellaneous_services_rounded,
+            imagePath: 'assets/images/icons/services_complementaires.png',
+            imageBackgroundColor: Colors.purple,
+            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+            iconColor: Colors.purple,
+            title: 'Services complémentaires',
+            description: 'Options et services additionnels',
+            onClose: () => Navigator.of(context).pop(),
           ),
           Expanded(
             child: SingleChildScrollView(

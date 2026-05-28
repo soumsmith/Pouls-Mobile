@@ -11,11 +11,17 @@ import 'package:parents_responsable/widgets/custom_loader.dart';
 class SchoolEventBottomSheet extends StatefulWidget {
   final String schoolCode;
   final String schoolName;
+  final String? imagePath;
+  final Color? imageBackgroundColor;
+  final double? imageBorderRadius;
 
   const SchoolEventBottomSheet({
     super.key,
     required this.schoolCode,
     required this.schoolName,
+    this.imagePath,
+    this.imageBackgroundColor,
+    this.imageBorderRadius,
   });
 
   @override
@@ -125,6 +131,9 @@ class _SchoolEventBottomSheetState extends State<SchoolEventBottomSheet> {
         children: [
           BottomSheetHeader(
             icon: Icons.event_rounded,
+            imagePath: widget.imagePath,
+            imageBackgroundColor: widget.imageBackgroundColor,
+            imageBorderRadius: widget.imageBorderRadius,
             iconColor: themeColor,
             title: 'Événements scolaires',
             description: 'Calendrier des activités',

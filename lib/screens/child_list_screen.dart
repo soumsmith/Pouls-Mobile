@@ -4256,6 +4256,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                     builder: (context) => SchoolEventBottomSheet(
                       schoolCode: schoolCode,
                       schoolName: widget.child.establishment,
+                      imagePath: 'assets/images/icons/evenements_scolaires.png',
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                     ),
                   );
                 } else {

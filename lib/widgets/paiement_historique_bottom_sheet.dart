@@ -324,12 +324,13 @@ class _PaymentCard extends StatelessWidget {
         curve: Curves.easeInOut,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: cardBgColor,
+          color: isExpanded
+              ? Colors.green.withOpacity(isDark ? 0.15 : 0.05)
+              : cardBgColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isExpanded ? borderColor : Colors.transparent,
-            width: 1.2,
-          ),
+          border: isExpanded
+              ? Border.all(color: Colors.green.withOpacity(0.8), width: 1.2)
+              : Border.all(color: Colors.transparent, width: 1.2),
           boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: ClipRRect(
@@ -360,7 +361,7 @@ class _PaymentCard extends StatelessWidget {
                       isExpanded 
                           ? Icons.keyboard_arrow_up_rounded 
                           : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.screenOrange,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                       size: 24,
                     ),
                   ],

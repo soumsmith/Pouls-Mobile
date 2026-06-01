@@ -23,6 +23,8 @@ import '../services/order_service.dart';
 import '../models/order.dart';
 import '../services/auth_service.dart';
 import '../services/message_service.dart';
+import '../services/mock_api_service.dart';
+import '../services/remote_api_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_config.dart';
@@ -58,6 +60,8 @@ import '../widgets/establishment_action_cards.dart' hide SchoolLifeItemCard;
 import '../models/parent_suggestion.dart';
 import '../services/parent_suggestion_service.dart';
 import '../services/access_log_service.dart';
+import '../widgets/filter_row_widget.dart';
+import '../widgets/search_bar_widget.dart';
 import '../services/echeance_service.dart';
 import '../models/echeance_notification.dart';
 import '../models/access_log.dart';
@@ -349,6 +353,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   StateSetter? _ordersModalSetState;
   String? _expandedOrderId;
   String _ordersStatusFilter = 'Tous';
+  bool _isOrdersSearching = false;
+  final TextEditingController _ordersSearchController = TextEditingController();
 
   // Variables pour le contrôle d'accès
   List<AccessControlEntry> _accessEntries = [];
@@ -595,7 +601,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     });
 
     try {
-      final apiService = MainScreenWrapper.of(context).apiService;
+      final wrapper = MainScreenWrapper.maybeOf(context);
+      final apiService = wrapper?.apiService ?? (AppConfig.MOCK_MODE ? MockApiService() : RemoteApiService());
 
       // Étape 1: Charger les informations de l'enfant d'abord
       print('📂 Étape 1: Récupération des informations de l\'enfant...');
@@ -670,7 +677,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       await Future.delayed(const Duration(milliseconds: 200));
 
       final messagesResult = await apiService.getMessages(
-        MainScreenWrapper.of(context).currentUserId ?? 'parent1',
+        wrapper?.currentUserId ?? AuthService.instance.getCurrentUser()?.id ?? 'parent1',
       );
       await Future.delayed(const Duration(milliseconds: 200));
 
@@ -1062,7 +1069,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           // Gradient fade at bottom
           BottomFadeGradient(
-            endColor: isDarkMode ? Colors.grey[900] : AppColors.screenSurface,
+            endColor: AppColors.screenSurfaceThemed(context),
           ),
         ],
       ),
@@ -1089,7 +1096,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           children: [
             BottomSheetHeader(
               icon: Icons.bar_chart_rounded,
-              imagePath: 'assets/images/icons/notes.png',
+              imagePath: 'assets/images/icons/mes_notes.png',
               imageBorderRadius: AppDimensions.getImageBorderRadius(context),
               iconColor: const Color(0xFF1976D2),
               title: 'Mes Notes',
@@ -1137,7 +1144,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               children: [
                 BottomSheetHeader(
                   icon: Icons.description_rounded,
-                  imagePath: 'assets/images/icons/bulletins.png',
+                  imagePath: 'assets/images/icons/mes_bulletins.png',
                   imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                   iconColor: const Color(0xFF2E7D32),
                   title: 'Bulletins',
@@ -1772,6 +1779,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   void _showOrdersBottomSheet() {
     _expandedOrderId = null;
     _ordersStatusFilter = 'Tous';
+    _isOrdersSearching = false;
+    _ordersSearchController.clear();
     _ordersFuture = _loadOrdersFuture();
     showModalBottomSheet(
       context: context,
@@ -1799,8 +1808,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   description: 'Suivez vos commandes et achats',
                   onClose: () => Navigator.of(context).pop(),
                 ),
-                _buildOrdersFilterButtons(setModalState),
-                Expanded(child: _buildOrdersTab()),
+                Expanded(child: _buildOrdersTab(setModalState)),
               ],
             ),
           );
@@ -2179,43 +2187,32 @@ class _ChildListScreenState extends State<ChildListScreen>
           _markNotificationAsReadWithAPI(notification, setModalState);
         }
       },
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-          topLeft: Radius.circular(2),
-          bottomLeft: Radius.circular(2),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8, left: 4, right: 4),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: AppDimensions.getBottomSheetShadow(context),
+          border: isExpanded ? Border.all(
+            color: isDark ? const Color(0x22FFFFFF) : const Color(0x18000000),
+            width: 0.5,
+          ) : null,
         ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-            border: Border(
-              left: BorderSide(
-                color: notification.estLu ? Colors.transparent : unreadBlue,
-                width: 3,
-              ),
-              top: BorderSide(
-                color: isDark
-                    ? const Color(0x22FFFFFF)
-                    : const Color(0x18000000),
-                width: 0.5,
-              ),
-              right: BorderSide(
-                color: isDark
-                    ? const Color(0x22FFFFFF)
-                    : const Color(0x18000000),
-                width: 0.5,
-              ),
-              bottom: BorderSide(
-                color: isDark
-                    ? const Color(0x22FFFFFF)
-                    : const Color(0x18000000),
-                width: 0.5,
-              ),
-            ),
-          ),
-          child: Padding(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              if (!notification.estLu)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 3,
+                    color: unreadBlue,
+                  ),
+                ),
+              Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2407,6 +2404,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               ],
             ),
           ),
+            ],
+          ),
         ),
       ),
     );
@@ -2430,11 +2429,43 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     if (isImage) {
       return GestureDetector(
-        onTap: () async {
-          final uri = Uri.parse(attachmentUrl);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: EdgeInsets.zero,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(color: Colors.black87),
+                  ),
+                  InteractiveViewer(
+                    child: Center(
+                      child: Image.network(
+                        attachmentUrl,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(child: CircularProgressIndicator(color: Colors.white));
+                        },
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 40,
+                    right: 20,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         },
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
@@ -2821,8 +2852,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
-      elevation: 8,
+      color: Colors.transparent,
+      elevation: 0,
       onSelected: (value) {
         if (value == 'remove_child') {
           _showRemoveChildConfirmation();
@@ -2831,30 +2862,40 @@ class _ChildListScreenState extends State<ChildListScreen>
       itemBuilder: (context) => [
         PopupMenuItem<String>(
           value: 'remove_child',
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+          padding: EdgeInsets.zero,
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.person_remove_rounded,
+                    color: Colors.red,
+                    size: 16,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.person_remove_rounded,
-                  color: Colors.red,
-                  size: 16,
+                const SizedBox(width: 12),
+                Text(
+                  'Retirer cet enfant',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Retirer cet enfant',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -4294,7 +4335,6 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 3 : Vie scolaire
         // ════════════════════════════════════════════════════════════════
-        const SizedBox(height: 16),
         SectionRow(title: 'Suivi scolaire'),
         const SizedBox(height: 16),
         LayoutBuilder(
@@ -4695,9 +4735,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ════════════════════════════════════════════════════════════════
         // SECTION 5 : Services
         // ════════════════════════════════════════════════════════════════
-        const SizedBox(height: 16),
         SectionRow(title: 'Services'),
-        const SizedBox(height: 16),
         EstablishmentActionSection(
           actions: [
             EstablishmentAction(
@@ -5599,7 +5637,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     Map<String, List<StudentTimetableEntry>> coursesByDay,
   ) {
     return Container(
-      height: 70,
+      height: 50,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -5632,8 +5670,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 color: isSelected
                     ? null
                     : (_themeService.isDarkMode
-                          ? Colors.grey[850]
-                          : Colors.grey[100]),
+                          ? const Color(0xFF1E1E1E)
+                          : Colors.white),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: isSelected
                     ? [
@@ -5643,7 +5681,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                           offset: const Offset(0, 4),
                         ),
                       ]
-                    : null,
+                    : AppDimensions.getSettingsCardShadow(context),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
@@ -5653,9 +5691,19 @@ class _ChildListScreenState extends State<ChildListScreen>
                   width: 1,
                 ),
               ),
-              child: Column(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 16,
+                    color: isSelected
+                        ? Colors.white.withOpacity(0.9)
+                        : (_themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[500]),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     day,
                     style: TextStyle(
@@ -5668,21 +5716,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                           : (_themeService.isDarkMode
                                 ? Colors.grey[300]
                                 : Colors.grey[700]),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$coursesCount cours',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                      color: isSelected
-                          ? Colors.white.withOpacity(0.8)
-                          : (_themeService.isDarkMode
-                                ? Colors.grey[500]
-                                : Colors.grey[500]),
                     ),
                   ),
                 ],
@@ -7868,12 +7901,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: entry.isStatusOk
-              ? Colors.green.withOpacity(0.2)
-              : Colors.red.withOpacity(0.2),
-          width: 1,
-        ),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -7994,11 +8022,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isExpanded
+            ? color.withOpacity(isDarkMode ? 0.15 : 0.05)
+            : (isDarkMode ? const Color(0xFF1E1E1E) : Colors.white),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isExpanded
-              ? color.withOpacity(0.4)
+              ? color.withOpacity(0.5)
               : Colors.transparent,
           width: isExpanded ? 1.5 : 1,
         ),
@@ -8806,6 +8836,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final s = subject.toLowerCase();
     if (s.contains('math')) return Colors.blue;
     if (s.contains('fran')) return Colors.green;
+    if (s.contains('arab') || s.contains('aqidah') || s.contains('fiq')) return Colors.brown;
     if (s.contains('histoir')) return Colors.orange;
     if (s.contains('phys') || s.contains('chim')) return Colors.purple;
     if (s.contains('angl')) return Colors.indigo;
@@ -8821,6 +8852,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     final s = subject.toLowerCase();
     if (s.contains('math')) return Icons.calculate_rounded;
     if (s.contains('fran')) return Icons.menu_book_rounded;
+    if (s.contains('arab')) return Icons.translate_rounded;
+    if (s.contains('aqidah') || s.contains('fiq')) return Icons.menu_book_rounded;
     if (s.contains('histoir')) return Icons.public_rounded;
     if (s.contains('phys') || s.contains('chim')) return Icons.science_rounded;
     if (s.contains('angl')) return Icons.language_rounded;
@@ -10149,83 +10182,102 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildOrdersFilterButtons(StateSetter setModalState) {
-    final isDark = _themeService.isDarkMode;
-    
-    final List<Map<String, dynamic>> tabs = [
-      {'label': 'Tous', 'icon': Icons.all_inbox_rounded, 'color': AppColors.shopBlue},
-      {'label': 'En attente', 'icon': Icons.hourglass_empty_rounded, 'color': Colors.orange[700]!},
-      {'label': 'En cours', 'icon': Icons.trending_up_rounded, 'color': Colors.blue[600]!},
-      {'label': 'Livrées', 'icon': Icons.check_circle_outline_rounded, 'color': Colors.green[600]!},
-      {'label': 'Annulées', 'icon': Icons.cancel_outlined, 'color': Colors.red[600]!},
-    ];
-
+  Widget _buildOrdersStatVerticalDivider(bool isDark) {
     return Container(
-      height: 38,
-      margin: const EdgeInsets.only(bottom: 8, top: 8),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: tabs.length,
-        itemBuilder: (context, index) {
-          final tab = tabs[index];
-          final label = tab['label'] as String;
-          final icon = tab['icon'] as IconData;
-          final color = tab['color'] as Color;
-          final isSelected = _ordersStatusFilter == label;
+      width: 1,
+      height: 36,
+      color: AppColors.screenDividerThemed(context).withOpacity(0.5),
+    );
+  }
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: InkWell(
-              onTap: () {
-                setModalState(() {
-                  _ordersStatusFilter = label;
-                });
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? color.withOpacity(isDark ? 0.2 : 0.1) 
-                      : (isDark ? Colors.grey[850] : Colors.grey[100]),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected 
-                        ? color 
-                        : (isDark ? Colors.grey[800]! : Colors.grey[300]!),
-                    width: 1.2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 14,
-                      color: isSelected ? color : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: isSelected ? color : (isDark ? Colors.grey[300] : Colors.grey[700]),
-                      ),
-                    ),
-                  ],
+  Widget _buildOrdersStatItem(String title, String value, bool isDark, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.screenTextPrimaryThemed(context),
+                  letterSpacing: -0.5,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenTextSecondaryThemed(context),
             ),
-          );
-        },
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildOrdersTab() {
+  Widget _buildOrdersStatsHeader(List<Order> rawOrders) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Calculate stats
+    final int totalCount = rawOrders.length;
+    final double totalSum = rawOrders.fold<double>(
+      0.0,
+      (sum, order) => sum + order.totalAmount,
+    );
+    final int pendingCount = rawOrders.where((order) => order.status == OrderStatus.pending).length;
+    final int validatedCount = rawOrders.where((order) => 
+      order.status == OrderStatus.confirmed || 
+      order.status == OrderStatus.processing || 
+      order.status == OrderStatus.shipped || 
+      order.status == OrderStatus.delivered
+    ).length;
+
+    String sumStr = "";
+    if (totalSum >= 1000) {
+      final double kValue = totalSum / 1000;
+      sumStr = "${kValue.toStringAsFixed(kValue % 1 == 0 ? 0 : 1)}k";
+    } else {
+      sumStr = totalSum.toStringAsFixed(0);
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.screenCardThemed(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.screenDividerThemed(context).withOpacity(0.5), width: 1),
+        boxShadow: AppDimensions.getBottomSheetShadow(context),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildOrdersStatItem('Total', totalCount.toString(), isDark, Icons.shopping_bag_outlined, AppColors.shopBlue),
+          _buildOrdersStatVerticalDivider(isDark),
+          _buildOrdersStatItem('Somme', '$sumStr F', isDark, Icons.monetization_on_outlined, AppColors.shopGreen),
+          _buildOrdersStatVerticalDivider(isDark),
+          _buildOrdersStatItem('En attente', pendingCount.toString(), isDark, Icons.hourglass_empty_rounded, Colors.orange[700]!),
+          _buildOrdersStatVerticalDivider(isDark),
+          _buildOrdersStatItem('Validées', validatedCount.toString(), isDark, Icons.check_circle_outline_rounded, Colors.green[600]!),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrdersTab(StateSetter setModalState) {
     return FutureBuilder<List<Order>>(
       future: _ordersFuture ??= _loadOrdersFuture(),
       builder: (context, snapshot) {
@@ -10290,7 +10342,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
         final rawOrders = snapshot.data ?? [];
         
-        final orders = rawOrders.where((order) {
+        final filteredByStatus = rawOrders.where((order) {
           if (_ordersStatusFilter == 'Tous') return true;
           if (_ordersStatusFilter == 'En attente') {
             return order.status == OrderStatus.pending;
@@ -10310,8 +10362,16 @@ class _ChildListScreenState extends State<ChildListScreen>
           return true;
         }).toList();
 
+        final orders = filteredByStatus.where((order) {
+            if (_ordersSearchController.text.isEmpty) return true;
+            final q = _ordersSearchController.text.toLowerCase();
+            return order.id.toLowerCase().contains(q);
+        }).toList();
+
+        Widget content;
+
         if (orders.isEmpty) {
-          return Container(
+          content = Container(
             padding: const EdgeInsets.all(32),
             child: Column(
               children: [
@@ -10346,20 +10406,51 @@ class _ChildListScreenState extends State<ChildListScreen>
               ],
             ),
           );
+        } else {
+            content = Column(
+              children: orders.map((order) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildOrderCardFromOrder(order),
+                );
+              }).toList(),
+            );
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Column(
-                children: orders.map((order) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildOrderCardFromOrder(order),
-                  );
-                }).toList(),
+              FilterRowWidget(
+                filters: const ['Tous', 'En attente', 'En cours', 'Livrées', 'Annulées'],
+                selectedFilter: _ordersStatusFilter,
+                onFilterSelected: (String filter) {
+                  setModalState(() {
+                    _ordersStatusFilter = filter;
+                  });
+                },
+              ),
+              _buildOrdersStatsHeader(rawOrders),
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SearchBarWidget(
+                      isSearching: true,
+                      searchController: _ordersSearchController,
+                      onChanged: (val) {
+                          setModalState(() {});
+                      },
+                      onClear: () {
+                          setModalState(() {
+                              _ordersSearchController.clear();
+                          });
+                      },
+                      hintText: 'Rechercher une commande...',
+                  ),
+              ),
+              Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: content,
               ),
             ],
           ),
@@ -11091,9 +11182,95 @@ class _ChildListScreenState extends State<ChildListScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _buildPresenceFilters(),
+          const SizedBox(height: 12),
           _buildAttendanceSummary(),
           const SizedBox(height: 20),
           _buildAbsencesList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresenceActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      child: Row(
+        children: [
+          if (_filterStartDateController.text.isNotEmpty || 
+              _filterEndDateController.text.isNotEmpty || 
+              _filterType != null) ...[
+            Expanded(
+              flex: 1,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final effectiveModalSetState = _presenceModalSetState;
+                  if (effectiveModalSetState != null && mounted) {
+                    effectiveModalSetState(() {
+                      _filterStartDateController.clear();
+                      _filterEndDateController.clear();
+                      _filterStartDate = null;
+                      _filterEndDate = null;
+                      _filterType = null;
+                    });
+                  }
+                  if (mounted) {
+                    setState(() {
+                      _filterStartDateController.clear();
+                      _filterEndDateController.clear();
+                      _filterStartDate = null;
+                      _filterEndDate = null;
+                      _filterType = null;
+                    });
+                  }
+                },
+                icon: const Icon(Icons.clear_rounded, size: 20),
+                label: const Text('Effacer', style: TextStyle(fontSize: 13)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[600],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            flex: 2,
+            child: ElevatedButton.icon(
+              onPressed: () => _loadPresenceData(),
+              icon: _isLoadingPresence
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.search_rounded, size: 20),
+              label: Text(
+                _isLoadingPresence
+                    ? 'Recherche...'
+                    : 'Rechercher',
+                style: const TextStyle(fontSize: 13),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1565C0),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 2,
+                shadowColor: const Color(0xFF1565C0).withOpacity(0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -11394,92 +11571,6 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return Column(
       children: [
-        // Section des filtres
-        _buildPresenceFilters(),
-
-        // Bouton pour charger les données de présence
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            children: [
-              if (_filterStartDateController.text.isNotEmpty || 
-                  _filterEndDateController.text.isNotEmpty || 
-                  _filterType != null) ...[
-                Expanded(
-                  flex: 1,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final effectiveModalSetState = _presenceModalSetState;
-                      if (effectiveModalSetState != null && mounted) {
-                        effectiveModalSetState(() {
-                          _filterStartDateController.clear();
-                          _filterEndDateController.clear();
-                          _filterStartDate = null;
-                          _filterEndDate = null;
-                          _filterType = null;
-                        });
-                      }
-                      if (mounted) {
-                        setState(() {
-                          _filterStartDateController.clear();
-                          _filterEndDateController.clear();
-                          _filterStartDate = null;
-                          _filterEndDate = null;
-                          _filterType = null;
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.clear_rounded, size: 20),
-                    label: const Text('Effacer', style: TextStyle(fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[600],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: () => _loadPresenceData(),
-                  icon: _isLoadingPresence
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 20),
-                  label: Text(
-                    _isLoadingPresence
-                        ? 'Chargement...'
-                        : 'Actualiser',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 2,
-                    shadowColor: const Color(0xFF1565C0).withOpacity(0.3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
         // Liste des entrées de présence
         if (_filteredPresenceEntries.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -11511,37 +11602,11 @@ class _ChildListScreenState extends State<ChildListScreen>
               decoration: BoxDecoration(
                 color: itemBgColor,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
-                  width: 1,
-                ),
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Accent bar on the left
-                      Container(
-                        width: 4,
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -11635,11 +11700,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             );
           }),
         ],
@@ -11962,7 +12022,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                       ),
                     ],
                   ),
-
+                  const SizedBox(height: 16),
+                  _buildPresenceActionButtons(),
                 ],
               ),
             ),
@@ -12563,7 +12624,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+            color: isDark ? Colors.grey[900] : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: borderColor, width: 1.2),
             boxShadow: [

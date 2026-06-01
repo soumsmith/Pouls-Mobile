@@ -441,6 +441,7 @@ class AppColors {
   static const Color settingsPurple = Color(0xFF9C27B0);
   static const Color settingsAmber = Color(0xFFF59E0B);
   static const Color settingsCyan = Color(0xFF00BCD4);
+  static const Color integrationBlue = Color(0xFF1174C5);
   
   // Gris supplémentaire
   static const Color grey666 = Color(0xFF666666);

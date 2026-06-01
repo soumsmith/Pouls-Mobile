@@ -6946,63 +6946,44 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 20),
-                  _buildServiceCard(
-                    'Cantine',
-                    'Repas équilibrés et surveillés',
-                    Icons.restaurant_rounded,
-                    Colors.orange,
-                    () {
-                      Navigator.of(context).pop();
-                      // Action pour la cantine
-                    },
+                  const SizedBox(height: 60),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.construction_rounded,
+                      size: 48,
+                      color: Colors.purple,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Bientôt disponible',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  _buildServiceCard(
-                    'Transport scolaire',
-                    'Navette sécurisée vers l\'école',
-                    Icons.bus_alert_rounded,
-                    Colors.blue,
-                    () {
-                      Navigator.of(context).pop();
-                      // Action pour le transport
-                    },
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      'Les services complémentaires pour cet établissement seront bientôt accessibles.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.screenTextSecondaryThemed(context),
+                        height: 1.5,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  _buildServiceCard(
-                    'Activités périscolaires',
-                    'Ateliers et clubs diversifiés',
-                    Icons.sports_soccer_rounded,
-                    Colors.green,
-                    () {
-                      Navigator.of(context).pop();
-                      // Action pour les activités
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildServiceCard(
-                    'Soutien scolaire',
-                    'Aide aux devoirs et remédiation',
-                    Icons.school_rounded,
-                    Colors.purple,
-                    () {
-                      Navigator.of(context).pop();
-                      // Action pour le soutien
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildServiceCard(
-                    'Garderie',
-                    'Accueil avant et après les cours',
-                    Icons.access_time_rounded,
-                    Colors.red,
-                    () {
-                      Navigator.of(context).pop();
-                      // Action pour la garderie
-                    },
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 60),
                 ],
               ),
             ),

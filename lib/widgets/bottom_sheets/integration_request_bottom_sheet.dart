@@ -392,12 +392,12 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         color: isCompleted
                             ? Colors.green
                             : isActive
-                            ? AppColors.shopBlue
+                            ? AppColors.integrationBlue
                             : (isDark ? const Color(0xFF222222) : AppColors.screenSurface),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isActive
-                              ? AppColors.shopBlue
+                              ? AppColors.integrationBlue
                               : isCompleted
                               ? Colors.green
                               : (isDark ? const Color(0xFF333333) : AppColors.screenDivider),
@@ -406,7 +406,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: AppColors.shopBlue.withOpacity(0.25),
+                                  color: AppColors.integrationBlue.withOpacity(0.25),
                                   blurRadius: 4,
                                   spreadRadius: 1,
                                 ),
@@ -448,7 +448,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                             ? FontWeight.w700
                             : FontWeight.w500,
                         color: isActive
-                            ? AppColors.shopBlue
+                            ? AppColors.integrationBlue
                             : isCompleted
                             ? Colors.green
                             : (isDark ? Colors.white54 : AppColors.screenTextSecondary),
@@ -742,7 +742,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                   children: [
                     Icon(
                       Icons.qr_code_2_rounded,
-                      color: AppColors.shopBlue,
+                      color: AppColors.integrationBlue,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -898,7 +898,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             CustomButton(
               text: 'Suivant',
               onPressed: canNext ? () => setState(() => _currentStep++) : null,
-              color: AppColors.shopBlue,
+              color: AppColors.integrationBlue,
               icon: Icons.arrow_forward_rounded,
               iconOnRight: true,
               width: 120,

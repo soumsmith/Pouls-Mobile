@@ -7,6 +7,7 @@ import '../../services/text_size_service.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_dimensions.dart';
 import '../section_header_widget.dart';
+import '../search_bar_widget.dart';
 
 /// Bottom sheet réutilisable et amélioré pour afficher la scolarité d'un élève
 /// Fusionne le design de _showFeesBottomSheet avec les fonctionnalités de ScolariteBottomSheet
@@ -67,6 +68,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   int? _expandedIndex;
+  bool _isSearchingMode = false;
 
   // Couleurs par défaut pour les frais scolaires
   Color get _primaryColor => widget.primaryColor ?? const Color(0xFF10B981);
@@ -561,43 +563,38 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
           title: 'Détail des échéances',
           isDark: isDark,
           indicatorColor: _primaryColor,
-          padding: const EdgeInsets.fromLTRB(4, 0, 16, 12),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E2A) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: AppDimensions.getSettingsCardShadow(context),
-          ),
-          child: TextField(
-            controller: _searchController,
-            onChanged: (value) {
+          padding: const EdgeInsets.fromLTRB(4, 0, 0, 0),
+          trailing: IconButton(
+            icon: Icon(
+              _isSearchingMode ? Icons.close_rounded : Icons.search_rounded,
+              color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+              size: 22,
+            ),
+            onPressed: () {
               setState(() {
-                _searchQuery = value.toLowerCase();
+                _isSearchingMode = !_isSearchingMode;
+                if (!_isSearchingMode) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
               });
             },
-            style: TextStyle(
-              color: isDark ? Colors.white : const Color(0xFF1E293B),
-              fontSize: 14,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Rechercher une échéance...',
-              hintStyle: TextStyle(
-                color: isDark ? Colors.grey[500] : Colors.grey[400],
-                fontSize: 14,
-              ),
-              prefixIcon: Icon(
-                Icons.search_rounded,
-                color: isDark ? Colors.grey[400] : Colors.grey[500],
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-            ),
           ),
+        ),
+        SearchBarWidget(
+          isSearching: _isSearchingMode,
+          searchController: _searchController,
+          hintText: 'Rechercher une échéance...',
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value.toLowerCase();
+            });
+          },
+          onClear: () {
+            setState(() {
+              _searchQuery = '';
+            });
+          },
         ),
       ],
     );
@@ -681,11 +678,15 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
         curve: Curves.easeInOut,
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1E1E2A) : Colors.white,
+          color: isExpanded
+              ? (isOverdue 
+                  ? Colors.red.withOpacity(isDarkMode ? 0.15 : 0.05) 
+                  : Colors.green.withOpacity(isDarkMode ? 0.15 : 0.05))
+              : (isDarkMode ? const Color(0xFF1E1E2A) : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: isExpanded
               ? Border.all(
-                  color: isDarkMode ? const Color(0xFF2A2A3A) : const Color(0xFFE2E8F0),
+                  color: isOverdue ? Colors.red.withOpacity(0.8) : Colors.green.withOpacity(0.8), 
                   width: 1.2,
                 )
               : Border.all(color: Colors.transparent, width: 1.2),

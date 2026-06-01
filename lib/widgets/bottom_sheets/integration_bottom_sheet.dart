@@ -900,7 +900,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             child: LinearProgressIndicator(
               value: (_currentStep + 1) / _totalSteps,
               backgroundColor: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
-              valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
+              valueColor: const AlwaysStoppedAnimation(AppColors.integrationBlue),
               minHeight: 4,
             ),
           ),
@@ -931,13 +931,13 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                             color: isCompleted
                                 ? Colors.green
                                 : isCurrent
-                                ? AppColors.shopBlue
+                                ? AppColors.integrationBlue
                                 : (isDark ? const Color(0xFF333333) : AppColors.screenDivider),
                             boxShadow: isCurrent
                                 ? [
                                     BoxShadow(
                                       color:
-                                          AppColors.shopBlue.withOpacity(0.25),
+                                          AppColors.integrationBlue.withOpacity(0.25),
                                       blurRadius: 6,
                                       spreadRadius: 1,
                                     ),
@@ -978,7 +978,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                                   ? FontWeight.w600
                                   : FontWeight.w400,
                               color: isCurrent
-                                  ? AppColors.shopBlue
+                                  ? AppColors.integrationBlue
                                   : isCompleted
                                   ? Colors.green
                                   : (isDark ? Colors.white54 : AppColors.screenTextSecondary),
@@ -1042,7 +1042,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               ? 'Envoyer la demande'
               : 'Suivant',
           onPressed: canNext ? _nextStep : null,
-          color: AppColors.shopBlue,
+          color: AppColors.integrationBlue,
           icon: _currentStep == _totalSteps - 1
               ? null
               : Icons.arrow_forward_rounded,

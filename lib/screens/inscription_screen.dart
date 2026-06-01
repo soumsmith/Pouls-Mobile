@@ -928,7 +928,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             child: LinearProgressIndicator(
               value: (_currentPageIndex + 1) / steps.length,
               backgroundColor: dividerColor,
-              valueColor: const AlwaysStoppedAnimation(AppColors.shopBlue),
+              valueColor: const AlwaysStoppedAnimation(AppColors.integrationBlue),
               minHeight: 4,
             ),
           ),
@@ -955,12 +955,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                         color: isCompleted
                             ? Colors.green
                             : isCurrent
-                            ? AppColors.shopBlue
+                            ? AppColors.integrationBlue
                             : AppColors.screenDivider,
                         boxShadow: isCurrent
                             ? [
                                 BoxShadow(
-                                  color: AppColors.shopBlue.withOpacity(0.25),
+                                  color: AppColors.integrationBlue.withOpacity(0.25),
                                   blurRadius: 6,
                                   spreadRadius: 1,
                                 ),
@@ -996,9 +996,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             ? FontWeight.w600
                             : FontWeight.w400,
                         color: isCurrent
-                            ? (isDark
-                                  ? AppColors.shopBlueLight
-                                  : AppColors.shopBlue)
+                            ? AppColors.integrationBlue
                             : isCompleted
                             ? Colors.green
                             : textSecondaryColor,
@@ -2041,7 +2039,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             CustomButton(
               text: isSecondToLast ? 'Récap' : 'Suivant',
               onPressed: canNext ? _nextStep : null,
-              color: AppColors.shopBlue,
+              color: AppColors.integrationBlue,
               icon: Icons.arrow_forward_rounded,
               iconOnRight: true,
               width: 120,
@@ -2052,7 +2050,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             CustomButton(
               text: 'Confirmer',
               onPressed: _showPaymentChoiceBottomSheet,
-              color: AppColors.shopBlue,
+              color: AppColors.screenOrange,
               icon: Icons.check_circle_rounded,
               width: 120,
               height: 40,

@@ -21,6 +21,7 @@ class SectionHeaderWidget extends StatelessWidget {
   final bool showBottomDivider; // Contrôle l'affichage de la ligne horizontale en bas
   final Color? dividerColor; // Couleur de la ligne de séparation
   final double? dividerHeight; // Hauteur de la ligne de séparation
+  final Widget? trailing; // Widget optionnel à la fin de la ligne
 
   const SectionHeaderWidget({
     super.key,
@@ -40,6 +41,7 @@ class SectionHeaderWidget extends StatelessWidget {
     this.showBottomDivider = false, // Par défaut, on n'affiche pas la ligne de séparation
     this.dividerColor,
     this.dividerHeight,
+    this.trailing,
   });
 
   @override
@@ -79,6 +81,7 @@ class SectionHeaderWidget extends StatelessWidget {
                   ),
                 ),
               ),
+              if (trailing != null) trailing!,
             ],
           ),
         ),

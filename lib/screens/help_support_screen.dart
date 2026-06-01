@@ -58,14 +58,14 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
     );
   }
 
-  // ─── BUILD ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark
+      value: (isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
           .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: AppColors.screenSurface,
+        backgroundColor: AppColors.screenSurfaceThemed(context),
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
@@ -100,7 +100,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   // ─── APP BAR ──────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
     return Container(
-      color: AppColors.screenSurface,
+      color: AppColors.screenSurfaceThemed(context),
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -114,16 +114,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.screenCard,
+                    color: AppColors.screenCardThemed(context),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new,
-                      size: 16, color: AppColors.screenTextPrimary),
+                  child: Icon(Icons.arrow_back_ios_new,
+                      size: 16, color: AppColors.screenTextPrimaryThemed(context)),
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -132,7 +132,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimary,
+                        color: AppColors.screenTextPrimaryThemed(context),
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -140,7 +140,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                       'Comment pouvons-nous vous aider ?',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.screenTextSecondary,
+                        color: AppColors.screenTextSecondaryThemed(context),
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -159,28 +159,28 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: AppColors.screenCard,
+        color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(14),
         boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: TextField(
         controller: _searchController,
-        style: const TextStyle(
-            fontSize: 14, color: AppColors.screenTextPrimary, fontWeight: FontWeight.w500),
+        style: TextStyle(
+            fontSize: 14, color: AppColors.screenTextPrimaryThemed(context), fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: 'Rechercher une aide...',
           hintStyle:
-              const TextStyle(fontSize: 13, color: AppColors.screenTextSecondary),
+              TextStyle(fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
           prefixIcon:
-              const Icon(Icons.search, color: AppColors.screenOrange, size: 18),
+              Icon(Icons.search, color: AppColors.screenOrange, size: 18),
           suffixIcon: _searchQuery.isNotEmpty
               ? GestureDetector(
                   onTap: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
                   },
-                  child: const Icon(Icons.close,
-                      color: AppColors.screenTextSecondary, size: 16),
+                  child: Icon(Icons.close,
+                      color: AppColors.screenTextSecondaryThemed(context), size: 16),
                 )
               : null,
           border: InputBorder.none,
@@ -194,10 +194,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   Widget _sectionLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: AppColors.screenTextPrimary,
+        color: AppColors.screenTextPrimaryThemed(context),
         letterSpacing: -0.3,
       ),
     );
@@ -264,7 +264,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.screenCard,
+                    color: AppColors.screenCardThemed(context),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
@@ -284,10 +284,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                       const SizedBox(height: 12),
                       Text(
                         card['title'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimary,
+                          color: AppColors.screenTextPrimaryThemed(context),
                           letterSpacing: -0.2,
                         ),
                         maxLines: 1,
@@ -296,9 +296,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                       const SizedBox(height: 3),
                       Text(
                         card['subtitle'] as String,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.screenTextSecondary,
+                          color: AppColors.screenTextSecondaryThemed(context),
                           fontWeight: FontWeight.w400,
                         ),
                         maxLines: 2,
@@ -381,7 +381,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.screenCard,
+                color: AppColors.screenCardThemed(context),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
@@ -394,23 +394,23 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                       color: AppColors.screenOrangeLight,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.search_off,
+                    child: Icon(Icons.search_off,
                         size: 36, color: AppColors.screenOrange),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Aucun résultat trouvé',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimary,
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Essayez avec d\'autres mots-clés',
                     style: TextStyle(
-                        fontSize: 13, color: AppColors.screenTextSecondary),
+                        fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
                   ),
                 ],
               ),
@@ -439,7 +439,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: AppColors.screenCard,
+          color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(20),
           boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
@@ -459,15 +459,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                 color: AppColors.screenOrangeLight,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.help_outline,
+              child: Icon(Icons.help_outline,
                   color: AppColors.screenOrange, size: 18),
             ),
             title: Text(
               faq['question'] as String,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.screenTextPrimary,
+                color: AppColors.screenTextPrimaryThemed(context),
                 letterSpacing: -0.2,
               ),
             ),
@@ -491,16 +491,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                 ),
               ),
             ),
-            iconColor: AppColors.screenTextSecondary,
-            collapsedIconColor: AppColors.screenTextSecondary,
+            iconColor: AppColors.screenTextSecondaryThemed(context),
+            collapsedIconColor: AppColors.screenTextSecondaryThemed(context),
             children: [
-              const Divider(color: AppColors.screenDivider, height: 1),
+              Divider(color: AppColors.screenDividerThemed(context), height: 1),
               const SizedBox(height: 12),
               Text(
                 faq['answer'] as String,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.screenTextSecondary,
+                  color: AppColors.screenTextSecondaryThemed(context),
                   height: 1.6,
                   fontWeight: FontWeight.w400,
                 ),
@@ -554,7 +554,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
           const SizedBox(height: 14),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.screenCard,
+              color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(20),
               boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
@@ -602,37 +602,37 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                                   children: [
                                     Text(
                                       c['title'] as String,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.screenTextPrimary,
+                                        color: AppColors.screenTextPrimaryThemed(context),
                                         letterSpacing: -0.2,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       c['subtitle'] as String,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.screenTextSecondary,
+                                        color: AppColors.screenTextSecondaryThemed(context),
                                         fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward_ios,
-                                  size: 13, color: AppColors.screenTextSecondary),
+                              Icon(Icons.arrow_forward_ios,
+                                  size: 13, color: AppColors.screenTextSecondaryThemed(context)),
                             ],
                           ),
                         ),
                       ),
                     ),
                     if (!isLast)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(left: 74),
                         child:
-                            Divider(color: AppColors.screenDivider, height: 1),
+                            Divider(color: AppColors.screenDividerThemed(context), height: 1),
                       ),
                   ],
                 );
@@ -715,7 +715,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.screenCard,
+                    color: AppColors.screenCardThemed(context),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
@@ -738,19 +738,19 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                           children: [
                             Text(
                               r['title'] as String,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.screenTextPrimary,
+                                color: AppColors.screenTextPrimaryThemed(context),
                                 letterSpacing: -0.2,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               r['subtitle'] as String,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.screenTextSecondary,
+                                color: AppColors.screenTextSecondaryThemed(context),
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -761,11 +761,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: AppColors.screenSurface,
+                          color: AppColors.screenSurfaceThemed(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.open_in_new,
-                            size: 15, color: AppColors.screenTextSecondary),
+                        child: Icon(Icons.open_in_new,
+                            size: 15, color: AppColors.screenTextSecondaryThemed(context)),
                       ),
                     ],
                   ),

@@ -11,6 +11,8 @@ import '../services/auth_service.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/filter_row_widget.dart';
+import '../widgets/search_bar_widget.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -177,30 +179,27 @@ class _OrdersScreenState extends State<OrdersScreen>
 
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: Column(
+      child: Stack(
         children: [
-          _buildSearchBar(),
-          Expanded(
-            child: Stack(
-              children: [
-                CustomScrollView(
-                  slivers: [
-                    _buildSliverAppBar(),
-                    SliverFillRemaining(
-                      child: Column(
-                        children: [
-                          _buildStatsHeader(),
-                          _buildFilterButtons(),
-                          Expanded(child: _buildOrdersList()),
-                        ],
-                      ),
-                    ),
+          CustomScrollView(
+            slivers: [
+              _buildSliverAppBar(),
+              SliverToBoxAdapter(
+                child: _buildSearchBar(),
+              ),
+              SliverFillRemaining(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    _buildFilterButtons(),
+                    _buildStatsHeader(),
+                    Expanded(child: _buildOrdersList()),
                   ],
                 ),
-                const BottomFadeGradient(),
-              ],
-            ),
+              ),
+            ],
           ),
+          const BottomFadeGradient(),
         ],
       ),
     );
@@ -208,64 +207,14 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   // ─── SEARCH BAR ────────────────────────────────────────────────────────────
   Widget _buildSearchBar() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      height: _isSearching ? 56 : 0,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      decoration: BoxDecoration(
-        color: AppColors.screenCardThemed(context),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppDimensions.getSettingsCardShadow(context),
-      ),
-      child: _isSearching
-          ? Row(
-              children: [
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.search_rounded,
-                  color: AppColors.screenTextSecondaryThemed(context),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    style: TextStyle(
-                      color: AppColors.screenTextPrimaryThemed(context),
-                      fontSize: 14,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher une commande...',
-                      hintStyle: TextStyle(
-                        color: AppColors.screenTextSecondaryThemed(context),
-                        fontSize: 14,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    onChanged: _filterOrders,
-                  ),
-                ),
-                if (_searchController.text.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      _searchController.clear();
-                      _filterOrders('');
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.close_rounded,
-                        color: AppColors.screenTextSecondaryThemed(context),
-                        size: 16,
-                      ),
-                    ),
-                  ),
-              ],
-            )
-          : null,
+    return SearchBarWidget(
+      isSearching: _isSearching,
+      searchController: _searchController,
+      onChanged: _filterOrders,
+      onClear: () {
+        _filterOrders('');
+      },
+      hintText: 'Rechercher une commande...',
     );
   }
 
@@ -278,9 +227,9 @@ class _OrdersScreenState extends State<OrdersScreen>
       isDark: isDark,
       automaticallyImplyLeading: true,
       actions: [
-        // Bouton de recherche/rafraîchissement
+        // Bouton de recherche
         GestureDetector(
-          onTap: _isSearching ? _toggleSearch : _loadOrders,
+          onTap: _toggleSearch,
           child: Container(
             width: 40,
             height: 40,
@@ -399,78 +348,16 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   Widget _buildFilterButtons() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Status tabs definition
-    final List<Map<String, dynamic>> tabs = [
-      {'label': 'En attente', 'icon': Icons.hourglass_empty_rounded, 'color': Colors.orange[700]!},
-      {'label': 'En cours', 'icon': Icons.trending_up_rounded, 'color': Colors.blue[600]!},
-      {'label': 'Livrées', 'icon': Icons.check_circle_outline_rounded, 'color': Colors.green[600]!},
-      {'label': 'Annulées', 'icon': Icons.cancel_outlined, 'color': Colors.red[600]!},
-      {'label': 'Tous', 'icon': Icons.all_inbox_rounded, 'color': AppColors.shopBlue},
-    ];
-
-    return Container(
-      height: 38,
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: tabs.length,
-        itemBuilder: (context, index) {
-          final tab = tabs[index];
-          final label = tab['label'] as String;
-          final icon = tab['icon'] as IconData;
-          final color = tab['color'] as Color;
-          final isSelected = _selectedStatusFilter == label;
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedStatusFilter = label;
-                });
-                _loadOrders();
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? color.withOpacity(isDark ? 0.2 : 0.1) 
-                      : AppColors.screenCardThemed(context),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected 
-                        ? color 
-                        : AppColors.screenDividerThemed(context).withOpacity(0.5),
-                    width: 1.2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 14,
-                      color: isSelected ? color : AppColors.screenTextSecondaryThemed(context),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: isSelected ? color : AppColors.screenTextPrimaryThemed(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: FilterRowWidget(
+        filters: const ['En attente', 'En cours', 'Livrées', 'Annulées', 'Tous'],
+        selectedFilter: _selectedStatusFilter,
+        onFilterSelected: (String filter) {
+          setState(() {
+            _selectedStatusFilter = filter;
+          });
+          _loadOrders();
         },
       ),
     );
@@ -756,12 +643,14 @@ class _OrdersScreenState extends State<OrdersScreen>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: statusInfo.color.withOpacity(0.08),
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? const Color(0xFF2C2C2E) 
+                        : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     statusInfo.icon,
-                    color: statusInfo.color,
+                    color: AppColors.screenTextSecondaryThemed(context),
                     size: 20,
                   ),
                 ),
@@ -1038,45 +927,51 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Bouton support (outline)
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: double.infinity,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: AppColors.screenSurfaceThemed(context),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                  color: AppColors.screenDividerThemed(context), width: 1.5),
-                            ),
-                            child: Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.headset_mic_outlined,
-                                      size: 18,
-                                      color: AppColors.screenTextSecondaryThemed(context)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Contacter le support',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.screenTextSecondaryThemed(context),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => Navigator.pop(context),
+                                child: Container(
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.screenSurfaceThemed(context),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                        color: AppColors.screenDividerThemed(context), width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.headset_mic_outlined,
+                                            size: 18,
+                                            color: AppColors.screenTextSecondaryThemed(context)),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'Support',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.screenTextSecondaryThemed(context),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _CancelButton(order: order),
+                            ),
+                          ],
                         ),
-
-                        // Bouton annuler uniquement si pending
-                        const SizedBox(height: 10),
-                        _CancelButton(order: order),
-
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -1109,16 +1004,19 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
         border: Border.all(color: AppColors.screenDividerThemed(context)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
+                flex: 5,
                 child: _infoCell(
                   context,
                   label: 'Statut',
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusInfo.color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -1129,12 +1027,15 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                         Icon(statusInfo.icon,
                             size: 13, color: statusInfo.color),
                         const SizedBox(width: 4),
-                        Text(
-                          order.status.displayName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: statusInfo.color,
-                            fontWeight: FontWeight.w700,
+                        Flexible(
+                          child: Text(
+                            order.status.displayName,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: statusInfo.color,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -1142,66 +1043,69 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Expanded(
+                flex: 4,
                 child: _infoCell(
                   context,
                   label: 'Date',
                   child: Text(
                     _formatDate(order.createdAt),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: AppColors.screenTextPrimaryThemed(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Divider(color: AppColors.screenDividerThemed(context), height: 1),
-          const SizedBox(height: 12),
-          Row(
-            children: [
+              const SizedBox(width: 8),
               Expanded(
+                flex: 5,
                 child: _infoCell(
                   context,
                   label: 'Paiement',
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.payment_outlined,
                           size: 14, color: AppColors.shopGreen),
-                      const SizedBox(width: 6),
-                      Text(
-                        order.paymentMethod.displayName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.screenTextPrimaryThemed(context),
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          order.paymentMethod.displayName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.screenTextPrimaryThemed(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              if (order.paymentReference != null)
-                Expanded(
-                  child: _infoCell(
-                    context,
-                    label: 'Référence',
-                    child: Text(
-                      order.paymentReference!,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.screenTextPrimaryThemed(context),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
             ],
           ),
+          if (order.paymentReference != null) ...[
+            const SizedBox(height: 12),
+            Divider(color: AppColors.screenDividerThemed(context), height: 1),
+            const SizedBox(height: 12),
+            _infoCell(
+              context,
+              label: 'Référence',
+              child: Text(
+                order.paymentReference!,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.screenTextPrimaryThemed(context),
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1291,17 +1195,6 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
                         letterSpacing: -0.3,
                       ),
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      item.product.subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.screenTextSecondaryThemed(context),
-                        fontWeight: FontWeight.w400,
-                      ),
-                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 10),
@@ -1499,13 +1392,16 @@ class _CancelButtonState extends State<_CancelButton> {
                   children: [
                     Icon(Icons.cancel_outlined,
                         size: 18, color: Colors.red[400]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Annuler la commande',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.red[400],
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Annuler',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.red[400],
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

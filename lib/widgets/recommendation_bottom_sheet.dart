@@ -286,7 +286,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
             child: LinearProgressIndicator(
               value: (_currentStep + 1) / _totalSteps,
               backgroundColor: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
-              valueColor: AlwaysStoppedAnimation(widget.accentColor),
+              valueColor: const AlwaysStoppedAnimation(AppColors.integrationBlue),
               minHeight: 4,
             ),
           ),
@@ -313,7 +313,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
                         color: isCompleted
                             ? Colors.green
                             : isCurrent
-                            ? widget.accentColor
+                            ? AppColors.integrationBlue
                             : isDark ? const Color(0xFF333333) : AppColors.screenDivider,
                       ),
                       child: Icon(
@@ -335,7 +335,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
                             ? FontWeight.w600
                             : FontWeight.w400,
                         color: isCurrent
-                            ? widget.accentColor
+                            ? AppColors.integrationBlue
                             : isCompleted
                             ? Colors.green
                             : AppColors.screenTextSecondary,
@@ -685,7 +685,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
             CustomButton(
               text: isLast ? 'Envoyer la recommandation' : 'Suivant',
               onPressed: canNext ? _nextStep : null,
-              color: widget.accentColor,
+              color: AppColors.integrationBlue,
               icon: isLast ? null : Icons.arrow_forward_rounded,
               iconOnRight: true,
               width: isLast ? 200 : 120,

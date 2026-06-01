@@ -164,7 +164,10 @@ class _CartScreenState extends State<CartScreen>
             child: Column(
               children: [
                 Expanded(child: _buildCartItems()),
-                _buildModernCheckoutSummary(),
+                SafeArea(
+                  top: false,
+                  child: _buildModernCheckoutSummary(),
+                ),
               ],
             ),
           ),

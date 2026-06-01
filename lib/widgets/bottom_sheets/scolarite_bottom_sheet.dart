@@ -165,7 +165,7 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
+              ? Colors.grey[900]
               : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.red.withOpacity(0.3)),
@@ -209,7 +209,7 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
+                ? Colors.grey[900]
                 : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.red.withOpacity(0.3)),
@@ -315,7 +315,7 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
+                ? Colors.grey[900]
                 : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
@@ -494,7 +494,7 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? const Color(0xFF1E1E1E)
+            ? Colors.grey[900]
             : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(

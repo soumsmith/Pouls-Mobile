@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:syncfusion_flutter_core/theme.dart';
 import '../config/app_colors.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/custom_loader.dart';
@@ -60,6 +61,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+       backgroundColor: AppColors.screenBg(context),
       body: CustomScrollView(
         slivers: [
           CustomSliverAppBar(
@@ -78,19 +80,23 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                   : Stack(
                       children: [
                         // Le viewer ne rebuild JAMAIS grâce au late final
-                        _pdfWidget,
+                        SfPdfViewerTheme(
+                          data: SfPdfViewerThemeData(
+                            backgroundColor: AppColors.screenBg(context),
+                          ),
+                          child: _pdfWidget,
+                        ),
 
                         // Loader overlay — disparaît une fois le doc chargé
                         if (isLoading)
                           Container(
-                            color: Colors.white,
+                            color: AppColors.screenBg(context),
                             child: Center(
                               child: CustomLoader(
                                 message: 'Chargement du PDF...',
                                 loaderColor: AppColors.screenOrange,
                                 size: 56.0,
-                                showBackground: true,
-                                backgroundColor: Colors.white,
+                                showBackground: false,
                               ),
                             ),
                           ),

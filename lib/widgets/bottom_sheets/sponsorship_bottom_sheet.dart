@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../custom_text_field.dart';
 import '../custom_form_button.dart';
+import '../components/custom_button.dart';
 import '../custom_loader.dart';
 import '../snackbar.dart';
 import '../share_button.dart';
@@ -157,7 +158,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                 const SizedBox(height: 24),
 
                 // Bouton d'obtention du code
-                CustomFormButton(
+                CustomButton(
                   text: 'Obtenir mon code de parrainage',
                   color: AppColors.screenOrange,
                   icon: Icons.card_giftcard_rounded,

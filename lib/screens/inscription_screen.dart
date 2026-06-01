@@ -12,6 +12,7 @@ import '../services/inscription_api_service.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/bottom_sheets/payment_choice_bottom_sheet.dart';
 import '../widgets/snackbar.dart';
+import '../widgets/components/custom_button.dart';
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
@@ -2018,149 +2019,46 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     final isLast = _currentPageIndex == _orderedStepIds.length - 1;
     final isSecondToLast = _currentPageIndex == _orderedStepIds.length - 2;
 
-    return Container(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisAlignment: _currentPageIndex > 0
-              ? MainAxisAlignment.spaceBetween
-              : MainAxisAlignment.end,
-          children: [
-            if (_currentPageIndex > 0)
-              GestureDetector(
-                onTap: _prevStep,
-                child: Container(
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1E293B)
-                        : AppColors.screenSurface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: dividerColor),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 14,
-                        color: textSecondaryColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Précédent',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            if (!isLast)
-              GestureDetector(
-                onTap: canNext ? _nextStep : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    gradient: canNext
-                        ? const LinearGradient(
-                            colors: [
-                              AppColors.shopBlueLight,
-                              AppColors.shopBlue,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : LinearGradient(
-                            colors: [
-                              Colors.grey.shade300,
-                              Colors.grey.shade300,
-                            ],
-                          ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: canNext
-                        ? [
-                            BoxShadow(
-                              color: AppColors.shopBlue.withOpacity(0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        isSecondToLast ? 'Récap' : 'Suivant',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: canNext ? Colors.white : Colors.grey.shade500,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 14,
-                        color: canNext ? Colors.white : Colors.grey.shade500,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            if (isLast)
-              GestureDetector(
-                onTap: _showPaymentChoiceBottomSheet,
-                child: Container(
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shopBlue.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Confirmer',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          if (_currentPageIndex > 0)
+            CustomButton(
+              text: 'Précédent',
+              onPressed: _prevStep,
+              color: isDark ? Colors.white60 : Colors.grey[700]!,
+              isLight: true,
+              icon: Icons.arrow_back_ios_new,
+              width: 120,
+              height: 40,
+              fontSize: 12,
+            )
+          else
+            const Spacer(),
+          if (_currentPageIndex > 0) const Spacer(),
+          if (!isLast)
+            CustomButton(
+              text: isSecondToLast ? 'Récap' : 'Suivant',
+              onPressed: canNext ? _nextStep : null,
+              color: AppColors.shopBlue,
+              icon: Icons.arrow_forward_rounded,
+              iconOnRight: true,
+              width: 120,
+              height: 40,
+              fontSize: 12,
+            ),
+          if (isLast)
+            CustomButton(
+              text: 'Confirmer',
+              onPressed: _showPaymentChoiceBottomSheet,
+              color: AppColors.shopBlue,
+              icon: Icons.check_circle_rounded,
+              width: 120,
+              height: 40,
+              fontSize: 12,
+            ),
+        ],
       ),
     );
   }
@@ -2384,28 +2282,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   const SizedBox(height: 32),
 
                   // Bouton retour
-                  SizedBox(
-                    width: double.infinity,
+                  CustomButton(
+                    text: 'Retour',
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: AppColors.shopBlue,
+                    icon: Icons.arrow_back_rounded,
                     height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                      label: const Text(
-                        'Retour',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.shopBlue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
+                    fontSize: 15,
                   ),
                 ],
               ),
@@ -2764,35 +2647,13 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   ),
                   const SizedBox(height: 32),
 
-                  // Bouton de retour
-                  SizedBox(
-                    width: double.infinity,
+                  CustomButton(
+                    text: 'Retour',
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: AppColors.shopBlue,
+                    icon: Icons.arrow_back_rounded,
                     height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.shopBlue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.arrow_back_rounded, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Retour',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    fontSize: 16,
                   ),
                 ],
               ),
@@ -2915,41 +2776,20 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   Column(
                     children: [
                       // Bouton réessayer
-                      SizedBox(
-                        width: double.infinity,
+                      CustomButton(
+                        text: 'Réessayer',
+                        onPressed: () {
+                          setState(() {
+                            _hasCriticalError = false;
+                            _criticalErrorMessage = null;
+                            _isInitialLoading = true;
+                          });
+                          _initializeStudentData();
+                        },
+                        color: AppColors.shopBlue,
+                        icon: Icons.refresh_rounded,
                         height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _hasCriticalError = false;
-                              _criticalErrorMessage = null;
-                              _isInitialLoading = true;
-                            });
-                            _initializeStudentData();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.shopBlue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.refresh_rounded, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Réessayer',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        fontSize: 16,
                       ),
                       const SizedBox(height: 12),
                       // Bouton actualiser (nouveau)

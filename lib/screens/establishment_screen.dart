@@ -619,18 +619,18 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: MediaQuery.of(context).viewInsets,
-        child: _buildAdvancedSearchBottomSheet(),
-      ),
+      builder: (ctx) => _buildAdvancedSearchBottomSheet(ctx),
     );
   }
 
-  Widget _buildAdvancedSearchBottomSheet() {
+  Widget _buildAdvancedSearchBottomSheet(BuildContext context) {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
       child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.95,
+        ),
         decoration: BoxDecoration(
           color: AppColors.screenSurfaceThemed(context),
           borderRadius: const BorderRadius.only(
@@ -638,11 +638,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             topRight: Radius.circular(20),
           ),
         ),
-        child: SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Container(
               margin: const EdgeInsets.only(top: 8),
               width: 40,
@@ -714,121 +712,120 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Pays',
-                          hint: 'Entrez le pays',
-                          icon: Icons.public_rounded,
-                          controller: _paysController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Pays',
+                            hint: 'Entrez le pays',
+                            icon: Icons.public_rounded,
+                            controller: _paysController,
+                            iconColor: AppColors.screenOrange,
+                            focusBorderColor: AppColors.screenOrange,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Ville',
-                          hint: 'Entrez la ville',
-                          icon: Icons.location_city_rounded,
-                          controller: _villeController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Ville',
+                            hint: 'Entrez la ville',
+                            icon: Icons.location_city_rounded,
+                            controller: _villeController,
+                            iconColor: AppColors.screenOrange,
+                            focusBorderColor: AppColors.screenOrange,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Quartier',
-                          hint: 'Entrez le quartier',
-                          icon: Icons.location_on_rounded,
-                          controller: _quartierController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Nom établissement',
-                          hint: 'Entrez le nom',
-                          icon: Icons.business_rounded,
-                          controller: _nomEtablissementController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Catégorie',
-                          hint: 'Ex: Primaire, Collège...',
-                          icon: Icons.category_rounded,
-                          controller: _categorieController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Code pays',
-                          hint: 'Entrez le code',
-                          icon: Icons.code_rounded,
-                          controller: _codepaysController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _applyAdvancedSearch();
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.screenOrange,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      ],
                     ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Appliquer les filtres',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Quartier',
+                            hint: 'Entrez le quartier',
+                            icon: Icons.location_on_rounded,
+                            controller: _quartierController,
+                            iconColor: AppColors.screenOrange,
+                            focusBorderColor: AppColors.screenOrange,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Nom établissement',
+                            hint: 'Entrez le nom',
+                            icon: Icons.business_rounded,
+                            controller: _nomEtablissementController,
+                            iconColor: AppColors.screenOrange,
+                            focusBorderColor: AppColors.screenOrange,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Catégorie',
+                            hint: 'Ex: Primaire, Collège...',
+                            icon: Icons.category_rounded,
+                            controller: _categorieController,
+                            iconColor: AppColors.screenOrange,
+                            focusBorderColor: AppColors.screenOrange,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Code pays',
+                            hint: 'Entrez le code',
+                            icon: Icons.code_rounded,
+                            controller: _codepaysController,
+                            iconColor: AppColors.screenOrange,
+                            focusBorderColor: AppColors.screenOrange,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _applyAdvancedSearch();
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.screenOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Appliquer les filtres',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ── Body ───────────────────────────────────────────────────
   List<Widget> _buildSliverContent() {

@@ -9,6 +9,7 @@ class EstablishmentAction {
   final String key;
   final String title;
   final String subtitle;
+  final String? overtitle;
   final String? imagePath;
   final IconData? iconData;
   final Color color;
@@ -19,6 +20,7 @@ class EstablishmentAction {
     required this.key,
     required this.title,
     required this.subtitle,
+    this.overtitle,
     this.imagePath,
     this.iconData,
     required this.color,
@@ -123,7 +125,7 @@ class EstablishmentActionSection extends StatelessWidget {
   }
 }
 
-// Widget pour les cartes de communauté (layout différent)
+// Widget pour les cartes de communauté (layout différent - style Notes & Bulletins)
 class EstablishmentCommunitySection extends StatelessWidget {
   final List<EstablishmentAction> actions;
   final bool isDark;
@@ -136,52 +138,48 @@ class EstablishmentCommunitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final screenWidth = constraints.maxWidth;
-          final crossAxisCount = screenWidth > 600 ? 2 : 1;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final cardWidth = actions.length == 1
+            ? (screenWidth > 600 ? 340.0 : screenWidth - 32.0)
+            : (screenWidth > 600 ? 340.0 : screenWidth * 0.75);
+        final cardHeight = cardWidth * 0.55; 
+        final containerHeight = cardHeight + 75.0;
 
-          Widget buildCard(EstablishmentAction action, int index) {
-            return SchoolLifeItemCard(
-              title: action.title,
-              subtitle: action.subtitle,
-              imagePath: action.imagePath,
-              iconData: action.iconData,
-              isDark: isDark,
-              color: action.color,
-              buttonText: action.actionText,
-              onTap: action.onTap,
-            );
-          }
-
-          // Mobile : Column pour éviter l'espace inutile du GridView
-          if (crossAxisCount == 1) {
-            return Column(
-              children: actions
-                  .asMap()
-                  .entries
-                  .map((entry) => buildCard(entry.value, entry.key))
-                  .toList(),
-            );
-          }
-
-          // Tablette/Desktop : GridView 2 colonnes
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 50,
-              mainAxisSpacing: 0,
-              childAspectRatio: 6,
-            ),
+        return SizedBox(
+          height: containerHeight,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
             itemCount: actions.length,
-            itemBuilder: (context, index) => buildCard(actions[index], index),
-          );
-        },
-      ),
+            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              final action = actions[index];
+              return ImageMenuCardExternalTitle(
+                index: index,
+                cardKey: action.key,
+                overtitle: action.overtitle ?? 'COMMUNAUTÉ',
+                title: action.title,
+                subtitle: action.subtitle,
+                imagePath: action.imagePath,
+                iconData: action.iconData,
+                width: cardWidth,
+                height: null,
+                imageHeight: cardHeight,
+                imageBorderRadius: 16.0,
+                enableInnerBorder: true,
+                enableOuterBorder: true,
+                innerBorderWidth: 0.5,
+                outerBorderWidth: 0.5,
+                innerBorderColor: action.color.withOpacity(0.3),
+                color: action.color,
+                onTap: action.onTap,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

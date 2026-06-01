@@ -51,6 +51,9 @@ class AppConfig {
     return 'https://api2.vie-ecoles.com/api';
   }
 
+  // API Africa
+  static const String API_AFRICA_URL = 'https://api-africa.vie-ecoles.com/api';
+
   // TODO: Configurer le timeout des requêtes HTTP
   static const Duration API_TIMEOUT = Duration(seconds: 30);
 }

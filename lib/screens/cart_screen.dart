@@ -14,6 +14,7 @@ import '../widgets/order_wizard_bottom_sheet.dart';
 import '../services/auth_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/components/custom_button.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -611,75 +612,14 @@ class _CartScreenState extends State<CartScreen>
   }
 
   Widget _buildModernCheckoutButton() {
-    return GestureDetector(
-      onTap: _isCheckingOut ? null : _proceedToCheckout,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: _isCheckingOut
-              ? LinearGradient(
-                  colors: [
-                    AppColors.isDarkMode(context) 
-                        ? Colors.grey.shade600
-                        : Colors.grey.shade300,
-                    AppColors.isDarkMode(context) 
-                        ? Colors.grey.shade600
-                        : Colors.grey.shade300,
-                  ],
-                )
-              : const LinearGradient(
-                  colors: [
-                    AppColors.shopBlueLight,
-                    AppColors.shopBlue,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: !_isCheckingOut
-              ? [
-                  BoxShadow(
-                    color: AppColors.shopBlue.withOpacity(0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: _isCheckingOut
-              ? SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Commander maintenant',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
-                ),
-        ),
-      ),
+    return CustomButton(
+      text: 'Commander maintenant',
+      color: AppColors.shopBlue,
+      icon: Icons.arrow_forward_rounded,
+      iconOnRight: true,
+      onPressed: _proceedToCheckout,
+      isLoading: _isCheckingOut,
+      height: 56,
     );
   }
 

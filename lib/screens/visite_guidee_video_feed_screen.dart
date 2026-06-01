@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../widgets/share_bottom_sheet.dart';
 import '../models/visite_guidee_video.dart';
 import '../models/video_comment.dart';
 import '../models/video_rating.dart';
@@ -12,6 +11,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../config/app_dimensions.dart';
+import '../widgets/components/custom_button.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
@@ -149,7 +149,7 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
   }
 
   // Afficher les options de partage
-  Future<void> _shareVideo() async {
+  void _shareVideo() {
     if (widget.videos.isEmpty) return;
     
     final video = widget.videos[_currentIndex];
@@ -161,19 +161,18 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
 
     final String videoUrl = 'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
     
-    try {
-      await Share.share(videoUrl, subject: video.displayTitle);
-    } catch (e) {
-      if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: '',
-          message: 'Erreur de partage: $e',
-          backgroundColor: Colors.red,
-          icon: Icons.error_outline,
-        );
-      }
-    }
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
+      builder: (context) => ShareBottomSheet(
+        title: 'Partager la vidéo',
+        itemTitle: video.displayTitle,
+        shareText: '🎬 Découvrez cette visite guidée : ${video.displayTitle}\n\nRegardez la vidéo ici : $videoUrl',
+      ),
+    );
   }
 
   // Afficher les commentaires
@@ -1393,23 +1392,11 @@ class _RatingSheetState extends State<_RatingSheet> {
                     }),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _currentRating > 0 ? _submitRating : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                      ),
-                      child: const Text(
-                        'Envoyer la note',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                  CustomButton(
+                    text: 'Envoyer la note',
+                    color: Colors.green,
+                    onPressed: _currentRating > 0 ? _submitRating : null,
+                    height: 48,
                   ),
                 ] else ...[
                   Container(

@@ -7,6 +7,7 @@ import '../screens/help_support_screen.dart';
 import '../screens/new_settings_screen.dart';
 import '../screens/messages_screen.dart';
 import '../screens/my_tickets_screen.dart';
+import '../screens/referred_users_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import 'dart:convert';
@@ -196,6 +197,18 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+      },
+    ),
+    _MenuItem(
+      title: 'Utilisateurs parrainés',
+      subtitle: 'Voir vos filleuls et vos points',
+      icon: Icons.group_add_rounded,
+      color: const Color(0xFFFF6B2C),
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ReferredUsersScreen()));
       },
     ),
     _MenuItem(

@@ -7,6 +7,7 @@ import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/screens/visite_guidee_video_feed_screen.dart';
 import 'package:parents_responsable/widgets/custom_form_button.dart';
+import '../widgets/components/custom_button.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
 import 'package:parents_responsable/widgets/image_menu_card.dart';
@@ -14,6 +15,8 @@ import 'package:parents_responsable/widgets/image_menu_card_external_title.dart'
 import 'package:parents_responsable/widgets/establishment_action_cards.dart';
 import 'package:parents_responsable/widgets/bottom_nav.dart';
 import 'package:parents_responsable/widgets/bottom_sheet_menu.dart';
+import '../widgets/search_bar_widget.dart';
+import '../widgets/feedback_state_widget.dart';
 import 'dart:developer' as developer;
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
@@ -315,7 +318,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   EcoleDetail? _ecoleDetail;
   EcoleData? _ecoleParametres;
-  Future<ScolariteResponse>? _scolariteFuture;
+  Future<List<Scolarite>>? _scolariteFuture;
   Future<List<Niveau>>? _niveauxFuture;
   String? _selectedNiveauFiltre;
 
@@ -367,6 +370,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   String _selectedSexe = 'M';
   String _selectedStatutAff = 'Affecté';
   String _searchQuery = '';
+  bool _isSearchingScolarite = false;
   String? _expandedBranche;
   bool _isOverviewExpanded = false;
   bool _isQRCodeExpanded = false;
@@ -770,34 +774,36 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       _isLoadingBlogs = true;
       _isLoadingAvis = true;
     });
-    try {
-      final results = await Future.wait([
-        _blogService.getBlogsForUI('grand', code).catchError((e) {
-          setState(() {
-            _blogsError = e.toString();
-            _isLoadingBlogs = false;
-          });
-          throw e;
-        }),
-        _avisService.getAvisForUI(code).catchError((e) {
-          setState(() {
-            _avisError = e.toString();
-            _isLoadingAvis = false;
-          });
-          throw e;
-        }),
-      ]);
+
+    // Handle Blogs
+    _blogService.getBlogsForUI('grand', code).then((blogs) {
+      if (!mounted) return;
       setState(() {
-        if (_blogsError == null) {
-          _blogs = results[0] as List<Map<String, dynamic>>;
-          _isLoadingBlogs = false;
-        }
-        if (_avisError == null) {
-          _avis = results[1] as List<Map<String, dynamic>>;
-          _isLoadingAvis = false;
-        }
+        _blogs = blogs;
+        _isLoadingBlogs = false;
       });
-    } catch (_) {}
+    }).catchError((e) {
+      if (!mounted) return;
+      setState(() {
+        _blogsError = e.toString();
+        _isLoadingBlogs = false;
+      });
+    });
+
+    // Handle Avis
+    _avisService.getAvisForUI(code).then((avis) {
+      if (!mounted) return;
+      setState(() {
+        _avis = avis;
+        _isLoadingAvis = false;
+      });
+    }).catchError((e) {
+      if (!mounted) return;
+      setState(() {
+        _avisError = e.toString();
+        _isLoadingAvis = false;
+      });
+    });
   }
 
   Future<void> _loadVisiteGuideeVideos() async {
@@ -1090,7 +1096,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       isDark: isDark,
       actions: [
         AppBarAction(
-          icon: Icons.favorite_border,
+          icon: Icons.rate_review_outlined,
           onTap: () {
             _showActionBottomSheet(
               'voir_les_avis',
@@ -1098,11 +1104,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             );
           },
           tooltip: 'Avis et notes',
-        ).buildWidget(isDark),
-        AppBarAction(
-          icon: Icons.share,
-          onTap: () {},
-          tooltip: 'Partager',
         ).buildWidget(isDark),
         const SizedBox(width: 4),
       ],
@@ -2668,9 +2669,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     final communityActions = [
       EstablishmentAction(
         key: 'galeries',
+        overtitle: 'PHOTOS & VIDÉOS',
         title: 'Galeries Écoles',
         subtitle: 'Découvrez nos galeries photos',
-        imagePath: 'assets/images/icons/galeries_photos.png',
+        imagePath: 'assets/images/icons/galerie.png',
         color: const Color(0xFF00796B),
         actionText: 'Voir galeries',
         onTap: () => Navigator.of(context).push(
@@ -3289,14 +3291,32 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     if (actionType == 'scolarite') {
       print('🔄 CLIC SUR "SCOLARITÉ" - Déclenchement du chargement');
       setState(() {
-        _selectedNiveauFiltre = null;
         _searchQuery = '';
         _searchController.clear();
-        _niveauxFuture ??= NiveauService.getNiveauxByEcole(widget.ecole.parametreCode ?? '');
-        _scolariteFuture = ScolariteService.getScolaritesByEcole(
-          widget.ecole.parametreCode ?? '',
-          niveau: null,
-        );
+        _niveauxFuture ??= NiveauService.getNiveauxByEcole(widget.ecole.parametreCode ?? '').then((niveaux) {
+          if (niveaux.isNotEmpty) {
+            final niveauLabels = <String>{};
+            for (final n in niveaux) {
+              final label = (n.niveau?.isNotEmpty == true) ? n.niveau! : n.nom;
+              if (label != null) {
+                niveauLabels.add(label);
+              }
+            }
+            final sortedLabels = niveauLabels.toList()..sort();
+            if (sortedLabels.isNotEmpty) {
+              setState(() {
+                _selectedNiveauFiltre = sortedLabels.first;
+                _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                  widget.ecole.parametreCode ?? '',
+                  niveau: sortedLabels.first,
+                );
+              });
+              // Force bottom sheet rebuild to display _scolariteFuture
+              _avisNotifier.value++;
+            }
+          }
+          return niveaux;
+        });
       });
     }
 
@@ -3309,16 +3329,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         builder: (context, setSheetState) => GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: MediaQuery.of(context).viewInsets,
-            child: ValueListenableBuilder<int>(
-              valueListenable: _avisNotifier,
-              builder: (context, _, __) {
-              return Container(
-                constraints: BoxConstraints(
-                  minHeight: 100,
-                  maxHeight: MediaQuery.sizeOf(context).height * 0.9,
-                ),
+          child: ValueListenableBuilder<int>(
+            valueListenable: _avisNotifier,
+            builder: (context, _, __) {
+            return Container(
+                height: MediaQuery.sizeOf(context).height * 0.95,
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
                   borderRadius: const BorderRadius.vertical(
@@ -3332,7 +3347,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                 ),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.max,
                   children: [
                     BottomSheetHeader(
                       icon: def.icon,
@@ -3344,13 +3359,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       description: def.subtitle,
                       onClose: () => Navigator.of(context).pop(),
                     ),
-                    Flexible(
+                    Expanded(
                       child: SingleChildScrollView(
                         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        padding: EdgeInsets.fromLTRB(20, 20, 20, actionType == 'voir_les_avis' ? 0 : 20 + MediaQuery.of(context).viewInsets.bottom),
                         child: _buildActionContent(actionType, def.color, setSheetState),
                       ),
                     ),
+                    if (actionType == 'voir_les_avis')
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(20, 10, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+                        child: _buildComposeAvisBar(),
+                      ),
                   ],
                 ),
               );
@@ -3358,7 +3378,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           ),
         ),
       ),
-    ),
   );
 }
 
@@ -3753,16 +3772,20 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 ),
               )
             else if (snapshot.hasError)
-              _buildTabError(
-                snapshot.error.toString(),
-                () => setSheetState(() {}),
-                _kActions['communication']!.color,
+              ErrorStateWidget(
+                error: snapshot.error.toString().replaceAll('Exception: ', ''),
+                onRetry: () => setSheetState(() {}),
+                headerColor: _kActions['communication']!.color,
               )
             else if (!snapshot.hasData || snapshot.data!.isEmpty)
-              _buildTabEmpty(
-                Icons.article_outlined,
-                'Aucune communication',
-                'Aucune communication disponible pour le moment.',
+              EmptyStateWidget(
+                icon: Icons.article_outlined,
+                title: 'Aucune communication',
+                subtitle: 'Aucune communication disponible pour le moment.',
+                onRefresh: () => setSheetState(() {}),
+                buttonColor: _kActions['communication']!.color,
+                buttonIcon: Icons.refresh_rounded,
+                buttonIsLight: true,
               )
             else
               ...snapshot.data!.map((blog) => _buildBlogCard(blog)).toList(),
@@ -4049,17 +4072,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           );
         }
         if (snapshot.hasError) {
-          return _buildTabError(
-            snapshot.error.toString(),
-            () => setState(() {}),
-            _kActions['niveaux']!.color,
+          return ErrorStateWidget(
+            error: snapshot.error.toString().replaceAll('Exception: ', ''),
+            onRetry: () => setState(() {}),
+            headerColor: _kActions['niveaux']!.color,
           );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return _buildTabEmpty(
-            Icons.school_outlined,
-            'Aucun niveau disponible',
-            'Cette école n\'a pas de niveaux configurés',
+          return EmptyStateWidget(
+            icon: Icons.school_outlined,
+            title: 'Aucun niveau disponible',
+            subtitle: 'Cette école n\'a pas de niveaux configurés',
+            onRefresh: () => setState(() {}),
+            buttonColor: _kActions['niveaux']!.color,
+            buttonIcon: Icons.refresh_rounded,
+            buttonIsLight: true,
           );
         }
         final niveaux = snapshot.data!;
@@ -4407,16 +4434,20 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           )
         else if (_eventsError != null)
-          _buildTabError(
-            _eventsError!,
-            _loadBlogsEventsAndAvis,
-            _kActions['school_events']!.color,
+          ErrorStateWidget(
+            error: _eventsError!,
+            onRetry: _loadBlogsEventsAndAvis,
+            headerColor: _kActions['school_events']!.color,
           )
         else if (_schoolEvents.isEmpty)
-          _buildTabEmpty(
-            Icons.event_outlined,
-            'Aucun événement',
-            'Aucun événement disponible pour le moment.',
+          EmptyStateWidget(
+            icon: Icons.event_outlined,
+            title: 'Aucun événement',
+            subtitle: 'Aucun événement disponible pour le moment.',
+            onRefresh: _loadBlogsEventsAndAvis,
+            buttonColor: _kActions['school_events']!.color,
+            buttonIcon: Icons.refresh_rounded,
+            buttonIsLight: true,
           )
         else
           Column(
@@ -4822,55 +4853,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Scolarité tab ──────────────────────────────────────────────────────────
   Widget _buildScolariteTab(Color headerColor, StateSetter setSheetState) {
-    if (_scolariteFuture == null) {
-      return const Center(
-        child: CustomLoader(
-          message: 'Chargement de la scolarité...',
-          loaderColor: AppColors.screenOrange,
-          size: 56.0,
-          showBackground: false,
-        ),
-      );
+    if (_scolariteFuture == null && _niveauxFuture == null) {
+      return const SizedBox.shrink();
     }
 
-    return FutureBuilder<ScolariteResponse>(
-      future: _scolariteFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CustomLoader(
-              message: 'Chargement de la scolarité...',
-              loaderColor: AppColors.screenOrange,
-              size: 56.0,
-              showBackground: false,
-            ),
-          );
-        }
-        if (snapshot.hasError) {
-          return _buildTabError(snapshot.error.toString(), () {
-            setSheetState(() {
-              _scolariteFuture = ScolariteService.getScolaritesByEcole(
-                widget.ecole.parametreCode ?? '',
-                niveau: _selectedNiveauFiltre,
-              );
-            });
-          }, _kActions['scolarite']!.color);
-        }
-        if (!snapshot.hasData || snapshot.data!.data.isEmpty) {
-          return _buildTabEmpty(
-            Icons.account_balance_wallet_outlined,
-            'Aucun frais de scolarité',
-            'Cette école n\'a pas de frais configurés',
-          );
-        }
-        final scolarites = ScolariteService.filtrerEtTrierScolarites(
-          snapshot.data!.data,
-        );
-        final scolaritesParBranche = ScolariteService.grouperParBranche(
-          scolarites,
-        );
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Frais de scolarité',
@@ -4880,176 +4871,229 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Frais par branche et statut',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondaryThemed(context),
+            IconButton(
+              icon: Icon(
+                _isSearchingScolarite ? Icons.search_off_rounded : Icons.search_rounded,
+                color: _isSearchingScolarite ? AppColors.screenOrange : AppColors.screenTextSecondaryThemed(context),
+                size: 24,
               ),
+              onPressed: () {
+                setSheetState(() {
+                  _isSearchingScolarite = !_isSearchingScolarite;
+                  if (!_isSearchingScolarite) {
+                    _searchQuery = '';
+                    _searchController.clear();
+                  }
+                });
+              },
             ),
-            const SizedBox(height: 12),
-            if (_niveauxFuture != null)
-              FutureBuilder<List<Niveau>>(
-                future: _niveauxFuture,
-                builder: (context, levelsSnapshot) {
-                  if (!levelsSnapshot.hasData || levelsSnapshot.data!.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Frais par branche et statut',
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.screenTextSecondaryThemed(context),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_niveauxFuture != null)
+          FutureBuilder<List<Niveau>>(
+            future: _niveauxFuture,
+            builder: (context, levelsSnapshot) {
+              if (levelsSnapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: CustomLoader(
+                      message: 'Chargement des niveaux...',
+                      loaderColor: AppColors.screenOrange,
+                      size: 32.0,
+                      showBackground: false,
+                    ),
+                  ),
+                );
+              }
+              if (levelsSnapshot.hasError || !levelsSnapshot.hasData || levelsSnapshot.data!.isEmpty) {
+                return const SizedBox.shrink();
+              }
 
-                  // Extraire les noms uniques des niveaux
-                  final niveauLabels = <String>{};
-                  for (final n in levelsSnapshot.data!) {
-                    final label = (n.niveau?.isNotEmpty == true) ? n.niveau! : n.nom;
-                    if (label != null) {
-                      niveauLabels.add(label);
-                    }
-                  }
+              // Extraire les noms uniques des niveaux
+              final niveauLabels = <String>{};
+              for (final n in levelsSnapshot.data!) {
+                final label = (n.niveau?.isNotEmpty == true) ? n.niveau! : n.nom;
+                if (label != null) {
+                  niveauLabels.add(label);
+                }
+              }
 
-                  final sortedLabels = niveauLabels.toList()..sort();
+              final sortedLabels = niveauLabels.toList()..sort();
 
-                  return Container(
-                    height: 40,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        // Chip "Tous"
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
+              return Container(
+                height: 45, // Augmenté pour laisser la place à l'ombre
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4), // Padding pour l'ombre
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    // Chips des niveaux individuels
+                    ...sortedLabels.map((lbl) {
+                      final isSelected = _selectedNiveauFiltre == lbl;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: AppDimensions.getSettingsCardShadow(context),
+                          ),
                           child: ChoiceChip(
-                            label: const Text('Tous'),
-                            selected: _selectedNiveauFiltre == null,
+                            label: Text(lbl),
+                            selected: isSelected,
                             selectedColor: AppColors.screenOrange.withOpacity(0.2),
+                            backgroundColor: AppColors.screenSurfaceThemed(context),
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             labelStyle: TextStyle(
-                              color: _selectedNiveauFiltre == null
+                              color: isSelected
                                   ? AppColors.screenOrange
                                   : AppColors.screenTextSecondaryThemed(context),
-                              fontWeight: FontWeight.bold,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               fontSize: 13,
                             ),
                             onSelected: (selected) {
-                              if (selected) {
+                              if (selected && !isSelected) {
                                 setSheetState(() {
-                                  _selectedNiveauFiltre = null;
+                                  _selectedNiveauFiltre = lbl;
                                   _scolariteFuture = ScolariteService.getScolaritesByEcole(
                                     widget.ecole.parametreCode ?? '',
-                                    niveau: null,
+                                    niveau: _selectedNiveauFiltre!,
                                   );
                                 });
                               }
                             },
                           ),
                         ),
-                        // Chips des niveaux individuels
-                        ...sortedLabels.map((lbl) {
-                          final isSelected = _selectedNiveauFiltre == lbl;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: ChoiceChip(
-                              label: Text(lbl),
-                              selected: isSelected,
-                              selectedColor: AppColors.screenOrange.withOpacity(0.2),
-                              labelStyle: TextStyle(
-                                color: isSelected
-                                    ? AppColors.screenOrange
-                                    : AppColors.screenTextSecondaryThemed(context),
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 13,
-                              ),
-                              onSelected: (selected) {
-                                setSheetState(() {
-                                  _selectedNiveauFiltre = selected ? lbl : null;
-                                  _scolariteFuture = ScolariteService.getScolaritesByEcole(
-                                    widget.ecole.parametreCode ?? '',
-                                    niveau: _selectedNiveauFiltre,
-                                  );
-                                });
-                              },
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.screenSurfaceThemed(context),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.screenBorder(context)),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: TextStyle(
-                  color: AppColors.screenTextPrimaryThemed(context),
-                  fontSize: 13,
-                ),
-                focusNode: _searchFocusNode,
-                autofocus: false,
-                textInputAction: TextInputAction.search,
-                onChanged: (v) {
-                  setSheetState(() => _searchQuery = v.toLowerCase());
-                },
-                decoration: InputDecoration(
-                  hintText: 'Rechercher un niveau...',
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: Colors.grey,
-                    size: 20,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
-                          onPressed: () {
-                            setSheetState(() => _searchQuery = '');
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  hintStyle: const TextStyle(
-                    color: Color(0xFFBBBBBB),
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...scolaritesParBranche.entries
-                .where(
-                  (e) =>
-                      _searchQuery.isEmpty ||
-                      e.key.toLowerCase().contains(_searchQuery),
-                )
-                .map(
-                  (e) => StatefulBuilder(
-                    builder: (context, setState) {
-                      String? expandedBranche = _expandedBranche;
-                      return _buildBrancheSection(
-                        e.key,
-                        e.value,
-                        setState,
-                        expandedBranche,
-                        (newValue) {
-                          setState(() => expandedBranche = newValue);
-                          setState(() => _expandedBranche = newValue);
-                        },
                       );
-                    },
+                    }),
+                  ],
+                ),
+              );
+            },
+          ),
+        SearchBarWidget(
+          isSearching: _isSearchingScolarite,
+          searchController: _searchController,
+          hintText: 'Rechercher un frais...',
+          onChanged: (v) {
+            setSheetState(() => _searchQuery = v.toLowerCase());
+          },
+          onClear: () {
+            setSheetState(() => _searchQuery = '');
+          },
+        ),
+        const SizedBox(height: 12),
+        if (_scolariteFuture != null)
+          FutureBuilder<List<Scolarite>>(
+            future: _scolariteFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: CustomLoader(
+                      message: 'Chargement de la scolarité...',
+                      loaderColor: AppColors.screenOrange,
+                      size: 56.0,
+                      showBackground: false,
+                    ),
                   ),
-                )
-                .toList(),
-            const SizedBox(height: 70),
-          ],
-        );
-      },
+                );
+              }
+              if (snapshot.hasError) {
+                return ErrorStateWidget(
+                  error: snapshot.error.toString().replaceAll('Exception: ', ''), 
+                  onRetry: () {
+                    setSheetState(() {
+                      if (_selectedNiveauFiltre != null) {
+                        _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                          widget.ecole.parametreCode ?? '',
+                          niveau: _selectedNiveauFiltre!,
+                        );
+                      }
+                    });
+                  }, 
+                  headerColor: _kActions['scolarite']!.color
+                );
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return EmptyStateWidget(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Aucun frais de scolarité',
+                  subtitle: 'Cette école n\'a pas de frais configurés pour ce niveau',
+                  onRefresh: () {
+                    setSheetState(() {
+                      if (_selectedNiveauFiltre != null) {
+                        _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                          widget.ecole.parametreCode ?? '',
+                          niveau: _selectedNiveauFiltre!,
+                        );
+                      }
+                    });
+                  },
+                  buttonColor: _kActions['scolarite']!.color,
+                  buttonIcon: Icons.refresh_rounded,
+                  buttonIsLight: true,
+                );
+              }
+              final scolarites = ScolariteService.filtrerEtTrierScolarites(
+                snapshot.data!,
+              );
+              final scolaritesParBranche = ScolariteService.grouperParBranche(
+                scolarites,
+              );
+              
+              final visibleEntries = scolaritesParBranche.entries.where(
+                    (e) =>
+                        _searchQuery.isEmpty ||
+                        e.key.toLowerCase().contains(_searchQuery) ||
+                        e.value.any((scol) => (scol.rubriqueLibelle.toLowerCase().contains(_searchQuery))),
+                  ).toList();
+                  
+              if (visibleEntries.isEmpty) {
+                return EmptyStateWidget(
+                  icon: Icons.search_off_rounded,
+                  title: 'Aucun résultat',
+                  subtitle: 'Aucun frais trouvé pour cette recherche',
+                );
+              }
+
+              return Column(
+                children: [
+                  ...visibleEntries.map(
+                    (e) => StatefulBuilder(
+                      builder: (context, setState) {
+                        String? expandedBranche = _expandedBranche;
+                        return _buildBrancheSection(
+                          e.key,
+                          e.value,
+                          setState,
+                          expandedBranche,
+                          (newValue) {
+                            setState(() => expandedBranche = newValue);
+                            setState(() => _expandedBranche = newValue);
+                          },
+                        );
+                      },
+                    ),
+                  ).toList(),
+                  const SizedBox(height: 70),
+                ],
+              );
+            },
+          ),
+      ],
     );
   }
 
@@ -5151,42 +5195,28 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Expanded(
-                          child: _buildTotalItem(
-                            'Affectés',
-                            totaux['AFF'] ?? 0,
-                            const Color(0xFF3B82F6),
-                            Icons.check_circle_rounded,
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 24,
-                          color: AppColors.screenDivider,
-                        ),
-                        Expanded(
-                          child: _buildTotalItem(
-                            'Écolier',
-                            totaux['ECOLIER'] ?? 0,
-                            const Color(0xFF10B981),
-                            Icons.face_rounded,
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 24,
-                          color: AppColors.screenDivider,
-                        ),
-                        Expanded(
-                          child: _buildTotalItem(
-                            'Non Affectés',
-                            totaux['NAFF'] ?? 0,
-                            const Color(0xFFEF4444),
-                            Icons.remove_circle_rounded,
-                          ),
-                        ),
-                      ],
+                      children: () {
+                        List<Widget> items = [];
+                        final int aff = totaux['AFF'] ?? 0;
+                        final int ecol = totaux['ECOLIER'] ?? 0;
+                        final int naff = totaux['NAFF'] ?? 0;
+                        
+                        if (aff > 0) {
+                          items.add(Expanded(child: _buildTotalItem('Affectés', aff, const Color(0xFF3B82F6), Icons.check_circle_rounded)));
+                        }
+                        if (ecol > 0) {
+                          if (items.isNotEmpty) items.add(Container(width: 1, height: 24, color: AppColors.screenDivider));
+                          items.add(Expanded(child: _buildTotalItem('Écolier', ecol, const Color(0xFF10B981), Icons.face_rounded)));
+                        }
+                        if (naff > 0) {
+                          if (items.isNotEmpty) items.add(Container(width: 1, height: 24, color: AppColors.screenDivider));
+                          items.add(Expanded(child: _buildTotalItem('Non Affectés', naff, const Color(0xFFEF4444), Icons.remove_circle_rounded)));
+                        }
+                        if (items.isEmpty) {
+                          items.add(Expanded(child: _buildTotalItem('Aucun', 0, AppColors.screenTextSecondaryThemed(context), Icons.info_outline_rounded)));
+                        }
+                        return items;
+                      }(),
                     ),
                   ),
                 ],
@@ -5329,7 +5359,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 6),
                 child: Text(
-                  entry.key == 'INS' ? 'Inscription' : 'Scolarité',
+                  entry.value.first.rubriqueLibelle,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -5684,89 +5714,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Tab helpers ────────────────────────────────────────────────────────────
-  Widget _buildTabError(String error, VoidCallback onRetry, Color headerColor) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            Icon(Icons.error_outline_rounded, size: 56, color: Colors.red[300]),
-            const SizedBox(height: 12),
-            const Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              error,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.screenTextSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: headerColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Réessayer',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabEmpty(IconData icon, String title, String subtitle) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.screenOrangeLight,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 40, color: AppColors.screenOrange),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimaryThemed(context),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ══════════════════════════════════════════════════════════════════════════
   //  FORMS
@@ -6076,13 +6023,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           )
         else
           ..._avis.map((avis) => _buildAvisBubble(avis)),
-        const SizedBox(height: 16),
-        Divider(
-          color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
-          height: 1,
-        ),
-        const SizedBox(height: 12),
-        _buildComposeAvisBar(),
       ],
     );
   }
@@ -8112,11 +8052,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           const SizedBox(height: 20),
 
           // Consult button
-          CustomFormButton(
+          CustomButton(
             text: 'Consulter ma demande',
             icon: Icons.star_rounded,
             onPressed: () => _submitConsultRequest(_matriculeController.text),
             color: actionColor,
+            height: 50,
           ),
         ],
       ),

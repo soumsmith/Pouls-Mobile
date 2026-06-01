@@ -27,7 +27,17 @@ class CoulisseExcellenceService {
       print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
+        final dynamic decodedBody = json.decode(response.body);
+        List<dynamic> jsonData;
+        
+        if (decodedBody is Map<String, dynamic> && decodedBody.containsKey('data')) {
+          jsonData = decodedBody['data'];
+        } else if (decodedBody is List) {
+          jsonData = decodedBody;
+        } else {
+          throw Exception('Format de réponse inattendu');
+        }
+        
         print('JSON Data Length: ${jsonData.length}');
         print('JSON Data: $jsonData');
 
@@ -50,9 +60,9 @@ class CoulisseExcellenceService {
   }
 
   static Future<List<CoulisseExcellence>>
-  getAllCoulisseExcellenceVideos() async {
+  getAllCoulisseExcellenceVideos({int page = 1, int perPage = 20}) async {
     try {
-      final url = '$baseUrl/coulisseexcellencelist';
+      final url = '$baseUrl/coulisseexcellencelist?page=$page&per_page=$perPage';
       developer.log('GET Request URL: $url');
       print('=== API COULISSE EXCELLENCE (ALL) ===');
       print('URL: $url');
@@ -68,7 +78,17 @@ class CoulisseExcellenceService {
       print('Status Code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
+        final dynamic decodedBody = json.decode(response.body);
+        List<dynamic> jsonData;
+        
+        if (decodedBody is Map<String, dynamic> && decodedBody.containsKey('data')) {
+          jsonData = decodedBody['data'];
+        } else if (decodedBody is List) {
+          jsonData = decodedBody;
+        } else {
+          throw Exception('Format de réponse inattendu');
+        }
+        
         print('JSON Data Length: ${jsonData.length}');
 
         final videos = jsonData

@@ -315,6 +315,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<SchoolSupply> _schoolSupplies = [];
   bool _isLoading = true;
   bool _isLoadingSupplies = false;
+  bool _didInitialLoad = false;
 
   // Données de l'école récupérées directement depuis l'API spécifique à l'élève
   dynamic _apiEcoleData;
@@ -479,8 +480,11 @@ class _ChildListScreenState extends State<ChildListScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadData();
-    _loadNotifications(); // Charger les notifications automatiquement
+    if (!_didInitialLoad) {
+      _didInitialLoad = true;
+      _loadData();
+      _loadNotifications(); // Charger les notifications automatiquement
+    }
   }
 
   @override
@@ -1365,27 +1369,38 @@ class _ChildListScreenState extends State<ChildListScreen>
             });
           }
 
-          return Container(
-            height: MediaQuery.sizeOf(context).height * 0.8,
+          final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+          final screenHeight = MediaQuery.sizeOf(context).height;
+          final isDarkMode = _themeService.isDarkMode;
+          final double sheetHeight = keyboardHeight > 0 
+              ? screenHeight * 0.95 
+              : screenHeight * 0.8;
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            height: sheetHeight,
             decoration: BoxDecoration(
-              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
+              color: isDarkMode ? Colors.grey[900] : Colors.white,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
             ),
-            child: Column(
-              children: [
-                BottomSheetHeader(
-                  icon: Icons.person_off_rounded,
-                  imagePath: 'assets/images/icons/presence_conduite.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                  iconColor: const Color(0xFF00796B),
-                  title: 'Présence',
-                  description: 'Vérifiez la présence et la conduite',
-                  onClose: () => Navigator.of(context).pop(),
-                ),
-                Expanded(child: _buildAbsencesTab()),
-              ],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: keyboardHeight),
+              child: Column(
+                children: [
+                  BottomSheetHeader(
+                    icon: Icons.person_off_rounded,
+                    imagePath: 'assets/images/icons/presence_conduite.png',
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                    iconColor: const Color(0xFF00796B),
+                    title: 'Présence',
+                    description: 'Vérifiez la présence et la conduite',
+                    onClose: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(child: _buildAbsencesTab()),
+                ],
+              ),
             ),
           );
         },
@@ -4434,7 +4449,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'overtitle': 'ÉVALUATIONS',
                 'title': 'Mes Notes',
                 'subtitle': 'Consultez les moyennes et évaluations de votre enfant.',
-                'imagePath': 'assets/images/icons/notes.png',
+                'imagePath': 'assets/images/icons/mes-notes.png',
                 'color': const Color(0xFF1976D2),
                 'key': 'notes',
               },
@@ -4442,7 +4457,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'overtitle': 'BILAN TRIMESTRIEL',
                 'title': 'Mes bulletins',
                 'subtitle': 'Accédez aux bulletins de l\'année en cours.',
-                'imagePath': 'assets/images/icons/bulletins.png',
+                'imagePath': 'assets/images/icons/bulletin-scolaire.png',
                 'color': const Color(0xFF4CAF50),
                 'key': 'bulletins',
               },
@@ -4488,8 +4503,8 @@ class _ChildListScreenState extends State<ChildListScreen>
             ];
 
             final cardWidth = screenWidth > 600 ? 340.0 : screenWidth * 0.75;
-            final cardHeight = cardWidth * 0.45; // Ratio plus réduit pour une image moins haute
-            final containerHeight = cardHeight + 65.0; // Espace pour le texte ajusté
+            final cardHeight = cardWidth * 0.55; // Augmentation du ratio pour une carte d'image plus haute
+            final containerHeight = cardHeight + 75.0; // Espace supplémentaire pour le texte sous l'image
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,

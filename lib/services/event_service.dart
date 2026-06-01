@@ -12,13 +12,16 @@ class EventService {
   static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles';
   static Future<EventsResponse> getEvents({
     int page = 1,
-    int perPage = 20,
+    int perPage = 16,
     String? nomEtablissement,
     String? schoolCode,
+    String? country,
+    String? categorie,
+    String? date,
     bool debug = false,
   }) async {
     try {
-      String url = '$baseUrl/evenements-list?page=$page&per_page=$perPage';
+      String url = '${AppConfig.API_AFRICA_URL}/evenements-list?page=$page&per_page=$perPage';
 
       if (nomEtablissement != null && nomEtablissement.isNotEmpty) {
         url += '&nomEtablissement=${Uri.encodeComponent(nomEtablissement)}';
@@ -26,6 +29,18 @@ class EventService {
 
       if (schoolCode != null && schoolCode.isNotEmpty) {
         url += '&ecole=${Uri.encodeComponent(schoolCode)}';
+      }
+
+      if (country != null) {
+        url += '&country=${Uri.encodeComponent(country)}';
+      }
+
+      if (categorie != null) {
+        url += '&categorie=${Uri.encodeComponent(categorie)}';
+      }
+
+      if (date != null) {
+        url += '&date=${Uri.encodeComponent(date)}';
       }
 
       if (debug) {
@@ -80,9 +95,17 @@ class EventService {
   }
 
   /// Récupère la liste complète des événements (première page par défaut)
-  static Future<List<Event>> getEventsList({String? nomEtablissement}) async {
+  static Future<List<Event>> getEventsList({
+    String? nomEtablissement,
+    int page = 1,
+    int perPage = 16,
+  }) async {
     try {
-      final response = await getEvents(nomEtablissement: nomEtablissement);
+      final response = await getEvents(
+        nomEtablissement: nomEtablissement,
+        page: page,
+        perPage: perPage,
+      );
       return response.data;
     } catch (e) {
       throw Exception(
@@ -106,9 +129,12 @@ class EventService {
   /// Récupère les événements et les convertit en format UI
   static Future<List<Map<String, dynamic>>> getEventsForUI({
     int page = 1,
-    int perPage = 20,
+    int perPage = 16,
     String? nomEtablissement,
     String? schoolCode,
+    String? country,
+    String? categorie,
+    String? date,
     bool debug = false,
   }) async {
     try {
@@ -123,6 +149,9 @@ class EventService {
         perPage: perPage,
         nomEtablissement: nomEtablissement,
         schoolCode: schoolCode,
+        country: country,
+        categorie: categorie,
+        date: date,
         debug: debug,
       );
 

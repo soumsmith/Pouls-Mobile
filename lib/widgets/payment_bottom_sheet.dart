@@ -3,6 +3,7 @@ import '../config/app_colors.dart';
 import 'custom_loader.dart';
 import 'bottom_sheets/bottom_sheet_header.dart';
 import 'components/custom_text_input.dart';
+import 'components/custom_button.dart';
 
 class PaymentBottomSheet extends StatefulWidget {
   final String? childName;
@@ -234,69 +235,6 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
     }
   }
 
-  Widget _buildModernPaymentButton({
-    required String label,
-    VoidCallback? onTap,
-    bool isLoading = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CustomLoader(
-                    message: '',
-                    loaderColor: Colors.white,
-                    size: 22,
-                    showBackground: false,
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.payment_outlined,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
   bool get _isReservationClosed {
     final now = DateTime.now();
     bool isClosed = false;
@@ -430,27 +368,12 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
-                        foregroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'Fermer',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  CustomButton(
+                    text: 'Fermer',
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: isDark ? Colors.white60 : Colors.grey[700]!,
+                    isLight: true,
+                    height: 48,
                   ),
                   SizedBox(
                     height: MediaQuery.of(context).viewInsets.bottom,
@@ -508,10 +431,13 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                     keyboardType: TextInputType.text,
                   ),
                   const SizedBox(height: 24),
-                  _buildModernPaymentButton(
-                    label: isLoading ? '' : 'Procéder au paiement',
-                    onTap: isLoading ? null : _effectuerPaiement,
+                  CustomButton(
+                    text: 'Procéder au paiement',
+                    color: AppColors.screenOrange,
+                    icon: Icons.credit_card_rounded,
+                    onPressed: _effectuerPaiement,
                     isLoading: isLoading,
+                    height: 50,
                   ),
                   const SizedBox(height: 16),
                   Container(

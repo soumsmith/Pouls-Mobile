@@ -11,6 +11,7 @@ import '../../services/theme_service.dart';
 import '../../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
+import '../../widgets/components/custom_button.dart';
 import '../../widgets/snackbar.dart';
 import '../../config/app_colors.dart';
 import '../../screens/inscription_screen.dart' as inscription;
@@ -421,65 +422,17 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
                       const SizedBox(height: 32),
 
                       // Bouton d'inscription
-                      SizedBox(
-                        width: double.infinity,
+                      CustomButton(
+                        text: _isLoadingInscription
+                            ? 'Inscription en cours...'
+                            : 'Commencer l\'inscription',
+                        onPressed: _startInscription,
+                        color: AppColors.success,
+                        icon: Icons.app_registration,
+                        isLoading: _isLoadingInscription,
+                        isLight: true,
                         height: 56,
-                        child: ElevatedButton(
-                          onPressed: _isLoadingInscription
-                              ? null
-                              : _startInscription,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4CAF50),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _isLoadingInscription
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Inscription en cours...',
-                                      style: TextStyle(
-                                        fontSize: _textSizeService
-                                            .getScaledFontSize(16),
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.app_registration, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Commencer l\'inscription',
-                                      style: TextStyle(
-                                        fontSize: _textSizeService
-                                            .getScaledFontSize(16),
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
+                        fontSize: 16,
                       ),
                       const SizedBox(height: 0),
                     ],

@@ -10,6 +10,7 @@ import '../config/app_colors.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/skeleton_box.dart';
+import '../widgets/see_more_card.dart';
 import 'coulisse_video_feed_screen.dart';
 
 class AllVideosScreen extends StatefulWidget {
@@ -29,6 +30,11 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchTimer;
+  
+  // Variables de pagination
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
@@ -44,13 +50,18 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
   }
 
   Future<void> _loadVideos() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final videos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos();
+      final videos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(page: 1, perPage: 20);
       setState(() {
         _videos = videos;
-        _filteredVideos = videos;
+        _filteredVideos = _getFilteredList(videos, _searchController.text);
+        _hasMore = videos.length == 20;
+        _currentPage = 1;
         _isLoading = false;
-        _error = null;
       });
     } catch (e) {
       setState(() {
@@ -60,19 +71,51 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
     }
   }
 
+  Future<void> _loadMoreVideos() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() {
+      _isLoadingMore = true;
+    });
+    try {
+      final nextPage = _currentPage + 1;
+      final newVideos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(page: nextPage, perPage: 20);
+      setState(() {
+        if (newVideos.isEmpty) {
+          _hasMore = false;
+        } else {
+          _currentPage = nextPage;
+          _videos.addAll(newVideos);
+          _hasMore = newVideos.length == 20;
+          _filteredVideos = _getFilteredList(_videos, _searchController.text);
+        }
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  List<CoulisseExcellence> _getFilteredList(List<CoulisseExcellence> list, String query) {
+    if (query.isEmpty) return list;
+    return list.where((video) {
+      final titleMatch = video.titre.toLowerCase().contains(query.toLowerCase());
+      final classMatch = video.classe != null && video.classe.toLowerCase().contains(query.toLowerCase());
+      return titleMatch || classMatch;
+    }).toList();
+  }
+
   void _onSearchChanged(String query) {
     _searchTimer?.cancel();
     _searchTimer = Timer(const Duration(milliseconds: 300), () {
       setState(() {
-        if (query.isEmpty) {
-          _filteredVideos = _videos;
-        } else {
-          _filteredVideos = _videos.where((video) {
-            final titleMatch = video.titre.toLowerCase().contains(query.toLowerCase());
-            final classMatch = video.classe != null && video.classe.toLowerCase().contains(query.toLowerCase());
-            return titleMatch || classMatch;
-          }).toList();
-        }
+        _filteredVideos = _getFilteredList(_videos, query);
       });
     });
   }
@@ -233,9 +276,25 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        return _buildVideoCard(_filteredVideos[index]);
+                        if (index == _filteredVideos.length && _hasMore) {
+                          return SeeMoreCard(
+                            cardColor: AppColors.screenCardThemed(context),
+                            borderColor: const Color(0xFF10B981).withOpacity(0.3), // Green for videos
+                            iconColor: const Color(0xFF10B981),
+                            textColor: const Color(0xFF10B981),
+                            subtitleColor: const Color(0xFF10B981).withOpacity(0.5),
+                            title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
+                            subtitle: _isLoadingMore ? '' : 'de vidéos',
+                            onTap: _isLoadingMore ? () {} : _loadMoreVideos,
+                            icon: Icons.add,
+                          );
+                        }
+                        if (index < _filteredVideos.length) {
+                          return _buildVideoCard(_filteredVideos[index]);
+                        }
+                        return const SizedBox.shrink();
                       },
-                      childCount: _filteredVideos.length,
+                      childCount: _filteredVideos.length + (_hasMore ? 1 : 0),
                     ),
                   ),
                 ),
@@ -264,7 +323,6 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
       color: const Color(0xFF10B981), // Green color for videos
       height: AppDimensions.getEcoleCardHeight(context),
       imageFlex: 7.0,
-      imageBorderRadius: AppDimensions.getImageBorderRadius(context) -20,
       titleFontSize: AppDimensions.getScaledSize(context, 14.0),
       externalTitleSpacing: 8.0,
       centerTitle: false,

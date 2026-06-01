@@ -8,6 +8,7 @@ import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/snackbar.dart';
+import '../widgets/components/custom_button.dart';
 
 // ─── DESIGN TOKENS THEME-AWARE ─────────────────────────────────────────────────
 // Utilise les méthodes theme-aware d'AppColors pour le dark/light mode
@@ -838,17 +839,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   ),
                   const Spacer(),
                   // CTA
-                  SizedBox(
+                  CustomButton(
+                    text: 'Commander',
+                    color: AppColors.screenOrange,
+                    icon: Icons.shopping_bag_outlined,
+                    onPressed: product.isAvailable && !_isLoading
+                        ? () => _addToCart(product)
+                        : null,
+                    isLoading: _isLoading,
                     width: 160,
-                    child: _buildCTAButton(
-                      label: 'Commander',
-                      icon: Icons.shopping_bag_outlined,
-                      isLoading: _isLoading,
-                      enabled: product.isAvailable && !_isLoading,
-                      onTap: product.isAvailable && !_isLoading
-                          ? () => _addToCart(product)
-                          : null,
-                    ),
+                    height: 44,
                   ),
                 ],
               ),
@@ -884,81 +884,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   ),
                 ),
               ),
-              _buildCTAButton(
-                label: 'Accéder au service',
+              CustomButton(
+                text: 'Accéder au service',
+                color: AppColors.screenOrange,
                 icon: Icons.open_in_new_rounded,
-                onTap: () => _accessFreeService(product),
+                onPressed: () => _accessFreeService(product),
+                height: 48,
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // ── CTA Button (gradient orange) ─────────────────────────────────────
-  Widget _buildCTAButton({
-    required String label,
-    required IconData icon,
-    VoidCallback? onTap,
-    bool isLoading = false,
-    bool enabled = true,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 42,
-        decoration: BoxDecoration(
-          gradient: enabled
-              ? const LinearGradient(
-                  colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: enabled ? null : AppColors.productDetailButtonDisabled(context),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: _T.orangeGlow(context),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : [],
-        ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 17,
-                      color: enabled ? Colors.white : AppColors.productDetailButtonDisabledText(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: enabled ? Colors.white : AppColors.productDetailButtonDisabledText(context),
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
         ),
       ),
     );

@@ -9,6 +9,7 @@ import 'package:parents_responsable/services/text_size_service.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/bottom_sheet_header.dart';
 import 'package:parents_responsable/widgets/components/custom_date_input.dart';
 import 'package:parents_responsable/widgets/components/custom_select_input.dart';
+import 'package:parents_responsable/widgets/components/custom_button.dart';
 import 'package:parents_responsable/widgets/components/custom_text_input.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
@@ -830,29 +831,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               ),
 
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.screenOrange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'OK, j\'ai compris',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+              CustomButton(
+                text: 'OK, j\'ai compris',
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                color: AppColors.screenOrange,
+                height: 48,
+                fontSize: 15,
               ),
             ],
           ),
@@ -1040,98 +1026,30 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     return Row(
       children: [
         if (_currentStep > 0)
-          GestureDetector(
-            onTap: _previousStep,
-            child: Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 14,
-                    color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Précédent',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          CustomButton(
+            text: 'Précédent',
+            onPressed: _previousStep,
+            color: isDark ? Colors.white60 : Colors.grey[700]!,
+            isLight: true,
+            icon: Icons.arrow_back_ios_new,
+            width: 120,
+            height: 40,
+            fontSize: 12,
           ),
         const Spacer(),
-        GestureDetector(
-          onTap: canNext ? _nextStep : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              gradient: canNext
-                  ? const LinearGradient(
-                      colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : LinearGradient(
-                      colors: isDark
-                          ? [const Color(0xFF2C2C2C), const Color(0xFF2C2C2C)]
-                          : [Colors.grey.shade300, Colors.grey.shade300],
-                    ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: canNext
-                  ? [
-                      BoxShadow(
-                        color: AppColors.shopBlue.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _currentStep == _totalSteps - 1
-                      ? 'Envoyer la demande'
-                      : 'Suivant',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: canNext
-                        ? Colors.white
-                        : (isDark ? Colors.white30 : Colors.grey.shade500),
-                    letterSpacing: 0.1,
-                  ),
-                ),
-                if (_currentStep < _totalSteps - 1) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: canNext
-                        ? Colors.white
-                        : (isDark ? Colors.white30 : Colors.grey.shade500),
-                  ),
-                ],
-              ],
-            ),
-          ),
+        CustomButton(
+          text: _currentStep == _totalSteps - 1
+              ? 'Envoyer la demande'
+              : 'Suivant',
+          onPressed: canNext ? _nextStep : null,
+          color: AppColors.shopBlue,
+          icon: _currentStep == _totalSteps - 1
+              ? null
+              : Icons.arrow_forward_rounded,
+          iconOnRight: true,
+          width: _currentStep == _totalSteps - 1 ? 180 : 120,
+          height: 40,
+          fontSize: 12,
         ),
       ],
     );
@@ -1256,34 +1174,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   Widget _buildRetryButton() {
-    return GestureDetector(
-      onTap: _loadEcoles,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.screenOrangeLight,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.refresh_rounded,
-              color: AppColors.screenOrange,
-              size: 16,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Réessayer',
-              style: TextStyle(
-                color: AppColors.screenOrange,
-                fontWeight: FontWeight.w700,
-                fontSize: _textSizeService.getScaledFontSize(13),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CustomButton(
+      text: 'Réessayer',
+      onPressed: _loadEcoles,
+      color: AppColors.screenOrange,
+      isLight: true,
+      icon: Icons.refresh_rounded,
+      height: 44,
+      fontSize: 13,
     );
   }
 

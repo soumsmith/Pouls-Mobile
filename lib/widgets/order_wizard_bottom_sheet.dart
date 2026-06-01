@@ -45,12 +45,11 @@ class OrderWizardBottomSheet extends StatefulWidget {
 }
 
 class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin {
   int _currentStep = 0;
   late PageController _pageController;
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
-  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   // Controllers
   final _nomController = TextEditingController();
@@ -88,7 +87,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _pageController = PageController();
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -127,15 +125,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   @override
-  void deactivate() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _draggableController.dispose();
     _pageController.dispose();
     _progressController.dispose();
     _nomController.dispose();
@@ -148,28 +138,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
     _ecoleController.dispose();
     _eleveIdController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    if (!mounted) return;
-    try {
-      final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-      final newHasKeyboard = keyboardHeight > 0;
-      
-      if (newHasKeyboard != _hasKeyboard) {
-        _hasKeyboard = newHasKeyboard;
-        if (_draggableController.isAttached) {
-          _draggableController.animateTo(
-            newHasKeyboard ? 0.95 : 0.70,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      }
-    } catch (_) {
-      // Safely ignore deactivation metric updates
-    }
   }
 
   void _nextStep() {
@@ -322,47 +290,39 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      controller: _draggableController,
-      initialChildSize: 0.70,
-      minChildSize: 0.50,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.screenCardThemed(context),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header with progress
-                _buildHeader(),
-                
-                // Progress indicator
-                _buildProgressIndicator(),
-                
-                // Content
-                Flexible(
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    physics: const ClampingScrollPhysics(),
-                    child: _buildCurrentStep(),
-                  ),
-                ),
-                
-                // Bottom navigation
-                _buildBottomNavigation(),
-              ],
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      height: screenHeight * 0.95,
+      decoration: BoxDecoration(
+        color: AppColors.screenCardThemed(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header with progress
+          _buildHeader(),
+          
+          // Progress indicator
+          _buildProgressIndicator(),
+          
+          // Content
+          Flexible(
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: _buildCurrentStep(),
             ),
           ),
-        );
-      },
+          
+          // Bottom navigation
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8 + keyboardHeight),
+            child: _buildNavigationButtons(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -394,7 +354,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
       descriptionColor: AppColors.screenTextSecondaryThemed(context),
-      draggableController: _draggableController,
     );
   }
 
@@ -507,18 +466,19 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
     );
   }
 
-  Widget _buildBottomNavigation() {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8),
-      child: _buildNavigationButtons(),
-    );
-  }
-
   Widget _buildNavigationButtons() {
-    final canNext = _validateCurrentStep();
     final isLast = _currentStep == 3;
 
-    return Padding(
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        _nomController,
+        _telephoneController,
+        _adresseController,
+        _communeController,
+      ]),
+      builder: (context, _) {
+        final canNext = _validateCurrentStep();
+        return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: _currentStep > 0
@@ -679,6 +639,8 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
             ),
         ],
       ),
+    );
+      },
     );
   }
 

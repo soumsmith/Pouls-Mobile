@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../widgets/share_bottom_sheet.dart';
 import '../models/coulisse_excellence.dart';
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
@@ -15,6 +14,7 @@ import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/snackbar.dart';
 import '../config/app_dimensions.dart';
+import '../widgets/components/custom_button.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -203,7 +203,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   }
 
   // Afficher les options de partage
-  Future<void> _shareVideo() async {
+  void _shareVideo() {
     if (widget.videos.isEmpty) return;
 
     final video = widget.videos[_currentIndex];
@@ -213,13 +213,19 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
+    final String videoUrl = 'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       constraints: BoxConstraints(
         maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
       ),
-      builder: (context) => _ShareOptionsSheet(video: video),
+      builder: (context) => ShareBottomSheet(
+        title: 'Partager la vidéo',
+        itemTitle: video.titre,
+        shareText: '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\nRegardez la vidéo ici : $videoUrl\n\n#CoulissesExcellence #Éducation',
+      ),
     );
   }
 
@@ -1649,25 +1655,11 @@ class _RatingSheetState extends State<_RatingSheet> {
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _currentRating > 0 ? _submitRating : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.green.withOpacity(0.4),
-                          disabledForegroundColor: Colors.white70,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: const Text(
-                          'Envoyer la note',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
+                    child: CustomButton(
+                      text: 'Envoyer la note',
+                      color: Colors.green,
+                      onPressed: _currentRating > 0 ? _submitRating : null,
+                      height: 48,
                     ),
                   ),
                 ] else ...[
@@ -1722,195 +1714,3 @@ class _RatingSheetState extends State<_RatingSheet> {
   }
 }
 
-class _ShareOptionsSheet extends StatelessWidget {
-  final CoulisseExcellence video;
-
-  const _ShareOptionsSheet({required this.video});
-
-  Future<void> _shareGeneral() async {
-    final String videoUrl =
-        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
-    final String shareText =
-        '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\n#CoulissesExcellence #Éducation';
-
-    try {
-      await Share.share('$shareText\n\n$videoUrl', subject: video.titre);
-    } catch (e) {
-      // Handle error
-    }
-  }
-
-  Future<void> _shareOnWhatsApp() async {
-    final String videoUrl =
-        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
-    final String message =
-        '🎬 *${video.titre}*\n\n${video.description}\n\n$videoUrl';
-
-    final Uri whatsappUri = Uri.parse(
-      'https://wa.me/?text=${Uri.encodeComponent(message)}',
-    );
-
-    try {
-      if (await canLaunchUrl(whatsappUri)) {
-        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      // Handle error
-    }
-  }
-
-  Future<void> _shareOnFacebook() async {
-    final String videoUrl =
-        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
-
-    final Uri facebookUri = Uri.parse(
-      'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(videoUrl)}',
-    );
-
-    try {
-      if (await canLaunchUrl(facebookUri)) {
-        await launchUrl(facebookUri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      // Handle error
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDarkMode = ThemeService().isDarkMode;
-    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
-    final textColor = isDarkMode ? Colors.white : Colors.black87;
-    final subtextColor = isDarkMode ? Colors.white70 : Colors.black54;
-    final dividerColor = isDarkMode ? Colors.white24 : Colors.black12;
-    final handleColor = isDarkMode ? Colors.white24 : Colors.black26;
-    final iconColor = isDarkMode ? Colors.white : Colors.black87;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          BottomSheetHeader(
-            icon: Icons.share_rounded,
-            iconColor: const Color(0xFF0288D1),
-            title: 'Partager la vidéo',
-            description: 'Choisissez comment partager',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-
-          // Share options
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // General share option
-                ListTile(
-                  leading: Icon(Icons.share, color: iconColor),
-                  title: Text(
-                    'Partager...',
-                    style: TextStyle(color: textColor),
-                  ),
-                  subtitle: Text(
-                    'Partager via les applications disponibles',
-                    style: TextStyle(color: subtextColor),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _shareGeneral();
-                  },
-                ),
-
-                // WhatsApp option
-                ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEAF7EE),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Image.asset(
-                        'assets/images/icons/whatsapp.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    'WhatsApp',
-                    style: TextStyle(color: textColor),
-                  ),
-                  subtitle: Text(
-                    'Partager sur WhatsApp',
-                    style: TextStyle(color: subtextColor),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _shareOnWhatsApp();
-                  },
-                ),
-
-                // Facebook option
-                ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: Colors.blue,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.facebook, color: Colors.white),
-                  ),
-                  title: Text(
-                    'Facebook',
-                    style: TextStyle(color: textColor),
-                  ),
-                  subtitle: Text(
-                    'Partager sur Facebook',
-                    style: TextStyle(color: subtextColor),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _shareOnFacebook();
-                  },
-                ),
-
-                // Copy link option
-                ListTile(
-                  leading: Icon(Icons.link, color: iconColor),
-                  title: Text(
-                    'Copier le lien',
-                    style: TextStyle(color: textColor),
-                  ),
-                  subtitle: Text(
-                    'Copier le lien de la vidéo',
-                    style: TextStyle(color: subtextColor),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    // Copy link logic would go here
-                    CartSnackBar.showOverlay(
-                      context,
-                      productName: '',
-                      message: 'Lien copié !',
-                      backgroundColor: Colors.blue,
-                      icon: Icons.link,
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-}

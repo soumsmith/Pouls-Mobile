@@ -21,7 +21,7 @@ class BlogService {
     print('🏫 École: $ecole');
 
     final url =
-        '$baseUrl/ecoles/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}&page=$page&per_page=$perPage';
+        '${AppConfig.API_AFRICA_URL}/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}&page=$page&per_page=$perPage';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 
@@ -116,9 +116,28 @@ class BlogService {
   }
 
   /// Récupère la liste des blogs depuis l'API (sans filtres)
-  static Future<BlogsResponse> getBlogs({int page = 1, int perPage = 20}) async {
+  static Future<BlogsResponse> getBlogs({
+    int page = 1,
+    int perPage = 16,
+    String? country,
+    String? categorie,
+    String? date,
+  }) async {
     try {
-      final url = '$baseUrl/ecoles/blogs-list?page=$page&per_page=$perPage';
+      String url = '${AppConfig.API_AFRICA_URL}/blogs-list?page=$page&per_page=$perPage';
+      
+      if (country != null && country.isNotEmpty) {
+        url += '&country=${Uri.encodeComponent(country)}';
+      }
+
+      if (categorie != null && categorie.isNotEmpty) {
+        url += '&categorie=${Uri.encodeComponent(categorie)}';
+      }
+
+      if (date != null && date.isNotEmpty) {
+        url += '&date=${Uri.encodeComponent(date)}';
+      }
+      
       print('');
       print('═══════════════════════════════════════════════════════════');
       print('📝 CHARGEMENT DES ACTUALITÉS (HOME PAGE)');

@@ -12,6 +12,7 @@ import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
+import '../../widgets/components/custom_button.dart';
 import '../../widgets/snackbar.dart';
 import 'integration_result_dialog.dart';
 
@@ -145,16 +146,35 @@ class _IntegrationRequestBottomSheetState
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         if (mounted) _showResultDialog(data);
+      } else if (response.statusCode == 404) {
+        String friendlyError = 'L\'élève avec le matricule saisi n\'a pas été trouvé dans l\'école sélectionnée.';
+        try {
+          final errBody = json.decode(response.body);
+          if (errBody is Map && errBody.containsKey('error')) {
+            final errText = errBody['error'].toString();
+            if (errText == 'Ecole not found') {
+              friendlyError = 'L\'élève avec le matricule saisi n\'a pas été trouvé dans l\'école sélectionnée.';
+            } else {
+              friendlyError = errText;
+            }
+          }
+        } catch (_) {}
+        throw Exception(friendlyError);
       } else {
-        throw Exception('Erreur ${response.statusCode} : ${response.body}');
+        throw Exception('Erreur de serveur (${response.statusCode}). Veuillez réessayer plus tard.');
       }
     } catch (e) {
       debugPrint('💥 Erreur consultation : $e');
       if (mounted) {
+        String errorMessage = e.toString();
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring('Exception: '.length);
+        }
+        
         CartSnackBar.showOverlay(
           context,
           productName: 'Erreur',
-          message: 'lors de la consultation : $e',
+          message: 'lors de la consultation : $errorMessage',
           backgroundColor: Colors.red,
         );
       }
@@ -861,170 +881,43 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: _currentStep > 0
-            ? MainAxisAlignment.spaceBetween
-            : MainAxisAlignment.end,
         children: [
           if (_currentStep > 0)
-            GestureDetector(
-              onTap: () => setState(() => _currentStep--),
-              child: Container(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 14,
-                      color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Précédent',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            CustomButton(
+              text: 'Précédent',
+              onPressed: () => setState(() => _currentStep--),
+              color: isDark ? Colors.white60 : Colors.grey[700]!,
+              isLight: true,
+              icon: Icons.arrow_back_ios_new,
+              width: 120,
+              height: 40,
+              fontSize: 12,
             ),
+          const Spacer(),
           if (!isLast)
-            GestureDetector(
-              onTap: canNext ? () => setState(() => _currentStep++) : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  gradient: canNext
-                      ? const LinearGradient(
-                          colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : LinearGradient(
-                          colors: isDark
-                              ? [const Color(0xFF2A2A2A), const Color(0xFF2A2A2A)]
-                              : [Colors.grey.shade300, Colors.grey.shade300],
-                        ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: canNext
-                      ? [
-                          BoxShadow(
-                            color: AppColors.shopBlue.withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Suivant',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: canNext
-                            ? Colors.white
-                            : (isDark ? Colors.white30 : Colors.white70),
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 14,
-                      color: canNext
-                          ? Colors.white
-                          : (isDark ? Colors.white30 : Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          if (isLast)
-            GestureDetector(
-              onTap: canNext
+            CustomButton(
+              text: 'Suivant',
+              onPressed: canNext ? () => setState(() => _currentStep++) : null,
+              color: AppColors.shopBlue,
+              icon: Icons.arrow_forward_rounded,
+              iconOnRight: true,
+              width: 120,
+              height: 40,
+              fontSize: 12,
+            )
+          else
+            CustomButton(
+              text: 'Consulter',
+              onPressed: canNext
                   ? () => widget.onConsultWithMatricule(_currentMatricule)
                   : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  gradient: canNext && !widget.isLoadingRequest
-                      ? const LinearGradient(
-                          colors: [AppColors.screenOrange, Color(0xFFFF7A3C)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : LinearGradient(
-                          colors: isDark
-                              ? [const Color(0xFF2A2A2A), const Color(0xFF2A2A2A)]
-                              : [Colors.grey.shade300, Colors.grey.shade300],
-                        ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: canNext && !widget.isLoadingRequest
-                      ? [
-                          BoxShadow(
-                            color: AppColors.screenOrange.withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.isLoadingRequest)
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.grey,
-                          ),
-                        ),
-                      )
-                    else ...[
-                      Text(
-                        'Consulter',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: canNext
-                              ? Colors.white
-                              : (isDark ? Colors.white30 : Colors.white70),
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.search_rounded,
-                        size: 14,
-                        color: canNext
-                            ? Colors.white
-                            : (isDark ? Colors.white30 : Colors.white70),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+              color: AppColors.screenOrange,
+              icon: Icons.search_rounded,
+              iconOnRight: true,
+              isLoading: widget.isLoadingRequest,
+              width: 120,
+              height: 40,
+              fontSize: 12,
             ),
         ],
       ),
@@ -1042,81 +935,5 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
       default:
         return false;
     }
-  }
-}
-
-class _OrangeButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onTap;
-  final bool isLoading;
-  final IconData? icon;
-
-  const _OrangeButton({
-    required this.label,
-    required this.onTap,
-    required this.isLoading,
-    this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: onTap != null
-              ? [AppColors.screenOrange, const Color(0xFFFF7A3C)]
-              : [Colors.grey.shade400, Colors.grey.shade300],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: onTap != null
-            ? [
-                BoxShadow(
-                  color: AppColors.screenOrange.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (icon != null) ...[
-                        Icon(icon, color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                      ],
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-    );
   }
 }

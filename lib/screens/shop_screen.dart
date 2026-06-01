@@ -546,28 +546,24 @@ class _LibraryScreenState extends State<LibraryScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _buildAdvancedSearchBottomSheet(),
-      ),
+      builder: (ctx) => _buildAdvancedSearchBottomSheet(ctx),
     );
   }
 
-  Widget _buildAdvancedSearchBottomSheet() {
-    return IntrinsicHeight(
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
+  Widget _buildAdvancedSearchBottomSheet(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.95,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.screenSurfaceThemed(context),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
-        decoration: BoxDecoration(
-          color: AppColors.screenSurfaceThemed(context),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               margin: const EdgeInsets.only(top: 8),
@@ -640,118 +636,117 @@ class _LibraryScreenState extends State<LibraryScreen>
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Pays',
-                          hint: 'Entrez le pays',
-                          icon: Icons.public_rounded,
-                          controller: _paysController,
-                          iconColor: AppColors.shopBlue,
-                          focusBorderColor: AppColors.shopBlue,
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Pays',
+                            hint: 'Entrez le pays',
+                            icon: Icons.public_rounded,
+                            controller: _paysController,
+                            iconColor: AppColors.shopBlue,
+                            focusBorderColor: AppColors.shopBlue,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Ville',
-                          hint: 'Entrez la ville',
-                          icon: Icons.location_city_rounded,
-                          controller: _villeController,
-                          iconColor: AppColors.shopBlue,
-                          focusBorderColor: AppColors.shopBlue,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Ville',
+                            hint: 'Entrez la ville',
+                            icon: Icons.location_city_rounded,
+                            controller: _villeController,
+                            iconColor: AppColors.shopBlue,
+                            focusBorderColor: AppColors.shopBlue,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Quartier',
-                          hint: 'Entrez le quartier',
-                          icon: Icons.location_on_rounded,
-                          controller: _quartierController,
-                          iconColor: AppColors.shopBlue,
-                          focusBorderColor: AppColors.shopBlue,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Nom établissement',
-                          hint: 'Entrez le nom',
-                          icon: Icons.business_rounded,
-                          controller: _nomEtablissementController,
-                          iconColor: AppColors.shopBlue,
-                          focusBorderColor: AppColors.shopBlue,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Nom produit',
-                          hint: 'Entrez le nom du produit',
-                          icon: Icons.shopping_bag_rounded,
-                          controller: _nomProduitController,
-                          iconColor: AppColors.shopBlue,
-                          focusBorderColor: AppColors.shopBlue,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CustomTextField(
-                          label: 'Type',
-                          hint: 'Ex: Papeterie, Livres...',
-                          icon: Icons.category_rounded,
-                          controller: _typeController,
-                          iconColor: AppColors.shopBlue,
-                          focusBorderColor: AppColors.shopBlue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _applyAdvancedSearch();
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.shopBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      ],
                     ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Appliquer les filtres',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Quartier',
+                            hint: 'Entrez le quartier',
+                            icon: Icons.location_on_rounded,
+                            controller: _quartierController,
+                            iconColor: AppColors.shopBlue,
+                            focusBorderColor: AppColors.shopBlue,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Nom établissement',
+                            hint: 'Entrez le nom',
+                            icon: Icons.business_rounded,
+                            controller: _nomEtablissementController,
+                            iconColor: AppColors.shopBlue,
+                            focusBorderColor: AppColors.shopBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Nom produit',
+                            hint: 'Entrez le nom du produit',
+                            icon: Icons.shopping_bag_rounded,
+                            controller: _nomProduitController,
+                            iconColor: AppColors.shopBlue,
+                            focusBorderColor: AppColors.shopBlue,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Type',
+                            hint: 'Ex: Papeterie, Livres...',
+                            icon: Icons.category_rounded,
+                            controller: _typeController,
+                            iconColor: AppColors.shopBlue,
+                            focusBorderColor: AppColors.shopBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _applyAdvancedSearch();
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.shopBlue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Appliquer les filtres',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
-      ),
     );
   }
 

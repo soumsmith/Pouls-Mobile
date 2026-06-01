@@ -44,6 +44,16 @@ class Scolarite {
         return 'Inscription';
       case 'SCO':
         return 'Scolarité';
+      case 'ANX':
+        return 'Frais annexes';
+      case 'FC':
+        return 'Frais cantine';
+      case 'BEPC':
+        return 'Frais examen BEPC';
+      case 'BAC':
+        return 'Frais examen BAC';
+      case 'CEPE':
+        return 'Frais examen CEPE';
       default:
         return rubrique ?? 'Autre';
     }

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +12,7 @@ import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_she
 import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
+import '../widgets/share_bottom_sheet.dart';
 import '../config/app_dimensions.dart';
 import '../models/child.dart';
 import '../models/gestion_presence_eleve_entry.dart';
@@ -74,18 +76,33 @@ const _kDivider = Color(0xFFD1D1D6);
 const _kChipActive = Color(0xFF1A1A2A);
 const _kChipBg = Color(0xFFEBEBEF);
 
-class _PresenceBannerItem {
-  final String key;
-  final Child child;
-  final GestionPresenceEleveEntry entry;
-  final bool isPresence;
+class _FlashInfoItem {
+  final int id;
+  final String content;
+  final String slug;
+  final String type;
+  final String startDate;
+  final String endDate;
 
-  const _PresenceBannerItem({
-    required this.key,
-    required this.child,
-    required this.entry,
-    required this.isPresence,
+  const _FlashInfoItem({
+    required this.id,
+    required this.content,
+    required this.slug,
+    required this.type,
+    required this.startDate,
+    required this.endDate,
   });
+
+  factory _FlashInfoItem.fromJson(Map<String, dynamic> json) {
+    return _FlashInfoItem(
+      id: json['id'] as int? ?? 0,
+      content: json['content'] as String? ?? '',
+      slug: json['slug'] as String? ?? '',
+      type: json['type'] as String? ?? '',
+      startDate: json['start_date'] as String? ?? '',
+      endDate: json['end_date'] as String? ?? '',
+    );
+  }
 }
 
 class HomeScreen extends StatefulWidget {
@@ -142,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, bool> _childrenNotificationsLoading = {};
   Map<String, bool> _childrenEcheancesLoading = {};
 
-  List<_PresenceBannerItem> _presenceBannerItems = [];
+  List<_FlashInfoItem> _presenceBannerItems = [];
   final Set<String> _dismissedPresenceBannerItemKeys = {};
   bool _presenceBannerLoading = false;
   PageController? _presencePageController;
@@ -245,13 +262,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadChildrenPresenceSignals() async {
-    print('=== DÉBUT CHARGEMENT PRÉSENCE/ABSENCE POUR TOUS LES ENFANTS ===');
+    print('=== DÉBUT CHARGEMENT FLASH INFOS ===');
     if (_presenceBannerLoading) return;
-
-    if (_children.isEmpty) {
-      print('📭 Aucun enfant à charger pour présence/absence');
-      return;
-    }
 
     if (mounted) {
       setState(() {
@@ -260,95 +272,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      final futures = _children.map((child) async {
-        print('👤 Enfant: ${child.fullName} (${child.id})');
-        final childInfo = await DatabaseService.instance.getChildInfoById(
-          child.id,
-        );
-        final matricule = childInfo?['matricule'] as String?;
-        final paramEcole = childInfo?['paramEcole'] as String?;
-
-        print('🔍 Info enfant: matricule=$matricule, paramEcole=$paramEcole');
-
-        if (matricule == null || matricule.isEmpty) {
-          print('⚠️ Matricule manquant pour ${child.fullName}');
-          return null;
-        }
-        if (paramEcole == null || paramEcole.isEmpty) {
-          print('⚠️ Code école (paramEcole) manquant pour ${child.fullName}');
-          return null;
-        }
-
-        final entries =
-            await GestionPresenceEleveService.getGestionPresenceEleve(
-              matricule,
-              paramEcole,
-            );
-
-        print('📊 ${entries.length} entrée(s) reçue(s) pour ${child.fullName}');
-
-        final signaled = entries
-            .where((e) => e.presence != null)
-            .cast<GestionPresenceEleveEntry?>()
+      final response = await http.get(Uri.parse('https://api2.vie-ecoles.com/api/vie-ecoles/flash-infos'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final items = data.map((json) => _FlashInfoItem.fromJson(json)).toList();
+        
+        final visibleItems = items
+            .where((i) => !_dismissedPresenceBannerItemKeys.contains(i.id.toString()))
             .toList();
 
-        if (signaled.isEmpty) {
-          print('ℹ️ Aucune entrée de présence trouvée pour ${child.fullName}');
-          return null;
-        }
+        print('🎯 Flash Infos visibles: ${visibleItems.length}');
 
-        // Trier par date pour afficher dans l'ordre chronologique
-        signaled.sort((a, b) {
-          final da = _tryParseApiDate(a?.debut)?.millisecondsSinceEpoch ?? 0;
-          final db = _tryParseApiDate(b?.debut)?.millisecondsSinceEpoch ?? 0;
-          return da.compareTo(db);
+        if (!mounted) return;
+        setState(() {
+          _presenceBannerItems = visibleItems;
+          _presenceBannerLoading = false;
         });
-
-        // Créer un item par matière avec presence=1 (présent), sinon absent
-        final items = signaled
-            .map((entry) {
-              if (entry == null) return null;
-              final isPresence = (entry.presence ?? 0) == 1;
-              final key =
-                  '${child.id}::${entry.debut ?? ''}::${entry.fin ?? ''}::${entry.matiere ?? ''}::${entry.presence ?? ''}';
-              print(
-                '✅ Signalisation pour ${child.fullName}: ${isPresence ? 'Présence' : 'Absence'} - ${entry.matiere} (${entry.debut})',
-              );
-              return _PresenceBannerItem(
-                key: key,
-                child: child,
-                entry: entry,
-                isPresence: isPresence,
-              );
-            })
-            .whereType<_PresenceBannerItem>()
-            .toList();
-
-        // Retourner le premier item pour le PageView (le carousel gérera les autres)
-        if (items.isEmpty) return null;
-        return items.first;
-      }).toList();
-
-      final results = await Future.wait(futures);
-      final items = results.whereType<_PresenceBannerItem>().toList();
-      final visibleItems = items
-          .where((i) => !_dismissedPresenceBannerItemKeys.contains(i.key))
-          .toList();
-
-      print(
-        '🎯 Bannières visibles: ${visibleItems.length} / ${items.length} (dont ${items.length - visibleItems.length} déjà masquées)',
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _presenceBannerItems = visibleItems;
-        _presenceBannerLoading = false;
-      });
-      _ensurePresencePagerReady();
-      _startPresenceAutoScrollIfNeeded();
-      print('=== FIN CHARGEMENT PRÉSENCE/ABSENCE ===');
+        _ensurePresencePagerReady();
+        _startPresenceAutoScrollIfNeeded();
+      } else {
+        throw Exception('API error code: ${response.statusCode}');
+      }
+      print('=== FIN CHARGEMENT FLASH INFOS ===');
     } catch (e) {
-      print('❌ Erreur globale chargement présence/absence: $e');
+      print('❌ Erreur globale chargement Flash Infos: $e');
       if (!mounted) return;
       setState(() {
         _presenceBannerItems = [];
@@ -1888,22 +1835,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPresenceBannerItem(_PresenceBannerItem item) {
-    final titlePrefix = item.isPresence
-        ? 'Présence signalée'
-        : 'Absence signalée';
-    final grade = item.child.grade;
-    final enfant = item.child.firstName.isNotEmpty
-        ? item.child.firstName
-        : (item.entry.prenomEleve ?? '');
-    final matiere = item.entry.matiere ?? '';
-
-    final debutDate = _tryParseApiDate(item.entry.debut);
-    final timeLabel = debutDate == null
+  Widget _buildPresenceBannerItem(_FlashInfoItem item) {
+    final date = _tryParseApiDate(item.startDate);
+    final timeLabel = date == null
         ? ''
-        : _isSameDate(debutDate, DateTime.now())
+        : _isSameDate(date, DateTime.now())
         ? 'Aujourd\'hui'
-        : '${debutDate.day.toString().padLeft(2, '0')}/${debutDate.month.toString().padLeft(2, '0')}';
+        : '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 13, vertical: 3),
@@ -1919,49 +1857,59 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
         child: Row(
           children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: item.isPresence ? Colors.greenAccent : _kOrange,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 9),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$titlePrefix — $enfant, $grade',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: _textSizeService.getScaledFontSize(12),
-                      fontWeight: FontWeight.w600,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _showFlashInfoDetails(item),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: AppColors.screenOrange,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 0),
-                  Text(
-                    matiere.isNotEmpty
-                        ? '$matiere · ${timeLabel.isEmpty ? '' : '$timeLabel · '}${item.child.establishment}'
-                        : '${timeLabel.isEmpty ? '' : '$timeLabel · '}${item.child.establishment}',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: _textSizeService.getScaledFontSize(10),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            item.content,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: _textSizeService.getScaledFontSize(12),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            timeLabel.isNotEmpty ? 'Flash Info · $timeLabel' : 'Flash Info',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: _textSizeService.getScaledFontSize(10),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             GestureDetector(
               onTap: () {
                 setState(() {
-                  _dismissedPresenceBannerItemKeys.add(item.key);
-                  _presenceBannerItems.removeWhere((i) => i.key == item.key);
+                  _dismissedPresenceBannerItemKeys.add(item.id.toString());
+                  _presenceBannerItems.removeWhere((i) => i.id == item.id);
                 });
                 if (_presenceBannerItems.length <= 1) {
                   _stopPresenceAutoScroll();
@@ -1974,11 +1922,234 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.grey[700],
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showFlashInfoDetails(_FlashInfoItem item) {
+    _stopPresenceAutoScroll();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildFlashInfoBottomSheet(item),
+    ).then((_) {
+      _startPresenceAutoScrollIfNeeded();
+    });
+  }
+
+  Widget _buildFlashInfoBottomSheet(_FlashInfoItem item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1E1E2A) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF2D2D3F) : const Color(0xFFF8FAFC);
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subtextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final handleColor = isDark ? Colors.white24 : const Color(0xFFCBD5E1);
+
+    final date = _tryParseApiDate(item.startDate);
+    final timeLabel = date == null
+        ? ''
+        : _isSameDate(date, DateTime.now())
+        ? 'Aujourd\'hui'
+        : '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+    // Intelligently split content to extract source / title if it has a colon
+    String sheetTitle = 'Flash Info';
+    String messageBody = item.content;
+    if (item.content.contains(':')) {
+      final parts = item.content.split(':');
+      sheetTitle = parts[0].trim();
+      messageBody = parts.sublist(1).join(':').trim();
+    }
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 20),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Header Row with Megaphone Icon & Close Button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Icon + Badge
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrange.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.campaign_rounded,
+                      color: AppColors.screenOrange,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'FLASH INFO',
+                      style: TextStyle(
+                        color: AppColors.screenOrange,
+                        fontSize: _textSizeService.getScaledFontSize(10),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Close Icon
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : Colors.grey[100],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: isDark ? Colors.white70 : Colors.grey[700],
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Title / Establishment
+          Text(
+            sheetTitle,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(18),
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
+          ),
+          
+          // Date
+          if (timeLabel.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Publié le $timeLabel',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(11),
+                color: subtextColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          
+          // Divider
+          Divider(
+            color: isDark ? Colors.white10 : Colors.grey[200],
+            height: 1,
+            thickness: 1,
+          ),
+          const SizedBox(height: 20),
+          
+          // Message Content Container
+          Flexible(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? Colors.white10 : Colors.grey[200]!,
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  messageBody,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    color: textColor,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Elegant Action/Close Button at the bottom
+          SizedBox(
+            width: double.infinity,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppColors.screenOrange,
+                      Color(0xFFFF7A45),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.screenOrange.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    'Compris',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2180,189 +2351,12 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Partager l\'application',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(17),
-                fontWeight: FontWeight.w700,
-                color: _kTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Invitez vos amis a suivre leurs enfants',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(12),
-                color: _kTextSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _shareButton(
-                  label: 'Mail',
-                  icon: Icons.email_rounded,
-                  bg: const Color(0xFFFFEEEE),
-                  iconColor: Colors.red,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _handleShareAction('mail');
-                  },
-                ),
-                const SizedBox(width: 12),
-                _shareButton(
-                  label: 'WhatsApp',
-                  icon: null,
-                  imageAsset: 'assets/images/icons/whatsapp.png',
-                  bg: const Color(0xFFEAF7EE),
-                  iconColor: const Color(0xFF25D366),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _handleShareAction('whatsapp');
-                  },
-                ),
-                const SizedBox(width: 12),
-                _shareButton(
-                  label: 'Facebook',
-                  icon: Icons.facebook_rounded,
-                  bg: const Color(0xFFE8F0FE),
-                  iconColor: const Color(0xFF1877F2),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _handleShareAction('facebook');
-                  },
-                ),
-                const SizedBox(width: 12),
-                _shareButton(
-                  label: 'Autre',
-                  icon: Icons.more_horiz_rounded,
-                  bg: _kSheetBg,
-                  iconColor: _kTextSecondary,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _handleShareAction('other');
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
+      builder: (context) => ShareBottomSheet(
+        title: 'Partager l\'application',
+        itemTitle: 'Invitez vos amis à suivre leurs enfants',
+        shareText: 'Découvrez Pouls Ecole, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\nTéléchargez l\'application ici : https://play.google.com/store/apps/details?id=com.pouls.ecole',
       ),
     );
-  }
-
-  Widget _shareButton({
-    required String label,
-    IconData? icon,
-    String? imageAsset,
-    required Color bg,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: imageAsset != null
-                ? Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Image.asset(
-                      imageAsset,
-                      fit: BoxFit.contain,
-                    ),
-                  )
-                : Icon(icon, color: iconColor, size: 26),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(11),
-              color: _kTextPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleShareAction(String action) async {
-    const appUrl =
-        'https://play.google.com/store/apps/details?id=com.pouls.ecole';
-    const shareText =
-        'Decouvrez Pouls Ecole, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps reel !';
-    switch (action) {
-      case 'mail':
-        final subject = Uri.encodeComponent('Decouvrez Pouls Ecole');
-        final body = Uri.encodeComponent(
-          '$shareText\n\nTelechargez l\'application ici : $appUrl',
-        );
-        final uri = Uri.parse('mailto:?subject=$subject&body=$body');
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Aucune application email trouvee'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        break;
-      case 'whatsapp':
-        final uri = Uri(
-          scheme: 'https',
-          host: 'wa.me',
-          queryParameters: {
-            'text': '$shareText\n\nTelechargez l\'application ici : $appUrl',
-          },
-        );
-        if (await canLaunchUrl(uri)) await launchUrl(uri);
-        break;
-      case 'facebook':
-        final uri = Uri(
-          scheme: 'https',
-          host: 'www.facebook.com',
-          path: 'sharer/sharer.php',
-          queryParameters: {'u': appUrl, 'quote': shareText},
-        );
-        if (await canLaunchUrl(uri)) await launchUrl(uri);
-        break;
-      case 'other':
-        await Share.share(
-          '$shareText\n\nTelechargez l\'application ici : $appUrl',
-          subject: 'Decouvrez Pouls Ecole',
-        );
-        break;
-    }
   }
 
   // ─── CHILDREN SECTION ──────────────────────────────────────────────────────

@@ -8,6 +8,8 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
+import '../services/video_service.dart';
+import '../widgets/see_more_card.dart';
 import 'visite_guidee_video_feed_screen.dart';
 
 class AllVisiteGuideeVideosScreen extends StatefulWidget {
@@ -20,7 +22,13 @@ class AllVisiteGuideeVideosScreen extends StatefulWidget {
 }
 
 class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScreen> {
+  List<Video> _allVideos = [];
   List<Video> _filteredVideos = [];
+
+  // Variables de pagination
+  int _currentPage = 1;
+  bool _hasMore = false;
+  bool _isLoadingMore = false;
 
   // Variables pour la recherche
   bool _isSearching = false;
@@ -30,7 +38,9 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
   @override
   void initState() {
     super.initState();
-    _filteredVideos = widget.videos;
+    _allVideos = widget.videos.toList();
+    _filteredVideos = _allVideos;
+    _hasMore = _allVideos.length >= 20;
   }
 
   @override
@@ -40,19 +50,51 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
     super.dispose();
   }
 
+  Future<void> _loadMoreVideos() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() {
+      _isLoadingMore = true;
+    });
+    try {
+      final nextPage = _currentPage + 1;
+      final newVideos = await VideoService.getVideosByType('visiteguide', page: nextPage, perPage: 20);
+      setState(() {
+        if (newVideos.isEmpty) {
+          _hasMore = false;
+        } else {
+          _currentPage = nextPage;
+          _allVideos.addAll(newVideos);
+          _hasMore = newVideos.length == 20;
+          _filteredVideos = _getFilteredList(_allVideos, _searchController.text);
+        }
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  List<Video> _getFilteredList(List<Video> list, String query) {
+    if (query.isEmpty) return list;
+    return list.where((video) {
+      final titleMatch = video.title.toLowerCase().contains(query.toLowerCase());
+      final descMatch = video.description != null && video.description!.toLowerCase().contains(query.toLowerCase());
+      return titleMatch || descMatch;
+    }).toList();
+  }
+
   void _onSearchChanged(String query) {
     _searchTimer?.cancel();
     _searchTimer = Timer(const Duration(milliseconds: 300), () {
       setState(() {
-        if (query.isEmpty) {
-          _filteredVideos = widget.videos;
-        } else {
-          _filteredVideos = widget.videos.where((video) {
-            final titleMatch = video.title.toLowerCase().contains(query.toLowerCase());
-            final descMatch = video.description != null && video.description.toLowerCase().contains(query.toLowerCase());
-            return titleMatch || descMatch;
-          }).toList();
-        }
+        _filteredVideos = _getFilteredList(_allVideos, query);
       });
     });
   }
@@ -96,7 +138,7 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                   onClear: () {
                     setState(() {
                       _searchController.clear();
-                      _filteredVideos = widget.videos;
+                      _filteredVideos = _allVideos;
                     });
                   },
                   hintText: 'Rechercher une visite...',
@@ -149,8 +191,24 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                       mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
                     ),
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      return _buildVideoCard(context, _filteredVideos[index]);
-                    }, childCount: _filteredVideos.length),
+                      if (index == _filteredVideos.length && _hasMore) {
+                        return SeeMoreCard(
+                          cardColor: AppColors.screenCardThemed(context),
+                          borderColor: const Color(0xFF3B82F6).withOpacity(0.3), // Blue
+                          iconColor: const Color(0xFF3B82F6),
+                          textColor: const Color(0xFF3B82F6),
+                          subtitleColor: const Color(0xFF3B82F6).withOpacity(0.5),
+                          title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
+                          subtitle: _isLoadingMore ? '' : 'de vidéos',
+                          onTap: _isLoadingMore ? () {} : _loadMoreVideos,
+                          icon: Icons.add,
+                        );
+                      }
+                      if (index < _filteredVideos.length) {
+                        return _buildVideoCard(context, _filteredVideos[index]);
+                      }
+                      return const SizedBox.shrink();
+                    }, childCount: _filteredVideos.length + (_hasMore ? 1 : 0)),
                   ),
                 ),
                 const SliverToBoxAdapter(
@@ -180,7 +238,6 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
       color: const Color(0xFF3B82F6),
       height: AppDimensions.getEcoleCardHeight(context),
       imageFlex: 7.0,
-      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
       titleFontSize: AppDimensions.getScaledSize(context, 14.0),
       externalTitleSpacing: 8.0,
       centerTitle: false,

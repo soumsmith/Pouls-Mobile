@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
 import 'bottom_sheets/bottom_sheet_header.dart';
 import 'custom_text_field.dart';
+import 'components/custom_button.dart';
 
 typedef RecommendationSubmit = Future<void> Function(BuildContext context);
 
@@ -131,7 +132,8 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
   }
 
   void _onTextChanged() {
-    if (mounted) setState(() {});
+    // Ne plus faire de setState global ici pour éviter que le clavier ne saute/scintille
+    // lors du passage d'un champ à l'autre. Les boutons sont maintenant gérés par AnimatedBuilder.
   }
 
   bool _canNavigateToNext() {
@@ -199,14 +201,9 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
-    final maxAvailableHeight = (screenHeight * 0.95) - keyboardHeight;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: maxAvailableHeight > 0 ? maxAvailableHeight : 0,
-        ),
+    return Container(
+        height: screenHeight * 0.95,
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenSurface,
           borderRadius: const BorderRadius.only(
@@ -258,14 +255,13 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
               20,
               12,
               20,
-              MediaQuery.of(context).padding.bottom + 16,
+              MediaQuery.of(context).padding.bottom + 16 + keyboardHeight,
             ),
             child: _buildNavigationButtons(),
           ),
         ],
       ),
-    ),
-  );
+    );
 }
 
   Widget _buildProgressIndicator() {
@@ -656,124 +652,49 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
   }
 
   Widget _buildNavigationButtons() {
-    final canNext = _canNavigateToNext();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLast = _currentStep == _totalSteps - 1;
 
-    return Row(
-      children: [
-        if (_currentStep > 0)
-          GestureDetector(
-            onTap: _previousStep,
-            child: Container(
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        widget.recommenderNameController,
+        widget.etablissementController,
+        widget.paysRecommendController,
+        widget.villeRecommendController,
+        widget.parentNomController,
+        widget.parentPrenomController,
+        widget.parentTelephoneController,
+        widget.parentEmailController,
+      ]),
+      builder: (context, _) {
+        final canNext = _canNavigateToNext();
+        return Row(
+          children: [
+            if (_currentStep > 0)
+              CustomButton(
+                text: 'Précédent',
+                onPressed: _previousStep,
+                color: isDark ? Colors.white60 : Colors.grey[700]!,
+                isLight: true,
+                icon: Icons.arrow_back_ios_new,
+                width: 120,
+                height: 40,
+                fontSize: 12,
+              ),
+            const Spacer(),
+            CustomButton(
+              text: isLast ? 'Envoyer la recommandation' : 'Suivant',
+              onPressed: canNext ? _nextStep : null,
+              color: widget.accentColor,
+              icon: isLast ? null : Icons.arrow_forward_rounded,
+              iconOnRight: true,
+              width: isLast ? 200 : 120,
               height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF222222)
-                    : AppColors.screenSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? const Color(0xFF333333)
-                      : AppColors.screenDivider,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 14,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : AppColors.screenTextSecondary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Précédent',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white70
-                          : AppColors.screenTextSecondary,
-                    ),
-                  ),
-                ],
-              ),
+              fontSize: 12,
             ),
-          ),
-        const Spacer(),
-        GestureDetector(
-          onTap: canNext ? _nextStep : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              gradient: canNext
-                  ? LinearGradient(
-                      colors: [
-                        widget.accentColor.withOpacity(0.8),
-                        widget.accentColor,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : LinearGradient(
-                      colors: [
-                        Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF333333)
-                            : Colors.grey.shade300,
-                        Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF333333)
-                            : Colors.grey.shade300,
-                      ],
-                    ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: canNext
-                  ? [
-                      BoxShadow(
-                        color: widget.accentColor.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isLast ? 'Envoyer la recommandation' : 'Suivant',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: canNext
-                        ? Colors.white
-                        : Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white30
-                            : Colors.grey.shade500,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-                if (!isLast) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: canNext
-                        ? Colors.white
-                        : Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white30
-                            : Colors.grey.shade500,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

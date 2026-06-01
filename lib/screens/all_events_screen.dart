@@ -8,6 +8,9 @@ import '../widgets/filter_row_widget.dart';
 import '../models/event.dart';
 import 'event_detail_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/searchable_dropdown.dart';
+import '../widgets/components/custom_date_input.dart';
+import '../widgets/components/custom_text_input.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -45,6 +48,43 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   bool _isLoading = true;
   String? _error;
   
+  // Nouveaux filtres API
+  final _countryController = TextEditingController();
+  final _categoryController = TextEditingController();
+  final _dateController = TextEditingController();
+  bool _showAdvancedFilters = false;
+
+  final List<String> _countriesList = ['Tous', "Côte d'Ivoire", 'Bénin', 'Togo'];
+  final Map<String, String> _paysMap = {
+    "Côte d'Ivoire": "Cote d'Ivoire",
+    "Bénin": "Bénin",
+    "Togo": "Togo",
+    "Tous": "",
+  };
+  final Map<String, String> _paysReverseMap = {
+    "Cote d'Ivoire": "Côte d'Ivoire",
+    "Bénin": "Bénin",
+    "Togo": "Togo",
+    "": "Tous",
+  };
+
+  String? _getApiFormattedDate(String dateStr) {
+    if (dateStr.trim().isEmpty) return null;
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateStr)) {
+      return dateStr;
+    }
+    final parts = dateStr.split('/');
+    if (parts.length == 3) {
+      final day = parts[0];
+      final month = parts[1];
+      final year = parts[2];
+      if (day.length == 2 && month.length == 2 && year.length == 4) {
+        return '$year-$month-$day';
+      }
+    }
+    return dateStr;
+  }
+  
   // Pagination
   int _currentPage = 1;
   bool _hasMore = true;
@@ -77,6 +117,9 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   @override
   void dispose() {
     _searchController.dispose();
+    _countryController.dispose();
+    _categoryController.dispose();
+    _dateController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -97,7 +140,13 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     }
 
     try {
-      final response = await EventService.getEvents(page: _currentPage, perPage: 10);
+      final response = await EventService.getEvents(
+        page: _currentPage, 
+        perPage: 16,
+        country: _countryController.text.trim().isNotEmpty ? _countryController.text.trim() : null,
+        categorie: _categoryController.text.trim().isNotEmpty ? _categoryController.text.trim() : null,
+        date: _dateController.text.trim().isNotEmpty ? _getApiFormattedDate(_dateController.text.trim()) : null,
+      );
       final newEvents = response.data.map((e) => e.toUiMap()).toList();
       
       setState(() {
@@ -167,6 +216,15 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                 actions: [
                   IconButton(
                     icon: Icon(
+                      Icons.tune_rounded,
+                      color: _showAdvancedFilters ? AppColors.screenOrange : AppColors.screenTextPrimaryThemed(context),
+                    ),
+                    onPressed: () => setState(() {
+                      _showAdvancedFilters = !_showAdvancedFilters;
+                    }),
+                  ),
+                  IconButton(
+                    icon: Icon(
                       _isSearching ? Icons.close_rounded : Icons.search_rounded,
                       color: AppColors.screenTextPrimaryThemed(context),
                     ),
@@ -176,6 +234,14 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                     }),
                   ),
                 ],
+              ),
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    _buildAdvancedFilters(),
+                    if (_showAdvancedFilters) const SizedBox(height: 16),
+                  ],
+                ),
               ),
               SliverToBoxAdapter(child: _buildSearchBar()),
               SliverToBoxAdapter(child: _buildFilterRow()),
@@ -258,6 +324,81 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                     vertical: 12,
                   ),
                 ),
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildAdvancedFilters() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      height: _showAdvancedFilters ? 165 : 0,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: _showAdvancedFilters
+          ? SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: SearchableDropdown(
+                          label: 'Pays',
+                          value: _paysReverseMap[_countryController.text] ?? 'Tous',
+                          items: _countriesList,
+                          isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                          onChanged: (String val) {
+                            setState(() {
+                              _countryController.text = _paysMap[val] ?? '';
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: CustomTextInput(
+                          label: 'Catégorie',
+                          hint: 'Catégorie',
+                          icon: Icons.category_rounded,
+                          controller: _categoryController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: CustomDateInput(
+                          label: 'Date',
+                          hint: 'JJ/MM/AAAA',
+                          icon: Icons.calendar_today_rounded,
+                          controller: _dateController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
+                          inputFormatters: [DateInputFormatter()],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () => _loadEvents(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.screenOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        child: const Text('Appliquer', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             )
           : null,
@@ -526,6 +667,10 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                     onTap: () => setState(() {
                       _selectedFilter = 'Tous';
                       _searchController.clear();
+                      _countryController.clear();
+                      _categoryController.clear();
+                      _dateController.clear();
+                      _loadEvents();
                     }),
                     child: Container(
                       padding: const EdgeInsets.symmetric(

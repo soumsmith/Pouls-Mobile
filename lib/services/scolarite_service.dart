@@ -7,23 +7,18 @@ import '../config/app_config.dart';
 class ScolariteService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
 
-  static Future<ScolariteResponse> getScolaritesByEcole(
+  static Future<List<Scolarite>> getScolaritesByEcole(
     String ecoleCode, {
-    String? niveau,
+    required String niveau,
   }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('💰 CHARGEMENT DES FRAIS DE SCOLARITÉ');
     print('═══════════════════════════════════════════════════════════');
     print('🏫 Code école: $ecoleCode');
-    if (niveau != null) {
-      print('🎒 Niveau (filtre): $niveau');
-    }
+    print('🎒 Niveau: $niveau');
 
-    String url = '$baseUrl/ecoles/scolarites/$ecoleCode';
-    if (niveau != null && niveau.isNotEmpty) {
-      url += '?niveau=${Uri.encodeComponent(niveau)}';
-    }
+    String url = '$baseUrl/vie-ecoles/scolarite-niveau/${Uri.encodeComponent(niveau)}?ecole=${Uri.encodeComponent(ecoleCode)}';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 
@@ -44,31 +39,58 @@ class ScolariteService {
       print('   - Body length: ${response.body.length} caractères');
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
+        final List<dynamic> jsonList = json.decode(response.body);
         print('✅ Données de scolarité reçues et parsées avec succès');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        return ScolariteResponse.fromJson(jsonData);
+        
+        List<Scolarite> allScolarites = [];
+        if (jsonList.isNotEmpty) {
+           final dataMap = jsonList.first as Map<String, dynamic>;
+           if (dataMap.containsKey('AFF')) {
+             final affList = dataMap['AFF'] as List<dynamic>;
+             allScolarites.addAll(affList.map((item) => Scolarite.fromJson(item as Map<String, dynamic>)));
+           }
+           if (dataMap.containsKey('NAFF')) {
+             final naffList = dataMap['NAFF'] as List<dynamic>;
+             allScolarites.addAll(naffList.map((item) => Scolarite.fromJson(item as Map<String, dynamic>)));
+           }
+        }
+        return allScolarites;
+      } else if (response.statusCode == 404) {
+        print('ℹ️ Aucun frais de scolarité trouvé pour ce niveau (404)');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        return [];
       } else {
+        String errorMessage = 'Erreur lors du chargement des frais de scolarité';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData['error'] != null) {
+            errorMessage = errorData['error'];
+          }
+        } catch (_) {}
+        
         print('❌ Erreur HTTP ${response.statusCode}');
         print('❌ Corps de la réponse: ${response.body}');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        throw Exception(
-          'Erreur lors du chargement des frais de scolarité: ${response.statusCode}',
-        );
+        throw Exception(errorMessage);
       }
     } catch (e) {
       print('💥 Exception lors de la récupération des frais de scolarité: $e');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      throw Exception('Erreur de connexion: $e');
+      if (e is Exception && !e.toString().contains('Erreur de connexion')) {
+        rethrow;
+      }
+      throw Exception('Veuillez vérifier votre connexion internet et réessayer.');
     }
   }
 
   static List<Scolarite> filtrerEtTrierScolarites(List<Scolarite> scolarites) {
-    // Filtrer pour exclure les statuts ECOLIER
-    final filtres = scolarites.where((s) => s.shouldDisplay).toList();
+    // Filtrer pour exclure les statuts ECOLIER et exclure la branche '*'
+    final filtres = scolarites.where((s) => s.shouldDisplay && s.branche != '*').toList();
 
     // Trier par date limite (croissante)
     filtres.sort((a, b) {
@@ -104,16 +126,14 @@ class ScolariteService {
   static Map<String, List<Scolarite>> separerParRubrique(
     List<Scolarite> scolarites,
   ) {
-    final Map<String, List<Scolarite>> separes = {
-      'INS': [], // Inscription
-      'SCO': [], // Scolarité
-    };
+    final Map<String, List<Scolarite>> separes = {};
 
     for (final scolarite in scolarites) {
       final rubrique = scolarite.rubrique ?? 'AUTRE';
-      if (separes.containsKey(rubrique)) {
-        separes[rubrique]!.add(scolarite);
+      if (!separes.containsKey(rubrique)) {
+        separes[rubrique] = [];
       }
+      separes[rubrique]!.add(scolarite);
     }
 
     return separes;

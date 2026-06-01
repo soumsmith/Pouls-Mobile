@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/event.dart';
 import '../models/event_rating_comment.dart';
 import '../models/ecole.dart';
@@ -11,11 +9,13 @@ import '../services/event_rating_service.dart';
 import '../services/auth_service.dart';
 import '../services/ecole_api_service.dart';
 import '../services/ticket_service.dart';
+import '../widgets/share_bottom_sheet.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
+import '../widgets/components/custom_button.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -363,10 +363,12 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   Widget _buildTicketButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: _GradientButton(
+      child: CustomButton(
+        text: 'Commander un ticket',
+        color: _AppColors.indigo,
         icon: Icons.confirmation_num_rounded,
-        label: 'Commander un ticket',
-        onTap: _showTicketBottomSheet,
+        onPressed: _showTicketBottomSheet,
+        height: 50,
       ),
     );
   }
@@ -738,7 +740,20 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       constraints: BoxConstraints(
         maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
       ),
-      builder: (context) => _ShareBottomSheet(event: widget.event),
+      builder: (context) => ShareBottomSheet(
+        title: 'Partager l\'événement',
+        itemTitle: widget.event.title,
+        shareText: '''
+🎓 ${widget.event.title}
+
+📅 ${widget.event.toUiMap()['date']}
+🏫 ${widget.event.nomecole}
+
+${widget.event.content}
+
+Découvrez plus d'événements sur notre application! 📱
+''',
+      ),
     );
   }
 
@@ -946,6 +961,57 @@ class _HeroBanner extends StatelessWidget {
 
   const _HeroBanner({required this.event, required this.typeColor, required this.uiData});
 
+  void _openImage(BuildContext context, String imageUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.share_rounded, color: Colors.white),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    constraints: BoxConstraints(
+                      maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+                    ),
+                    builder: (context) => ShareBottomSheet(
+                      title: 'Partager l\'événement',
+                      itemTitle: event.title,
+                      shareText: '''
+🎓 ${event.title}
+
+📅 ${event.toUiMap()['date']}
+🏫 ${event.nomecole}
+
+${event.content}
+
+Découvrez plus d'événements sur notre application! 📱
+''',
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(imageUrl),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -958,17 +1024,24 @@ class _HeroBanner extends StatelessWidget {
             : _buildPlaceholder(),
 
         // Gradient overlay
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.2),
-                Colors.black.withOpacity(0.55),
-                Colors.black.withOpacity(0.9),
-              ],
-              stops: const [0.0, 0.55, 1.0],
+        GestureDetector(
+          onTap: () {
+            if (event.image != null && event.image!.isNotEmpty) {
+              _openImage(context, event.image!);
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.2),
+                  Colors.black.withOpacity(0.55),
+                  Colors.black.withOpacity(0.9),
+                ],
+                stops: const [0.0, 0.55, 1.0],
+              ),
             ),
           ),
         ),
@@ -1293,122 +1366,7 @@ class _EventCardPlaceholder extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-//  Share Bottom Sheet (extracted)
-// ─────────────────────────────────────────────
-class _ShareBottomSheet extends StatelessWidget {
-  final Event event;
-  const _ShareBottomSheet({required this.event});
 
-  String get _shareText => '''
-🎓 ${event.title}
-
-📅 ${event.toUiMap()['date']}
-🏫 ${event.nomecole}
-
-${event.content}
-
-Découvrez plus d'événements sur notre application! 📱
-''';
-
-  Future<void> _launchWhatsApp() async {
-    final url = 'https://wa.me/?text=${Uri.encodeComponent(_shareText)}';
-    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
-  }
-
-  Future<void> _launchFacebook() async {
-    final url =
-        'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent('https://example.com')}&quote=${Uri.encodeComponent(_shareText)}';
-    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
-  }
-
-  Future<void> _launchEmail() async {
-    final subject = Uri.encodeComponent(event.title);
-    final body = Uri.encodeComponent(_shareText);
-    final url = 'mailto:?subject=$subject&body=$body';
-    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 36, height: 4,
-            decoration: BoxDecoration(color: _AppColors.slate300, borderRadius: BorderRadius.circular(2)),
-          ),
-          const SizedBox(height: 20),
-          const Text('Partager l\'événement',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _AppColors.slate900)),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ShareOption(imageAsset: 'assets/images/icons/whatsapp.png', label: 'WhatsApp',
-                  color: const Color(0xFF25D366), onTap: () { Navigator.pop(context); _launchWhatsApp(); }),
-              _ShareOption(icon: Icons.facebook_rounded, label: 'Facebook',
-                  color: const Color(0xFF1877F2), onTap: () { Navigator.pop(context); _launchFacebook(); }),
-              _ShareOption(icon: Icons.email_rounded, label: 'Email',
-                  color: const Color(0xFFEA4335), onTap: () { Navigator.pop(context); _launchEmail(); }),
-              _ShareOption(icon: Icons.more_horiz_rounded, label: 'Plus',
-                  color: _AppColors.indigo,
-                  onTap: () { Navigator.pop(context); Share.share(_shareText, subject: event.title); }),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ShareOption extends StatelessWidget {
-  final IconData? icon;
-  final String? imageAsset;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ShareOption({
-    this.icon,
-    this.imageAsset,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  }) : assert(icon != null || imageAsset != null);
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 54, height: 54,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: imageAsset != null
-                ? Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Image.asset(imageAsset!, fit: BoxFit.contain),
-                  )
-                : Icon(icon, color: color, size: 26),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 11, color: _AppColors.slate500, fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 //  Ticket Bottom Sheet (extracted)
@@ -2109,35 +2067,23 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: CustomButton(
+                  text: 'Annuler',
                   onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _AppColors.slate700,
-                    side: const BorderSide(color: _AppColors.slate300),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Annuler', style: TextStyle(fontWeight: FontWeight.w600)),
+                  color: _AppColors.slate700,
+                  isLight: true,
+                  height: 48,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
+                child: CustomButton(
+                  text: isEdit ? 'Modifier' : 'Publier',
                   onPressed: _rating > 0 && _controller.text.trim().isNotEmpty
                       ? () => widget.onSave(_rating, _controller.text.trim())
                       : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _AppColors.indigo,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: _AppColors.slate300,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(
-                    isEdit ? 'Modifier' : 'Publier',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                  color: _AppColors.indigo,
+                  height: 48,
                 ),
               ),
             ],

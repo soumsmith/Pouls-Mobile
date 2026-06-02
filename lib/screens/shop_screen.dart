@@ -23,6 +23,7 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_row_widget.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/components/bottom_spacer.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/skeleton_box.dart';
 import 'product_detail_screen.dart';
@@ -876,7 +877,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
             ],
           ),
           // Gradient fade at bottom

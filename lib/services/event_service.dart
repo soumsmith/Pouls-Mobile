@@ -21,7 +21,7 @@ class EventService {
     bool debug = false,
   }) async {
     try {
-      String url = '${AppConfig.API_AFRICA_URL}/evenements-list?page=$page&per_page=$perPage';
+      String url = '${AppConfig.API_AFRICA_URL}/africa/evenements-list?page=$page&per_page=$perPage';
 
       if (nomEtablissement != null && nomEtablissement.isNotEmpty) {
         url += '&nomEtablissement=${Uri.encodeComponent(nomEtablissement)}';

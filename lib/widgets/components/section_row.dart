@@ -59,8 +59,8 @@ class SectionRow extends StatelessWidget {
                   seeMoreText ?? 'Voir plus',
                   style: TextStyle(
                     color: seeMoreTextColor ?? effectiveTextColor,
-                    fontSize: effectiveFontSize - 2,
-                    fontWeight: FontWeight.w500,
+                    fontSize: effectiveFontSize,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),

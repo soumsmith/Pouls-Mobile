@@ -7,6 +7,7 @@ import '../services/mock_api_service.dart';
 import '../models/child.dart';
 import '../config/app_colors.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/components/bottom_spacer.dart';
 import 'splash_screen.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
@@ -125,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _buildProfileHeader(user),
@@ -135,6 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     _buildPersonalInfoSection(),
                     const SizedBox(height: 20),
                     _buildQuickActionsSection(),
+                    const BottomSpacer(),
                   ]),
                 ),
               ),
@@ -477,31 +479,35 @@ class _ProfileScreenState extends State<ProfileScreen>
               padding: const EdgeInsets.all(18),
               child: Column(
                 children: [
-                  _buildInfoField(
-                    label: 'Nom Complet',
-                    controller: _nameController,
-                    icon: Icons.person_outline,
-                    enabled: _isEditing,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildInfoField(
-                    label: 'Email',
-                    controller: TextEditingController(
-                        text: AuthService.instance
-                                .getCurrentUser()
-                                ?.email ??
-                            ''),
-                    icon: Icons.email_outlined,
-                    enabled: false,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildInfoField(
-                    label: 'Téléphone',
-                    controller: _phoneController,
-                    icon: Icons.phone_outlined,
-                    enabled: _isEditing,
-                  ),
-                ],
+                  if (_nameController.text.isNotEmpty)
+                    _buildInfoField(
+                      label: 'Nom Complet',
+                      controller: _nameController,
+                      icon: Icons.person_outline,
+                      enabled: _isEditing,
+                    ),
+                  if ((AuthService.instance.getCurrentUser()?.email ?? '').isNotEmpty)
+                    _buildInfoField(
+                      label: 'Email',
+                      controller: TextEditingController(
+                          text: AuthService.instance
+                                  .getCurrentUser()
+                                  ?.email ??
+                              ''),
+                      icon: Icons.email_outlined,
+                      enabled: false,
+                    ),
+                  if (_phoneController.text.isNotEmpty)
+                    _buildInfoField(
+                      label: 'Téléphone',
+                      controller: _phoneController,
+                      icon: Icons.phone_outlined,
+                      enabled: _isEditing,
+                    ),
+                ].whereType<Widget>().toList().fold<List<Widget>>([], (prev, element) {
+                  if (prev.isEmpty) return [element];
+                  return [...prev, const SizedBox(height: 14), element];
+                }),
               ),
             ),
           ],

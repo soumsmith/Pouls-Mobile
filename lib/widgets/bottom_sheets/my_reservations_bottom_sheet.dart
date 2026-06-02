@@ -3,6 +3,7 @@ import '../../config/app_colors.dart';
 import '../../services/http_service.dart';
 import 'bottom_sheet_header.dart';
 import '../custom_loader.dart';
+import '../components/bottom_spacer.dart';
 
 class MyReservationsBottomSheet extends StatefulWidget {
   final String childName;
@@ -151,6 +152,8 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
           child: CustomLoader(
             message: 'Chargement de vos réservations...',
             loaderColor: AppColors.screenOrange,
+            backgroundColor: Colors.transparent,
+            showBackground: false,
           ),
         ),
       );
@@ -317,6 +320,7 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
             ..._reservations.map((reservation) => _buildReservationCard(reservation, isDark)).toList(),
           ],
           
+          const BottomSpacer(),
           SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
         ],
       ),

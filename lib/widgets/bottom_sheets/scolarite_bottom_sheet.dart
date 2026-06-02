@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../custom_loader.dart';
 import '../bottom_fade_gradient.dart';
 import '../bottom_sheets/bottom_sheet_header.dart';
+import '../components/bottom_spacer.dart';
 import '../../models/student_scolarite.dart';
 import '../../services/theme_service.dart';
 import '../../services/text_size_service.dart';
@@ -450,6 +451,7 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
               ),
             )
             .toList(),
+        const BottomSpacer(),
       ],
     );
   }

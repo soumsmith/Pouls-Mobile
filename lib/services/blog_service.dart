@@ -21,7 +21,7 @@ class BlogService {
     print('🏫 École: $ecole');
 
     final url =
-        '${AppConfig.API_AFRICA_URL}/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}&page=$page&per_page=$perPage';
+        '${AppConfig.API_AFRICA_URL}/africa/blogs-list?titre=${Uri.encodeComponent(titre)}&ecole=${Uri.encodeComponent(ecole)}&page=$page&per_page=$perPage';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 
@@ -124,7 +124,7 @@ class BlogService {
     String? date,
   }) async {
     try {
-      String url = '${AppConfig.API_AFRICA_URL}/blogs-list?page=$page&per_page=$perPage';
+      String url = '${AppConfig.API_AFRICA_URL}/africa/blogs-list?page=$page&per_page=$perPage';
       
       if (country != null && country.isNotEmpty) {
         url += '&country=${Uri.encodeComponent(country)}';

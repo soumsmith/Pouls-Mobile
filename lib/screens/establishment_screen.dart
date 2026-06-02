@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:parents_responsable/widgets/section_header_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/components/section_row.dart';
+import '../widgets/components/bottom_spacer.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
@@ -981,7 +982,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
         // ── Grid ──────────────────────────────────────
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: _getCrossAxisCount(context),
@@ -1035,6 +1036,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             }, childCount: items.length + (_hasMoreEcoles ? 1 : 0)),
           ),
         ),
+        const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
       ],
     ];
   }

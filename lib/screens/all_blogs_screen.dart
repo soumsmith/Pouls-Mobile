@@ -11,6 +11,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/components/custom_date_input.dart';
 import '../widgets/components/custom_text_input.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -656,7 +657,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       else
         // ── Liste de blogs ───────────────────────
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (ctx, i) {
@@ -698,6 +699,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
             ),
           ),
         ),
+        const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
     ];
   }
 

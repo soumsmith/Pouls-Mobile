@@ -43,6 +43,7 @@ import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/components/bottom_spacer.dart';
 import '../services/notes_api_service.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
@@ -1060,7 +1061,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       const SizedBox(height: 8),
                       _buildPaymentBannerCard(),
                       const SizedBox(height: 24),
-                      const SizedBox(height: 150),
+                      const BottomSpacer(),
                     ],
                   ),
                 ),
@@ -1948,6 +1949,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     context,
                     message: 'Chargement des notifications...',
                     loaderColor: AppColors.screenOrange,
+                    showBackground: false,
                   );
                 }
               });
@@ -5008,6 +5010,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       context,
       message: 'Traitement du paiement...',
       loaderColor: AppColors.screenOrange,
+      showBackground: false,
     );
 
     try {

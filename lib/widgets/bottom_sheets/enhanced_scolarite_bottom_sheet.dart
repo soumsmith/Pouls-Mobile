@@ -8,6 +8,7 @@ import '../../config/app_colors.dart';
 import '../../config/app_dimensions.dart';
 import '../section_header_widget.dart';
 import '../search_bar_widget.dart';
+import '../components/bottom_spacer.dart';
 
 /// Bottom sheet réutilisable et amélioré pour afficher la scolarité d'un élève
 /// Fusionne le design de _showFeesBottomSheet avec les fonctionnalités de ScolariteBottomSheet
@@ -550,6 +551,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
             );
           }
         ).toList(),
+        const BottomSpacer(),
       ],
     );
   }

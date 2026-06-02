@@ -13,6 +13,7 @@ import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bo
 import 'package:parents_responsable/widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/share_bottom_sheet.dart';
+import '../widgets/components/bottom_spacer.dart';
 import '../config/app_dimensions.dart';
 import '../models/child.dart';
 import '../models/gestion_presence_eleve_entry.dart';
@@ -1846,9 +1847,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 13, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        gradient: LinearGradient(
+          colors: [
+            AppColors.settingsGreen.withOpacity(0.3),
+            Colors.transparent,
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
         border: Border.all(
-          color: AppColors.homeAlertBorder(context),
+          color: AppColors.settingsGreen.withOpacity(0.3),
           width: 0.5,
         ),
         borderRadius: BorderRadius.circular(13),
@@ -2941,9 +2949,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildVisiteGuideeSection(),
-
-      const SizedBox(height: 125),
-    ];
+                  const BottomSpacer(),
+                ];
   }
 
   // ─── CARD BUILDER (wrapper ImageMenuCardExternalTitle) ─────────────────────

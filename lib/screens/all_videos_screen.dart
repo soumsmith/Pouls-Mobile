@@ -6,6 +6,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/components/bottom_spacer.dart';
 import '../config/app_colors.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
@@ -299,7 +300,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                   ),
                 ),
                 const SliverToBoxAdapter(
-                  child: SizedBox(height: 120), // Large bottom margin
+                  child: BottomSpacer(height: 125),
                 ),
               ],
             ],

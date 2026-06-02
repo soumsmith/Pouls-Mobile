@@ -8,6 +8,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import 'child_list_screen.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 class AllChildrenScreen extends StatefulWidget {
   const AllChildrenScreen({super.key});
@@ -114,7 +115,7 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
                 ],
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // Search bar
@@ -127,6 +128,7 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
                       _buildEmptyState()
                     else
                       _buildChildrenGrid(),
+                    const BottomSpacer(height: 125),
                   ]),
                 ),
               ),

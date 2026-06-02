@@ -89,6 +89,7 @@ import '../widgets/section_header_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/components/bottom_spacer.dart';
 import '../widgets/see_more_card.dart';
 import '../utils/image_helper.dart';
 import '../config/app_typography.dart';
@@ -1117,15 +1118,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         const SizedBox(height: 8),
         _buildEstablishmentHeader(isDark),
         const SizedBox(height: 10),
-        // _buildSectionHeader('Actions rapides', isDark),
-        // const SizedBox(height: 24),
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   child: _buildActionButtons(isDark),
-        // ),
-        // const SizedBox(height: 24),
         _buildMenuCards(isDark),
-        //const SizedBox(height: 100),
+        const BottomSpacer(),
       ],
     );
   }

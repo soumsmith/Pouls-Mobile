@@ -81,6 +81,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../widgets/subtle_retry_button.dart';
 import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
+import '../widgets/custom_text_field.dart';
 import '../services/bulletin_api_service.dart';
 import 'pdf_viewer_screen.dart';
 import 'dart:io';
@@ -364,6 +365,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   StateSetter? _accessControlModalSetState;
   bool _accessControlLoaded = false;
   DateTime _selectedAccessDate = DateTime.now();
+  final TextEditingController _accessDateController = TextEditingController();
 
   // Variables pour les messages
   List<StudentMessage> _studentMessages = [];
@@ -482,6 +484,35 @@ class _ChildListScreenState extends State<ChildListScreen>
         );
 
     _animationController.forward();
+
+    // Init _accessDateController
+    final String initDateStr = 
+        '${_selectedAccessDate.day.toString().padLeft(2, '0')}/'
+        '${_selectedAccessDate.month.toString().padLeft(2, '0')}/'
+        '${_selectedAccessDate.year}';
+    _accessDateController.text = initDateStr;
+
+    _accessDateController.addListener(() {
+      final text = _accessDateController.text;
+      if (text.length == 10) {
+        final parts = text.split('/');
+        if (parts.length == 3) {
+          final day = int.tryParse(parts[0]);
+          final month = int.tryParse(parts[1]);
+          final year = int.tryParse(parts[2]);
+          if (day != null && month != null && year != null) {
+            final parsedDate = DateTime(year, month, day);
+            if (parsedDate != _selectedAccessDate) {
+              setState(() {
+                _selectedAccessDate = parsedDate;
+              });
+              _accessControlModalSetState?.call(() {});
+              _loadAccessControlData(_accessControlModalSetState);
+            }
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -497,6 +528,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _accessDateController.dispose();
     super.dispose();
   }
 
@@ -5785,88 +5817,12 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
-      child: TextFormField(
-        readOnly: true,
-        onTap: () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: _selectedAccessDate,
-            firstDate: DateTime(2020),
-            lastDate: DateTime.now(),
-            builder: (context, child) {
-              return Theme(
-                data: Theme.of(context).copyWith(
-                  colorScheme: isDark
-                      ? const ColorScheme.dark(
-                          primary: Color(0xFFC2185B),
-                          onPrimary: Colors.white,
-                          surface: Color(0xFF1E1E1E),
-                          onSurface: Colors.white,
-                        )
-                      : const ColorScheme.light(
-                          primary: Color(0xFFC2185B),
-                          onPrimary: Colors.white,
-                          surface: Colors.white,
-                          onSurface: Colors.black87,
-                        ),
-                ),
-                child: child!,
-              );
-            },
-          );
-          if (picked != null && picked != _selectedAccessDate) {
-            setState(() {
-              _selectedAccessDate = picked;
-            });
-            _accessControlModalSetState?.call(() {});
-            _loadAccessControlData(_accessControlModalSetState);
-          }
-        },
-        controller: TextEditingController(text: displayText),
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: isDark ? Colors.white : Colors.black87,
-        ),
-        decoration: InputDecoration(
-          labelText: 'Date de pointage',
-          labelStyle: TextStyle(
-            color: isDark ? Colors.white70 : Colors.black54,
-            fontWeight: FontWeight.w500,
-          ),
-          prefixIcon: const Icon(
-            Icons.edit_calendar_rounded,
-            color: Colors.grey,
-          ),
-          suffixIcon: const Icon(
-            Icons.arrow_drop_down_rounded,
-            color: Colors.grey,
-          ),
-          filled: true,
-          fillColor: isDark
-              ? const Color(0xFFC2185B).withOpacity(0.1)
-              : const Color(0xFFC2185B).withOpacity(0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: const Color(0xFFC2185B).withOpacity(0.3),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: const Color(0xFFC2185B).withOpacity(0.3),
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFC2185B), width: 1.5),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
-        ),
+      child: CustomDateInput(
+        label: 'Date de pointage',
+        hint: 'JJ/MM/AAAA',
+        icon: Icons.edit_calendar_rounded,
+        controller: _accessDateController,
+        inputFormatters: [DateInputFormatter()],
       ),
     );
   }

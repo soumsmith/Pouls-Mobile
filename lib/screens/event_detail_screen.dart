@@ -69,6 +69,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   String? _ticketsError;
   TicketCategory? _selectedTicketCategory;
   int _selectedQuantity = 1;
+  bool _hasCheckedTickets = false;
 
   bool _isLiked = false;
   late AnimationController _likeController;
@@ -86,6 +87,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     );
     _loadSchoolEvents();
     _loadCommentsAndRatings();
+    _checkTicketAvailability();
   }
 
   @override
@@ -106,6 +108,25 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       }
     } catch (_) {
       if (mounted) setState(() => _schoolEventsLoading = false);
+    }
+  }
+
+  Future<void> _checkTicketAvailability() async {
+    try {
+      final id = widget.event.id ?? widget.event.slug;
+      final categories = await TicketService.getTicketCategories(id, fallbackSlug: widget.event.slug);
+      if (mounted) {
+        setState(() {
+          _ticketCategories = categories;
+          _hasCheckedTickets = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _hasCheckedTickets = true;
+        });
+      }
     }
   }
 
@@ -222,7 +243,6 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           _buildInfoCards(typeColor),
           const SizedBox(height: 20),
           _buildDescription(),
-          const SizedBox(height: 24),
           _buildTicketButton(),
           const SizedBox(height: 28),
           _buildRatingsSection(),
@@ -361,13 +381,18 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   // ── Ticket CTA ──────────────────────────────
   Widget _buildTicketButton() {
+    if (_hasCheckedTickets && _ticketCategories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
       child: CustomButton(
         text: 'Commander un ticket',
         color: _AppColors.indigo,
         icon: Icons.confirmation_num_rounded,
-        onPressed: _showTicketBottomSheet,
+        onPressed: !_hasCheckedTickets ? null : _showTicketBottomSheet,
+        isLoading: !_hasCheckedTickets,
         height: 50,
       ),
     );

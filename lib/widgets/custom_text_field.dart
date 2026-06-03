@@ -16,6 +16,7 @@ class CustomTextField extends StatelessWidget {
   final Color? iconColor;
   final Color? focusBorderColor;
   final bool readOnly;
+  final VoidCallback? onTap;
 
   const CustomTextField({
     Key? key,
@@ -31,6 +32,7 @@ class CustomTextField extends StatelessWidget {
     this.iconColor,
     this.focusBorderColor,
     this.readOnly = false,
+    this.onTap,
   }) : super(key: key);
 
   @override
@@ -66,6 +68,7 @@ class CustomTextField extends StatelessWidget {
           maxLines: maxLines,
           inputFormatters: inputFormatters,
           readOnly: readOnly,
+          onTap: onTap,
           style: TextStyle(
             fontSize: 14, 
             color: textColor, 

@@ -37,6 +37,7 @@ import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/skeleton_box.dart';
+import 'rating_children_list_screen.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -1248,8 +1249,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           'Intégration',
           "Veuillez sélectionner un établissement pour faire une demande d'intégration.",
         );
-      case 'rating':
-        return _buildRatingForm();
       case 'sponsorship':
         return _buildSponsorshipForm();
       case 'share':
@@ -1387,24 +1386,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  Widget _buildRatingForm() {
-    return RatingBottomSheet(
-      schoolId: 'general',
-      schoolName: 'Établissements',
-      schoolColor: _kActions['rating']!.color,
-      onRatingSubmitted: (rating, comment) async {
-        // Fermer le bottom sheet parent
-        Navigator.of(context).pop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Avis soumis pour les établissements'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildSponsorshipForm() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1637,23 +1618,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     }
 
     if (actionType == 'rating') {
-      showRatingBottomSheet(
-        context,
-        schoolId: 'general',
-        schoolName: 'Établissements',
-        schoolColor: def.color,
-        imagePath: def.imagePath,
-        imageBackgroundColor: def.color.withOpacity(0.1),
-        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-        onRatingSubmitted: (rating, comment) async {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Avis soumis pour les établissements'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        },
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RatingChildrenListScreen(
+            actionColor: def.color,
+            imagePath: def.imagePath,
+          ),
+        ),
       );
       return;
     }

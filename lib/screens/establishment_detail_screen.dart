@@ -83,6 +83,8 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/share_button.dart';
 import '../widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
 import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
+import '../widgets/bottom_sheets/scolarite_bottom_sheet.dart';
+import '../widgets/bottom_sheets/kits_bottom_sheet.dart';
 import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/section_header_widget.dart';
@@ -2629,6 +2631,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         actionText: 'Découvrir',
         onTap: () => _showServicesComplementairesBottomSheet(),
       ),
+      EstablishmentAction(
+        key: 'kits_scolaires',
+        title: 'Kits d\'articles',
+        subtitle: 'Fournitures',
+        imagePath: 'assets/images/icons/scolarite_tarifs.png', // Utilise l'icône existante temporairement
+        color: const Color(0xFF8B5CF6),
+        actionText: 'Voir',
+        onTap: () => _showKitsBottomSheetAction(),
+      ),
     ];
 
     // Section Vie école (opérationnel)
@@ -3375,6 +3386,53 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   );
 }
 
+  // ── Bottom sheet pour les kits scolaires ──────────────────────────────────────────────
+  Future<void> _showKitsBottomSheetAction() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      builder: (_) => const CustomLoader(
+        message: 'Chargement des niveaux...',
+        loaderColor: Color(0xFF8B5CF6),
+        size: 56.0,
+        showBackground: true,
+      ),
+    );
+
+    try {
+      final codeEcole = widget.ecole.parametreCode ?? '';
+      _niveauxFuture ??= NiveauService.getNiveauxByEcole(codeEcole);
+      
+      final niveaux = await _niveauxFuture!;
+      
+      if (mounted) {
+        Navigator.of(context).pop(); // Ferme le loader
+        
+        final schoolName = widget.ecole.parametreNom ?? 'École';
+        
+        showKitsBottomSheet(
+          context,
+          schoolId: codeEcole,
+          schoolName: schoolName,
+          niveaux: niveaux,
+          primaryColor: const Color(0xFF8B5CF6),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Ferme le loader
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text('Erreur: Impossible de charger les niveaux ($e)'),
+            backgroundColor: Colors.red[400],
+          ),
+        );
+      }
+    }
+  }
+
+  // ── Build Action Bottom Sheet ──────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
   //  Coulisses Excellence Content
   Widget _buildCoulissesContent(Color headerColor) {

@@ -34,7 +34,9 @@ class ShareButton extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 224, 222, 222),
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? const Color(0xFF2A2A2A) 
+                    : const Color(0xFFF3F4F6), // Fond plus clair
                 borderRadius: BorderRadius.circular(50),
               ),
               child: _buildButtonContent(),
@@ -45,7 +47,9 @@ class ShareButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: textSizeService.getScaledFontSize(12),
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white70 
+                    : const Color(0xFF4B5563),
               ),
             ),
           ],

@@ -8,6 +8,7 @@ import '../components/custom_button.dart';
 import '../custom_loader.dart';
 import '../snackbar.dart';
 import '../share_button.dart';
+import '../components/bottom_spacer.dart';
 import 'bottom_sheet_header.dart';
 import '../../services/parrainage_service.dart';
 import '../../services/auth_service.dart';
@@ -336,9 +337,10 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: _buildShareButtons(codeParrainage),
+                        children: _buildShareButtons(context, codeParrainage),
                       ),
                     ),
+                    const BottomSpacer(),
                   ],
                 ),
               ),
@@ -350,7 +352,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
   }
 
   // Méthode pour construire dynamiquement les boutons de partage
-  List<Widget> _buildShareButtons(String codeParrainage) {
+  List<Widget> _buildShareButtons(BuildContext context, String codeParrainage) {
     final downloadLink = defaultTargetPlatform == TargetPlatform.android 
         ? 'https://play.google.com/store/apps/details?id=com.pouls.mobile'
         : 'https://apps.apple.com/app/parent-responsable/id123456789';

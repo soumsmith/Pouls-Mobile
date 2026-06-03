@@ -11,6 +11,7 @@ import '../screens/profile_screen.dart';
 import '../screens/help_support_screen.dart';
 import '../screens/text_size_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -258,6 +259,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                           ),
                           const SizedBox(height: 24),
                           _buildLogoutButton(),
+                          const BottomSpacer(),
                         ],
                       ),
                     ),

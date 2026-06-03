@@ -8,10 +8,11 @@ class RatingBottomSheet extends StatefulWidget {
   final String schoolName;
   final Color schoolColor;
   final Function(String rating, String comment)? onRatingSubmitted;
-  final bool allowRating; // Permet de contrôler si l'utilisateur peut donner une note
+  final bool allowRating;
   final String? imagePath;
   final Color? imageBackgroundColor;
   final double? imageBorderRadius;
+  final bool popOnSuccess;
 
   const RatingBottomSheet({
     Key? key,
@@ -23,6 +24,7 @@ class RatingBottomSheet extends StatefulWidget {
     this.imagePath,
     this.imageBackgroundColor,
     this.imageBorderRadius,
+    this.popOnSuccess = false,
   }) : super(key: key);
 
   @override
@@ -125,6 +127,10 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> with WidgetsBindi
           backgroundColor: Colors.green,
         ),
       );
+
+      if (widget.popOnSuccess && mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -616,6 +622,7 @@ void showRatingBottomSheet(
   String? imagePath,
   Color? imageBackgroundColor,
   double? imageBorderRadius,
+  bool popOnSuccess = true,
 }) {
   showModalBottomSheet(
     context: context,
@@ -631,6 +638,7 @@ void showRatingBottomSheet(
       imagePath: imagePath,
       imageBackgroundColor: imageBackgroundColor,
       imageBorderRadius: imageBorderRadius,
+      popOnSuccess: popOnSuccess,
     ),
   );
 }

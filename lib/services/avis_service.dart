@@ -60,6 +60,44 @@ class AvisService {
     }
   }
 
+  /// Soumettre un avis
+  Future<void> submitAvis(String userNumero, String codeEcole, String rating, String comment) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('⭐ SOUMISSION D\'UN AVIS');
+    print('═══════════════════════════════════════════════════════════');
+    
+    // L'URL d'API POST attend le numéro de l'utilisateur à la fin
+    final url = '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/avis/$userNumero';
+    print('🔗 URL (POST): $url');
+    print('📡 Envoi de la requête FormData avec:');
+    print('   - codeecole: $codeEcole');
+    print('   - note: $rating');
+    print('   - contenu: $comment');
+
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.fields['codeecole'] = codeEcole;
+      request.fields['note'] = rating;
+      request.fields['contenu'] = comment;
+
+      // Envoyer la requête avec un timeout
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final responseBody = await streamedResponse.stream.bytesToString();
+
+      print('📥 Réponse reçue (POST):');
+      print('   - Status Code: ${streamedResponse.statusCode}');
+      print('   - Body: $responseBody');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      
+    } catch (e) {
+      print('💥 Exception lors de la soumission de l\'avis: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+    }
+  }
+
   /// Récupère les avis et les convertit en format UI
   Future<List<Map<String, dynamic>>> getAvisForUI(String codeEcole) async {
     try {

@@ -1636,8 +1636,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─── APP BAR ───────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
+    final rawFirstName = AuthService.instance.getCurrentUser()?.firstName ?? '';
+    final isTablet = AppDimensions.isTablet(context);
+    final displayFirstName = (!isTablet && rawFirstName.length > 4) 
+        ? '${rawFirstName.substring(0, 4)}...' 
+        : rawFirstName;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
       child: Row(
@@ -1672,7 +1677,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_getGreeting()}, ${AuthService.instance.getCurrentUser()?.firstName ?? ''}',
+                  '${_getGreeting()}, $displayFirstName',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

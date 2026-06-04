@@ -28,6 +28,10 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Cette application a besoin d'accéder au microphone pour enregistrer des messages vocaux.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cette application a besoin d'accéder à votre bibliothèque de photos pour permettre la sélection et le téléchargement d'images.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Cette application utilise votre position pour améliorer l'expérience utilisateur.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

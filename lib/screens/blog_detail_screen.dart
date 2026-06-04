@@ -11,28 +11,29 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens (cohérents avec EventDetailScreen)
 // ─────────────────────────────────────────────
 class _C {
-  static const indigo      = Color(0xFF6366F1);
-  static const indigoDark  = Color(0xFF4F46E5);
+  static const indigo = Color(0xFF6366F1);
+  static const indigoDark = Color(0xFF4F46E5);
   static const indigoLight = Color(0xFFEEF2FF);
-  static const emerald     = Color(0xFF10B981);
-  static const emeraldLight= Color(0xFFD1FAE5);
-  static const amber       = Color(0xFFF59E0B);
-  static const amberLight  = Color(0xFFFEF3C7);
-  static const rose        = Color(0xFFEF4444);
-  static const roseLight   = Color(0xFFFEE2E2);
-  static const slate900    = Color(0xFF1E293B);
-  static const slate700    = Color(0xFF334155);
-  static const slate500    = Color(0xFF64748B);
-  static const slate300    = Color(0xFFCBD5E1);
-  static const slate100    = Color(0xFFF1F5F9);
-  static const gold        = Color(0xFFF59E0B);
-  static const surface     = Color(0xFFF8F8FC);
-  static const white       = Colors.white;
+  static const emerald = Color(0xFF10B981);
+  static const emeraldLight = Color(0xFFD1FAE5);
+  static const amber = Color(0xFFF59E0B);
+  static const amberLight = Color(0xFFFEF3C7);
+  static const rose = Color(0xFFEF4444);
+  static const roseLight = Color(0xFFFEE2E2);
+  static const slate900 = Color(0xFF1E293B);
+  static const slate700 = Color(0xFF334155);
+  static const slate500 = Color(0xFF64748B);
+  static const slate300 = Color(0xFFCBD5E1);
+  static const slate100 = Color(0xFFF1F5F9);
+  static const gold = Color(0xFFF59E0B);
+  static const surface = Color(0xFFF8F8FC);
+  static const white = Colors.white;
 }
 
 // ─────────────────────────────────────────────
@@ -49,7 +50,6 @@ class BlogDetailScreen extends StatefulWidget {
 
 class _BlogDetailScreenState extends State<BlogDetailScreen>
     with SingleTickerProviderStateMixin {
-
   // ── state ───────────────────────────────────
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -95,7 +95,8 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
       builder: (context) => ShareBottomSheet(
         title: 'Partager l\'actualité',
         itemTitle: widget.blog.title,
-        shareText: '''
+        shareText:
+            '''
 📰 ${widget.blog.title}
 
 🏫 ${widget.blog.nomecole}
@@ -139,7 +140,6 @@ Découvrez plus d\'actualités sur notre application! 📱
       );
       if (!mounted) return;
       MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
-
     } catch (e) {
       if (!mounted) return;
       _showSnack('Erreur: $e', _C.rose);
@@ -175,7 +175,11 @@ Découvrez plus d\'actualités sur notre application! 📱
 
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: color, behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -188,7 +192,9 @@ Découvrez plus d\'actualités sur notre application! 📱
     final typeColor = uiData['color'] as Color;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: Theme.of(context).brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
         body: CustomScrollView(
@@ -229,16 +235,15 @@ Découvrez plus d\'actualités sur notre application! 📱
       ),
       actions: [
         _NavIconBtn(
-          icon: _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+          icon: _isBookmarked
+              ? Icons.bookmark_rounded
+              : Icons.bookmark_border_rounded,
           iconColor: _isBookmarked ? _C.amber : Colors.white,
           onTap: _toggleBookmark,
           scaleAnim: _bookmarkAnim,
         ),
         const SizedBox(width: 4),
-        _NavIconBtn(
-          icon: Icons.share_rounded,
-          onTap: _showShareMenu,
-        ),
+        _NavIconBtn(icon: Icons.share_rounded, onTap: _showShareMenu),
         const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -246,7 +251,11 @@ Découvrez plus d\'actualités sur notre application! 📱
           StretchMode.zoomBackground,
           StretchMode.blurBackground,
         ],
-        background: _HeroBanner(blog: widget.blog, typeColor: typeColor, uiData: uiData),
+        background: _HeroBanner(
+          blog: widget.blog,
+          typeColor: typeColor,
+          uiData: uiData,
+        ),
       ),
     );
   }
@@ -272,6 +281,7 @@ Découvrez plus d\'actualités sur notre application! 📱
           const SizedBox(height: 28),
           _buildRatingAndComments(),
           const SizedBox(height: 40),
+          const BottomSpacer(height: 125),
         ],
       ),
     );
@@ -281,7 +291,8 @@ Découvrez plus d\'actualités sur notre application! 📱
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Container(
-        width: 36, height: 4,
+        width: 36,
+        height: 4,
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF333333) : _C.slate300,
           borderRadius: BorderRadius.circular(2),
@@ -306,7 +317,9 @@ Découvrez plus d\'actualités sur notre application! 📱
             onTap: _showShareMenu,
           ),
           _ActionIcon(
-            icon: _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+            icon: _isBookmarked
+                ? Icons.bookmark_rounded
+                : Icons.bookmark_border_rounded,
             label: _isBookmarked ? 'Enregistré' : 'Enregistrer',
             bgColor: _C.amber,
             iconColor: _C.white,
@@ -430,32 +443,61 @@ Découvrez plus d\'actualités sur notre application! 📱
                 Row(
                   children: [
                     Container(
-                      width: 38, height: 38,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        color: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
+                        color: isDark
+                            ? _C.indigo.withOpacity(0.2)
+                            : _C.indigoLight,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.rate_review_rounded, color: _C.indigo, size: 19),
+                      child: const Icon(
+                        Icons.rate_review_rounded,
+                        color: _C.indigo,
+                        size: 19,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Votre avis',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimaryThemed(context))),
-                        Text('Partagez votre opinion',
-                            style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
+                        Text(
+                          'Votre avis',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.screenTextPrimaryThemed(context),
+                          ),
+                        ),
+                        Text(
+                          'Partagez votre opinion',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.screenTextSecondaryThemed(context),
+                          ),
+                        ),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                Divider(height: 1, color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9)),
+                Divider(
+                  height: 1,
+                  color: isDark
+                      ? const Color(0xFF333333)
+                      : const Color(0xFFF1F5F9),
+                ),
                 const SizedBox(height: 16),
 
                 // Étoiles
-                Text('Note',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondaryThemed(context))),
+                Text(
+                  'Note',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                  ),
+                ),
                 const SizedBox(height: 10),
                 Row(
                   children: List.generate(5, (i) {
@@ -470,9 +512,15 @@ Découvrez plus d\'actualités sur notre application! 📱
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 150),
                           child: Icon(
-                            filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                            filled
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
                             key: ValueKey('$i-$filled'),
-                            color: filled ? _C.gold : (isDark ? const Color(0xFF444444) : _C.slate300),
+                            color: filled
+                                ? _C.gold
+                                : (isDark
+                                      ? const Color(0xFF444444)
+                                      : _C.slate300),
                             size: 36,
                           ),
                         ),
@@ -486,14 +534,23 @@ Découvrez plus d\'actualités sur notre application! 📱
                     duration: const Duration(milliseconds: 200),
                     child: Container(
                       key: ValueKey(_userRating),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? _C.amber.withOpacity(0.2) : _C.amberLight,
+                        color: isDark
+                            ? _C.amber.withOpacity(0.2)
+                            : _C.amberLight,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         _ratingLabel(_userRating.toInt()),
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _C.amber),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: _C.amber,
+                        ),
                       ),
                     ),
                   ),
@@ -501,16 +558,28 @@ Découvrez plus d\'actualités sur notre application! 📱
                 const SizedBox(height: 16),
 
                 // Commentaire
-                Text('Commentaire',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextSecondaryThemed(context))),
+                Text(
+                  'Commentaire',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _commentController,
                   maxLines: 3,
-                  style: TextStyle(fontSize: 14, color: AppColors.screenTextPrimaryThemed(context)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.screenTextPrimaryThemed(context),
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Partagez votre avis sur ce blog…',
-                    hintStyle: TextStyle(color: AppColors.screenTextSecondaryThemed(context), fontSize: 13),
+                    hintStyle: TextStyle(
+                      color: AppColors.screenTextSecondaryThemed(context),
+                      fontSize: 13,
+                    ),
                     filled: true,
                     fillColor: isDark ? const Color(0xFF1E1E2A) : _C.slate100,
                     contentPadding: const EdgeInsets.all(14),
@@ -520,7 +589,10 @@ Découvrez plus d\'actualités sur notre application! 📱
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _C.indigo, width: 1.5),
+                      borderSide: const BorderSide(
+                        color: _C.indigo,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -547,18 +619,31 @@ Découvrez plus d\'actualités sur notre application! 📱
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Text('Commentaires récents',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.screenTextPrimaryThemed(context))),
+                Text(
+                  'Commentaires récents',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.screenTextPrimaryThemed(context),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${_comments.length}',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _C.indigo),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _C.indigo,
+                    ),
                   ),
                 ),
               ],
@@ -581,16 +666,26 @@ Découvrez plus d\'actualités sur notre application! 📱
               child: Column(
                 children: [
                   Container(
-                    width: 52, height: 52,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1E1E2A) : _C.slate100,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(Icons.chat_bubble_outline_rounded, size: 26, color: AppColors.screenTextSecondaryThemed(context)),
+                    child: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 26,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text('Soyez le premier à commenter',
-                      style: TextStyle(fontSize: 12, color: AppColors.screenTextSecondaryThemed(context))),
+                  Text(
+                    'Soyez le premier à commenter',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -618,7 +713,9 @@ Découvrez plus d\'actualités sur notre application! 📱
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
+                backgroundColor: isDark
+                    ? _C.indigo.withOpacity(0.2)
+                    : _C.indigoLight,
                 child: Text(
                   author.isNotEmpty ? author[0].toUpperCase() : '?',
                   style: const TextStyle(
@@ -633,28 +730,48 @@ Découvrez plus d\'actualités sur notre application! 📱
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(author,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.screenTextPrimaryThemed(context))),
-                    Text(_formatDate(comment['date'] as String),
-                        style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
+                    Text(
+                      author,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.screenTextPrimaryThemed(context),
+                      ),
+                    ),
+                    Text(
+                      _formatDate(comment['date'] as String),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.screenTextSecondaryThemed(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
               if (rating > 0)
                 Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (i) => Icon(
-                    i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                    size: 14,
-                    color: _C.gold,
-                  )),
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      i < rating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 14,
+                      color: _C.gold,
+                    ),
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             comment['comment'] as String,
-            style: TextStyle(fontSize: 13.5, color: AppColors.screenTextPrimaryThemed(context), height: 1.55),
+            style: TextStyle(
+              fontSize: 13.5,
+              color: AppColors.screenTextPrimaryThemed(context),
+              height: 1.55,
+            ),
           ),
         ],
       ),
@@ -669,7 +786,11 @@ Découvrez plus d\'actualités sur notre application! 📱
   }
 
   String _stripHtmlTags(String htmlString) {
-    final RegExp exp = RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false);
+    final RegExp exp = RegExp(
+      r'<[^>]*>',
+      multiLine: true,
+      caseSensitive: false,
+    );
     return htmlString.replaceAll(exp, '').trim();
   }
 
@@ -677,8 +798,18 @@ Découvrez plus d\'actualités sur notre application! 📱
     try {
       final dt = DateTime.parse(dateString);
       const months = [
-        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+        'Janvier',
+        'Février',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juillet',
+        'Août',
+        'Septembre',
+        'Octobre',
+        'Novembre',
+        'Décembre',
       ];
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
     } catch (_) {
@@ -695,7 +826,11 @@ class _HeroBanner extends StatelessWidget {
   final Color typeColor;
   final Map<String, dynamic> uiData;
 
-  const _HeroBanner({required this.blog, required this.typeColor, required this.uiData});
+  const _HeroBanner({
+    required this.blog,
+    required this.typeColor,
+    required this.uiData,
+  });
 
   void _openImage(BuildContext context, String imageUrl) {
     Navigator.push(
@@ -717,7 +852,8 @@ class _HeroBanner extends StatelessWidget {
                     builder: (context) => ShareBottomSheet(
                       title: 'Partager l\'actualité',
                       itemTitle: blog.title,
-                      shareText: '''
+                      shareText:
+                          '''
 📰 ${blog.title}
 
 🏫 ${blog.nomecole}
@@ -791,7 +927,10 @@ Découvrez plus d\'actualités sur notre application! 📱
             children: [
               // Badge type
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: typeColor.withOpacity(0.85),
                   borderRadius: BorderRadius.circular(20),
@@ -799,7 +938,11 @@ Découvrez plus d\'actualités sur notre application! 📱
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(uiData['icon'] as IconData, size: 12, color: Colors.white),
+                    Icon(
+                      uiData['icon'] as IconData,
+                      size: 12,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       uiData['type'] as String,
@@ -831,7 +974,11 @@ Découvrez plus d\'actualités sur notre application! 📱
               // École
               Row(
                 children: [
-                  const Icon(Icons.school_rounded, size: 13, color: Colors.white70),
+                  const Icon(
+                    Icons.school_rounded,
+                    size: 13,
+                    color: Colors.white70,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -859,10 +1006,7 @@ Découvrez plus d\'actualités sur notre application! 📱
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            typeColor.withOpacity(0.85),
-            typeColor.withOpacity(0.4),
-          ],
+          colors: [typeColor.withOpacity(0.85), typeColor.withOpacity(0.4)],
         ),
       ),
       child: const Icon(Icons.article_rounded, color: Colors.white24, size: 80),
@@ -891,7 +1035,8 @@ class _NavIconBtn extends StatelessWidget {
     Widget btn = GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36, height: 36,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.35),
           shape: BoxShape.circle,
@@ -932,7 +1077,8 @@ class _ActionIcon extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 52, height: 52,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
@@ -988,8 +1134,12 @@ class _InfoCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, color: iconColor, size: 18),
           ),
           const SizedBox(width: 10),
@@ -997,12 +1147,23 @@ class _InfoCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.screenTextPrimaryThemed(context)),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                Text(subtitle,
-                    style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.screenTextPrimaryThemed(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1042,11 +1203,19 @@ class _ExpandableTextState extends State<_ExpandableText> {
             widget.text,
             maxLines: widget.maxLines,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 14.5, color: AppColors.screenTextPrimaryThemed(context), height: 1.65),
+            style: TextStyle(
+              fontSize: 14.5,
+              color: AppColors.screenTextPrimaryThemed(context),
+              height: 1.65,
+            ),
           ),
           secondChild: Text(
             widget.text,
-            style: TextStyle(fontSize: 14.5, color: AppColors.screenTextPrimaryThemed(context), height: 1.65),
+            style: TextStyle(
+              fontSize: 14.5,
+              color: AppColors.screenTextPrimaryThemed(context),
+              height: 1.65,
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -1058,14 +1227,20 @@ class _ExpandableTextState extends State<_ExpandableText> {
               Text(
                 _expanded ? 'Voir moins' : 'Lire la suite',
                 style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: _C.indigo,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _C.indigo,
                 ),
               ),
               const SizedBox(width: 3),
               AnimatedRotation(
                 duration: const Duration(milliseconds: 250),
                 turns: _expanded ? 0.5 : 0,
-                child: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: _C.indigo),
+                child: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: _C.indigo,
+                ),
               ),
             ],
           ),

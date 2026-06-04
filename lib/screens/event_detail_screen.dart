@@ -17,6 +17,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -100,10 +101,14 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   // ── data loaders ───────────────────────────
   Future<void> _loadSchoolEvents() async {
     try {
-      final events = await EventService.getEventsBySchool(widget.event.codeecole);
+      final events = await EventService.getEventsBySchool(
+        widget.event.codeecole,
+      );
       if (mounted) {
         setState(() {
-          _schoolEvents = events.where((e) => e.slug != widget.event.slug).toList();
+          _schoolEvents = events
+              .where((e) => e.slug != widget.event.slug)
+              .toList();
           _schoolEventsLoading = false;
         });
       }
@@ -115,7 +120,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   Future<void> _checkTicketAvailability() async {
     try {
       final id = widget.event.id ?? widget.event.slug;
-      final categories = await TicketService.getTicketCategories(id, fallbackSlug: widget.event.slug);
+      final categories = await TicketService.getTicketCategories(
+        id,
+        fallbackSlug: widget.event.slug,
+      );
       if (mounted) {
         setState(() {
           _ticketCategories = categories;
@@ -132,7 +140,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Future<void> _loadCommentsAndRatings() async {
-    if (mounted) setState(() { _commentsLoading = true; _commentsError = null; });
+    if (mounted)
+      setState(() {
+        _commentsLoading = true;
+        _commentsError = null;
+      });
     try {
       final results = await Future.wait([
         EventRatingService.getEventComments(widget.event.slug),
@@ -143,7 +155,8 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       if (currentUser != null) {
         try {
           userComment = await EventRatingService.getUserComment(
-            widget.event.slug, currentUser.id,
+            widget.event.slug,
+            currentUser.id,
           );
         } catch (_) {}
       }
@@ -156,7 +169,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _commentsLoading = false; _commentsError = e.toString(); });
+      if (mounted)
+        setState(() {
+          _commentsLoading = false;
+          _commentsError = e.toString();
+        });
     }
   }
 
@@ -169,7 +186,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     final typeColor = uiData['color'] as Color;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: Theme.of(context).brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
         body: CustomScrollView(
@@ -209,7 +228,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       ),
       actions: [
         _NavIconBtn(
-          icon: _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          icon: _isLiked
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
           iconColor: _isLiked ? _AppColors.rose : Colors.white,
           onTap: _toggleLike,
           scaleAnim: _likeAnim,
@@ -221,7 +242,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           StretchMode.zoomBackground,
           StretchMode.blurBackground,
         ],
-        background: _HeroBanner(event: widget.event, typeColor: typeColor, uiData: uiData),
+        background: _HeroBanner(
+          event: widget.event,
+          typeColor: typeColor,
+          uiData: uiData,
+        ),
       ),
     );
   }
@@ -256,6 +281,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           const SizedBox(height: 28),
           if (_schoolEvents.isNotEmpty) _buildOtherEvents(),
           const SizedBox(height: 40),
+          const BottomSpacer(height: 125),
         ],
       ),
     );
@@ -430,7 +456,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 GestureDetector(
                   onTap: _showAddCommentDialog,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: _AppColors.indigoLight,
                       borderRadius: BorderRadius.circular(20),
@@ -438,7 +467,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        Icon(Icons.edit_rounded, size: 13, color: _AppColors.indigo),
+                        Icon(
+                          Icons.edit_rounded,
+                          size: 13,
+                          color: _AppColors.indigo,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Donner mon avis',
@@ -464,10 +497,15 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           const SizedBox(height: 16),
         ],
         if (_commentsLoading)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(20),
-            child: CircularProgressIndicator(color: _AppColors.indigo, strokeWidth: 2),
-          ))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: CircularProgressIndicator(
+                color: _AppColors.indigo,
+                strokeWidth: 2,
+              ),
+            ),
+          )
         else if (_comments.isEmpty)
           _buildEmptyComments()
         else
@@ -497,13 +535,19 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 color: isDark ? const Color(0xFF1E1E2A) : _AppColors.slate100,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(Icons.chat_bubble_outline_rounded,
-                  size: 28, color: AppColors.screenTextSecondaryThemed(context)),
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 28,
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
             ),
             const SizedBox(height: 10),
             Text(
               'Soyez le premier à donner votre avis',
-              style: TextStyle(fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
             ),
           ],
         ),
@@ -539,7 +583,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
               const SizedBox(height: 4),
               Text(
                 '${_ratingSummary!.totalRatings} avis',
-                style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.screenTextSecondaryThemed(context),
+                ),
               ),
             ],
           ),
@@ -551,15 +598,25 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 final star = 5 - i;
                 final pct = _ratingSummary!.totalRatings > 0
                     ? (_ratingSummary!.ratingDistribution[star] ?? 0) /
-                        _ratingSummary!.totalRatings
+                          _ratingSummary!.totalRatings
                     : 0.0;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2.5),
                   child: Row(
                     children: [
-                      Text('$star', style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context))),
+                      Text(
+                        '$star',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.screenTextSecondaryThemed(context),
+                        ),
+                      ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.star_rounded, color: _AppColors.gold, size: 12),
+                      const Icon(
+                        Icons.star_rounded,
+                        color: _AppColors.gold,
+                        size: 12,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: ClipRRect(
@@ -567,8 +624,12 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                           child: LinearProgressIndicator(
                             value: pct.toDouble(),
                             minHeight: 5,
-                            backgroundColor: isDark ? const Color(0xFF1E1E2A) : _AppColors.slate100,
-                            valueColor: const AlwaysStoppedAnimation(_AppColors.gold),
+                            backgroundColor: isDark
+                                ? const Color(0xFF1E1E2A)
+                                : _AppColors.slate100,
+                            valueColor: const AlwaysStoppedAnimation(
+                              _AppColors.gold,
+                            ),
                           ),
                         ),
                       ),
@@ -577,7 +638,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                         width: 18,
                         child: Text(
                           '${_ratingSummary!.ratingDistribution[star] ?? 0}',
-                          style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.screenTextSecondaryThemed(context),
+                          ),
                         ),
                       ),
                     ],
@@ -607,7 +671,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: isDark ? _AppColors.indigo.withOpacity(0.2) : _AppColors.indigoLight,
+                backgroundColor: isDark
+                    ? _AppColors.indigo.withOpacity(0.2)
+                    : _AppColors.indigoLight,
                 backgroundImage: comment.userAvatar.isNotEmpty
                     ? NetworkImage(comment.userAvatar)
                     : null,
@@ -639,13 +705,19 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                     ),
                     Text(
                       comment.formattedDate,
-                      style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.screenTextSecondaryThemed(context),
+                      ),
                     ),
                   ],
                 ),
               ),
               _StarRow(
-                stars: List.generate(5, (i) => i < comment.rating ? 'filled' : 'empty'),
+                stars: List.generate(
+                  5,
+                  (i) => i < comment.rating ? 'filled' : 'empty',
+                ),
                 size: 14,
               ),
             ],
@@ -691,7 +763,8 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: _schoolEvents.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, i) => _buildSchoolEventCard(_schoolEvents[i]),
+            itemBuilder: (context, i) =>
+                _buildSchoolEventCard(_schoolEvents[i]),
           ),
         ),
       ],
@@ -718,8 +791,14 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             SizedBox(
               height: 90,
               child: event.image != null && event.image!.isNotEmpty
-                  ? Image.network(event.image!, fit: BoxFit.cover, width: double.infinity,
-                      errorBuilder: (_, __, ___) => _EventCardPlaceholder(color: uiData['color'] as Color))
+                  ? Image.network(
+                      event.image!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => _EventCardPlaceholder(
+                        color: uiData['color'] as Color,
+                      ),
+                    )
                   : _EventCardPlaceholder(color: uiData['color'] as Color),
             ),
             Padding(
@@ -740,8 +819,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                   const SizedBox(height: 5),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_rounded,
-                          size: 10, color: uiData['color'] as Color),
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 10,
+                        color: uiData['color'] as Color,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         uiData['date'] as String,
@@ -775,7 +857,8 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       builder: (context) => ShareBottomSheet(
         title: 'Partager l\'événement',
         itemTitle: widget.event.title,
-        shareText: '''
+        shareText:
+            '''
 🎓 ${widget.event.title}
 
 📅 ${widget.event.toUiMap()['date']}
@@ -818,7 +901,6 @@ Découvrez plus d'événements sur notre application! 📱
       );
       if (!mounted) return;
       MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -868,10 +950,21 @@ Découvrez plus d'événements sur notre application! 📱
     }
     try {
       final id = widget.event.id ?? widget.event.slug;
-      final categories = await TicketService.getTicketCategories(id, fallbackSlug: widget.event.slug);
-      if (mounted) setState(() { _ticketCategories = categories; _ticketsLoading = false; });
+      final categories = await TicketService.getTicketCategories(
+        id,
+        fallbackSlug: widget.event.slug,
+      );
+      if (mounted)
+        setState(() {
+          _ticketCategories = categories;
+          _ticketsLoading = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _ticketsLoading = false; _ticketsError = e.toString(); });
+      if (mounted)
+        setState(() {
+          _ticketsLoading = false;
+          _ticketsError = e.toString();
+        });
     }
   }
 
@@ -902,7 +995,9 @@ Découvrez plus d'événements sur notre application! 📱
       final tickets = {_selectedTicketCategory!.id: _selectedQuantity};
       final id = widget.event.id ?? widget.event.slug;
       await TicketService.purchaseTicket(
-        eventId: id, tickets: tickets, phoneNumber: currentUser.phone,
+        eventId: id,
+        tickets: tickets,
+        phoneNumber: currentUser.phone,
       );
       if (mounted) {
         Navigator.pop(context);
@@ -910,7 +1005,10 @@ Découvrez plus d'événements sur notre application! 📱
           'Ticket${_selectedQuantity > 1 ? 's commandés' : ' commandé'} avec succès!',
           _AppColors.emerald,
         );
-        setState(() { _selectedTicketCategory = null; _selectedQuantity = 1; });
+        setState(() {
+          _selectedTicketCategory = null;
+          _selectedQuantity = 1;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -930,9 +1028,9 @@ Découvrez plus d'événements sur notre application! 📱
   }
 
   void _showSnack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
   }
 
   // ── Comment bottom sheet ────────────────────
@@ -947,7 +1045,9 @@ Découvrez plus d'événements sur notre application! 📱
         maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
       ),
       builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: _CommentBottomSheet(
           existingComment: _userComment,
           onSave: (rating, comment) async {
@@ -955,13 +1055,16 @@ Découvrez plus d'événements sur notre application! 📱
             try {
               if (_userComment != null) {
                 await EventRatingService.updateComment(
-                  commentId: _userComment!.id, rating: rating, comment: comment,
+                  commentId: _userComment!.id,
+                  rating: rating,
+                  comment: comment,
                 );
               } else {
                 await EventRatingService.addComment(
                   eventSlug: widget.event.slug,
                   userId: currentUser.id,
-                  userName: '${currentUser.firstName} ${currentUser.lastName}'.trim(),
+                  userName: '${currentUser.firstName} ${currentUser.lastName}'
+                      .trim(),
                   userAvatar: '',
                   rating: rating,
                   comment: comment,
@@ -990,7 +1093,11 @@ class _HeroBanner extends StatelessWidget {
   final Color typeColor;
   final Map<String, dynamic> uiData;
 
-  const _HeroBanner({required this.event, required this.typeColor, required this.uiData});
+  const _HeroBanner({
+    required this.event,
+    required this.typeColor,
+    required this.uiData,
+  });
 
   void _openImage(BuildContext context, String imageUrl) {
     Navigator.push(
@@ -1015,7 +1122,8 @@ class _HeroBanner extends StatelessWidget {
                     builder: (context) => ShareBottomSheet(
                       title: 'Partager l\'événement',
                       itemTitle: event.title,
-                      shareText: '''
+                      shareText:
+                          '''
 🎓 ${event.title}
 
 📅 ${event.toUiMap()['date']}
@@ -1050,8 +1158,11 @@ Découvrez plus d'événements sur notre application! 📱
       children: [
         // Background image
         event.image != null && event.image!.isNotEmpty
-            ? Image.network(event.image!, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildPlaceholder())
+            ? Image.network(
+                event.image!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildPlaceholder(),
+              )
             : _buildPlaceholder(),
 
         // Gradient overlay
@@ -1087,7 +1198,10 @@ Découvrez plus d'événements sur notre application! 📱
             children: [
               // Badge type
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: typeColor.withOpacity(0.85),
                   borderRadius: BorderRadius.circular(20),
@@ -1095,8 +1209,11 @@ Découvrez plus d'événements sur notre application! 📱
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.local_fire_department_rounded,
-                        size: 13, color: Colors.white),
+                    const Icon(
+                      Icons.local_fire_department_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       uiData['type'] as String,
@@ -1126,8 +1243,11 @@ Découvrez plus d'événements sur notre application! 📱
               // Sous-titre
               Row(
                 children: [
-                  const Icon(Icons.location_on_rounded,
-                      size: 14, color: Colors.white70),
+                  const Icon(
+                    Icons.location_on_rounded,
+                    size: 14,
+                    color: Colors.white70,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -1280,7 +1400,10 @@ class _InfoCard extends StatelessWidget {
           Container(
             width: 38,
             height: 38,
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, color: iconColor, size: 18),
           ),
           const SizedBox(width: 10),
@@ -1300,7 +1423,10 @@ class _InfoCard extends StatelessWidget {
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 11, color: AppColors.screenTextSecondaryThemed(context)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.screenTextSecondaryThemed(context),
+                  ),
                 ),
               ],
             ),
@@ -1316,7 +1442,11 @@ class _GradientButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _GradientButton({required this.icon, required this.label, required this.onTap});
+  const _GradientButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1373,8 +1503,10 @@ class _StarRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: stars.map((s) {
         return Icon(
-          s == 'filled' ? Icons.star_rounded
-              : s == 'half' ? Icons.star_half_rounded
+          s == 'filled'
+              ? Icons.star_rounded
+              : s == 'half'
+              ? Icons.star_half_rounded
               : Icons.star_outline_rounded,
           color: _AppColors.gold,
           size: size,
@@ -1396,8 +1528,6 @@ class _EventCardPlaceholder extends StatelessWidget {
     );
   }
 }
-
-
 
 // ─────────────────────────────────────────────
 //  Ticket Bottom Sheet (extracted)
@@ -1454,23 +1584,40 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
         children: [
           Center(
             child: Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(color: _AppColors.slate300, borderRadius: BorderRadius.circular(2)),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _AppColors.slate300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text('Sélectionner un ticket',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _AppColors.slate900)),
+          const Text(
+            'Sélectionner un ticket',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _AppColors.slate900,
+            ),
+          ),
           const SizedBox(height: 4),
-          const Text('Choisissez votre catégorie et la quantité',
-              style: TextStyle(fontSize: 13, color: _AppColors.slate500)),
+          const Text(
+            'Choisissez votre catégorie et la quantité',
+            style: TextStyle(fontSize: 13, color: _AppColors.slate500),
+          ),
           const SizedBox(height: 20),
 
           if (widget.ticketsLoading)
-            const Center(child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(color: _AppColors.indigo, strokeWidth: 2),
-            ))
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(
+                  color: _AppColors.indigo,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
           else if (widget.ticketsError != null)
             _buildError()
           else if (widget.ticketCategories.isEmpty)
@@ -1484,7 +1631,8 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                 shrinkWrap: true,
                 itemCount: widget.ticketCategories.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) => _buildCategoryTile(widget.ticketCategories[i]),
+                itemBuilder: (_, i) =>
+                    _buildCategoryTile(widget.ticketCategories[i]),
               ),
             ),
 
@@ -1498,24 +1646,36 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                     foregroundColor: _AppColors.slate700,
                     side: const BorderSide(color: _AppColors.slate300),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('Fermer', style: TextStyle(fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    'Fermer',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _selectedCategory != null ? widget.onPurchase : null,
+                  onPressed: _selectedCategory != null
+                      ? widget.onPurchase
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _AppColors.indigo,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: _AppColors.slate300,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text('Commander', style: TextStyle(fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    'Commander',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],
@@ -1529,7 +1689,10 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
     final isSelected = _selectedCategory?.id == category.id;
     return GestureDetector(
       onTap: () {
-        setState(() { _selectedCategory = category; _qty = 1; });
+        setState(() {
+          _selectedCategory = category;
+          _qty = 1;
+        });
         widget.onCategorySelected(category);
         widget.onQuantityChanged(1);
       },
@@ -1540,7 +1703,9 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
           color: isSelected ? _AppColors.indigoLight : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? _AppColors.indigo : _AppColors.slate300.withOpacity(0.5),
+            color: isSelected
+                ? _AppColors.indigo
+                : _AppColors.slate300.withOpacity(0.5),
             width: isSelected ? 1.5 : 0.5,
           ),
         ),
@@ -1552,17 +1717,24 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                 // Radio indicator
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: 20, height: 20,
+                  width: 20,
+                  height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isSelected ? _AppColors.indigo : Colors.transparent,
                     border: Border.all(
-                      color: isSelected ? _AppColors.indigo : _AppColors.slate300,
+                      color: isSelected
+                          ? _AppColors.indigo
+                          : _AppColors.slate300,
                       width: 1.5,
                     ),
                   ),
                   child: isSelected
-                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 12)
+                      ? const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 12,
+                        )
                       : null,
                 ),
                 const SizedBox(width: 10),
@@ -1570,23 +1742,43 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(category.name,
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600, color: _AppColors.slate900)),
+                      Text(
+                        category.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: _AppColors.slate900,
+                        ),
+                      ),
                       if (category.description.isNotEmpty)
-                        Text(category.description,
-                            style: const TextStyle(fontSize: 11, color: _AppColors.slate500)),
+                        Text(
+                          category.description,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: _AppColors.slate500,
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('${category.price} FCFA',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800, color: _AppColors.rose)),
-                    Text('${category.quantity} dispo',
-                        style: const TextStyle(fontSize: 11, color: _AppColors.slate500)),
+                    Text(
+                      '${category.price} FCFA',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: _AppColors.rose,
+                      ),
+                    ),
+                    Text(
+                      '${category.quantity} dispo',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: _AppColors.slate500,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1596,8 +1788,14 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Quantité',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _AppColors.slate700)),
+                  const Text(
+                    'Quantité',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: _AppColors.slate700,
+                    ),
+                  ),
                   Row(
                     children: [
                       _QtyBtn(
@@ -1612,9 +1810,14 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Text('$_qty',
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w700, color: _AppColors.slate900)),
+                        child: Text(
+                          '$_qty',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: _AppColors.slate900,
+                          ),
+                        ),
                       ),
                       _QtyBtn(
                         icon: Icons.add_rounded,
@@ -1643,16 +1846,27 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Icon(Icons.error_outline_rounded, size: 44, color: _AppColors.rose),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 44,
+              color: _AppColors.rose,
+            ),
             const SizedBox(height: 10),
-            Text(widget.ticketsError ?? '', textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: _AppColors.slate500)),
+            Text(
+              widget.ticketsError ?? '',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: _AppColors.slate500),
+            ),
             const SizedBox(height: 14),
             ElevatedButton(
               onPressed: widget.onRetry,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _AppColors.indigo, foregroundColor: Colors.white, elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                backgroundColor: _AppColors.indigo,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: const Text('Réessayer'),
             ),
@@ -1669,13 +1883,23 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
         child: Column(
           children: [
             Container(
-              width: 54, height: 54,
-              decoration: BoxDecoration(color: _AppColors.slate100, borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.confirmation_num_outlined, size: 28, color: _AppColors.slate500),
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: _AppColors.slate100,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.confirmation_num_outlined,
+                size: 28,
+                color: _AppColors.slate500,
+              ),
             ),
             const SizedBox(height: 10),
-            const Text('Aucune catégorie disponible',
-                style: TextStyle(fontSize: 13, color: _AppColors.slate500)),
+            const Text(
+              'Aucune catégorie disponible',
+              style: TextStyle(fontSize: 13, color: _AppColors.slate500),
+            ),
           ],
         ),
       ),
@@ -1688,19 +1912,28 @@ class _QtyBtn extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
-  const _QtyBtn({required this.icon, required this.enabled, required this.onTap});
+  const _QtyBtn({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        width: 30, height: 30,
+        width: 30,
+        height: 30,
         decoration: BoxDecoration(
           color: enabled ? _AppColors.indigo : _AppColors.slate100,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: enabled ? Colors.white : _AppColors.slate300, size: 16),
+        child: Icon(
+          icon,
+          color: enabled ? Colors.white : _AppColors.slate300,
+          size: 16,
+        ),
       ),
     );
   }
@@ -1714,7 +1947,11 @@ class _ConfirmTicketDialog extends StatelessWidget {
   final int quantity;
   final VoidCallback onConfirm;
 
-  const _ConfirmTicketDialog({required this.category, required this.quantity, required this.onConfirm});
+  const _ConfirmTicketDialog({
+    required this.category,
+    required this.quantity,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1727,8 +1964,14 @@ class _ConfirmTicketDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Confirmer la commande',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: _AppColors.slate900)),
+            const Text(
+              'Confirmer la commande',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: _AppColors.slate900,
+              ),
+            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(14),
@@ -1739,18 +1982,37 @@ class _ConfirmTicketDialog extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(category.name,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _AppColors.slate900)),
+                  Text(
+                    category.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: _AppColors.slate900,
+                    ),
+                  ),
                   if (category.description.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(category.description,
-                        style: const TextStyle(fontSize: 12, color: _AppColors.slate500)),
+                    Text(
+                      category.description,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: _AppColors.slate500,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 12),
-                  _SummaryRow(label: 'Prix unitaire', value: '${category.price} FCFA'),
+                  _SummaryRow(
+                    label: 'Prix unitaire',
+                    value: '${category.price} FCFA',
+                  ),
                   _SummaryRow(label: 'Quantité', value: '$quantity'),
                   const Divider(height: 16, color: _AppColors.slate300),
-                  _SummaryRow(label: 'Total', value: '$total FCFA', bold: true, valueColor: _AppColors.rose),
+                  _SummaryRow(
+                    label: 'Total',
+                    value: '$total FCFA',
+                    bold: true,
+                    valueColor: _AppColors.rose,
+                  ),
                 ],
               ),
             ),
@@ -1762,9 +2024,14 @@ class _ConfirmTicketDialog extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: _AppColors.slate300),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    child: const Text('Annuler', style: TextStyle(color: _AppColors.slate700)),
+                    child: const Text(
+                      'Annuler',
+                      style: TextStyle(color: _AppColors.slate700),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1772,10 +2039,17 @@ class _ConfirmTicketDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onConfirm,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _AppColors.indigo, foregroundColor: Colors.white, elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      backgroundColor: _AppColors.indigo,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    child: const Text('Commander', style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: const Text(
+                      'Commander',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ],
@@ -1793,7 +2067,12 @@ class _SummaryRow extends StatelessWidget {
   final bool bold;
   final Color? valueColor;
 
-  const _SummaryRow({required this.label, required this.value, this.bold = false, this.valueColor});
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1802,7 +2081,10 @@ class _SummaryRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: _AppColors.slate500)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, color: _AppColors.slate500),
+          ),
           Text(
             value,
             style: TextStyle(
@@ -1832,10 +2114,19 @@ class _LoadingDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: _AppColors.indigo, strokeWidth: 2.5),
+            CircularProgressIndicator(
+              color: _AppColors.indigo,
+              strokeWidth: 2.5,
+            ),
             SizedBox(height: 16),
-            Text('Traitement en cours…',
-                style: TextStyle(fontSize: 14, color: _AppColors.slate700, fontWeight: FontWeight.w500)),
+            Text(
+              'Traitement en cours…',
+              style: TextStyle(
+                fontSize: 14,
+                color: _AppColors.slate700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -1937,13 +2228,21 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
   late int _rating;
   late TextEditingController _controller;
 
-  static const _labels = ['Mauvais', 'Passable', 'Bien', 'Très bien', 'Excellent'];
+  static const _labels = [
+    'Mauvais',
+    'Passable',
+    'Bien',
+    'Très bien',
+    'Excellent',
+  ];
 
   @override
   void initState() {
     super.initState();
     _rating = widget.existingComment?.rating ?? 0;
-    _controller = TextEditingController(text: widget.existingComment?.comment ?? '');
+    _controller = TextEditingController(
+      text: widget.existingComment?.comment ?? '',
+    );
   }
 
   @override
@@ -1968,7 +2267,8 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           // Drag handle
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
                 color: _AppColors.slate300,
                 borderRadius: BorderRadius.circular(2),
@@ -1981,13 +2281,17 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           Row(
             children: [
               Container(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: _AppColors.indigoLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.rate_review_rounded,
-                    color: _AppColors.indigo, size: 20),
+                child: const Icon(
+                  Icons.rate_review_rounded,
+                  color: _AppColors.indigo,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -2014,7 +2318,11 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           // Étoiles
           const Text(
             'Votre note',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _AppColors.slate700),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _AppColors.slate700,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -2045,7 +2353,10 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
                 duration: const Duration(milliseconds: 200),
                 child: Container(
                   key: ValueKey(_rating),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _AppColors.amberLight,
                     borderRadius: BorderRadius.circular(20),
@@ -2067,7 +2378,11 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           // Champ commentaire
           const Text(
             'Votre commentaire',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _AppColors.slate700),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _AppColors.slate700,
+            ),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -2078,7 +2393,10 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
             style: const TextStyle(fontSize: 14, color: _AppColors.slate900),
             decoration: InputDecoration(
               hintText: 'Partagez votre expérience avec cet événement…',
-              hintStyle: const TextStyle(color: _AppColors.slate500, fontSize: 13),
+              hintStyle: const TextStyle(
+                color: _AppColors.slate500,
+                fontSize: 13,
+              ),
               filled: true,
               fillColor: _AppColors.slate100,
               contentPadding: const EdgeInsets.all(14),
@@ -2088,7 +2406,10 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _AppColors.indigo, width: 1.5),
+                borderSide: const BorderSide(
+                  color: _AppColors.indigo,
+                  width: 1.5,
+                ),
               ),
             ),
           ),

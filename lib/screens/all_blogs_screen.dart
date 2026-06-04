@@ -4,6 +4,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../utils/image_helper.dart';
 import '../services/blog_service.dart';
+import '../services/pays_service.dart';
 import '../models/blog.dart';
 import '../widgets/filter_row_widget.dart';
 import 'blog_detail_screen.dart';
@@ -41,19 +42,10 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   final _dateController = TextEditingController();
   bool _showAdvancedFilters = false;
 
-  final List<String> _countriesList = ['Tous', "Côte d'Ivoire", 'Bénin', 'Togo'];
-  final Map<String, String> _paysMap = {
-    "Côte d'Ivoire": "Cote d'Ivoire",
-    "Bénin": "Bénin",
-    "Togo": "Togo",
-    "Tous": "",
-  };
-  final Map<String, String> _paysReverseMap = {
-    "Cote d'Ivoire": "Côte d'Ivoire",
-    "Bénin": "Bénin",
-    "Togo": "Togo",
-    "": "Tous",
-  };
+  List<String> _countriesList = ['Tous'];
+  Map<String, String> _paysMap = {'Tous': ''};
+  Map<String, String> _paysReverseMap = {'': 'Tous'};
+  bool _isLoadingPays = true;
 
   String? _getApiFormattedDate(String dateStr) {
     if (dateStr.trim().isEmpty) return null;
@@ -94,6 +86,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       vsync: this,
     );
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _loadPays();
     _loadBlogs();
   }
 
@@ -105,6 +98,30 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     _dateController.dispose();
     _fadeController.dispose();
     super.dispose();
+  }
+
+  // ── Chargement des pays depuis l'API ────────────────────
+  Future<void> _loadPays() async {
+    try {
+      final results = await Future.wait([
+        PaysService.getPaysNames(),
+        PaysService.getPaysMap(),
+        PaysService.getPaysReverseMap(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _countriesList = results[0] as List<String>;
+          _paysMap = results[1] as Map<String, String>;
+          _paysReverseMap = results[2] as Map<String, String>;
+          _isLoadingPays = false;
+        });
+      }
+    } catch (e) {
+      // En cas d'erreur, garder la liste par défaut
+      if (mounted) {
+        setState(() => _isLoadingPays = false);
+      }
+    }
   }
 
   Future<void> _loadBlogs({bool loadMore = false}) async {

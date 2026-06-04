@@ -5,6 +5,8 @@ import '../services/text_size_service.dart';
 import 'bottom_sheets/bottom_sheet_header.dart';
 import 'custom_text_field.dart';
 import 'components/custom_button.dart';
+import '../services/pays_service.dart';
+import 'searchable_dropdown.dart';
 
 typedef RecommendationSubmit = Future<void> Function(BuildContext context);
 
@@ -82,9 +84,15 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
     Icons.summarize_rounded,
   ];
 
+  List<String> _countriesList = ['Tous'];
+  Map<String, String> _paysMap = {'Tous': ''};
+  Map<String, String> _paysReverseMap = {'': 'Tous'};
+  bool _isLoadingPays = true;
+
   @override
   void initState() {
     super.initState();
+    _loadPays();
     
     // Pre-fill with logged-in user details if available and currently empty
     final currentUser = AuthService().getCurrentUser();
@@ -129,6 +137,28 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
     widget.parentTelephoneController.removeListener(_onTextChanged);
     widget.parentEmailController.removeListener(_onTextChanged);
     super.dispose();
+  }
+
+  Future<void> _loadPays() async {
+    try {
+      final results = await Future.wait([
+        PaysService.getPaysNames(),
+        PaysService.getPaysMap(),
+        PaysService.getPaysReverseMap(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _countriesList = results[0] as List<String>;
+          _paysMap = results[1] as Map<String, String>;
+          _paysReverseMap = results[2] as Map<String, String>;
+          _isLoadingPays = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingPays = false);
+      }
+    }
   }
 
   void _onTextChanged() {
@@ -384,13 +414,16 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
               focusBorderColor: widget.accentColor,
             ),
             const SizedBox(height: 16),
-            CustomTextField(
+            SearchableDropdown(
               label: 'Pays',
-              hint: 'Entrez le pays',
-              icon: Icons.public_rounded,
-              controller: widget.paysRecommendController,
-              iconColor: widget.accentColor,
-              focusBorderColor: widget.accentColor,
+              value: _paysReverseMap[widget.paysRecommendController.text] ?? 'Tous',
+              items: _countriesList,
+              isDarkMode: isDark,
+              onChanged: (String val) {
+                setState(() {
+                  widget.paysRecommendController.text = _paysMap[val] ?? '';
+                });
+              },
             ),
             const SizedBox(height: 16),
             CustomTextField(

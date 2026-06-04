@@ -25,6 +25,8 @@ import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_row_widget.dart';
+import '../services/pays_service.dart';
+import '../widgets/searchable_dropdown.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/image_menu_card.dart';
 import '../widgets/app_loader.dart';
@@ -181,6 +183,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   int _currentSliderIndex = 0;
   bool _showSliderText = false;
 
+  List<String> _countriesList = ['Tous'];
+  Map<String, String> _paysMap = {'Tous': ''};
+  Map<String, String> _paysReverseMap = {'': 'Tous'};
+  bool _isLoadingPays = true;
+
   // ── Animations ─────────────────────────────────────────────
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
@@ -225,6 +232,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _fadeController.forward();
 
+    _loadPays();
     _loadEcoles();
     _loadVideos();
     _initializeFeaturedSchools();
@@ -266,6 +274,28 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _adresseParentController.dispose();
     _fadeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPays() async {
+    try {
+      final results = await Future.wait([
+        PaysService.getPaysNames(),
+        PaysService.getPaysMap(),
+        PaysService.getPaysReverseMap(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _countriesList = results[0] as List<String>;
+          _paysMap = results[1] as Map<String, String>;
+          _paysReverseMap = results[2] as Map<String, String>;
+          _isLoadingPays = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingPays = false);
+      }
+    }
   }
 
   void _onTextSizeChanged() {
@@ -626,6 +656,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   Widget _buildAdvancedSearchBottomSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
@@ -722,13 +753,16 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                     Row(
                       children: [
                         Expanded(
-                          child: CustomTextField(
+                          child: SearchableDropdown(
                             label: 'Pays',
-                            hint: 'Entrez le pays',
-                            icon: Icons.public_rounded,
-                            controller: _paysController,
-                            iconColor: AppColors.screenOrange,
-                            focusBorderColor: AppColors.screenOrange,
+                            value: _paysReverseMap[_paysController.text] ?? 'Tous',
+                            items: _countriesList,
+                            isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                            onChanged: (String val) {
+                              setState(() {
+                                _paysController.text = _paysMap[val] ?? '';
+                              });
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),

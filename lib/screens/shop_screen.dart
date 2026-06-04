@@ -29,6 +29,8 @@ import '../widgets/skeleton_box.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
+import '../services/pays_service.dart';
+import '../widgets/searchable_dropdown.dart';
 
 class LibraryScreen extends StatefulWidget implements MainScreenChild {
   const LibraryScreen({super.key});
@@ -79,6 +81,11 @@ class _LibraryScreenState extends State<LibraryScreen>
   bool _isLoadingCategories = false;
   String? _categoryError;
 
+  List<String> _countriesList = ['Tous'];
+  Map<String, String> _paysMap = {'Tous': ''};
+  Map<String, String> _paysReverseMap = {'': 'Tous'};
+  bool _isLoadingPays = true;
+
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -101,6 +108,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
     _loadProducts();
     _loadCategories();
+    _loadPays();
     _updateCartItemCount();
     _updateOrdersCount();
   }
@@ -124,6 +132,28 @@ class _LibraryScreenState extends State<LibraryScreen>
     _typeController.dispose();
     _fadeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPays() async {
+    try {
+      final results = await Future.wait([
+        PaysService.getPaysNames(),
+        PaysService.getPaysMap(),
+        PaysService.getPaysReverseMap(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _countriesList = results[0] as List<String>;
+          _paysMap = results[1] as Map<String, String>;
+          _paysReverseMap = results[2] as Map<String, String>;
+          _isLoadingPays = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingPays = false);
+      }
+    }
   }
 
   Future<void> _loadProducts() async {
@@ -645,13 +675,16 @@ class _LibraryScreenState extends State<LibraryScreen>
                     Row(
                       children: [
                         Expanded(
-                          child: CustomTextField(
+                          child: SearchableDropdown(
                             label: 'Pays',
-                            hint: 'Entrez le pays',
-                            icon: Icons.public_rounded,
-                            controller: _paysController,
-                            iconColor: AppColors.shopBlue,
-                            focusBorderColor: AppColors.shopBlue,
+                            value: _paysReverseMap[_paysController.text] ?? 'Tous',
+                            items: _countriesList,
+                            isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                            onChanged: (String val) {
+                              setState(() {
+                                _paysController.text = _paysMap[val] ?? '';
+                              });
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),

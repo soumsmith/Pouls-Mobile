@@ -26,6 +26,7 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/skeleton_box.dart';
+import '../widgets/main_screen_wrapper.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -472,10 +473,7 @@ class _LibraryScreenState extends State<LibraryScreen>
             : null,
         badgeColor: Colors.green,
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const OrdersScreen()),
-          ).then((_) => _updateOrdersCount());
+          MainScreenWrapper.of(context).navigateToExtraScreen(const OrdersScreen());
         },
       ),
       const SizedBox(width: 4),
@@ -775,6 +773,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         ),
                       ),
                     ),
+                    const BottomSpacer(),
                   ],
                 ),
               ),

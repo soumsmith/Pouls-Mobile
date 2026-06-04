@@ -52,7 +52,8 @@ class _MenuItem {
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 class BottomSheetMenu extends StatefulWidget {
-  const BottomSheetMenu({super.key});
+  final BuildContext parentContext;
+  const BottomSheetMenu({super.key, required this.parentContext});
 
   @override
   State<BottomSheetMenu> createState() => _BottomSheetMenuState();
@@ -156,9 +157,9 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       color: const Color(0xFF2196F3),
       onTap: () {
         Navigator.of(context).pop();
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const MessagesScreen()));
+        MainScreenWrapper.of(
+          widget.parentContext,
+        ).navigateToExtraScreen(const MessagesScreen());
       },
     ),
     _MenuItem(
@@ -169,9 +170,9 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       badgeCount: _ticketCount,
       onTap: () {
         Navigator.of(context).pop();
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const MyTicketsScreen()));
+        MainScreenWrapper.of(
+          widget.parentContext,
+        ).navigateToExtraScreen(const MyTicketsScreen());
       },
     ),
     _MenuItem(
@@ -194,9 +195,9 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       color: const Color(0xFF2196F3),
       onTap: () {
         Navigator.of(context).pop();
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+        MainScreenWrapper.of(
+          widget.parentContext,
+        ).navigateToExtraScreen(const ProfileScreen());
       },
     ),
     _MenuItem(
@@ -206,9 +207,9 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       color: const Color(0xFFFF6B2C),
       onTap: () {
         Navigator.of(context).pop();
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ReferredUsersScreen()));
+        MainScreenWrapper.of(
+          widget.parentContext,
+        ).navigateToExtraScreen(const ReferredUsersScreen());
       },
     ),
     _MenuItem(
@@ -218,9 +219,9 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       color: const Color(0xFF4CAF50),
       onTap: () {
         Navigator.of(context).pop();
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+        MainScreenWrapper.of(
+          widget.parentContext,
+        ).navigateToExtraScreen(const HelpSupportScreen());
       },
     ),
     _MenuItem(
@@ -230,9 +231,9 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       color: const Color(0xFF64748B),
       onTap: () {
         Navigator.of(context).pop();
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const NewSettingsScreen()));
+        MainScreenWrapper.of(
+          widget.parentContext,
+        ).navigateToExtraScreen(const NewSettingsScreen());
       },
     ),
   ];
@@ -421,6 +422,6 @@ void showMenuBottomSheet(BuildContext context) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withOpacity(0.40),
-    builder: (_) => const BottomSheetMenu(),
+    builder: (_) => BottomSheetMenu(parentContext: context),
   );
 }

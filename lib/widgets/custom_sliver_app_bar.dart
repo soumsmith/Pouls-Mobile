@@ -109,7 +109,7 @@ class CustomSliverAppBar extends StatelessWidget {
   /// Gestion de la navigation de retour
   void _handleBackNavigation(BuildContext context) {
     if (MainScreenWrapper.maybeOf(context) != null) {
-      MainScreenWrapper.of(context).navigateToHome();
+      MainScreenWrapper.of(context).goBackToPreviousTab();
     } else {
       Navigator.of(context).pop();
     }

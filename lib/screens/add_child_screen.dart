@@ -367,7 +367,7 @@ class _AddChildScreenState extends State<AddChildScreen>
       
       // Vérifier si l'élève existe déjà dans la base de données locale
       final existingChild = await DatabaseService.instance.getChildById(childId);
-      if (existingChild != null) {
+      if (existingChild != null && existingChild.parentId == parentId) {
         print('❌ Élève déjà ajouté: ${existingChild.firstName} ${existingChild.lastName}');
         setState(() => _isLoading = false);
         if (mounted) {

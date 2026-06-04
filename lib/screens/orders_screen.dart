@@ -13,6 +13,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/filter_row_widget.dart';
 import '../widgets/search_bar_widget.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -247,7 +248,14 @@ class _OrdersScreenState extends State<OrdersScreen>
           ),
         ),
       ],
-      onBackTap: () => Navigator.pop(context),
+      onBackTap: () {
+        final wrapper = MainScreenWrapper.maybeOf(context);
+        if (wrapper != null) {
+          wrapper.goBackToPreviousTab();
+        } else {
+          Navigator.pop(context);
+        }
+      },
     );
   }
 

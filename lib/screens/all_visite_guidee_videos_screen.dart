@@ -12,6 +12,7 @@ import '../config/app_dimensions.dart';
 import '../services/video_service.dart';
 import '../widgets/see_more_card.dart';
 import 'visite_guidee_video_feed_screen.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 class AllVisiteGuideeVideosScreen extends StatefulWidget {
   final List<Video> videos;
@@ -259,12 +260,10 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
         )
         .toList();
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VisiteGuideeVideoFeedScreen(
-          videos: visiteVideos,
-          initialIndex: initialIndex >= 0 ? initialIndex : 0,
-        ),
+    MainScreenWrapper.of(context).navigateToExtraScreen(
+      VisiteGuideeVideoFeedScreen(
+        videos: visiteVideos,
+        initialIndex: initialIndex >= 0 ? initialIndex : 0,
       ),
     );
   }

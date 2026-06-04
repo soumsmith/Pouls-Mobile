@@ -10,6 +10,7 @@ import 'establishment_detail_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens (cohérents avec EventDetailScreen)
@@ -137,9 +138,8 @@ Découvrez plus d\'actualités sur notre application! 📱
         paramecole: null,
       );
       if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => EstablishmentDetailScreen(ecole: ecole)),
-      );
+      MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
+
     } catch (e) {
       if (!mounted) return;
       _showSnack('Erreur: $e', _C.rose);
@@ -217,7 +217,13 @@ Découvrez plus d\'actualités sur notre application! 📱
         child: Center(
           child: _NavIconBtn(
             icon: Icons.arrow_back_ios_new_rounded,
-            onTap: () => Navigator.of(context).pop(),
+            onTap: () {
+              if (MainScreenWrapper.maybeOf(context) != null) {
+                MainScreenWrapper.of(context).goBackToPreviousTab();
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
           ),
         ),
       ),

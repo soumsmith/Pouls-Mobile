@@ -13,6 +13,7 @@ import '../widgets/searchable_dropdown.dart';
 import '../widgets/components/custom_date_input.dart';
 import '../widgets/components/custom_text_input.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -749,11 +750,9 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                     child: _EventCard(
                       event: event,
                       onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => EventDetailScreen(
-                              event: Event.fromJson(event),
-                            ),
+                        MainScreenWrapper.of(context).navigateToExtraScreen(
+                          EventDetailScreen(
+                            event: Event.fromJson(event),
                           ),
                         );
                       },

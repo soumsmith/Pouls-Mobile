@@ -1075,16 +1075,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Gérer l'action sur un événement
   void _handleEventAction(Event event) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)));
+    MainScreenWrapper.of(context).navigateToExtraScreen(EventDetailScreen(event: event));
   }
 
   // Gérer l'action "Voir+"
   void _handleSeeMoreEvents() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AllEventsScreen()));
+    MainScreenWrapper.of(context).navigateToExtraScreen(const AllEventsScreen());
   }
 
   // Construire la section Actualités/Blogs
@@ -1232,23 +1228,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Gérer l'action sur un blog
   void _handleBlogAction(Blog blog) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => BlogDetailScreen(blog: blog)));
+    MainScreenWrapper.of(context).navigateToExtraScreen(BlogDetailScreen(blog: blog));
   }
 
   // Gérer l'action "Voir+" pour les blogs
   void _handleSeeMoreBlogs() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AllBlogsScreen()));
+    MainScreenWrapper.of(context).navigateToExtraScreen(const AllBlogsScreen());
   }
 
   // Gérer l'action "Voir+" pour les vidéos
   void _handleSeeMoreVideos() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AllVideosScreen()));
+    MainScreenWrapper.of(context).navigateToExtraScreen(const AllVideosScreen());
   }
 
   // Construire la section Coulisse de l'Excellence
@@ -1716,9 +1706,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // User avatar
               GestureDetector(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
+                  MainScreenWrapper.of(context).navigateToExtraScreen(const ProfileScreen());
                 },
                 child: Container(
                   width: 36,
@@ -2842,11 +2830,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           centerTitle: true,
                           onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const OrdersScreen(),
-                              ),
-                            );
+                            MainScreenWrapper.of(context)
+                                .navigateToExtraScreen(const OrdersScreen());
                           },
                         ),
                         SizedBox(
@@ -2886,12 +2871,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     SectionRow(
                       title: 'COULISSES DE L\'EXCELLENCE',
                       onSeeMore: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AllVideosScreen(),
-                          ),
-                        );
+                        MainScreenWrapper.of(context).navigateToExtraScreen(AllVideosScreen());
                       },
                     ),
                     const SizedBox(height: 16),
@@ -2904,12 +2884,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     SectionRow(
                       title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES',
                       onSeeMore: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AllEventsScreen(),
-                          ),
-                        );
+                        MainScreenWrapper.of(context).navigateToExtraScreen(AllEventsScreen());
                       },
                     ),
                     const SizedBox(height: 16),
@@ -2924,12 +2899,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         SectionRow(
                           title: 'ACTUALITÉS',
                           onSeeMore: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AllBlogsScreen(),
-                              ),
-                            );
+                            MainScreenWrapper.of(context).navigateToExtraScreen(const AllBlogsScreen());
                           },
                         ),
                         const SizedBox(height: 16),
@@ -2942,14 +2912,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SectionRow(
                     title: 'VISITE GUIDÉE',
                     onSeeMore: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AllVisiteGuideeVideosScreen(
-                            videos: _visiteGuideeVideos,
-                          ),
-                        ),
-                      );
+                      MainScreenWrapper.of(context).navigateToExtraScreen(AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos));
                     },
                   ),
                   const SizedBox(height: 16),

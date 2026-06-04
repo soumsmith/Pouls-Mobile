@@ -10,6 +10,8 @@ import '../models/user_ticket.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
+import '../widgets/main_screen_wrapper.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   const MyTicketsScreen({super.key});
@@ -561,7 +563,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               ),
             ),
           const SliverToBoxAdapter(
-            child: SizedBox(height: 80),
+            child: BottomSpacer(height: 125),
           ),
         ],
       ),
@@ -762,7 +764,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                if (MainScreenWrapper.maybeOf(context) != null) {
+                  MainScreenWrapper.of(context).goBackToPreviousTab();
+                } else {
+                  Navigator.of(context).pop();
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

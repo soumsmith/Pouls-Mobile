@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../widgets/components/bottom_spacer.dart';
+import '../widgets/main_screen_wrapper.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
@@ -109,7 +111,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
             children: [
               // Back button
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  if (MainScreenWrapper.maybeOf(context) != null) {
+                    MainScreenWrapper.of(context).goBackToPreviousTab();
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
                 child: Container(
                   width: 40,
                   height: 40,
@@ -773,6 +781,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               ),
             );
           }),
+          const BottomSpacer(height: 125),
         ],
       ),
     );

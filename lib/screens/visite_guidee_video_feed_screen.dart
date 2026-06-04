@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
-import '../models/visite_guidee_video.dart';
+import 'visite_guidee_video_feed_screen.dart';
+import '../widgets/main_screen_wrapper.dart';
 import '../models/video_comment.dart';
 import '../models/video_rating.dart';
 import '../services/theme_service.dart';
 import '../services/interaction_api_service.dart';
 import '../models/interaction.dart';
+import '../models/visite_guidee_video.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
@@ -292,7 +294,13 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
           ),
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black87),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              if (MainScreenWrapper.maybeOf(context) != null) {
+                MainScreenWrapper.of(context).goBackToPreviousTab();
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
           ),
         ),
         body: Center(
@@ -458,7 +466,13 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                       AppBarIconButton(
                         icon: Icons.grid_view,
                         isDark: true,
-                        onTap: () => Navigator.of(context).pop(),
+                        onTap: () {
+                          if (MainScreenWrapper.maybeOf(context) != null) {
+                            MainScreenWrapper.of(context).goBackToPreviousTab();
+                          } else {
+                            Navigator.of(context).pop();
+                          }
+                        },
                       ),
                     ],
                   ),

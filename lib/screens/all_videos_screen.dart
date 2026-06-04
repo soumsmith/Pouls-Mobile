@@ -13,6 +13,7 @@ import '../config/app_dimensions.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/see_more_card.dart';
 import 'coulisse_video_feed_screen.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 class AllVideosScreen extends StatefulWidget {
   const AllVideosScreen({Key? key}) : super(key: key);
@@ -336,12 +337,10 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
   void _handleVideoAction(CoulisseExcellence video) {
     // Navigation vers l'écran de lecture de vidéo
     final videoIndex = _filteredVideos.indexWhere((v) => v.id == video.id);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CoulisseVideoFeedScreen(
-          videos: _filteredVideos,
-          initialIndex: videoIndex >= 0 ? videoIndex : 0,
-        ),
+    MainScreenWrapper.of(context).navigateToExtraScreen(
+      CoulisseVideoFeedScreen(
+        videos: _filteredVideos,
+        initialIndex: videoIndex >= 0 ? videoIndex : 0,
       ),
     );
   }

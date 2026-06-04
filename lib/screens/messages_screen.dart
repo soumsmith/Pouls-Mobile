@@ -388,7 +388,6 @@ class _MessagesScreenState extends State<MessagesScreen>
       isDark: false,
       surfaceTintColor: Colors.transparent,
       automaticallyImplyLeading: true,
-      onBackTap: () => Navigator.pop(context),
       actions: _buildMessageActions(),
       titleTextStyle: TextStyle(
         fontSize: 16,

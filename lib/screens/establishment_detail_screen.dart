@@ -79,6 +79,7 @@ import '../services/database_service.dart';
 import '../services/testimonial_service.dart';
 import '../services/integration_request_service.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../main.dart' show navigatorKey;
 import '../widgets/custom_text_field.dart';
 import '../widgets/share_button.dart';
 import '../widgets/bottom_sheets/sponsorship_bottom_sheet.dart';
@@ -1048,41 +1049,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         slivers: [
                           _buildSliverAppBar(isDark),
                           SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 100,
-                              ), // Espace pour la bottom nav
-                              child: _buildContent(isDark),
-                            ),
-                          ),
+  child: _buildContent(isDark),
+),
                         ],
                       ),
                     ),
                   ),
                   // Bottom fade gradient effect
                   const BottomFadeGradient(),
-                  // Bottom navigation
-                  Positioned(
-                    bottom: -15,
-                    left: 0,
-                    right: 0,
-                    child: SafeArea(
-                      top: false,
-                      child: BottomNav(
-                        currentIndex:
-                            999, // Index hors limites pour ne rien sélectionner
-                        onTap: (index) {
-                          if (index == 3) {
-                            // Menu "Plus" - afficher le menu bottom sheet
-                            showMenuBottomSheet(context);
-                          } else {
-                            // Pour les autres onglets, simplement revenir à l'écran précédent
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      ),
-                    ),
-                  ),
+
+
                 ],
               ),
             ),
@@ -2680,12 +2656,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/galerie.png',
         color: const Color(0xFF00796B),
         actionText: 'Voir galeries',
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => GalleryScreen(
-              ecoleCode: widget.ecole.parametreCode ?? 'gainhs',
-              ecoleNom: widget.ecole.parametreNom,
-            ),
+        onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
+          GalleryScreen(
+            ecoleCode: widget.ecole.parametreCode ?? 'gainhs',
+            ecoleNom: widget.ecole.parametreNom,
           ),
         ),
       ),
@@ -3279,11 +3253,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       final ecoleCode = widget.ecole.parametreCode ?? 'gainhs';
       final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
 
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) =>
-              GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
-        ),
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
       );
       return;
     }
@@ -3443,11 +3414,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     // Naviguer immédiatement vers l'écran TikTok-style
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) =>
-              GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
-        ),
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
       );
     });
 

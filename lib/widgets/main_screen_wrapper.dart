@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
+import '../widgets/bottom_fade_gradient.dart';
 import '../screens/home_screen.dart';
 import '../widgets/bottom_sheet_menu.dart';
 import '../screens/establishment_screen.dart';
 import '../screens/child_list_screen.dart';
+import '../screens/establishment_detail_screen.dart';
 import '../screens/shop_screen.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
@@ -33,21 +35,30 @@ class MainScreenWrapper extends StatefulWidget {
 
   /// Récupère l'instance de MainScreenWrapper depuis le contexte
   static _MainScreenWrapperState of(BuildContext context) {
+    if (context is StatefulElement && context.state is _MainScreenWrapperState) {
+      return context.state as _MainScreenWrapperState;
+    }
     return context.findAncestorStateOfType<_MainScreenWrapperState>()!;
   }
 
   /// Récupère l'instance de MainScreenWrapper depuis le contexte (peut retourner null)
   static _MainScreenWrapperState? maybeOf(BuildContext context) {
+    if (context is StatefulElement && context.state is _MainScreenWrapperState) {
+      return context.state as _MainScreenWrapperState;
+    }
     return context.findAncestorStateOfType<_MainScreenWrapperState>();
   }
 }
 
 class _MainScreenWrapperState extends State<MainScreenWrapper> {
   late int _currentIndex;
+  int? _previousIndex;
   late ApiService _apiService;
   String? _currentUserId;
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription;
   Widget? _currentChildDetailScreen;
+  Widget? _currentEstablishmentDetailScreen;
+  final List<Widget> _extraScreenStack = [];
 
   @override
   void initState() {
@@ -162,16 +173,59 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   /// Navigue vers l'écran de détail d'un enfant
   void navigateToChildDetail(dynamic child) {
     setState(() {
+      _previousIndex = _currentIndex != -1 ? _currentIndex : _previousIndex;
       _currentChildDetailScreen = ChildListScreen(child: child);
+      _currentEstablishmentDetailScreen = null;
+      _extraScreenStack.clear();
       _currentIndex = -1; // Désactive tous les onglets du bottom nav
     });
   }
 
-  /// Retourne à l'écran principal
+  /// Navigue vers l'écran de détail d'un établissement
+  void navigateToEstablishmentDetail(dynamic ecole) {
+    setState(() {
+      _previousIndex = _currentIndex != -1 ? _currentIndex : _previousIndex;
+      _currentEstablishmentDetailScreen = EstablishmentDetailScreen(ecole: ecole);
+      _currentChildDetailScreen = null;
+      _extraScreenStack.clear();
+      _currentIndex = -1; // Désactive tous les onglets du bottom nav
+    });
+  }
+
+  /// Navigue vers un écran arbitraire (ex: AllEventsScreen)
+  void navigateToExtraScreen(Widget screen) {
+    setState(() {
+      _previousIndex = _currentIndex != -1 ? _currentIndex : _previousIndex;
+      _extraScreenStack.add(screen);
+      _currentChildDetailScreen = null;
+      _currentEstablishmentDetailScreen = null;
+      _currentIndex = -1; // Désactive tous les onglets du bottom nav
+    });
+  }
+
+  /// Retourne à l'écran principal (accueil)
   void navigateToHome() {
     setState(() {
       _currentIndex = 0; // Retour à l'onglet Accueil
       _currentChildDetailScreen = null;
+      _currentEstablishmentDetailScreen = null;
+      _extraScreenStack.clear();
+    });
+  }
+
+  /// Retourne à l'onglet précédent ou dépile l'écran extra courant
+  void goBackToPreviousTab() {
+    setState(() {
+      if (_extraScreenStack.isNotEmpty) {
+        _extraScreenStack.removeLast();
+        if (_extraScreenStack.isNotEmpty) {
+          return; // Reste sur l'écran précédent de la pile
+        }
+      }
+      _currentIndex = _previousIndex ?? 0;
+      _currentChildDetailScreen = null;
+      _currentEstablishmentDetailScreen = null;
+      _extraScreenStack.clear();
     });
   }
 
@@ -180,16 +234,24 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
       showMenuBottomSheet(context);
     } else {
       setState(() {
+        _previousIndex = _currentIndex != -1 ? _currentIndex : _previousIndex;
         _currentIndex = index;
-        _currentChildDetailScreen =
-            null; // Retour à l'écran principal si on change d'onglet
+        _currentChildDetailScreen = null; // Retour à l'écran principal si on change d'onglet
+        _currentEstablishmentDetailScreen = null;
+        _extraScreenStack.clear();
       });
     }
   }
 
   Widget _getCurrentScreen() {
+    if (_extraScreenStack.isNotEmpty) {
+      return _extraScreenStack.last;
+    }
     if (_currentChildDetailScreen != null) {
       return _currentChildDetailScreen!;
+    }
+    if (_currentEstablishmentDetailScreen != null) {
+      return _currentEstablishmentDetailScreen!;
     }
 
     switch (_currentIndex) {
@@ -213,6 +275,10 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             widget.child!
           else
             _getCurrentScreen(),
+            
+          // Fade gradient for bottom content transition
+          const BottomFadeGradient(),
+
           // Bottom navigation with SafeArea to handle system padding
           Positioned(
             bottom: 0,

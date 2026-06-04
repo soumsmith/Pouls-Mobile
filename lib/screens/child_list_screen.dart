@@ -45,6 +45,7 @@ import '../models/access_control.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../services/notes_api_service.dart';
+import '../widgets/searchable_dropdown.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
 import '../models/student_message.dart';
@@ -453,6 +454,12 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Données des bulletins
   List<dynamic>? _bulletins;
   bool _isLoadingBulletins = false;
+  
+  // Filtres pour Bulletins
+  List<dynamic> _bulletinsSchoolYears = [];
+  List<String> _bulletinsAvailableYears = [];
+  bool _isLoadingBulletinsYears = false;
+  bool _isBulletinsFilterExpanded = false;
   String? _expandedBulletinId;
   StateSetter? _bulletinsModalSetState;
 
@@ -1161,6 +1168,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (_bulletins == null && !_isLoadingBulletins) {
                 _loadBulletins(setModalState);
+                _loadBulletinsSchoolYears(setModalState);
               }
             });
           }
@@ -1184,6 +1192,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   description: 'Accédez aux bulletins trimestriels et annuels',
                   onClose: () => Navigator.of(context).pop(),
                 ),
+                // Filtre des années
+                _buildBulletinsFiltersSection(setModalState),
                 // ↓ CLEF DU FIX : utilisation simple de l'état
                 Expanded(
                   child: Builder(
@@ -3694,7 +3704,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         Navigator.of(context).popUntil((route) => route.isFirst);
         
         if (wrapper != null) {
-          wrapper.navigateToHome();
+          wrapper.goBackToPreviousTab();
           wrapper.refreshCurrentUser();
         }
       }
@@ -4801,12 +4811,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: const Color(0xFFE91E63),
               actionText: 'Voir tickets',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyTicketsScreen(),
-                  ),
-                );
+                MainScreenWrapper.of(context).navigateToExtraScreen(const MyTicketsScreen());
               },
             ),
             EstablishmentAction(
@@ -9025,6 +9030,226 @@ class _ChildListScreenState extends State<ChildListScreen>
       updateState(() => _isLoadingBulletins = false);
       print('❌ Erreur lors du chargement des bulletins: $e');
     }
+  }
+
+  Future<void> _loadBulletinsSchoolYears([StateSetter? setModalState]) async {
+    if (_bulletinsSchoolYears.isNotEmpty) return;
+    
+    final ecole = _ecoleId?.toString() ?? '38';
+    
+    void updateState(VoidCallback fn) {
+      if (setModalState != null) setModalState(fn);
+      if (mounted) setState(fn);
+    }
+    
+    updateState(() => _isLoadingBulletinsYears = true);
+    
+    try {
+      final years = await _notesApiService.getSchoolYears(ecoleId: ecole);
+      updateState(() {
+        if (years != null && years.isNotEmpty) {
+          _bulletinsSchoolYears = years;
+          _bulletinsAvailableYears = years
+              .map<String>((y) => (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString())
+              .toList();
+        }
+        _isLoadingBulletinsYears = false;
+      });
+    } catch (e) {
+      updateState(() => _isLoadingBulletinsYears = false);
+      print('❌ Erreur _loadBulletinsSchoolYears: $e');
+    }
+  }
+
+  void _onBulletinYearChanged(String label, [StateSetter? setModalState]) {
+    final year = _bulletinsSchoolYears.firstWhere(
+      (y) => (y['customLibelle'] ?? y['libelle']) == label,
+      orElse: () => null,
+    );
+    if (year != null && _anneeId.toString() != year['id'].toString()) {
+      void updateState(VoidCallback fn) {
+        if (setModalState != null) setModalState(fn);
+        if (mounted) setState(fn);
+      }
+      updateState(() {
+        _anneeId = int.tryParse(year['id'].toString());
+        // Collapse the filter automatically when a year is selected
+        _isBulletinsFilterExpanded = false;
+      });
+      _loadBulletins(setModalState);
+    }
+  }
+
+  Widget _buildBulletinsFiltersSection(StateSetter setModalState) {
+    if (_bulletinsSchoolYears.isEmpty && !_isLoadingBulletinsYears) return const SizedBox.shrink();
+
+    String currentYearLabel = 'Année scolaire';
+    final currentYear = _bulletinsSchoolYears.firstWhere(
+      (y) => y['id'].toString() == _anneeId?.toString(),
+      orElse: () => null,
+    );
+    if (currentYear != null) {
+      currentYearLabel = currentYear['customLibelle'] ?? currentYear['libelle'] ?? 'Année scolaire';
+    }
+
+    return GestureDetector(
+      onTap: () {
+        setModalState(() {
+          _isBulletinsFilterExpanded = !_isBulletinsFilterExpanded;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.screenOrange.withOpacity(0.1),
+                    AppColors.screenOrange.withOpacity(0.05),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: _isBulletinsFilterExpanded 
+                    ? const BorderRadius.vertical(top: Radius.circular(20))
+                    : BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.screenOrange.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _isBulletinsFilterExpanded ? Icons.filter_list : Icons.tune,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Filtres",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.screenOrange,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _isBulletinsFilterExpanded ? 'Réduire' : 'Étendre pour filtrer par année',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.screenTextSecondaryThemed(context),
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _isBulletinsFilterExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.screenOrange.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: AppColors.screenOrange,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Expanded Content
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _isBulletinsFilterExpanded
+                  ? Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 16,
+                                color: AppColors.screenTextPrimaryThemed(context),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Année Scolaire',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.screenTextPrimaryThemed(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (_isLoadingBulletinsYears)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          else
+                            SearchableDropdown(
+                              label: "Sélectionner l'année",
+                              value: currentYearLabel,
+                              items: _bulletinsAvailableYears,
+                              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                              onChanged: (val) => _onBulletinYearChanged(val, setModalState),
+                            ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildBulletinsTab() {

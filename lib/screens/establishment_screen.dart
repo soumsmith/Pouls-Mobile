@@ -853,6 +853,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         ),
                       ),
                     ),
+                    const BottomSpacer(),
                   ],
                 ),
               ),
@@ -1059,12 +1060,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   allowLineBreak: true,
                   externalTitleSpacing: 8,
                   height: AppDimensions.getEcoleCardHeight(context),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          EstablishmentDetailScreen(ecole: items[i]),
-                    ),
-                  ),
+                  onTap: () => MainScreenWrapper.of(context).navigateToEstablishmentDetail(items[i]),
                 );
               }
               return const SizedBox.shrink();
@@ -1227,9 +1223,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
-            onTap: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => AllEventsScreen())),
+            onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(AllEventsScreen()),
           ),
         ],
       ),

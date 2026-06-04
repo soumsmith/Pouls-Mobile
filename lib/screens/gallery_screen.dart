@@ -6,6 +6,7 @@ import '../config/app_colors.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../config/app_dimensions.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 class GalleryScreen extends StatefulWidget {
   final String ecoleCode;
@@ -191,6 +192,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
             );
           }, childCount: _images.length),
         ),
+      ),
+      const SliverToBoxAdapter(
+        child: BottomSpacer(height: 125),
       ),
     ];
   }

@@ -6,6 +6,7 @@ import '../models/referred_user.dart';
 import '../services/referral_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 class ReferredUsersScreen extends StatefulWidget {
   const ReferredUsersScreen({super.key});
@@ -64,7 +65,6 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
               title: 'Utilisateurs parrainés',
               isDark: isDark,
               automaticallyImplyLeading: true,
-              onBackTap: () => Navigator.pop(context),
             ),
             SliverToBoxAdapter(
               child: _isLoading
@@ -206,7 +206,7 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
               return _buildUserCard(user);
             },
           ),
-          const SizedBox(height: 40),
+          const BottomSpacer(height: 125),
         ],
       ),
     );

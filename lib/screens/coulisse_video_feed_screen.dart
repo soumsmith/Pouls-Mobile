@@ -15,6 +15,7 @@ import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/snackbar.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -183,11 +184,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       );
 
       if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => EstablishmentDetailScreen(ecole: ecole),
-          ),
-        );
+        MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
       }
     } catch (e) {
       if (mounted) {
@@ -357,7 +354,13 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
           ),
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black87),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+            if (MainScreenWrapper.maybeOf(context) != null) {
+              MainScreenWrapper.of(context).goBackToPreviousTab();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
           ),
         ),
         body: Center(
@@ -515,7 +518,13 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                       AppBarIconButton(
                         icon: Icons.grid_view,
                         isDark: true,
-                        onTap: () => Navigator.of(context).pop(),
+                        onTap: () {
+                          if (MainScreenWrapper.maybeOf(context) != null) {
+                            MainScreenWrapper.of(context).goBackToPreviousTab();
+                          } else {
+                            Navigator.of(context).pop();
+                          }
+                        },
                       ),
                     ],
                   ),

@@ -9,6 +9,8 @@ import '../utils/image_helper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/components/bottom_spacer.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 // ─── DESIGN TOKENS THEME-AWARE ─────────────────────────────────────────────────
 // Utilise les méthodes theme-aware d'AppColors pour le dark/light mode
@@ -206,7 +208,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           ),
                         ),
                         // espace pour la bottom bar
-                        const SliverToBoxAdapter(child: SizedBox(height: 110)),
+                        const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
                       ],
                     ),
                     // ── Bottom bar flottante ──
@@ -314,7 +316,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       // Bouton retour
       leading: _buildNavButton(
         icon: Icons.arrow_back_ios_new_rounded,
-        onTap: () => Navigator.pop(context),
+        onTap: () {
+          final wrapper = MainScreenWrapper.maybeOf(context);
+          if (wrapper != null) {
+            wrapper.goBackToPreviousTab();
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
       // Actions
       actions: [

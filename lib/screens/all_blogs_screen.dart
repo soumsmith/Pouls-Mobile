@@ -12,6 +12,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/components/custom_date_input.dart';
 import '../widgets/components/custom_text_input.dart';
+import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
@@ -701,11 +702,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                       child: _BlogCard(
                         blog: blog,
                         onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => BlogDetailScreen(blog: blog),
-                            ),
-                          );
+                          MainScreenWrapper.of(context).navigateToExtraScreen(BlogDetailScreen(blog: blog));
                         },
                       ),
                     ),

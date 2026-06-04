@@ -15,6 +15,7 @@ import '../services/auth_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -168,6 +169,7 @@ class _CartScreenState extends State<CartScreen>
                   top: false,
                   child: _buildModernCheckoutSummary(),
                 ),
+                const BottomSpacer(height: 125),
               ],
             ),
           ),
@@ -205,7 +207,14 @@ class _CartScreenState extends State<CartScreen>
             ),
           ),
       ],
-      onBackTap: () => Navigator.pop(context),
+      onBackTap: () {
+        final wrapper = MainScreenWrapper.maybeOf(context);
+        if (wrapper != null) {
+          wrapper.goBackToPreviousTab();
+        } else {
+          Navigator.pop(context);
+        }
+      },
     );
   }
 

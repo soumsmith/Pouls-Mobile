@@ -12,6 +12,7 @@ import '../screens/help_support_screen.dart';
 import '../screens/text_size_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -84,7 +85,6 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
               slivers: [
                 CustomSliverAppBar(
                   title: 'Paramètres',
-                  onBackTap: () => Navigator.pop(context),
                 ),
                 SliverToBoxAdapter(
                   child: FadeTransition(
@@ -512,13 +512,11 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
   }
 
   void _navigateToProfile() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    MainScreenWrapper.of(context).navigateToExtraScreen(const ProfileScreen());
   }
 
   void _navigateToHelpSupport() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+    MainScreenWrapper.of(context).navigateToExtraScreen(const HelpSupportScreen());
   }
 
   void _showTextSizeSettings() {

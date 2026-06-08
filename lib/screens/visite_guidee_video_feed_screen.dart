@@ -14,6 +14,10 @@ import '../widgets/snackbar.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
+import '../models/ecole.dart';
+import '../models/ecole_detail.dart';
+import '../services/ecole_api_service.dart';
+import 'establishment_detail_screen.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
@@ -147,6 +151,59 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
     if (widget.videos.isNotEmpty && index < widget.videos.length) {
       final videoId = widget.videos[index].id ?? widget.videos[index].typeVideo.hashCode;
       _fetchVideoInteractions(videoId);
+    }
+  }
+
+  // Naviguer vers le détail de l'école
+  Future<void> _navigateToEcole(String code) async {
+    if (code.isEmpty) {
+      CartSnackBar.showOverlay(
+        context,
+        productName: '',
+        message: 'Le code de l\'école est manquant pour cette vidéo',
+        backgroundColor: Colors.orange,
+        icon: Icons.warning_amber_rounded,
+      );
+      return;
+    }
+
+    // Mettre en pause la vidéo actuelle
+    if (_youtubeControllers[_currentIndex] != null) {
+      _youtubeControllers[_currentIndex]!.pause();
+    }
+
+    try {
+      // Charger les détails de l'école via l'API de détail
+      final ecoleDetail = await EcoleApiService.getEcoleDetail(code);
+
+      // Créer un objet Ecole minimal avec les données récupérées
+      final ecole = Ecole(
+        pays: ecoleDetail.data.pays,
+        ville: ecoleDetail.data.ville,
+        adresse: ecoleDetail.data.adresse,
+        parametreNom: ecoleDetail.data.nom,
+        logo: ecoleDetail.data.logo ?? '',
+        telephone: ecoleDetail.data.telephone,
+        parametreCode: code,
+        statut: ecoleDetail.data.statut,
+        filiereNom: [],
+        imagefond: ecoleDetail.image,
+        paramecole: null,
+      );
+
+      if (mounted) {
+        MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
+      }
+    } catch (e) {
+      if (mounted) {
+        CartSnackBar.showOverlay(
+          context,
+          productName: '',
+          message: 'Erreur: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
+        );
+      }
     }
   }
 
@@ -401,15 +458,10 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                 _ActionButton(
                   icon: Icons.school,
                   label: 'École',
-                  onTap: () {
-                    CartSnackBar.showOverlay(
-                      context,
-                      productName: '',
-                      message: 'Navigation vers l\'école non disponible pour cette visite guidée',
-                      backgroundColor: Colors.blue,
-                      icon: Icons.info_outline,
-                    );
-                  },
+                  onTap: widget.videos.isNotEmpty
+                      ? () =>
+                            _navigateToEcole(widget.videos[_currentIndex].code)
+                      : () {},
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
@@ -632,7 +684,12 @@ class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMi
                 ],
               ),
             ),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 88, // Space for right-side vertical action buttons
+              bottom: 100, // Increased bottom padding to avoid bottom navigation bar overlap
+              top: 60,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,

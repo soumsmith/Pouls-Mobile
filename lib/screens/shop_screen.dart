@@ -67,6 +67,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   String? _nomEtablissement;
   String? _nomProduit;
   String? _type;
+  String? _categorieId;
+  String? _sousCategorieId;
 
   final _paysController = TextEditingController();
   final _villeController = TextEditingController();
@@ -79,6 +81,8 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   List<Category> _categories = [];
   List<String> _filters = ['Tous'];
+  List<String> _subFilters = [];
+  String _selectedSubFilter = 'Tous';
   bool _isLoadingCategories = false;
   String? _categoryError;
 
@@ -176,6 +180,8 @@ class _LibraryScreenState extends State<LibraryScreen>
         nomEtablissement: _nomEtablissement,
         nomProduit: _nomProduit,
         type: _type,
+        categorieId: _categorieId,
+        sousCategorieId: _sousCategorieId,
       );
       if (mounted) {
         setState(() {
@@ -249,7 +255,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   void _buildFiltersFromCategories() {
     final List<String> categoryNames = _categories
         .map((category) => category.nom)
-        .toSet() // Éviter les doublons
+        .toSet()
         .toList();
 
     setState(() {
@@ -271,6 +277,8 @@ class _LibraryScreenState extends State<LibraryScreen>
         nomEtablissement: _nomEtablissement,
         nomProduit: _nomProduit,
         type: _type,
+        categorieId: _categorieId,
+        sousCategorieId: _sousCategorieId,
       );
       if (!mounted) return;
       setState(() {
@@ -345,6 +353,8 @@ class _LibraryScreenState extends State<LibraryScreen>
       _nomEtablissement = null;
       _nomProduit = null;
       _type = null;
+      _categorieId = null;
+      _sousCategorieId = null;
       _searchController.clear();
     });
     _loadProducts();
@@ -352,10 +362,25 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   void _applyFilters() {
     setState(() {
-      if (_selectedFilter == 'Tous') {
-        _type = null;
-      } else {
-        _type = _selectedFilter;
+      _categorieId = null;
+      _sousCategorieId = null;
+
+      if (_selectedFilter != 'Tous') {
+        try {
+          final category = _categories.firstWhere(
+            (c) => c.nom == _selectedFilter,
+          );
+          _categorieId = category.id.toString();
+
+          if (_selectedSubFilter != 'Tous') {
+            final subCat = category.sousCategories.firstWhere(
+              (s) => s.nom == _selectedSubFilter,
+            );
+            _sousCategorieId = subCat.id.toString();
+          }
+        } catch (e) {
+          // Ignorer si non trouvé
+        }
       }
     });
     _loadProducts();
@@ -473,7 +498,9 @@ class _LibraryScreenState extends State<LibraryScreen>
             : null,
         badgeColor: Colors.green,
         onTap: () {
-          MainScreenWrapper.of(context).navigateToExtraScreen(const OrdersScreen());
+          MainScreenWrapper.of(
+            context,
+          ).navigateToExtraScreen(const OrdersScreen());
         },
       ),
       const SizedBox(width: 4),
@@ -555,18 +582,59 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildFilterTabs() {
-    return FilterRowWidget(
-      filters: _filters,
-      selectedFilter: _selectedFilter,
-      onFilterSelected: (filter) {
-        setState(() {
-          _selectedFilter = filter;
-          _applyFilters();
-        });
-      },
-      selectedColor: AppColors.shopGreen,
-      selectedGradient: AppColors.shopGreenGradient,
-      selectedTextColor: Colors.white,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FilterRowWidget(
+          filters: _filters,
+          selectedFilter: _selectedFilter,
+          onFilterSelected: (filter) {
+            setState(() {
+              _selectedFilter = filter;
+              _selectedSubFilter = 'Tous';
+              if (filter == 'Tous') {
+                _subFilters = [];
+              } else {
+                try {
+                  final category = _categories.firstWhere(
+                    (c) => c.nom == filter,
+                  );
+                  if (category.sousCategories.isNotEmpty) {
+                    _subFilters = [
+                      'Tous',
+                      ...category.sousCategories.map((s) => s.nom),
+                    ];
+                  } else {
+                    _subFilters = [];
+                  }
+                } catch (e) {
+                  _subFilters = [];
+                }
+              }
+              _applyFilters();
+            });
+          },
+          selectedColor: AppColors.shopGreen,
+          selectedGradient: AppColors.shopGreenGradient,
+          selectedTextColor: Colors.white,
+        ),
+        if (_subFilters.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          FilterRowWidget(
+            filters: _subFilters,
+            selectedFilter: _selectedSubFilter,
+            onFilterSelected: (subFilter) {
+              setState(() {
+                _selectedSubFilter = subFilter;
+                _applyFilters();
+              });
+            },
+            selectedColor: AppColors.shopBlue,
+            selectedTextColor: Colors.white,
+            unselectedColor: AppColors.grey100Adaptive(context),
+          ),
+        ],
+      ],
     );
   }
 
@@ -593,193 +661,203 @@ class _LibraryScreenState extends State<LibraryScreen>
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grey300Adaptive(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.grey300Adaptive(context),
+              borderRadius: BorderRadius.circular(2),
             ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.tune_rounded,
-                    size: 20,
-                    color: AppColors.shopBlue,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.tune_rounded,
+                  size: 20,
+                  color: AppColors.shopBlue,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Recherche avancée',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.screenTextPrimaryThemed(context),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Recherche avancée',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimaryThemed(context),
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: _clearAdvancedSearch,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: _clearAdvancedSearch,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.shopBlueSurface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Effacer',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.shopBlue,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.shopBlueSurface,
-                        borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.grey100Adaptive(context),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: AppColors.grey666Adaptive(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                20 + MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SearchableDropdown(
+                          label: 'Pays',
+                          value:
+                              _paysReverseMap[_paysController.text] ?? 'Tous',
+                          items: _countriesList,
+                          isDarkMode:
+                              Theme.of(context).brightness == Brightness.dark,
+                          onChanged: (String val) {
+                            setState(() {
+                              _paysController.text = _paysMap[val] ?? '';
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Ville',
+                          hint: 'Entrez la ville',
+                          icon: Icons.location_city_rounded,
+                          controller: _villeController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Quartier',
+                          hint: 'Entrez le quartier',
+                          icon: Icons.location_on_rounded,
+                          controller: _quartierController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Nom établissement',
+                          hint: 'Entrez le nom',
+                          icon: Icons.business_rounded,
+                          controller: _nomEtablissementController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Nom produit',
+                          hint: 'Entrez le nom du produit',
+                          icon: Icons.shopping_bag_rounded,
+                          controller: _nomProduitController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'Type',
+                          hint: 'Ex: Papeterie, Livres...',
+                          icon: Icons.category_rounded,
+                          controller: _typeController,
+                          iconColor: AppColors.shopBlue,
+                          focusBorderColor: AppColors.shopBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _applyAdvancedSearch();
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.shopBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
                       ),
                       child: const Text(
-                        'Effacer',
+                        'Appliquer les filtres',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.shopBlue,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.grey100Adaptive(context),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: AppColors.grey666Adaptive(context),
-                      ),
-                    ),
-                  ),
+                  const BottomSpacer(),
                 ],
               ),
             ),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SearchableDropdown(
-                            label: 'Pays',
-                            value: _paysReverseMap[_paysController.text] ?? 'Tous',
-                            items: _countriesList,
-                            isDarkMode: Theme.of(context).brightness == Brightness.dark,
-                            onChanged: (String val) {
-                              setState(() {
-                                _paysController.text = _paysMap[val] ?? '';
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Ville',
-                            hint: 'Entrez la ville',
-                            icon: Icons.location_city_rounded,
-                            controller: _villeController,
-                            iconColor: AppColors.shopBlue,
-                            focusBorderColor: AppColors.shopBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Quartier',
-                            hint: 'Entrez le quartier',
-                            icon: Icons.location_on_rounded,
-                            controller: _quartierController,
-                            iconColor: AppColors.shopBlue,
-                            focusBorderColor: AppColors.shopBlue,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Nom établissement',
-                            hint: 'Entrez le nom',
-                            icon: Icons.business_rounded,
-                            controller: _nomEtablissementController,
-                            iconColor: AppColors.shopBlue,
-                            focusBorderColor: AppColors.shopBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Nom produit',
-                            hint: 'Entrez le nom du produit',
-                            icon: Icons.shopping_bag_rounded,
-                            controller: _nomProduitController,
-                            iconColor: AppColors.shopBlue,
-                            focusBorderColor: AppColors.shopBlue,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Type',
-                            hint: 'Ex: Papeterie, Livres...',
-                            icon: Icons.category_rounded,
-                            controller: _typeController,
-                            iconColor: AppColors.shopBlue,
-                            focusBorderColor: AppColors.shopBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _applyAdvancedSearch();
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.shopBlue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Appliquer les filtres',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    const BottomSpacer(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -845,8 +923,10 @@ class _LibraryScreenState extends State<LibraryScreen>
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: _getCrossAxisCount(context),
-          crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
-              (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+          crossAxisSpacing:
+              AppDimensions.getAdaptiveGridSpacing(context) *
+              (((AppDimensions.isTablet(context) ||
+                          AppDimensions.isLargeTablet(context)) &&
                       AppDimensions.isLandscape(context))
                   ? 1.8
                   : 1.0),
@@ -876,8 +956,10 @@ class _LibraryScreenState extends State<LibraryScreen>
                   // image + texte externe pour éviter tout overflow.
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
-                        (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+                    crossAxisSpacing:
+                        AppDimensions.getAdaptiveGridSpacing(context) *
+                        (((AppDimensions.isTablet(context) ||
+                                    AppDimensions.isLargeTablet(context)) &&
                                 AppDimensions.isLandscape(context))
                             ? 1.8
                             : 1.0), // Plus d'espace horizontal uniquement sur tablette en paysage

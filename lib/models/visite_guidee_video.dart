@@ -4,6 +4,8 @@ class VisiteGuideeVideo {
   final String youtubeUrl;
   final String? title;
   final String? description;
+  final String code;
+  final String etablissement;
 
   VisiteGuideeVideo({
     this.id,
@@ -11,6 +13,8 @@ class VisiteGuideeVideo {
     required this.youtubeUrl,
     this.title,
     this.description,
+    this.code = '',
+    this.etablissement = '',
   });
 
   factory VisiteGuideeVideo.fromJson(Map<String, dynamic> json) {
@@ -20,6 +24,8 @@ class VisiteGuideeVideo {
       youtubeUrl: (json['youtube_url'] ?? '') as String,
       title: json['title'] as String?,
       description: json['description'] as String?,
+      code: json['codeecole'] as String? ?? json['code'] as String? ?? json['ecole'] as String? ?? '',
+      etablissement: json['nomecole'] as String? ?? json['etablissement'] as String? ?? '',
     );
   }
 
@@ -30,7 +36,29 @@ class VisiteGuideeVideo {
       'youtube_url': youtubeUrl,
       'title': title,
       'description': description,
+      'code': code,
+      'etablissement': etablissement,
     };
+  }
+
+  VisiteGuideeVideo copyWith({
+    int? id,
+    String? typeVideo,
+    String? youtubeUrl,
+    String? title,
+    String? description,
+    String? code,
+    String? etablissement,
+  }) {
+    return VisiteGuideeVideo(
+      id: id ?? this.id,
+      typeVideo: typeVideo ?? this.typeVideo,
+      youtubeUrl: youtubeUrl ?? this.youtubeUrl,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      code: code ?? this.code,
+      etablissement: etablissement ?? this.etablissement,
+    );
   }
 
   String get youtubeVideoId {

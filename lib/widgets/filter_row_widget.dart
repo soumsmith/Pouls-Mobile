@@ -9,6 +9,7 @@ class FilterRowWidget extends StatelessWidget {
   final Color? selectedColor;
   final Gradient? selectedGradient;
   final Color? selectedTextColor;
+  final Color? unselectedColor;
 
   const FilterRowWidget({
     super.key,
@@ -18,6 +19,7 @@ class FilterRowWidget extends StatelessWidget {
     this.selectedColor,
     this.selectedGradient,
     this.selectedTextColor,
+    this.unselectedColor,
   });
 
   @override
@@ -48,7 +50,7 @@ class FilterRowWidget extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     gradient: isSelected ? (selectedGradient ?? AppColors.screenOrangeGradient) : null,
-                    color: isSelected ? (selectedColor ?? null) : AppColors.screenSurfaceThemed(context),
+                    color: isSelected ? (selectedColor ?? null) : (unselectedColor ?? AppColors.screenSurfaceThemed(context)),
                     borderRadius: BorderRadius.circular(AppDimensions.getFilterBorderRadius(context)),
                     boxShadow: isSelected
                         ? [

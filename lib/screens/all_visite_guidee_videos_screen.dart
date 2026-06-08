@@ -256,6 +256,8 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
           (v) => VisiteGuideeVideo(
             typeVideo: v.typevideo,
             youtubeUrl: v.youtubeUrl,
+            code: v.code,
+            etablissement: v.etablissement,
           ),
         )
         .toList();

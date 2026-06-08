@@ -12,6 +12,7 @@ class Event {
   final String statutevent;
   final String publishedAt;
   final String? image;
+  final String? typebilleterie;
 
   Event({
     this.id,
@@ -25,6 +26,7 @@ class Event {
     this.statutevent = 'en cours',
     required this.publishedAt,
     this.image,
+    this.typebilleterie,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class Event {
       publishedAt:
           json['published_at'] as String? ?? DateTime.now().toIso8601String(),
       image: json['image'] as String?,
+      typebilleterie: json['typebilleterie'] as String?,
     );
   }
 
@@ -57,6 +60,7 @@ class Event {
       'statutevent': statutevent,
       'published_at': publishedAt,
       'image': image,
+      'typebilleterie': typebilleterie,
     };
   }
 
@@ -99,6 +103,7 @@ class Event {
       'content': content,
       'statutevent': statutevent,
       'published_at': publishedAt,
+      'typebilleterie': typebilleterie,
     };
   }
 

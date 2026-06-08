@@ -67,7 +67,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       final videoId = video.youtubeVideoId;
       print('Traitement vidéo: ${video.id} - VideoID: $videoId');
       if (videoId.isNotEmpty) {
-        final isInitialVideo = widget.videos.indexOf(video) == widget.initialIndex;
+        final isInitialVideo =
+            widget.videos.indexOf(video) == widget.initialIndex;
         final controller = YoutubePlayerController(
           initialVideoId: videoId,
           flags: YoutubePlayerFlags(
@@ -76,7 +77,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             enableCaption: false,
             forceHD: false,
             loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
-            hideControls: true, // Masquer les contrôles natifs (et le titre/logo de la chaîne en haut)
+            hideControls:
+                true, // Masquer les contrôles natifs (et le titre/logo de la chaîne en haut)
           ),
         );
         // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
@@ -109,14 +111,15 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
         videoId: videoId,
         type: 'like',
       );
-      
+
       final comments = await InteractionApiService.listInteractions(
         videoId: videoId,
         type: 'comment',
       );
-      
-      final hasLiked = userId != null && likes.any((like) => like.userId == userId);
-      
+
+      final hasLiked =
+          userId != null && likes.any((like) => like.userId == userId);
+
       if (mounted) {
         setState(() {
           if (hasLiked) {
@@ -129,7 +132,9 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
         });
       }
     } catch (e) {
-      print('⚠️ Erreur lors de la récupération des interactions pour la vidéo $videoId: $e');
+      print(
+        '⚠️ Erreur lors de la récupération des interactions pour la vidéo $videoId: $e',
+      );
     }
   }
 
@@ -210,7 +215,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    final String videoUrl = 'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+    final String videoUrl =
+        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
 
     showModalBottomSheet(
       context: context,
@@ -221,7 +227,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
         itemTitle: video.titre,
-        shareText: '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\nRegardez la vidéo ici : $videoUrl\n\n#CoulissesExcellence #Éducation',
+        shareText:
+            '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\nRegardez la vidéo ici : $videoUrl\n\n#CoulissesExcellence #Éducation',
       ),
     );
   }
@@ -353,14 +360,17 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             ),
           ),
           leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black87),
+            icon: Icon(
+              Icons.arrow_back,
+              color: isDarkMode ? Colors.white : Colors.black87,
+            ),
             onPressed: () {
-            if (MainScreenWrapper.maybeOf(context) != null) {
-              MainScreenWrapper.of(context).goBackToPreviousTab();
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
+              if (MainScreenWrapper.maybeOf(context) != null) {
+                MainScreenWrapper.of(context).goBackToPreviousTab();
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
           ),
         ),
         body: Center(
@@ -429,13 +439,15 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             child: Column(
               children: [
                 _ActionButton(
-                  icon: (_youtubeControllers.isNotEmpty &&
+                  icon:
+                      (_youtubeControllers.isNotEmpty &&
                           _currentIndex < _youtubeControllers.length &&
                           _youtubeControllers[_currentIndex] != null &&
                           _youtubeControllers[_currentIndex]!.value.isPlaying)
                       ? Icons.pause
                       : Icons.play_arrow,
-                  label: (_youtubeControllers.isNotEmpty &&
+                  label:
+                      (_youtubeControllers.isNotEmpty &&
                           _currentIndex < _youtubeControllers.length &&
                           _youtubeControllers[_currentIndex] != null &&
                           _youtubeControllers[_currentIndex]!.value.isPlaying)
@@ -465,10 +477,19 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
-                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].id)
+                  icon:
+                      widget.videos.isNotEmpty &&
+                          _likedVideoIds.contains(
+                            widget.videos[_currentIndex].id,
+                          )
                       ? Icons.favorite
                       : Icons.favorite_border,
-                  label: widget.videos.isNotEmpty && _videoLikesCount.containsKey(widget.videos[_currentIndex].id) && _videoLikesCount[widget.videos[_currentIndex].id]! > 0
+                  label:
+                      widget.videos.isNotEmpty &&
+                          _videoLikesCount.containsKey(
+                            widget.videos[_currentIndex].id,
+                          ) &&
+                          _videoLikesCount[widget.videos[_currentIndex].id]! > 0
                       ? '${_videoLikesCount[widget.videos[_currentIndex].id]}'
                       : 'J\'aime',
                   onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
@@ -482,7 +503,15 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 const SizedBox(height: 16),
                 _ActionButton(
                   icon: Icons.comment,
-                  label: widget.videos.isNotEmpty && _videoCommentsCount.containsKey(widget.videos[_currentIndex].id) && _videoCommentsCount[widget.videos[_currentIndex].id]! > 0
+                  label:
+                      widget.videos.isNotEmpty &&
+                          _videoCommentsCount.containsKey(
+                            widget.videos[_currentIndex].id,
+                          ) &&
+                          _videoCommentsCount[widget
+                                  .videos[_currentIndex]
+                                  .id]! >
+                              0
                       ? '${_videoCommentsCount[widget.videos[_currentIndex].id]}'
                       : 'Commenter',
                   onTap: _showComments,
@@ -509,7 +538,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 slivers: [
                   CustomSliverAppBar(
                     title: '',
-                    isDark: true, // Always dark style on top of video playback for supreme premium contrast
+                    isDark:
+                        true, // Always dark style on top of video playback for supreme premium contrast
                     backgroundColor: Colors.transparent,
                     surfaceTintColor: Colors.transparent,
                     elevation: 0,
@@ -590,16 +620,22 @@ class _SchoolLogoState extends State<_SchoolLogo> {
           child: CircleAvatar(
             radius: 18,
             backgroundColor: Colors.white24,
-            backgroundImage: logoUrl != null &&
+            backgroundImage:
+                logoUrl != null &&
                     logoUrl.isNotEmpty &&
-                    (logoUrl.startsWith('http://') || logoUrl.startsWith('https://'))
+                    (logoUrl.startsWith('http://') ||
+                        logoUrl.startsWith('https://'))
                 ? NetworkImage(logoUrl)
                 : null,
-            child: logoUrl == null ||
+            child:
+                logoUrl == null ||
                     logoUrl.isEmpty ||
-                    (!logoUrl.startsWith('http://') && !logoUrl.startsWith('https://'))
+                    (!logoUrl.startsWith('http://') &&
+                        !logoUrl.startsWith('https://'))
                 ? Text(
-                    widget.fallbackName.isNotEmpty ? widget.fallbackName[0].toUpperCase() : 'E',
+                    widget.fallbackName.isNotEmpty
+                        ? widget.fallbackName[0].toUpperCase()
+                        : 'E',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -629,7 +665,8 @@ class _VideoPage extends StatefulWidget {
   State<_VideoPage> createState() => _VideoPageState();
 }
 
-class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMixin {
+class _VideoPageState extends State<_VideoPage>
+    with SingleTickerProviderStateMixin {
   bool _showPlayPauseOverlay = false;
   bool _overlayIsPlayIcon = false;
   late AnimationController _overlayAnimationController;
@@ -719,7 +756,8 @@ class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMi
               child: AnimatedBuilder(
                 animation: _overlayAnimationController,
                 builder: (context, child) {
-                  final scale = 1.0 + (1.0 - _overlayAnimationController.value) * 0.5;
+                  final scale =
+                      1.0 + (1.0 - _overlayAnimationController.value) * 0.5;
                   final opacity = 1.0 - _overlayAnimationController.value;
                   return Opacity(
                     opacity: opacity,
@@ -760,7 +798,8 @@ class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMi
             padding: const EdgeInsets.only(
               left: 16,
               right: 88, // Space for right-side vertical action buttons
-              bottom: 24,
+              bottom:
+                  130, // Increased bottom padding to avoid bottom navigation bar overlap
               top: 60,
             ),
             child: Column(
@@ -1077,7 +1116,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             child: _isLoading
                 ? Center(
                     child: CircularProgressIndicator(
-                      color: isDarkMode ? Colors.white : Theme.of(context).primaryColor,
+                      color: isDarkMode
+                          ? Colors.white
+                          : Theme.of(context).primaryColor,
                     ),
                   )
                 : ListView.builder(
@@ -1102,21 +1143,17 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               left: 16,
               right: 16,
               top: 10,
-              bottom: MediaQuery.of(context).viewInsets.bottom +
+              bottom:
+                  MediaQuery.of(context).viewInsets.bottom +
                   (MediaQuery.of(context).viewInsets.bottom > 0
                       ? 16
                       : (MediaQuery.of(context).padding.bottom > 0
-                          ? MediaQuery.of(context).padding.bottom + 12
-                          : 24)),
+                            ? MediaQuery.of(context).padding.bottom + 12
+                            : 24)),
             ),
             decoration: BoxDecoration(
               color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: dividerColor,
-                  width: 0.5,
-                ),
-              ),
+              border: Border(top: BorderSide(color: dividerColor, width: 0.5)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -1128,27 +1165,20 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                       maxHeight: 120,
                     ),
                     decoration: BoxDecoration(
-                      color: isDarkMode ? const Color(0xFF2C2C2C) : Colors.grey[100],
+                      color: isDarkMode
+                          ? const Color(0xFF2C2C2C)
+                          : Colors.grey[100],
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: inputBorderColor,
-                        width: 0.5,
-                      ),
+                      border: Border.all(color: inputBorderColor, width: 0.5),
                     ),
                     child: TextField(
                       controller: _commentController,
                       maxLines: null,
                       textInputAction: TextInputAction.newline,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: textColor,
-                      ),
+                      style: TextStyle(fontSize: 14, color: textColor),
                       decoration: InputDecoration(
                         hintText: 'Ajouter un commentaire...',
-                        hintStyle: TextStyle(
-                          fontSize: 14,
-                          color: subtextColor,
-                        ),
+                        hintStyle: TextStyle(fontSize: 14, color: subtextColor),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -1205,7 +1235,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       );
 
       if (!success) {
-        print('⚠️ La suppression API a retourné false, rechargement de la liste...');
+        print(
+          '⚠️ La suppression API a retourné false, rechargement de la liste...',
+        );
       }
     } catch (e) {
       print('⚠️ Erreur lors de la suppression API: $e');
@@ -1234,7 +1266,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       );
 
       if (!success) {
-        print('⚠️ La modification API a retourné false, rechargement de la liste...');
+        print(
+          '⚠️ La modification API a retourné false, rechargement de la liste...',
+        );
       }
     } catch (e) {
       print('⚠️ Erreur lors de la modification API: $e');
@@ -1301,21 +1335,14 @@ class _CommentItem extends StatelessWidget {
                     ),
                     Text(
                       _formatTimestamp(comment.createdAt),
-                      style: TextStyle(
-                        color: timeColor,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: timeColor, fontSize: 12),
                     ),
                   ],
                 ),
               ),
               if (isCurrentUser) ...[
                 PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: timeColor,
-                    size: 20,
-                  ),
+                  icon: Icon(Icons.more_vert, color: timeColor, size: 20),
                   color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                   elevation: 8,
                   shape: RoundedRectangleBorder(
@@ -1353,7 +1380,11 @@ class _CommentItem extends StatelessWidget {
                       value: 'delete',
                       child: Row(
                         children: [
-                          const Icon(Icons.delete, color: Colors.redAccent, size: 16),
+                          const Icon(
+                            Icons.delete,
+                            color: Colors.redAccent,
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Supprimer',
@@ -1372,7 +1403,9 @@ class _CommentItem extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.only(left: 52), // Perfect align under the name
+            padding: const EdgeInsets.only(
+              left: 52,
+            ), // Perfect align under the name
             child: Text(
               comment.content ?? '',
               style: TextStyle(color: textColor, fontSize: 14),
@@ -1401,7 +1434,7 @@ class _CommentItem extends StatelessWidget {
   void _showEditDialog(BuildContext context) {
     final isDarkMode = ThemeService().isDarkMode;
     final controller = TextEditingController(text: comment.content ?? '');
-    
+
     final dialogBgColor = isDarkMode ? Colors.black : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black87;
     final hintColor = isDarkMode ? Colors.white54 : Colors.black38;
@@ -1428,7 +1461,9 @@ class _CommentItem extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Annuler',
-              style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white70 : Colors.black54,
+              ),
             ),
           ),
           TextButton(
@@ -1471,7 +1506,9 @@ class _CommentItem extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Annuler',
-              style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white70 : Colors.black54,
+              ),
             ),
           ),
           TextButton(
@@ -1572,10 +1609,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                           const SizedBox(height: 4),
                           Text(
                             widget.video.fullName,
-                            style: TextStyle(
-                              color: subtextColor,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(color: subtextColor, fontSize: 12),
                           ),
                         ],
                       ),
@@ -1618,10 +1652,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                           ),
                           Text(
                             '$_totalRatings évaluations',
-                            style: TextStyle(
-                              color: subtextColor,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(color: subtextColor, fontSize: 12),
                           ),
                         ],
                       ),
@@ -1722,4 +1753,3 @@ class _RatingSheetState extends State<_RatingSheet> {
     }
   }
 }
-

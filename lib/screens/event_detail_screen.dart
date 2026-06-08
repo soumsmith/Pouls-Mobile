@@ -818,21 +818,46 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                   ),
                   const SizedBox(height: 5),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 10,
-                        color: uiData['color'] as Color,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 10,
+                            color: uiData['color'] as Color,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            uiData['date'] as String,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: uiData['color'] as Color,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 3),
-                      Text(
-                        uiData['date'] as String,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: uiData['color'] as Color,
-                          fontWeight: FontWeight.w500,
+                      if (uiData['typebilleterie'] != null && (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini')
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
+                                ? Colors.green.withOpacity(0.1) 
+                                : Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            (uiData['typebilleterie'] as String).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
+                                  ? Colors.green[700] 
+                                  : Colors.orange[700],
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],

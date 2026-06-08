@@ -5,6 +5,8 @@ class Video {
   final String title;
   final String description;
   final String createdAt;
+  final String code;
+  final String etablissement;
 
   const Video({
     required this.typevideo,
@@ -12,6 +14,8 @@ class Video {
     required this.title,
     required this.description,
     required this.createdAt,
+    this.code = '',
+    this.etablissement = '',
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
@@ -21,6 +25,8 @@ class Video {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       createdAt: json['created_at'] ?? '',
+      code: json['codeecole']?.toString() ?? json['code']?.toString() ?? json['ecole']?.toString() ?? '',
+      etablissement: json['nomecole']?.toString() ?? json['etablissement']?.toString() ?? '',
     );
   }
 
@@ -47,6 +53,8 @@ class Video {
       'title': title,
       'description': description,
       'created_at': createdAt,
+      'code': code,
+      'etablissement': etablissement,
     };
   }
 

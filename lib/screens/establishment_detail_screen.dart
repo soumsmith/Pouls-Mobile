@@ -823,7 +823,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       final videos = await VisiteGuideeService.getVideosByEcole(code);
       if (mounted) {
         setState(() {
-          _visiteGuideeVideos = videos;
+          _visiteGuideeVideos = videos.map((v) => v.copyWith(
+            code: v.code.isEmpty ? code : v.code,
+            etablissement: v.etablissement.isEmpty ? (widget.ecole.parametreNom) : v.etablissement,
+          )).toList();
           _isLoadingVisiteGuidee = false;
         });
       }

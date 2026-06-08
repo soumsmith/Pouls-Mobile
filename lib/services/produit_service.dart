@@ -17,6 +17,8 @@ class ProduitService {
     String? nomEtablissement,
     String? nomProduit,
     String? type,
+    String? categorieId,
+    String? sousCategorieId,
   }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
@@ -32,6 +34,8 @@ class ProduitService {
       print('   - Nom établissement: $nomEtablissement');
     if (nomProduit != null) print('   - Nom produit: $nomProduit');
     if (type != null) print('   - Type: $type');
+    if (categorieId != null) print('   - Catégorie ID: $categorieId');
+    if (sousCategorieId != null) print('   - Sous-catégorie ID: $sousCategorieId');
 
     // Construction des paramètres de requête
     final Map<String, String> queryParams = {
@@ -47,7 +51,9 @@ class ProduitService {
       queryParams['nomEtablissement'] = nomEtablissement;
     if (nomProduit != null && nomProduit.isNotEmpty)
       queryParams['nomProduit'] = nomProduit;
-    if (type != null && type.isNotEmpty) queryParams['type'] = type;
+    if (type != null && type.isNotEmpty) queryParams['categorie'] = type;
+    if (categorieId != null && categorieId.isNotEmpty) queryParams['categorie'] = categorieId;
+    if (sousCategorieId != null && sousCategorieId.isNotEmpty) queryParams['sous_categorie'] = sousCategorieId;
 
     final uri = Uri.parse(
       '$baseUrl/produits/list',

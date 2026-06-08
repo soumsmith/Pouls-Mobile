@@ -34,7 +34,8 @@ class SponsorshipBottomSheet extends StatefulWidget {
 }
 
 class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
-  final TextEditingController _parentTelephoneController = TextEditingController();
+  final TextEditingController _parentTelephoneController =
+      TextEditingController();
   final TextSizeService _textSizeService = TextSizeService();
   final ThemeService _themeService = ThemeService();
   bool _parentTelephoneError = false;
@@ -99,13 +100,15 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F9FA),
+                    color: isDark
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFFF8F9FA),
                     borderRadius: BorderRadius.circular(
                       AppDimensions.getMediumCardBorderRadius(context),
                     ),
                     border: Border.all(
-                      color: isDark 
-                          ? const Color(0xFF404040) 
+                      color: isDark
+                          ? const Color(0xFF404040)
                           : const Color(0xFFE5E7EB),
                       width: 1,
                     ),
@@ -126,7 +129,9 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                             style: TextStyle(
                               fontSize: _textSizeService.getScaledFontSize(16),
                               fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : const Color(0xFF1F2937),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1F2937),
                             ),
                           ),
                         ],
@@ -149,7 +154,9 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                         'Renseignez votre numéro de téléphone pour obtenir votre code de parrainage',
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(12),
-                          color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+                          color: isDark
+                              ? Colors.white70
+                              : const Color(0xFF6B7280),
                         ),
                       ),
                     ],
@@ -179,18 +186,21 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
 
                     try {
                       // Récupérer les infos de parrainage directement avec le numéro de téléphone
-                      final infoResult = await ParrainageService.getInfoParrainage(
-                        _parentTelephoneController.text,
-                      );
+                      final infoResult =
+                          await ParrainageService.getInfoParrainage(
+                            _parentTelephoneController.text,
+                          );
 
                       Navigator.of(context).pop(); // ferme le loader
 
-                      if (infoResult['success'] == true && infoResult['data'] != null) {
+                      if (infoResult['success'] == true &&
+                          infoResult['data'] != null) {
                         Navigator.of(context).pop(); // ferme le bottom sheet
 
                         // Afficher le modal avec le code de parrainage
                         _showParrainageCodeModal(
-                          infoResult['data']['code_parrainage'] ?? 'Non disponible',
+                          infoResult['data']['code_parrainage'] ??
+                              'Non disponible',
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -271,8 +281,9 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                 description: 'Votre code a été généré avec succès',
                 onClose: () => Navigator.of(context).pop(),
                 titleColor: isDark ? Colors.white : const Color(0xFF1F2937),
-                descriptionColor:
-                    isDark ? Colors.white70 : const Color(0xFF6B7280),
+                descriptionColor: isDark
+                    ? Colors.white70
+                    : const Color(0xFF6B7280),
                 titleFontSize: _textSizeService.getScaledFontSize(18),
                 iconSize: 22,
               ),
@@ -307,8 +318,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                           Text(
                             'VOTRE CODE DE PARRAINAGE',
                             style: TextStyle(
-                              fontSize:
-                                  _textSizeService.getScaledFontSize(12),
+                              fontSize: _textSizeService.getScaledFontSize(12),
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF6B7280),
                               letterSpacing: 1.5,
@@ -320,8 +330,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                             codeParrainage,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize:
-                                  _textSizeService.getScaledFontSize(28),
+                              fontSize: _textSizeService.getScaledFontSize(28),
                               fontWeight: FontWeight.w900,
                               color: const Color(0xFF3B82F6),
                               letterSpacing: 4,
@@ -353,8 +362,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
 
   // Méthode pour construire dynamiquement les boutons de partage
   List<Widget> _buildShareButtons(BuildContext context, String codeParrainage) {
-    final downloadLink = defaultTargetPlatform == TargetPlatform.android 
-        ? 'https://play.google.com/store/apps/details?id=com.pouls.mobile'
+    final downloadLink = defaultTargetPlatform == TargetPlatform.android
+        ? 'https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr'
         : 'https://apps.apple.com/app/parent-responsable/id123456789';
 
     final shareButtons = [
@@ -365,9 +374,11 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         iconColor: const Color(0xFF25D366),
         imagePath: 'assets/images/icons/whatsapp.png',
         onTap: () async {
-          final message = 'Salut ! J\'utilise l\'application PARENT RESPONSABLE et je voulais partager mon code de parrainage avec toi : *$codeParrainage*. Télécharge l\'application ici $downloadLink et utilise ce code pour vous inscrire et bénéficier d\'avantages !';
-          final whatsappUrl = 'https://wa.me/?text=${Uri.encodeComponent(message)}';
-          
+          final message =
+              'Salut ! J\'utilise l\'application PARENT RESPONSABLE et je voulais partager mon code de parrainage avec toi : *$codeParrainage*. Télécharge l\'application ici $downloadLink et utilise ce code pour vous inscrire et bénéficier d\'avantages !';
+          final whatsappUrl =
+              'https://wa.me/?text=${Uri.encodeComponent(message)}';
+
           if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
             await launchUrl(
               Uri.parse(whatsappUrl),
@@ -402,9 +413,10 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         icon: Icons.sms_rounded,
         iconColor: const Color(0xFF2196F3),
         onTap: () async {
-          final message = 'Salut ! J\'utilise l\'application Parent responsable et je voulais partager mon code de parrainage avec toi : $codeParrainage. Télécharge l\'application et utilise ce code pour vous inscrire et bénéficier d\'avantages !';
+          final message =
+              'Salut ! J\'utilise l\'application Parent responsable et je voulais partager mon code de parrainage avec toi : $codeParrainage. Télécharge l\'application et utilise ce code pour vous inscrire et bénéficier d\'avantages !';
           final smsUrl = 'sms:?body=${Uri.encodeComponent(message)}';
-          
+
           if (await canLaunchUrl(Uri.parse(smsUrl))) {
             await launchUrl(
               Uri.parse(smsUrl),
@@ -414,7 +426,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
             CartSnackBar.showOverlay(
               context,
               productName: 'Erreur',
-              message: 'L\'application SMS n\'est pas disponible sur cet appareil',
+              message:
+                  'L\'application SMS n\'est pas disponible sur cet appareil',
               backgroundColor: Colors.red[500],
             );
           }
@@ -426,9 +439,11 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         iconColor: const Color(0xFFEA4335),
         onTap: () async {
           final subject = 'Code de parrainage Parent responsable';
-          final body = 'Salut !\n\nJ\'utilise l\'application Parent responsable et je voulais partager mon code de parrainage avec toi : $codeParrainage.\n\nTélécharge l\'application et utilise ce code pour vous inscrire et bénéficier d\'avantages !\n\nLien de téléchargement :\n$downloadLink\n\nÀ bientôt !';
-          final emailUrl = 'mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
-          
+          final body =
+              'Salut !\n\nJ\'utilise l\'application Parent responsable et je voulais partager mon code de parrainage avec toi : $codeParrainage.\n\nTélécharge l\'application et utilise ce code pour vous inscrire et bénéficier d\'avantages !\n\nLien de téléchargement :\n$downloadLink\n\nÀ bientôt !';
+          final emailUrl =
+              'mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
+
           if (await canLaunchUrl(Uri.parse(emailUrl))) {
             await launchUrl(
               Uri.parse(emailUrl),
@@ -438,7 +453,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
             CartSnackBar.showOverlay(
               context,
               productName: 'Erreur',
-              message: 'L\'application email n\'est pas disponible sur cet appareil',
+              message:
+                  'L\'application email n\'est pas disponible sur cet appareil',
               backgroundColor: Colors.red[500],
             );
           }

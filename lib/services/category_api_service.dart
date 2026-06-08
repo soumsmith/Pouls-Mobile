@@ -28,15 +28,20 @@ class CategoryApiService {
       print('   - Body length: ${response.body.length} caractères');
       
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
+        final dynamic decodedResponse = json.decode(response.body);
         
-        if (responseData['status'] == true && responseData['data'] != null) {
-          final List<dynamic> categoriesData = responseData['data'];
-          print('✅ ${categoriesData.length} catégorie(s) récupérée(s)');
-          return categoriesData.map((categoryData) => Category.fromJson(categoryData)).toList();
+        List<dynamic> categoriesData;
+        
+        if (decodedResponse is List) {
+          categoriesData = decodedResponse;
+        } else if (decodedResponse is Map<String, dynamic> && decodedResponse['data'] != null) {
+          categoriesData = decodedResponse['data'];
         } else {
-          throw Exception('API returned status: ${responseData['message'] ?? 'Unknown error'}');
+          throw Exception('Format de réponse API inattendu');
         }
+        
+        print('✅ ${categoriesData.length} catégorie(s) récupérée(s)');
+        return categoriesData.map((categoryData) => Category.fromJson(categoryData)).toList();
       } else {
         throw Exception('HTTP Error: ${response.statusCode} - ${response.reasonPhrase}');
       }

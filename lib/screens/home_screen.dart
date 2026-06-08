@@ -495,6 +495,8 @@ class _HomeScreenState extends State<HomeScreen> {
           (v) => VisiteGuideeVideo(
             typeVideo: v.typevideo,
             youtubeUrl: v.youtubeUrl,
+            code: v.code,
+            etablissement: v.etablissement,
           ),
         )
         .toList();
@@ -1038,13 +1040,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    uiData['date'] as String,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: uiData['color'] as Color,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        uiData['date'] as String,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: uiData['color'] as Color,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (uiData['typebilleterie'] != null && (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini')
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
+                                ? Colors.green.withOpacity(0.1) 
+                                : Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            (uiData['typebilleterie'] as String).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
+                                  ? Colors.green[700] 
+                                  : Colors.orange[700],
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),

@@ -365,8 +365,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isAccessControlBottomSheetOpen = false;
   StateSetter? _accessControlModalSetState;
   bool _accessControlLoaded = false;
-  DateTime _selectedAccessDate = DateTime.now();
-  final TextEditingController _accessDateController = TextEditingController();
+  DateTime _selectedAccessDateDebut = DateTime.now().subtract(const Duration(days: 30));
+  DateTime _selectedAccessDateFin = DateTime.now();
+  final TextEditingController _accessDateDebutController = TextEditingController();
+  final TextEditingController _accessDateFinController = TextEditingController();
 
   // Variables pour les messages
   List<StudentMessage> _studentMessages = [];
@@ -492,15 +494,15 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     _animationController.forward();
 
-    // Init _accessDateController
-    final String initDateStr = 
-        '${_selectedAccessDate.day.toString().padLeft(2, '0')}/'
-        '${_selectedAccessDate.month.toString().padLeft(2, '0')}/'
-        '${_selectedAccessDate.year}';
-    _accessDateController.text = initDateStr;
+    // Init _accessDateDebutController
+    final String initDateDebutStr = 
+        '${_selectedAccessDateDebut.day.toString().padLeft(2, '0')}/'
+        '${_selectedAccessDateDebut.month.toString().padLeft(2, '0')}/'
+        '${_selectedAccessDateDebut.year}';
+    _accessDateDebutController.text = initDateDebutStr;
 
-    _accessDateController.addListener(() {
-      final text = _accessDateController.text;
+    _accessDateDebutController.addListener(() {
+      final text = _accessDateDebutController.text;
       if (text.length == 10) {
         final parts = text.split('/');
         if (parts.length == 3) {
@@ -509,9 +511,38 @@ class _ChildListScreenState extends State<ChildListScreen>
           final year = int.tryParse(parts[2]);
           if (day != null && month != null && year != null) {
             final parsedDate = DateTime(year, month, day);
-            if (parsedDate != _selectedAccessDate) {
+            if (parsedDate != _selectedAccessDateDebut) {
               setState(() {
-                _selectedAccessDate = parsedDate;
+                _selectedAccessDateDebut = parsedDate;
+              });
+              _accessControlModalSetState?.call(() {});
+              _loadAccessControlData(_accessControlModalSetState);
+            }
+          }
+        }
+      }
+    });
+
+    // Init _accessDateFinController
+    final String initDateFinStr = 
+        '${_selectedAccessDateFin.day.toString().padLeft(2, '0')}/'
+        '${_selectedAccessDateFin.month.toString().padLeft(2, '0')}/'
+        '${_selectedAccessDateFin.year}';
+    _accessDateFinController.text = initDateFinStr;
+
+    _accessDateFinController.addListener(() {
+      final text = _accessDateFinController.text;
+      if (text.length == 10) {
+        final parts = text.split('/');
+        if (parts.length == 3) {
+          final day = int.tryParse(parts[0]);
+          final month = int.tryParse(parts[1]);
+          final year = int.tryParse(parts[2]);
+          if (day != null && month != null && year != null) {
+            final parsedDate = DateTime(year, month, day);
+            if (parsedDate != _selectedAccessDateFin) {
+              setState(() {
+                _selectedAccessDateFin = parsedDate;
               });
               _accessControlModalSetState?.call(() {});
               _loadAccessControlData(_accessControlModalSetState);
@@ -535,7 +566,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    _accessDateController.dispose();
+    _accessDateDebutController.dispose();
+    _accessDateFinController.dispose();
     super.dispose();
   }
 
@@ -5807,27 +5839,30 @@ class _ChildListScreenState extends State<ChildListScreen>
       return months[month];
     }
 
-    final String formattedDate =
-        '${_selectedAccessDate.day.toString().padLeft(2, '0')} '
-        '${getMonthName(_selectedAccessDate.month)} '
-        '${_selectedAccessDate.year}';
-
-    final now = DateTime.now();
-    final isToday =
-        _selectedAccessDate.year == now.year &&
-        _selectedAccessDate.month == now.month &&
-        _selectedAccessDate.day == now.day;
-
-    final displayText = isToday ? "Aujourd'hui, $formattedDate" : formattedDate;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
-      child: CustomDateInput(
-        label: 'Date de pointage',
-        hint: 'JJ/MM/AAAA',
-        icon: Icons.edit_calendar_rounded,
-        controller: _accessDateController,
-        inputFormatters: [DateInputFormatter()],
+      child: Row(
+        children: [
+          Expanded(
+            child: CustomDateInput(
+              label: 'Date de début',
+              hint: 'JJ/MM/AAAA',
+              icon: Icons.edit_calendar_rounded,
+              controller: _accessDateDebutController,
+              inputFormatters: [DateInputFormatter()],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: CustomDateInput(
+              label: 'Date de fin',
+              hint: 'JJ/MM/AAAA',
+              icon: Icons.edit_calendar_rounded,
+              controller: _accessDateFinController,
+              inputFormatters: [DateInputFormatter()],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -8315,10 +8350,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         print('✅ Données de l\'école chargées');
       }
 
-      final dateStr =
-          '${_selectedAccessDate.year}-${_selectedAccessDate.month.toString().padLeft(2, '0')}-${_selectedAccessDate.day.toString().padLeft(2, '0')}';
+      final dateDebutStr =
+          '${_selectedAccessDateDebut.year}-${_selectedAccessDateDebut.month.toString().padLeft(2, '0')}-${_selectedAccessDateDebut.day.toString().padLeft(2, '0')}';
+      final dateFinStr =
+          '${_selectedAccessDateFin.year}-${_selectedAccessDateFin.month.toString().padLeft(2, '0')}-${_selectedAccessDateFin.day.toString().padLeft(2, '0')}';
       final entries = await _accessControlService
-          .getAccessControlEntriesForStudent(matricule, date: dateStr);
+          .getAccessControlEntriesForStudent(matricule, dateDebut: dateDebutStr, dateFin: dateFinStr);
       print('✅ Réponse reçue: ${entries.length} pointages');
 
       if (mounted) {

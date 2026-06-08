@@ -50,7 +50,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   List<Map<String, dynamic>> _allEvents = [];
   bool _isLoading = true;
   String? _error;
-  
+
   // Nouveaux filtres API
   final _countryController = TextEditingController();
   final _categoryController = TextEditingController();
@@ -78,7 +78,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     }
     return dateStr;
   }
-  
+
   // Pagination
   int _currentPage = 1;
   bool _hasMore = true;
@@ -160,14 +160,20 @@ class _AllEventsScreenState extends State<AllEventsScreen>
 
     try {
       final response = await EventService.getEvents(
-        page: _currentPage, 
+        page: _currentPage,
         perPage: 16,
-        country: _countryController.text.trim().isNotEmpty ? _countryController.text.trim() : null,
-        categorie: _categoryController.text.trim().isNotEmpty ? _categoryController.text.trim() : null,
-        date: _dateController.text.trim().isNotEmpty ? _getApiFormattedDate(_dateController.text.trim()) : null,
+        country: _countryController.text.trim().isNotEmpty
+            ? _countryController.text.trim()
+            : null,
+        categorie: _categoryController.text.trim().isNotEmpty
+            ? _categoryController.text.trim()
+            : null,
+        date: _dateController.text.trim().isNotEmpty
+            ? _getApiFormattedDate(_dateController.text.trim())
+            : null,
       );
       final newEvents = response.data.map((e) => e.toUiMap()).toList();
-      
+
       setState(() {
         if (loadMore) {
           _allEvents.addAll(newEvents);
@@ -178,7 +184,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
         }
         _hasMore = response.currentPage < response.totalPages;
       });
-      
+
       if (!loadMore) _fadeController.forward(from: 0);
     } catch (e) {
       setState(() {
@@ -236,7 +242,9 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                   IconButton(
                     icon: Icon(
                       Icons.tune_rounded,
-                      color: _showAdvancedFilters ? AppColors.screenOrange : AppColors.screenTextPrimaryThemed(context),
+                      color: _showAdvancedFilters
+                          ? AppColors.screenOrange
+                          : AppColors.screenTextPrimaryThemed(context),
                     ),
                     onPressed: () => setState(() {
                       _showAdvancedFilters = !_showAdvancedFilters;
@@ -308,16 +316,16 @@ class _AllEventsScreenState extends State<AllEventsScreen>
               decoration: BoxDecoration(
                 color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.screenBorder(context),
-                ),
+                border: Border.all(color: AppColors.screenBorder(context)),
                 boxShadow: AppColors.screenCardShadowThemed(context),
               ),
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
                 onChanged: (_) => setState(() {}),
-                style: TextStyle(color: AppColors.screenTextPrimaryThemed(context)),
+                style: TextStyle(
+                  color: AppColors.screenTextPrimaryThemed(context),
+                ),
                 decoration: InputDecoration(
                   hintText: 'Rechercher un événement...',
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -366,9 +374,12 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                       Expanded(
                         child: SearchableDropdown(
                           label: 'Pays',
-                          value: _paysReverseMap[_countryController.text] ?? 'Tous',
+                          value:
+                              _paysReverseMap[_countryController.text] ??
+                              'Tous',
                           items: _countriesList,
-                          isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                          isDarkMode:
+                              Theme.of(context).brightness == Brightness.dark,
                           onChanged: (String val) {
                             setState(() {
                               _countryController.text = _paysMap[val] ?? '';
@@ -410,10 +421,21 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.screenOrange,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                         ),
-                        child: const Text('Appliquer', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Appliquer',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -436,18 +458,10 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   // ── Corps ────────────────────────────────────────────────
   List<Widget> _buildBodySlivers() {
     if (_isLoading) {
-      return [
-        SliverFillRemaining(
-          child: _buildLoadingState(),
-        )
-      ];
+      return [SliverFillRemaining(child: _buildLoadingState())];
     }
     if (_error != null) {
-      return [
-        SliverFillRemaining(
-          child: _buildErrorState(),
-        )
-      ];
+      return [SliverFillRemaining(child: _buildErrorState())];
     }
     return _buildContentSlivers();
   }
@@ -676,10 +690,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                   const SizedBox(height: 8),
                   const Text(
                     'Aucun résultat pour ce filtre',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF999999),
-                    ),
+                    style: TextStyle(fontSize: 13, color: Color(0xFF999999)),
                   ),
                   const SizedBox(height: 24),
                   GestureDetector(
@@ -751,9 +762,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                       event: event,
                       onTap: () {
                         MainScreenWrapper.of(context).navigateToExtraScreen(
-                          EventDetailScreen(
-                            event: Event.fromJson(event),
-                          ),
+                          EventDetailScreen(event: Event.fromJson(event)),
                         );
                       },
                     ),
@@ -763,7 +772,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
             }, childCount: items.length + (_hasMore ? 1 : 0)),
           ),
         ),
-        const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
+      const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
     ];
   }
 
@@ -820,7 +829,9 @@ class _EventCard extends StatelessWidget {
         event['subtitle'] as String? ?? event['establishment'] as String? ?? '';
     final String date = event['date'] as String? ?? '';
     final String status = event['statutevent'] as String? ?? 'en cours';
-    
+    final String typeBilleterie =
+        event['typebilleterie'] as String? ?? 'non_defini';
+
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
@@ -830,7 +841,9 @@ class _EventCard extends StatelessWidget {
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? AppColors.screenBorder(context) : const Color(0xFFF1F1F1),
+            color: isDark
+                ? AppColors.screenBorder(context)
+                : const Color(0xFFF1F1F1),
           ),
           boxShadow: [
             BoxShadow(
@@ -897,7 +910,11 @@ class _EventCard extends StatelessWidget {
                   // Sous-titre (établissement)
                   Row(
                     children: [
-                      Icon(Icons.business, size: 12, color: AppColors.screenTextSecondaryThemed(context)),
+                      Icon(
+                        Icons.business,
+                        size: 12,
+                        color: AppColors.screenTextSecondaryThemed(context),
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -919,36 +936,78 @@ class _EventCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Badge Date
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.calendar_today_rounded, size: 10, color: color),
-                            const SizedBox(width: 4),
-                            Text(
-                              date,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: color,
+                      // Badge Date et Billeterie
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 10,
+                                  color: color,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  date,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (typeBilleterie.toLowerCase() == 'non_defini' ||
+                              typeBilleterie.toLowerCase() == 'payant') ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: typeBilleterie.toLowerCase() == 'gratuit'
+                                    ? Colors.green.withOpacity(0.1)
+                                    : Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                typeBilleterie.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      typeBilleterie.toLowerCase() == 'gratuit'
+                                      ? Colors.green[700]
+                                      : Colors.orange[700],
+                                ),
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                      
+
                       // Statut
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: status.toLowerCase() == 'terminé' 
-                              ? Colors.grey.withOpacity(0.1) 
+                          color: status.toLowerCase() == 'terminé'
+                              ? Colors.grey.withOpacity(0.1)
                               : const Color(0xFF22C55E).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
@@ -957,8 +1016,8 @@ class _EventCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
-                            color: status.toLowerCase() == 'terminé' 
-                                ? Colors.grey 
+                            color: status.toLowerCase() == 'terminé'
+                                ? Colors.grey
                                 : const Color(0xFF22C55E),
                             letterSpacing: 0.5,
                           ),

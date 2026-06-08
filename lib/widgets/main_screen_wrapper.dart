@@ -277,7 +277,12 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             _getCurrentScreen(),
             
           // Fade gradient for bottom content transition
-          const BottomFadeGradient(),
+          if (_getCurrentScreen().runtimeType.toString().contains('VideoFeedScreen'))
+            const BottomFadeGradient(
+              endColor: Colors.black,
+            )
+          else
+            const BottomFadeGradient(),
 
           // Bottom navigation with SafeArea to handle system padding
           Positioned(
@@ -286,10 +291,18 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             right: 0,
             child: SafeArea(
               top: false,
-              child: BottomNav(
-                currentIndex: _currentIndex,
-                onTap: _onTabTapped,
-              ),
+              child: _getCurrentScreen().runtimeType.toString().contains('VideoFeedScreen')
+                  ? Theme(
+                      data: Theme.of(context).copyWith(brightness: Brightness.dark),
+                      child: BottomNav(
+                        currentIndex: _currentIndex,
+                        onTap: _onTabTapped,
+                      ),
+                    )
+                  : BottomNav(
+                      currentIndex: _currentIndex,
+                      onTap: _onTabTapped,
+                    ),
             ),
           ),
         ],

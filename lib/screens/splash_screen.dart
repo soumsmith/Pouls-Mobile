@@ -212,7 +212,7 @@ class _SplashScreenState extends State<SplashScreen>
                         opacity: _showSubtitle ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 800),
                         child: Text(
-                          'Suivi scolaire simplifié',
+                          'Premier réseau social éducatif.',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                 fontSize: AppDimensions.getSplashSubtitleFontSize(context),

@@ -25,32 +25,49 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
   late final ValueNotifier<int> _pageNotifier = ValueNotifier(0);
 
   // Widget PDF construit une seule fois via late final → jamais rebuild → plus de clignotement
-  late final Widget _pdfWidget = SfPdfViewer.network(
-    widget.pdfUrl,
-    key: _pdfViewerKey,
-    onDocumentLoaded: (PdfDocumentLoadedDetails details) {
-      if (!mounted) return;
-      setState(() {
-        totalPages = details.document.pages.count;
-        isLoading = false;
-      });
-    },
-    onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
-      if (!mounted) return;
-      setState(() {
-        errorMessage = details.description;
-        isLoading = false;
-      });
-    },
-    onPageChanged: (PdfPageChangedDetails details) {
-      // ValueNotifier → pas de setState → pas de rebuild du viewer
-      _pageNotifier.value = details.newPageNumber;
-    },
-    canShowScrollHead: true,
-    canShowScrollStatus: true,
-    enableDoubleTapZooming: true,
-    pageLayoutMode: PdfPageLayoutMode.continuous,
-  );
+  late final Widget _pdfWidget = widget.pdfUrl.startsWith('assets/')
+      ? SfPdfViewer.asset(
+          widget.pdfUrl,
+          key: _pdfViewerKey,
+          onDocumentLoaded: _onDocumentLoaded,
+          onDocumentLoadFailed: _onDocumentLoadFailed,
+          onPageChanged: _onPageChanged,
+          canShowScrollHead: true,
+          canShowScrollStatus: true,
+          enableDoubleTapZooming: true,
+          pageLayoutMode: PdfPageLayoutMode.continuous,
+        )
+      : SfPdfViewer.network(
+          widget.pdfUrl,
+          key: _pdfViewerKey,
+          onDocumentLoaded: _onDocumentLoaded,
+          onDocumentLoadFailed: _onDocumentLoadFailed,
+          onPageChanged: _onPageChanged,
+          canShowScrollHead: true,
+          canShowScrollStatus: true,
+          enableDoubleTapZooming: true,
+          pageLayoutMode: PdfPageLayoutMode.continuous,
+        );
+
+  void _onDocumentLoaded(PdfDocumentLoadedDetails details) {
+    if (!mounted) return;
+    setState(() {
+      totalPages = details.document.pages.count;
+      isLoading = false;
+    });
+  }
+
+  void _onDocumentLoadFailed(PdfDocumentLoadFailedDetails details) {
+    if (!mounted) return;
+    setState(() {
+      errorMessage = details.description;
+      isLoading = false;
+    });
+  }
+
+  void _onPageChanged(PdfPageChangedDetails details) {
+    _pageNotifier.value = details.newPageNumber;
+  }
 
   @override
   void dispose() {

@@ -68,10 +68,23 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
+      if (mounted) {
+        final errorString = e.toString();
+        final isNetworkError = errorString.contains('SocketException') || 
+                               errorString.contains('ClientException') ||
+                               errorString.contains('Failed host lookup') ||
+                               errorString.contains('No address associated') ||
+                               errorString.contains('Connection refused') ||
+                               errorString.contains('Network is unreachable') ||
+                               errorString.contains('Software caused connection abort');
+        
+        setState(() {
+          _error = isNetworkError 
+              ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+              : errorString;
+          _isLoading = false;
+        });
+      }
     }
   }
 

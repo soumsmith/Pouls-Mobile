@@ -356,8 +356,14 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       }
     } catch (e) {
       if (mounted) {
+        final errorString = e.toString();
+        final isNetworkError = errorString.contains('SocketException') || 
+                               errorString.contains('ClientException') ||
+                               errorString.contains('Failed host lookup');
         setState(() {
-          _videoError = e.toString();
+          _videoError = isNetworkError 
+              ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+              : 'Une erreur est survenue lors du chargement des vidéos.';
           _isLoadingVideos = false;
         });
       }
@@ -438,8 +444,14 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       }
     } catch (e) {
       if (mounted) {
+        final errorString = e.toString();
+        final isNetworkError = errorString.contains('SocketException') || 
+                               errorString.contains('ClientException') ||
+                               errorString.contains('Failed host lookup');
         setState(() {
-          _error = e.toString();
+          _error = isNetworkError 
+              ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+              : 'Une erreur est survenue lors du chargement des écoles.';
           _isLoading = false;
         });
       }

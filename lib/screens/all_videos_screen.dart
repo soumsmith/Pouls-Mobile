@@ -189,45 +189,61 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                     ),
                   ),
                 )
-              else if (_error != null)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Erreur de chargement',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[600],
+              else if (_error != null) 
+                (() {
+                  final isNetworkError = _error!.contains('SocketException') || 
+                                         _error!.contains('ClientException') ||
+                                         _error!.contains('Failed host lookup') ||
+                                         _error!.contains('No address associated') ||
+                                         _error!.contains('Connection refused') ||
+                                         _error!.contains('Network is unreachable') ||
+                                         _error!.contains('Software caused connection abort');
+                                         
+                  final errorMessage = isNetworkError 
+                      ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+                      : _error!;
+                      
+                  return SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline,
+                            size: 64,
+                            color: isNetworkError ? Colors.red : Colors.grey[400],
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _error!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
+                          const SizedBox(height: 16),
+                          Text(
+                            isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[600],
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _loadVideos,
-                          child: const Text('Réessayer'),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Text(
+                              errorMessage,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: _loadVideos,
+                            child: const Text('Réessayer'),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                )
-              else if (_filteredVideos.isEmpty)
+                  );
+                })() else if (_filteredVideos.isEmpty)
                 SliverFillRemaining(
                   child: Center(
                     child: Column(

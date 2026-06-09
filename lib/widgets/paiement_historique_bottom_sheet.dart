@@ -174,12 +174,27 @@ class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueShee
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              snapshot.error.toString(),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                               ),
-                              textAlign: TextAlign.center,
+                            Builder(
+                              builder: (context) {
+                                final errorString = snapshot.error.toString();
+                                final isNetworkError = errorString.contains('SocketException') || 
+                                                       errorString.contains('ClientException') ||
+                                                       errorString.contains('Failed host lookup') ||
+                                                       errorString.contains('No address associated') ||
+                                                       errorString.contains('Connection refused') ||
+                                                       errorString.contains('Network is unreachable') ||
+                                                       errorString.contains('Software caused connection abort');
+                                final displayError = isNetworkError 
+                                    ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+                                    : errorString.replaceAll('Exception: ', '');
+                                return Text(
+                                  displayError,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                );
+                              }
                             ),
                             const SizedBox(height: 24),
                             ElevatedButton.icon(

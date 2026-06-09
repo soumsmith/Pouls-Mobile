@@ -207,7 +207,19 @@ class _MessagesScreenState extends State<MessagesScreen>
         _isLoadingChildren = false;
         _isLoading = false;
       });
-      _showError('Erreur chargement enfants: $e');
+      
+      final errorString = e.toString();
+      final isNetworkError = errorString.contains('SocketException') || 
+                             errorString.contains('ClientException') ||
+                             errorString.contains('Failed host lookup') ||
+                             errorString.contains('No address associated') ||
+                             errorString.contains('Connection refused') ||
+                             errorString.contains('Network is unreachable') ||
+                             errorString.contains('Software caused connection abort');
+                             
+      if (!isNetworkError) {
+        _showError('Erreur chargement enfants: $errorString');
+      }
     }
   }
 
@@ -295,7 +307,19 @@ class _MessagesScreenState extends State<MessagesScreen>
       }
 
       setState(() => _isLoading = false);
-      _showError('Erreur chargement: $e');
+      
+      final errorString = e.toString();
+      final isNetworkError = errorString.contains('SocketException') || 
+                             errorString.contains('ClientException') ||
+                             errorString.contains('Failed host lookup') ||
+                             errorString.contains('No address associated') ||
+                             errorString.contains('Connection refused') ||
+                             errorString.contains('Network is unreachable') ||
+                             errorString.contains('Software caused connection abort');
+                             
+      if (!isNetworkError) {
+        _showError('Erreur chargement: $errorString');
+      }
     }
   }
 
@@ -319,14 +343,19 @@ class _MessagesScreenState extends State<MessagesScreen>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
+        content: Text(
+          msg, 
+          style: const TextStyle(color: Colors.white),
+          maxLines: 5,
+          overflow: TextOverflow.ellipsis,
+        ),
         backgroundColor: Colors.red[400],
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.only(
           left: 16,
           right: 16,
-          bottom: MediaQuery.of(context).padding.bottom + 100,
+          bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 10,
         ),
       ),
     );
@@ -1335,7 +1364,12 @@ class _MessagesScreenState extends State<MessagesScreen>
       });
       setState(() => _isRecording = true);
     } catch (e) {
-      _showError('Erreur micro: $e');
+      final errorString = e.toString();
+      if (errorString.contains('objective_c') || errorString.contains('DOBJC_initializeApi')) {
+        _showError('Le micro n\'est pas disponible sur le simulateur iOS. Veuillez tester sur un appareil physique.');
+      } else {
+        _showError('Erreur micro: $e');
+      }
     }
   }
 

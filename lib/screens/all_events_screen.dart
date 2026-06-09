@@ -501,6 +501,18 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   }
 
   Widget _buildErrorState() {
+    final isNetworkError = _error!.contains('SocketException') || 
+                           _error!.contains('ClientException') ||
+                           _error!.contains('Failed host lookup') ||
+                           _error!.contains('No address associated') ||
+                           _error!.contains('Connection refused') ||
+                           _error!.contains('Network is unreachable') ||
+                           _error!.contains('Software caused connection abort');
+                           
+    final errorMessage = isNetworkError 
+        ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+        : _error!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -514,16 +526,16 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                 color: const Color(0xFFFFECEC),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
-                Icons.error_outline_rounded,
+              child: Icon(
+                isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
                 size: 36,
-                color: Color(0xFFEF4444),
+                color: const Color(0xFFEF4444),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Erreur de chargement',
-              style: TextStyle(
+            Text(
+              isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1A1A1A),
@@ -531,7 +543,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              _error!,
+              errorMessage,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, color: Color(0xFF999999)),
             ),

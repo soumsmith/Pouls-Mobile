@@ -123,14 +123,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
       final ecoles = await _poulsApiService.getAllEcoles();
       if (mounted) setState(() => _ecoles = ecoles);
     } catch (e) {
-      if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Erreur',
-          message: 'de chargement des écoles : ${e.toString()}',
-          backgroundColor: Colors.red,
-        );
-      }
+      debugPrint('Error loading ecoles: $e');
     } finally {
       if (mounted) setState(() => _isLoadingEcoles = false);
     }
@@ -252,12 +245,22 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
       }
     } catch (e) {
       if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Erreur',
-          message: 'lors de l\'inscription : $e',
-          backgroundColor: Colors.red,
-        );
+        final errorString = e.toString();
+        final isNetworkError = errorString.contains('SocketException') || 
+                               errorString.contains('ClientException') ||
+                               errorString.contains('Failed host lookup') ||
+                               errorString.contains('No address associated') ||
+                               errorString.contains('Connection refused') ||
+                               errorString.contains('Network is unreachable') ||
+                               errorString.contains('Software caused connection abort');
+        if (!isNetworkError) {
+          CartSnackBar.showOverlay(
+            context,
+            productName: 'Erreur',
+            message: 'lors de l\'inscription',
+            backgroundColor: Colors.red,
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoadingInscription = false);

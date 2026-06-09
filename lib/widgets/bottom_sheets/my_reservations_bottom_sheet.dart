@@ -93,8 +93,17 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
             _error = null; // Pas d'erreur, juste pas de réservation
           });
         } else {
+          final isNetworkError = errorString.contains('SocketException') || 
+                                 errorString.contains('ClientException') ||
+                                 errorString.contains('Failed host lookup') ||
+                                 errorString.contains('No address associated') ||
+                                 errorString.contains('Connection refused') ||
+                                 errorString.contains('Network is unreachable') ||
+                                 errorString.contains('Software caused connection abort');
           setState(() {
-            _error = errorString.replaceAll('Exception: ', '');
+            _error = isNetworkError 
+                ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+                : errorString.replaceAll('Exception: ', '');
             _isLoading = false;
           });
         }

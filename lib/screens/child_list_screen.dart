@@ -1186,6 +1186,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     // Reset pour permettre un rechargement propre à chaque ouverture
     _bulletins = null;
     _isLoadingBulletins = false;
+    bool hasAttemptedLoad = false;
 
     showModalBottomSheet(
       context: context,
@@ -1196,12 +1197,11 @@ class _ChildListScreenState extends State<ChildListScreen>
           _bulletinsModalSetState = setModalState;
 
           // Déclencher le chargement une seule fois
-          if (_bulletins == null && !_isLoadingBulletins) {
+          if (!hasAttemptedLoad) {
+            hasAttemptedLoad = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_bulletins == null && !_isLoadingBulletins) {
-                _loadBulletins(setModalState);
-                _loadBulletinsSchoolYears(setModalState);
-              }
+              _loadBulletins(setModalState);
+              _loadBulletinsSchoolYears(setModalState);
             });
           }
 
@@ -9064,7 +9064,10 @@ class _ChildListScreenState extends State<ChildListScreen>
         '🔧 DEBUG: État mis à jour - _isLoadingBulletins: $_isLoadingBulletins, _bulletins: ${_bulletins?.length}',
       );
     } catch (e) {
-      updateState(() => _isLoadingBulletins = false);
+      updateState(() {
+        _bulletins = []; // Set to empty to avoid infinite loop
+        _isLoadingBulletins = false;
+      });
       print('❌ Erreur lors du chargement des bulletins: $e');
     }
   }
@@ -9345,6 +9348,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildBulletinsEmptyState() {
     final isDarkMode = _themeService.isDarkMode;
+    
+    // Check if it's likely a network error based on the empty state with no years loaded
+    final isNetworkError = _bulletinsSchoolYears.isEmpty;
 
     return Container(
       padding: const EdgeInsets.all(32),
@@ -9355,19 +9361,19 @@ class _ChildListScreenState extends State<ChildListScreen>
             height: 80,
             decoration: BoxDecoration(
               color: isDarkMode
-                  ? const Color(0xFF8B4513)
-                  : AppColors.screenOrangeLight,
+                  ? (isNetworkError ? const Color(0xFF8B0000) : const Color(0xFF8B4513))
+                  : (isNetworkError ? Colors.red[100] : AppColors.screenOrangeLight),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.description_outlined,
+              isNetworkError ? Icons.wifi_off_rounded : Icons.description_outlined,
               size: 40,
-              color: AppColors.screenOrange,
+              color: isNetworkError ? Colors.red : AppColors.screenOrange,
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Aucun bulletin disponible',
+            isNetworkError ? 'Erreur de connexion' : 'Aucun bulletin disponible',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -9376,7 +9382,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Les bulletins ne sont pas encore disponibles pour cette période scolaire.',
+            isNetworkError 
+                ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+                : 'Les bulletins ne sont pas encore disponibles pour cette période scolaire.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -9385,8 +9393,14 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           const SizedBox(height: 24),
           SubtleRetryButtonWithText(
-            onTap: _loadBulletins,
-            color: AppColors.screenOrange,
+            onTap: () {
+              setState(() {
+                _bulletins = null;
+              });
+              _loadBulletins();
+              _loadBulletinsSchoolYears();
+            },
+            color: isNetworkError ? Colors.red : AppColors.screenOrange,
           ),
         ],
       ),

@@ -6,6 +6,10 @@ import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
+import 'add_child_screen.dart';
+import 'pdf_viewer_screen.dart';
+import 'visite_guidee_video_feed_screen.dart';
+import '../models/visite_guidee_video.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -226,18 +230,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
         'icon': Icons.child_care_outlined,
         'color': AppColors.screenOrange,
       },
-      {
-        'title': 'Paiements',
-        'subtitle': 'Gérer les frais scolaires',
-        'icon': Icons.payment_outlined,
-        'color': const Color(0xFFF59E0B),
-      },
-      {
-        'title': 'Notifications',
-        'subtitle': 'Configurer les alertes',
-        'icon': Icons.notifications_outlined,
-        'color': const Color(0xFF3B82F6),
-      },
     ];
 
     return TweenAnimationBuilder<double>(
@@ -268,7 +260,20 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               final card = cards[index];
               final color = card['color'] as Color;
               return GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  if (card['title'] == 'Ajouter un enfant') {
+                    MainScreenWrapper.of(context).navigateToExtraScreen(const AddChildScreen());
+                  } else if (card['title'] == 'Premiers pas') {
+                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                      const PDFViewerScreen(
+                        pdfUrl: 'assets/document/guide-complet.pdf',
+                        title: 'Guide Complet',
+                      ),
+                    );
+                  } else {
+                    _showSnack('Ouverture de ${card['title']}...');
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -524,13 +529,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   Widget _buildContactSection() {
     final contacts = [
       {
-        'title': 'Support par Chat',
-        'subtitle': 'Discutez avec notre équipe',
-        'icon': Icons.chat_bubble_outline,
-        'color': const Color(0xFF4CAF50),
-        'action': 'chat',
-      },
-      {
         'title': 'Support par Email',
         'subtitle': 'support@ecole-app.com',
         'icon': Icons.email_outlined,
@@ -681,12 +679,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
         'icon': Icons.video_library_outlined,
         'color': const Color(0xFFF44336),
       },
-      {
-        'title': 'Blog',
-        'subtitle': 'Actualités et conseils',
-        'icon': Icons.article_outlined,
-        'color': const Color(0xFF00BCD4),
-      },
     ];
 
     return TweenAnimationBuilder<double>(
@@ -718,7 +710,34 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                     offset: Offset(0, 15 * (1 - value)), child: child),
               ),
               child: GestureDetector(
-                onTap: () => _showSnack('Ouverture de ${r['title']}...'),
+                onTap: () {
+                  if (r['title'] == 'Guide Complet') {
+                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                      const PDFViewerScreen(
+                        pdfUrl: 'assets/document/guide-complet.pdf',
+                        title: 'Guide Complet',
+                      ),
+                    );
+                  } else if (r['title'] == 'Vidéos Tutoriel') {
+                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                      VisiteGuideeVideoFeedScreen(
+                        videos: [
+                          VisiteGuideeVideo(
+                            id: 1,
+                            typeVideo: 'tutoriel',
+                            youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // URL générique
+                            title: 'Tutoriel complet',
+                            description: 'Apprenez à utiliser l\'application étape par étape',
+                            code: 'app',
+                            etablissement: 'Pouls Scolaire',
+                          )
+                        ],
+                      ),
+                    );
+                  } else {
+                    _showSnack('Ouverture de ${r['title']}...');
+                  }
+                },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(16),

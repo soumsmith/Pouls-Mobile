@@ -101,19 +101,32 @@ class _GalleryScreenState extends State<GalleryScreen> {
     }
 
     if (_error != null) {
+      final isNetworkError = _error!.contains('SocketException') || 
+                             _error!.contains('ClientException') ||
+                             _error!.contains('Failed host lookup') ||
+                             _error!.contains('No address associated') ||
+                             _error!.contains('Connection refused') ||
+                             _error!.contains('Network is unreachable') ||
+                             _error!.contains('Software caused connection abort');
+                             
+      final errorMessage = isNetworkError 
+          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+          : _error!;
+          
       return [
         SliverFillRemaining(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.error_outline,
+                Icon(
+                  isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline,
                   size: 48,
+                  color: isNetworkError ? Colors.red : null,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Erreur de chargement',
+                  isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -121,13 +134,16 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  _error!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    errorMessage,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(

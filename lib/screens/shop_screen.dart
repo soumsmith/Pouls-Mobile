@@ -194,11 +194,25 @@ class _LibraryScreenState extends State<LibraryScreen>
       }
     } catch (e) {
       if (mounted) {
+        final errorString = e.toString();
+        final isNetworkError = errorString.contains('SocketException') || 
+                               errorString.contains('ClientException') ||
+                               errorString.contains('Failed host lookup') ||
+                               errorString.contains('No address associated') ||
+                               errorString.contains('Connection refused') ||
+                               errorString.contains('Network is unreachable') ||
+                               errorString.contains('Software caused connection abort');
+        
         setState(() {
-          _error = e.toString();
+          _error = isNetworkError 
+              ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+              : 'Une erreur est survenue lors du chargement des produits.';
           _isLoading = false;
         });
-        _showError('Erreur lors du chargement des produits: $e');
+        
+        if (!isNetworkError) {
+          _showError('Erreur lors du chargement des produits: $e');
+        }
       }
     }
   }
@@ -243,8 +257,18 @@ class _LibraryScreenState extends State<LibraryScreen>
       }
     } catch (e) {
       if (mounted) {
+        final errorString = e.toString();
+        final isNetworkError = errorString.contains('SocketException') || 
+                               errorString.contains('ClientException') ||
+                               errorString.contains('Failed host lookup') ||
+                               errorString.contains('No address associated') ||
+                               errorString.contains('Connection refused') ||
+                               errorString.contains('Network is unreachable') ||
+                               errorString.contains('Software caused connection abort');
         setState(() {
-          _categoryError = e.toString();
+          _categoryError = isNetworkError 
+              ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+              : 'Une erreur est survenue lors du chargement des catégories.';
           _isLoadingCategories = false;
         });
       }

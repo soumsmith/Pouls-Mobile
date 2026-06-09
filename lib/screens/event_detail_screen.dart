@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../models/event.dart';
 import '../models/event_rating_comment.dart';
 import '../models/ecole.dart';
@@ -309,40 +314,34 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _ActionIcon(
-            icon: Icons.rate_review_rounded,
-            label: 'Avis',
-            bgColor: _AppColors.rose,
-            iconColor: Colors.white,
-            onTap: _showAddCommentDialog,
+          Expanded(
+            child: CustomButton(
+              icon: Icons.rate_review_rounded,
+              text: 'Avis',
+              color: _AppColors.rose,
+              isLight: true,
+              onPressed: _showAddCommentDialog,
+            ),
           ),
-          _ActionIcon(
-            icon: Icons.share_rounded,
-            label: 'Partager',
-            bgColor: _AppColors.indigo,
-            iconColor: Colors.white,
-            onTap: _showShareMenu,
+          const SizedBox(width: 12),
+          Expanded(
+            child: CustomButton(
+              icon: Icons.share_rounded,
+              text: 'Partager',
+              color: _AppColors.indigo,
+              isLight: true,
+              onPressed: _showShareMenu,
+            ),
           ),
-          _ActionIcon(
-            icon: Icons.phone_rounded,
-            label: 'Contacter',
-            bgColor: _AppColors.emerald,
-            iconColor: Colors.white,
-            onTap: _contactSchool,
-          ),
-          _ActionIcon(
-            icon: Icons.account_balance_rounded,
-            label: 'École',
-            bgColor: _AppColors.amber,
-            iconColor: Colors.white,
-            onTap: _visitSchool,
-          ),
-          _ActionIcon(
-            icon: Icons.calendar_month_rounded,
-            label: 'Agenda',
-            bgColor: isDark ? const Color(0xFF333333) : _AppColors.slate900,
-            iconColor: Colors.white,
-            onTap: _addToCalendar,
+          const SizedBox(width: 12),
+          Expanded(
+            child: CustomButton(
+              icon: Icons.account_balance_rounded,
+              text: 'École',
+              color: _AppColors.amber,
+              isLight: true,
+              onPressed: _visitSchool,
+            ),
           ),
         ],
       ),
@@ -890,7 +889,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 🏫 ${widget.event.nomecole}
 
 ${widget.event.content}
-
+${widget.event.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${widget.event.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d'événements sur notre application! 📱
 ''',
       ),
@@ -1155,7 +1154,7 @@ class _HeroBanner extends StatelessWidget {
 🏫 ${event.nomecole}
 
 ${event.content}
-
+${event.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${event.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d'événements sur notre application! 📱
 ''',
                     ),
@@ -1221,36 +1220,67 @@ Découvrez plus d'événements sur notre application! 📱
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Badge type
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: typeColor.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.local_fire_department_rounded,
-                      size: 13,
-                      color: Colors.white,
+              // Badges (Type + Billeterie)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      uiData['type'] as String,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.3,
+                    decoration: BoxDecoration(
+                      color: typeColor.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          uiData['type'] as String,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (event.typebilleterie != null && 
+                      event.typebilleterie!.isNotEmpty && 
+                      event.typebilleterie!.toLowerCase() != 'non_defini') ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: event.typebilleterie!.toLowerCase() == 'gratuit'
+                            ? Colors.green.withOpacity(0.9)
+                            : Colors.orange.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        event.typebilleterie!.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
               const SizedBox(height: 10),
               // Titre
@@ -1362,35 +1392,34 @@ class _ActionIcon extends StatelessWidget {
         HapticFeedback.lightImpact();
         onTap();
       },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: bgColor.withOpacity(0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: bgColor.withOpacity(0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: AppColors.screenTextSecondaryThemed(context),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: iconColor,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

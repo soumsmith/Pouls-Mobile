@@ -230,9 +230,9 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
       index: widget.videos.indexOf(video),
       cardKey: 'visite_${video.youtubeVideoId}_${widget.videos.indexOf(video)}',
       title: video.title,
-      subtitle: video.createdAt.isNotEmpty
-          ? video.createdAt
-          : video.description,
+      subtitle: video.etablissement.isNotEmpty
+          ? video.etablissement
+          : (video.createdAt.isNotEmpty ? video.createdAt : video.description),
       imagePath: video.youtubeVideoId.isNotEmpty
           ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
           : null,
@@ -245,6 +245,7 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
       centerTitle: false,
       allowLineBreak: true,
       titleMaxLines: 2,
+      showPlayIcon: true,
       onTap: () => _handleVideoAction(context, video),
     );
   }

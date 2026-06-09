@@ -60,4 +60,24 @@ class CategoryApiService {
       throw Exception('Failed to load categories by type: $e');
     }
   }
+
+  static Future<List<String>> getEventBlogCategories() async {
+    try {
+      final uri = Uri.parse('https://api-africa.vie-ecoles.com/api/africa/categories/evenement-blog');
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final dynamic decodedResponse = json.decode(response.body);
+        if (decodedResponse is Map<String, dynamic> && decodedResponse['data'] != null) {
+          final List<dynamic> data = decodedResponse['data'];
+          return data.map((e) => e['name'].toString()).toList();
+        }
+        return [];
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching event blog categories: $e');
+      return [];
+    }
+  }
 }

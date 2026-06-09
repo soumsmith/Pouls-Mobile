@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../models/blog.dart';
 import '../models/ecole.dart';
 import '../config/app_colors.dart';
@@ -102,7 +105,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
 🏫 ${widget.blog.nomecole}
 
 ${widget.blog.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
-
+${widget.blog.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${widget.blog.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d\'actualités sur notre application! 📱
 ''',
       ),
@@ -304,40 +307,46 @@ Découvrez plus d\'actualités sur notre application! 📱
   // ── Action Bar ──────────────────────────────
   Widget _buildActionBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final itemWidth = (MediaQuery.of(context).size.width - 40 - 12) / 2;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
         children: [
-          _ActionIcon(
+          CustomButton(
+            width: itemWidth,
             icon: Icons.share_rounded,
-            label: 'Partager',
-            bgColor: _C.indigo,
-            iconColor: _C.white,
-            onTap: _showShareMenu,
+            text: 'Partager',
+            color: _C.indigo,
+            isLight: true,
+            onPressed: _showShareMenu,
           ),
-          _ActionIcon(
+          CustomButton(
+            width: itemWidth,
             icon: _isBookmarked
                 ? Icons.bookmark_rounded
                 : Icons.bookmark_border_rounded,
-            label: _isBookmarked ? 'Enregistré' : 'Enregistrer',
-            bgColor: _C.amber,
-            iconColor: _C.white,
-            onTap: _toggleBookmark,
+            text: _isBookmarked ? 'Enregistré' : 'Enregistrer',
+            color: _C.amber,
+            isLight: true,
+            onPressed: _toggleBookmark,
           ),
-          _ActionIcon(
+          CustomButton(
+            width: itemWidth,
             icon: Icons.chat_bubble_outline_rounded,
-            label: 'Commenter',
-            bgColor: _C.emerald,
-            iconColor: _C.white,
-            onTap: _scrollToComments,
+            text: 'Commenter',
+            color: _C.emerald,
+            isLight: true,
+            onPressed: _scrollToComments,
           ),
-          _ActionIcon(
+          CustomButton(
+            width: itemWidth,
             icon: Icons.school_rounded,
-            label: 'École',
-            bgColor: isDark ? const Color(0xFF333333) : _C.slate900,
-            iconColor: _C.white,
-            onTap: _visitSchool,
+            text: 'École',
+            color: isDark ? const Color(0xFF333333) : _C.slate900,
+            isLight: true,
+            onPressed: _visitSchool,
           ),
         ],
       ),
@@ -859,7 +868,7 @@ class _HeroBanner extends StatelessWidget {
 🏫 ${blog.nomecole}
 
 ${blog.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
-
+${blog.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${blog.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d\'actualités sur notre application! 📱
 ''',
                     ),
@@ -1073,35 +1082,34 @@ class _ActionIcon extends StatelessWidget {
         HapticFeedback.lightImpact();
         onTap();
       },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: bgColor.withOpacity(0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: bgColor.withOpacity(0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: AppColors.screenTextSecondaryThemed(context),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: iconColor,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -10,6 +10,7 @@ class Blog {
   final String publishedAt;
   final String? image;
   final String? auteur;
+  final String? liendetailblog;
 
   Blog({
     required this.slug,
@@ -21,6 +22,7 @@ class Blog {
     required this.publishedAt,
     this.image,
     this.auteur,
+    this.liendetailblog,
   });
 
   factory Blog.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class Blog {
       publishedAt: json['published_at']?.toString() ?? '',
       image: json['image']?.toString(),
       auteur: json['auteur']?.toString(),
+      liendetailblog: json['liendetailblog']?.toString(),
     );
   }
 
@@ -48,6 +51,7 @@ class Blog {
       'published_at': publishedAt,
       'image': image,
       'auteur': auteur,
+      'liendetailblog': liendetailblog,
     };
   }
 
@@ -75,6 +79,7 @@ class Blog {
       'content': content,
       'auteur': auteur ?? 'Administration',
       'categories': categories,
+      'liendetailblog': liendetailblog,
     };
   }
 

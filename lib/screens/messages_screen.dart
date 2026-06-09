@@ -18,6 +18,8 @@ import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
+import '../widgets/custom_button.dart';
+import 'add_child_screen.dart';
 
 // ─── ENUM : types de pièce jointe ────────────────────────────────────────────
 enum AttachmentType { none, image, audio, document }
@@ -644,41 +646,58 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   Widget _buildEmptyChildrenList() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0288D1).withOpacity(0.1),
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0288D1).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.child_care,
+                size: 36,
+                color: Color(0xFF0288D1),
+              ),
             ),
-            child: const Icon(
-              Icons.child_care,
-              size: 36,
-              color: Color(0xFF0288D1),
+            const SizedBox(height: 16),
+            Text(
+              'Aucun enfant',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.screenTextPrimaryThemed(context),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Aucun enfant',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimaryThemed(context),
+            const SizedBox(height: 6),
+            Text(
+              'Ajoutez un enfant pour commencer à envoyer des messages',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Ajoutez un enfant pour commencer à envoyer des messages',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondaryThemed(context),
+            const SizedBox(height: 32),
+            CustomButton(
+              width: 220,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AddChildScreen()),
+                );
+              },
+              text: 'Ajouter un enfant',
+              icon: Icons.add_circle_outline_rounded,
+              backgroundColor: const Color(0xFF0288D1),
+              textColor: Colors.white,
+              borderRadius: BorderRadius.circular(12),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

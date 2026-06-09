@@ -251,6 +251,18 @@ class EventService {
     }
   }
 
+  /// Filtre les événements par catégorie
+  static List<Map<String, dynamic>> filterEventsByCategory(
+    List<Map<String, dynamic>> events,
+    String category,
+  ) {
+    if (category == 'Tous') return events;
+
+    return events.where((event) {
+      return (event['type'] as String).toLowerCase() == category.toLowerCase();
+    }).toList();
+  }
+
   /// Helper pour obtenir le nom du mois
   static String _getMonthName(int month) {
     const months = [

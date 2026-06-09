@@ -12,6 +12,8 @@ class CustomButton extends StatelessWidget {
   final double? width;
   final BorderRadius? borderRadius;
   final EdgeInsets? padding;
+  final IconData? icon;
+  final BorderSide? border;
 
   const CustomButton({
     super.key,
@@ -24,6 +26,8 @@ class CustomButton extends StatelessWidget {
     this.width,
     this.borderRadius,
     this.padding,
+    this.icon,
+    this.border,
   });
 
   @override
@@ -41,6 +45,7 @@ class CustomButton extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: borderRadius ?? BorderRadius.circular(isTablet ? 20.0 : 16.0),
+            side: border ?? BorderSide.none,
           ),
           padding: padding ?? EdgeInsets.symmetric(
             horizontal: isTablet ? 24.0 : 20.0,
@@ -58,11 +63,21 @@ class CustomButton extends StatelessWidget {
                   ),
                 ),
               )
-            : Text(
-                text,
-                style: AppTypography.buttonText.copyWith(
-                  color: textColor ?? Colors.white,
-                ),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: textColor ?? Colors.white, size: isTablet ? 24.0 : 20.0),
+                    SizedBox(width: 8),
+                  ],
+                  Text(
+                    text,
+                    style: AppTypography.buttonText.copyWith(
+                      color: textColor ?? Colors.white,
+                    ),
+                  ),
+                ],
               ),
       ),
     );

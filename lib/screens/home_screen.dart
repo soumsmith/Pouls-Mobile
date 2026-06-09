@@ -113,6 +113,109 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+class _AnimatedEmptyChildrenMessage extends StatefulWidget {
+  const _AnimatedEmptyChildrenMessage({super.key});
+
+  @override
+  State<_AnimatedEmptyChildrenMessage> createState() => _AnimatedEmptyChildrenMessageState();
+}
+
+class _AnimatedEmptyChildrenMessageState extends State<_AnimatedEmptyChildrenMessage> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    
+    _animation = Tween<double>(begin: 0.0, end: 10.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Aucun enfant pour le moment',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: AppDimensions.getChildNameTextSize(context) + 1,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Commencez à suivre leur parcours',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: AppDimensions.getChildNameTextSize(context) - 1,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Transform.translate(
+                offset: Offset(_animation.value, 0),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _HomeScreenState extends State<HomeScreen> {
   List<Child> _children = [];
   List<Child> _filteredChildren = [];
@@ -502,23 +605,18 @@ class _HomeScreenState extends State<HomeScreen> {
         .toList();
 
     // Naviguer vers l'écran de visualisation des vidéos
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VisiteGuideeVideoFeedScreen(
-          videos: visiteVideos,
-          initialIndex: videoIndex >= 0 ? videoIndex : 0,
-        ),
+    MainScreenWrapper.of(context).navigateToExtraScreen(
+      VisiteGuideeVideoFeedScreen(
+        videos: visiteVideos,
+        initialIndex: videoIndex >= 0 ? videoIndex : 0,
       ),
     );
   }
 
   // Gérer l'action "Voir+" pour les vidéos de visite guidée
   void _handleSeeMoreVisiteGuidee() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos),
-      ),
+    MainScreenWrapper.of(context).navigateToExtraScreen(
+      AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos),
     );
   }
 
@@ -1407,13 +1505,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (videoIndex != -1) {
-      // Naviguer vers l'écran de lecture vidéo
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => CoulisseVideoFeedScreen(
-            videos: _coulisseVideos,
-            initialIndex: videoIndex,
-          ),
+      // Naviguer vers l'écran de lecture vidéo en gardant la bottom nav
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        CoulisseVideoFeedScreen(
+          videos: _coulisseVideos,
+          initialIndex: videoIndex,
         ),
       );
     } else {
@@ -2419,17 +2515,19 @@ class _HomeScreenState extends State<HomeScreen> {
           height: AppDimensions.getChildImageSize(context) + 48,
           child: Row(
             children: [
-              // ── Liste scrollable des enfants ──
+              // ── Liste scrollable des enfants ou message vide ──
               Expanded(
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 4, 0),
-                  children: _filteredChildren
-                      .asMap()
-                      .entries
-                      .map((e) => _buildChildAvatar(e.value, e.key))
-                      .toList(),
-                ),
+                child: _filteredChildren.isEmpty && !_isLoading
+                    ? const _AnimatedEmptyChildrenMessage()
+                    : ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(20, 0, 4, 0),
+                        children: _filteredChildren
+                            .asMap()
+                            .entries
+                            .map((e) => _buildChildAvatar(e.value, e.key))
+                            .toList(),
+                      ),
               ),
               // ── Séparateur vertical ──
               // Container(

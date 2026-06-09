@@ -13,6 +13,7 @@ class Event {
   final String publishedAt;
   final String? image;
   final String? typebilleterie;
+  final String? liendetailblog;
 
   Event({
     this.id,
@@ -27,6 +28,7 @@ class Event {
     required this.publishedAt,
     this.image,
     this.typebilleterie,
+    this.liendetailblog,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class Event {
           json['published_at'] as String? ?? DateTime.now().toIso8601String(),
       image: json['image'] as String?,
       typebilleterie: json['typebilleterie'] as String?,
+      liendetailblog: json['liendetailblog'] as String?,
     );
   }
 
@@ -61,6 +64,7 @@ class Event {
       'published_at': publishedAt,
       'image': image,
       'typebilleterie': typebilleterie,
+      'liendetailblog': liendetailblog,
     };
   }
 
@@ -104,6 +108,7 @@ class Event {
       'statutevent': statutevent,
       'published_at': publishedAt,
       'typebilleterie': typebilleterie,
+      'liendetailblog': liendetailblog,
     };
   }
 

@@ -7,9 +7,19 @@ class GestionPresenceEleveService {
     String ecoleCode, {
     String? date,
     String? type,
+    String? dateDebut,
+    String? dateFin,
   }) async {
-    print('📡 Chargement présence/absence: matricule=$matricule, ecole=$ecoleCode, date=$date, type=$type');
-    var endpoint = '/vie-ecoles/gestion-presence-eleve/$matricule?ecole=$ecoleCode';
+    print('📡 Chargement présence/absence: matricule=$matricule, ecole=$ecoleCode, date=$date, type=$type, date_debut=$dateDebut, date_fin=$dateFin');
+    
+    // Default dates if none provided: last month to today
+    final now = DateTime.now();
+    final oneMonthAgo = DateTime(now.year, now.month - 1, now.day);
+    final String effectiveDateDebut = dateDebut ?? '${oneMonthAgo.year}-${oneMonthAgo.month.toString().padLeft(2, '0')}-${oneMonthAgo.day.toString().padLeft(2, '0')}';
+    final String effectiveDateFin = dateFin ?? '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    var endpoint = '/vie-ecoles/gestion-presence-eleve/$matricule?ecole=$ecoleCode&date_debut=$effectiveDateDebut&date_fin=$effectiveDateFin';
+    
     if (date != null && date.isNotEmpty) {
       endpoint += '&date=$date';
     }

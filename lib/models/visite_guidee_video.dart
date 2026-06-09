@@ -24,8 +24,8 @@ class VisiteGuideeVideo {
       youtubeUrl: (json['youtube_url'] ?? '') as String,
       title: json['title'] as String?,
       description: json['description'] as String?,
-      code: json['codeecole'] as String? ?? json['code'] as String? ?? json['ecole'] as String? ?? '',
-      etablissement: json['nomecole'] as String? ?? json['etablissement'] as String? ?? '',
+      code: json['codeecole']?.toString() ?? json['code']?.toString() ?? json['ecole']?.toString() ?? '',
+      etablissement: json['nomecole']?.toString() ?? json['etablissement']?.toString() ?? '',
     );
   }
 

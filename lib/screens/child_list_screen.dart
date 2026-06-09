@@ -11,6 +11,7 @@ import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/school_life_item_card.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/custom_button.dart';
 import '../models/child.dart';
 import '../models/note.dart';
 import '../models/timetable_entry.dart';
@@ -43,6 +44,7 @@ import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/bottom_sheets/child_kits_bottom_sheet.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
@@ -365,10 +367,14 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isAccessControlBottomSheetOpen = false;
   StateSetter? _accessControlModalSetState;
   bool _accessControlLoaded = false;
-  DateTime _selectedAccessDateDebut = DateTime.now().subtract(const Duration(days: 30));
+  DateTime _selectedAccessDateDebut = DateTime.now().subtract(
+    const Duration(days: 30),
+  );
   DateTime _selectedAccessDateFin = DateTime.now();
-  final TextEditingController _accessDateDebutController = TextEditingController();
-  final TextEditingController _accessDateFinController = TextEditingController();
+  final TextEditingController _accessDateDebutController =
+      TextEditingController();
+  final TextEditingController _accessDateFinController =
+      TextEditingController();
 
   // Variables pour les messages
   List<StudentMessage> _studentMessages = [];
@@ -456,7 +462,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Données des bulletins
   List<dynamic>? _bulletins;
   bool _isLoadingBulletins = false;
-  
+
   // Filtres pour Bulletins
   List<dynamic> _bulletinsSchoolYears = [];
   List<String> _bulletinsAvailableYears = [];
@@ -495,7 +501,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     _animationController.forward();
 
     // Init _accessDateDebutController
-    final String initDateDebutStr = 
+    final String initDateDebutStr =
         '${_selectedAccessDateDebut.day.toString().padLeft(2, '0')}/'
         '${_selectedAccessDateDebut.month.toString().padLeft(2, '0')}/'
         '${_selectedAccessDateDebut.year}';
@@ -524,7 +530,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     });
 
     // Init _accessDateFinController
-    final String initDateFinStr = 
+    final String initDateFinStr =
         '${_selectedAccessDateFin.day.toString().padLeft(2, '0')}/'
         '${_selectedAccessDateFin.month.toString().padLeft(2, '0')}/'
         '${_selectedAccessDateFin.year}';
@@ -674,7 +680,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       final wrapper = MainScreenWrapper.maybeOf(context);
-      final apiService = wrapper?.apiService ?? (AppConfig.MOCK_MODE ? MockApiService() : RemoteApiService());
+      final apiService =
+          wrapper?.apiService ??
+          (AppConfig.MOCK_MODE ? MockApiService() : RemoteApiService());
 
       // Étape 1: Charger les informations de l'enfant d'abord
       print('📂 Étape 1: Récupération des informations de l\'enfant...');
@@ -749,7 +757,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       await Future.delayed(const Duration(milliseconds: 200));
 
       final messagesResult = await apiService.getMessages(
-        wrapper?.currentUserId ?? AuthService.instance.getCurrentUser()?.id ?? 'parent1',
+        wrapper?.currentUserId ??
+            AuthService.instance.getCurrentUser()?.id ??
+            'parent1',
       );
       await Future.delayed(const Duration(milliseconds: 200));
 
@@ -1140,9 +1150,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             ],
           ),
           // Gradient fade at bottom
-          BottomFadeGradient(
-            endColor: AppColors.screenSurfaceThemed(context),
-          ),
+          BottomFadeGradient(endColor: AppColors.screenSurfaceThemed(context)),
         ],
       ),
     );
@@ -1218,7 +1226,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 BottomSheetHeader(
                   icon: Icons.description_rounded,
                   imagePath: 'assets/images/icons/mes_bulletins.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
                   iconColor: const Color(0xFF2E7D32),
                   title: 'Bulletins',
                   description: 'Accédez aux bulletins trimestriels et annuels',
@@ -1288,9 +1298,13 @@ class _ChildListScreenState extends State<ChildListScreen>
         builder: (context, setModalState) {
           _timetableModalSetState = setModalState;
 
-          if (_timetableResponse == null && !_isLoadingTimetable && !_timetableHasError) {
+          if (_timetableResponse == null &&
+              !_isLoadingTimetable &&
+              !_timetableHasError) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_timetableResponse == null && !_isLoadingTimetable && !_timetableHasError) {
+              if (_timetableResponse == null &&
+                  !_isLoadingTimetable &&
+                  !_timetableHasError) {
                 _loadTimetableData();
               }
             });
@@ -1309,7 +1323,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 BottomSheetHeader(
                   icon: Icons.calendar_today_rounded,
                   imagePath: 'assets/images/icons/emploi_du_temps.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
                   iconColor: const Color(0xFFF57C00),
                   title: 'Emploi du temps',
                   description: 'Consultez l\'emploi du temps et les horaires',
@@ -1434,6 +1450,13 @@ class _ChildListScreenState extends State<ChildListScreen>
   void _showAttendanceBottomSheet() {
     _hasLoadedPresence = false;
     _hasLoadedStatistiques = false;
+
+    // Prepopulate date filters (last month to today)
+    final now = DateTime.now();
+    _filterStartDate = DateTime(now.year, now.month - 1, now.day);
+    _filterEndDate = DateTime(now.year, now.month, now.day);
+    _filterStartDateController.text = "${_filterStartDate!.day.toString().padLeft(2, '0')}/${_filterStartDate!.month.toString().padLeft(2, '0')}/${_filterStartDate!.year}";
+    _filterEndDateController.text = "${_filterEndDate!.day.toString().padLeft(2, '0')}/${_filterEndDate!.month.toString().padLeft(2, '0')}/${_filterEndDate!.year}";
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1454,8 +1477,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
           final screenHeight = MediaQuery.sizeOf(context).height;
           final isDarkMode = _themeService.isDarkMode;
-          final double sheetHeight = keyboardHeight > 0 
-              ? screenHeight * 0.95 
+          final double sheetHeight = keyboardHeight > 0
+              ? screenHeight * 0.95
               : screenHeight * 0.8;
 
           return AnimatedContainer(
@@ -1474,7 +1497,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   BottomSheetHeader(
                     icon: Icons.person_off_rounded,
                     imagePath: 'assets/images/icons/presence_conduite.png',
-                    imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(
+                      context,
+                    ),
                     iconColor: const Color(0xFF00796B),
                     title: 'Présence',
                     description: 'Vérifiez la présence et la conduite',
@@ -1527,7 +1552,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 BottomSheetHeader(
                   icon: Icons.fingerprint_rounded,
                   imagePath: 'assets/images/icons/controle_acces.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
                   iconColor: const Color(0xFFC2185B),
                   title: 'Contrôle d\'accès',
                   description: 'Contrôlez les accès et les pointages',
@@ -1771,7 +1798,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   BottomSheetHeader(
                     icon: Icons.inventory_2_rounded,
                     imagePath: 'assets/images/icons/fournitures.png',
-                    imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(
+                      context,
+                    ),
                     iconColor: const Color(0xFF795548),
                     title: 'Fournitures',
                     description: 'Gérez les fournitures scolaires',
@@ -1877,7 +1906,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                 BottomSheetHeader(
                   icon: Icons.shopping_cart_rounded,
                   imagePath: 'assets/images/icons/mes_commandes.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
                   iconColor: const Color(0xFF00ACC1),
                   title: 'Commandes',
                   description: 'Suivez vos commandes et achats',
@@ -2144,7 +2175,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                   BottomSheetHeader(
                     icon: Icons.notifications_rounded,
                     imagePath: 'assets/images/icons/notifications.png',
-                    imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(
+                      context,
+                    ),
                     iconColor: const Color(0xFF1976D2),
                     title: 'Notifications',
                     description: (_isLoadingNotifications || _isLoadingEcheance)
@@ -2269,10 +2302,14 @@ class _ChildListScreenState extends State<ChildListScreen>
           color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: AppDimensions.getBottomSheetShadow(context),
-          border: isExpanded ? Border.all(
-            color: isDark ? const Color(0x22FFFFFF) : const Color(0x18000000),
-            width: 0.5,
-          ) : null,
+          border: isExpanded
+              ? Border.all(
+                  color: isDark
+                      ? const Color(0x22FFFFFF)
+                      : const Color(0x18000000),
+                  width: 0.5,
+                )
+              : null,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
@@ -2283,203 +2320,207 @@ class _ChildListScreenState extends State<ChildListScreen>
                   left: 0,
                   top: 0,
                   bottom: 0,
-                  child: Container(
-                    width: 3,
-                    color: unreadBlue,
-                  ),
+                  child: Container(width: 3, color: unreadBlue),
                 ),
               Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Dot indicateur
-                Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: notification.estLu
-                          ? Colors.transparent
-                          : unreadBlue,
-                    ),
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
-                const SizedBox(width: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Dot indicateur
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: notification.estLu
+                              ? Colors.transparent
+                              : unreadBlue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
 
-                // Contenu
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Titre + heure
-                      Row(
+                    // Contenu
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              notification.titre,
-                              style: TextStyle(
-                                fontSize: _textSizeService.getScaledFontSize(
-                                  14,
-                                ),
-                                fontWeight: notification.estLu
-                                    ? FontWeight.w400
-                                    : FontWeight.w500,
-                                color: notification.estLu
-                                    ? (isDark
-                                          ? Colors.white54
-                                          : const Color(0xFF6B6B6B))
-                                    : (isDark
-                                          ? Colors.white
-                                          : const Color(0xFF111111)),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            notification.formattedDate,
-                            style: TextStyle(
-                              fontSize: _textSizeService.getScaledFontSize(11),
-                              color: isDark
-                                  ? Colors.white30
-                                  : const Color(0xFFAAAAAA),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-
-                      // Expéditeur
-                      Text(
-                        notification.expediteurDisplay,
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(12),
-                          color: isDark
-                              ? Colors.white38
-                              : const Color(0xFF999999),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-
-                      // Corps du message
-                      Text(
-                        notification.contenu,
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(13),
-                          color: isDark
-                              ? Colors.white60
-                              : const Color(0xFF555555),
-                          height: 1.5,
-                        ),
-                        maxLines: isExpanded ? null : 2,
-                        overflow: isExpanded
-                            ? TextOverflow.visible
-                            : TextOverflow.ellipsis,
-                      ),
-
-                      if (notification.hasAttachment) ...[
-                        const SizedBox(height: 10),
-                        _buildNotificationAttachmentWidget(notification),
-                      ],
-
-                      // Action "Marquer comme lu" / "Lu"
-                      const SizedBox(height: 8),
-                      if (!notification.estLu) ...[
-                        GestureDetector(
-                          onTap: () => _markNotificationAsReadWithAPI(
-                            notification,
-                            setModalState,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  const Color(0xFF1976D2).withOpacity(0.1),
-                                  const Color(0xFF42A5F5).withOpacity(0.05),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: const Color(0xFF1976D2).withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  size: 12,
-                                  color: const Color(0xFF1976D2),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Marquer comme lu',
+                          // Titre + heure
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  notification.titre,
                                   style: TextStyle(
                                     fontSize: _textSizeService
-                                        .getScaledFontSize(11),
-                                    color: const Color(0xFF1976D2),
-                                    fontWeight: FontWeight.w500,
+                                        .getScaledFontSize(14),
+                                    fontWeight: notification.estLu
+                                        ? FontWeight.w400
+                                        : FontWeight.w500,
+                                    color: notification.estLu
+                                        ? (isDark
+                                              ? Colors.white54
+                                              : const Color(0xFF6B6B6B))
+                                        : (isDark
+                                              ? Colors.white
+                                              : const Color(0xFF111111)),
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[700] : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 12,
-                                color: isDark
-                                    ? Colors.grey[400]
-                                    : Colors.grey[600],
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 8),
                               Text(
-                                'Lu',
+                                notification.formattedDate,
                                 style: TextStyle(
                                   fontSize: _textSizeService.getScaledFontSize(
                                     11,
                                   ),
                                   color: isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
+                                      ? Colors.white30
+                                      : const Color(0xFFAAAAAA),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
+                          const SizedBox(height: 3),
+
+                          // Expéditeur
+                          Text(
+                            notification.expediteurDisplay,
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(12),
+                              color: isDark
+                                  ? Colors.white38
+                                  : const Color(0xFF999999),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+
+                          // Corps du message
+                          Text(
+                            notification.contenu,
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(13),
+                              color: isDark
+                                  ? Colors.white60
+                                  : const Color(0xFF555555),
+                              height: 1.5,
+                            ),
+                            maxLines: isExpanded ? null : 2,
+                            overflow: isExpanded
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
+                          ),
+
+                          if (notification.hasAttachment) ...[
+                            const SizedBox(height: 10),
+                            _buildNotificationAttachmentWidget(notification),
+                          ],
+
+                          // Action "Marquer comme lu" / "Lu"
+                          const SizedBox(height: 8),
+                          if (!notification.estLu) ...[
+                            GestureDetector(
+                              onTap: () => _markNotificationAsReadWithAPI(
+                                notification,
+                                setModalState,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      const Color(0xFF1976D2).withOpacity(0.1),
+                                      const Color(0xFF42A5F5).withOpacity(0.05),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF1976D2,
+                                    ).withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_outline,
+                                      size: 12,
+                                      color: const Color(0xFF1976D2),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Marquer comme lu',
+                                      style: TextStyle(
+                                        fontSize: _textSizeService
+                                            .getScaledFontSize(11),
+                                        color: const Color(0xFF1976D2),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.grey[700]
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    size: 12,
+                                    color: isDark
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Lu',
+                                    style: TextStyle(
+                                      fontSize: _textSizeService
+                                          .getScaledFontSize(11),
+                                      color: isDark
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
             ],
           ),
         ),
@@ -2525,7 +2566,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                         fit: BoxFit.contain,
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;
-                          return const Center(child: CircularProgressIndicator(color: Colors.white));
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -2534,7 +2579,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                     top: 40,
                     right: 20,
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 30,
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
@@ -3234,9 +3283,14 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showFamilyBottomSheet() {
-    if (_eleveDetail == null) return;
-
-    final eleve = _eleveDetail!;
+    final eleve =
+        _eleveDetail ??
+        {
+          'matricule': widget.child.matricule ?? '',
+          'prenom': widget.child.firstName,
+          'nom': widget.child.lastName,
+          'niveau': widget.child.grade,
+        };
     final isDarkMode = _themeService.isDarkMode;
     final draggableController = DraggableScrollableController();
 
@@ -3488,9 +3542,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // ─── MÉTHODES DE SUPPRESSION D'ENFANT ─────────────────────────────────────
 
-  void _showRemoveChildConfirmation() {
-    final isDarkMode = _themeService.isDarkMode;
-
+  void _showRemoveChildConfirmation({bool fromChildInfos = false}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -3501,7 +3553,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       builder: (context) => Container(
         margin: const EdgeInsets.only(top: 100),
         decoration: BoxDecoration(
-          color: isDarkMode ? Colors.grey[900] : Colors.white,
+          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
@@ -3512,90 +3564,119 @@ class _ChildListScreenState extends State<ChildListScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 48,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _themeService.isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.warning_rounded,
+                          color: Colors.red,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Retirer cet enfant',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.red,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Cette action est irréversible',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.warning_rounded,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Retirer cet enfant',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cette action est irréversible',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
 
             // Content
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'Êtes-vous sûr de vouloir retirer cet enfant de votre liste ?',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: _themeService.isDarkMode ? Colors.white : Colors.grey[800],
+                      height: 1.4,
+                    ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
+                  
+                  // Child Info Card
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
+                      color: _themeService.isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _themeService.isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.orange.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.3),
+                              width: 1,
+                            ),
                           ),
                           child: const Icon(
-                            Icons.person,
+                            Icons.person_outline_rounded,
                             color: Colors.orange,
-                            size: 20,
+                            size: 24,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3604,20 +3685,25 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 widget.child.fullName,
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDarkMode
-                                      ? Colors.white
-                                      : Colors.black87,
+                                  fontWeight: FontWeight.w700,
+                                  color: _themeService.isDarkMode ? Colors.white : Colors.black87,
+                                  letterSpacing: -0.3,
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.child.grade,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: isDarkMode
-                                      ? Colors.grey[400]
-                                      : Colors.grey[600],
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _themeService.isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  widget.child.grade,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: _themeService.isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                  ),
                                 ),
                               ),
                             ],
@@ -3626,11 +3712,41 @@ class _ChildListScreenState extends State<ChildListScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Toutes les données associées à cet enfant seront définitivement supprimées.',
-                    style: TextStyle(fontSize: 12, color: Colors.red),
-                    textAlign: TextAlign.center,
+                  const SizedBox(height: 24),
+                  
+                  // Warning Banner
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.red.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Colors.red[400],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Toutes les données associées à cet enfant seront définitivement supprimées.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.red,
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -3642,34 +3758,24 @@ class _ChildListScreenState extends State<ChildListScreen>
               child: Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
+                    child: CustomButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: BorderSide(
-                          color: isDarkMode
-                              ? Colors.grey[600]!
-                              : Colors.grey[400]!,
-                        ),
+                      text: 'Annuler',
+                      backgroundColor: Colors.transparent,
+                      textColor: _themeService.isDarkMode
+                          ? Colors.grey[400]!
+                          : Colors.grey[600]!,
+                      border: BorderSide(
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[600]!
+                            : Colors.grey[400]!,
                       ),
-                      child: Text(
-                        'Annuler',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode
-                              ? Colors.grey[400]!
-                              : Colors.grey[600]!,
-                        ),
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CustomButton(
                       onPressed: () {
                         Navigator.of(
                           context,
@@ -3679,26 +3785,16 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ).pop(); // Fermer le bottom sheet d'informations
                         _removeChild();
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Retirer',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      text: 'Retirer',
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ],
               ),
             ),
+            const BottomSpacer(height: 60),
           ],
         ),
       ),
@@ -3728,16 +3824,15 @@ class _ChildListScreenState extends State<ChildListScreen>
         );
       }
 
-      // Naviguer vers l'écran d'accueil et rafraîchir la liste
+      // Naviguer vers l'écran précédent et rafraîchir la liste
       if (mounted) {
         final wrapper = MainScreenWrapper.maybeOf(context);
-        
-        // Retourner à l'écran principal en fermant tous les écrans superposés
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        
+
         if (wrapper != null) {
           wrapper.goBackToPreviousTab();
           wrapper.refreshCurrentUser();
+        } else if (Navigator.canPop(context)) {
+          Navigator.of(context).pop();
         }
       }
     } catch (e) {
@@ -3787,7 +3882,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     required Color iconColor,
     required List<Widget> children,
   }) {
-    final validChildren = children.where((child) => child is! SizedBox).toList();
+    final validChildren = children
+        .where((child) => child is! SizedBox)
+        .toList();
     if (validChildren.isEmpty) return const SizedBox.shrink();
 
     final isDarkMode = _themeService.isDarkMode;
@@ -3865,29 +3962,13 @@ class _ChildListScreenState extends State<ChildListScreen>
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _showRemoveChildConfirmation,
-              icon: const Icon(Icons.delete_forever, color: Colors.white),
-              label: Text(
-                'Retirer cet enfant',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 2,
-              ),
+            child: CustomButton(
+              onPressed: () => _showRemoveChildConfirmation(fromChildInfos: true),
+              icon: Icons.delete_forever,
+              text: 'Retirer cet enfant',
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
         ],
@@ -4048,7 +4129,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       imagePath: imagePath,
       isDark: isDark,
       titleFontSize: AppDimensions.getScaledSize(context, 11.0),
-      imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
+      imageBorderRadius:
+          width / 2, // Moitié de la largeur pour un cercle parfait
       doubleBorderGap: doubleBorderGap,
       color: color,
       textColor: isDark ? Colors.white : textColor,
@@ -4095,7 +4177,10 @@ class _ChildListScreenState extends State<ChildListScreen>
             children: [
               Builder(
                 builder: (context) {
-                  final isTablet = AppDimensions.isSmallTablet(context) || AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+                  final isTablet =
+                      AppDimensions.isSmallTablet(context) ||
+                      AppDimensions.isTablet(context) ||
+                      AppDimensions.isLargeTablet(context);
                   final crossAxisCount = isTablet ? 6 : 4;
 
                   final List<Widget> cards = [
@@ -4144,8 +4229,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                           context: context,
                           childName: widget.child.firstName,
                           matricule: widget.child.matricule ?? _matricule ?? '',
-                          imagePath: 'assets/images/icons/consulter_demande.png',
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                          imagePath:
+                              'assets/images/icons/consulter_demande.png',
+                          imageBorderRadius: AppDimensions.getImageBorderRadius(
+                            context,
+                          ),
                         );
                       },
                     ),
@@ -4270,8 +4358,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 'Consultez les informations de scolarité',
                             primaryColor: const Color(0xFFF59E0B),
                             backgroundColor: const Color(0xFFFFFEF7),
-                            imagePath: 'assets/images/icons/echeancier_scolarite.png',
-                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                            imagePath:
+                                'assets/images/icons/echeancier_scolarite.png',
+                            imageBorderRadius:
+                                AppDimensions.getImageBorderRadius(context),
                             iconColor: const Color(0xFFD97706),
                             iconData: Icons.school_rounded,
                           );
@@ -4301,8 +4391,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                         context,
                         matricule: widget.child.matricule,
                         childFullName: widget.child.fullName,
-                        imagePath: 'assets/images/icons/demande_integration.png',
-                        imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                        imagePath:
+                            'assets/images/icons/demande_integration.png',
+                        imageBorderRadius: AppDimensions.getImageBorderRadius(
+                          context,
+                        ),
                       ),
                     ),
                   ];
@@ -4389,7 +4482,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       schoolCode: schoolCode,
                       schoolName: widget.child.establishment,
                       imagePath: 'assets/images/icons/evenements_scolaires.png',
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                     ),
                   );
                 } else {
@@ -4560,11 +4655,13 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
               );
             }
+
             final group1Items = [
               {
                 'overtitle': 'ÉVALUATIONS',
                 'title': 'Mes Notes',
-                'subtitle': 'Consultez les moyennes et évaluations de votre enfant.',
+                'subtitle':
+                    'Consultez les moyennes et évaluations de votre enfant.',
                 'imagePath': 'assets/images/icons/mes-notes.png',
                 'color': const Color(0xFF1976D2),
                 'key': 'notes',
@@ -4619,8 +4716,12 @@ class _ChildListScreenState extends State<ChildListScreen>
             ];
 
             final cardWidth = screenWidth > 600 ? 340.0 : screenWidth * 0.75;
-            final cardHeight = cardWidth * 0.55; // Augmentation du ratio pour une carte d'image plus haute
-            final containerHeight = cardHeight + 75.0; // Espace supplémentaire pour le texte sous l'image
+            final cardHeight =
+                cardWidth *
+                0.55; // Augmentation du ratio pour une carte d'image plus haute
+            final containerHeight =
+                cardHeight +
+                75.0; // Espace supplémentaire pour le texte sous l'image
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4642,30 +4743,42 @@ class _ChildListScreenState extends State<ChildListScreen>
                         subtitle: item['subtitle'] as String,
                         imagePath: item['imagePath'] as String?,
                         width: cardWidth,
-                        height: null, // null permet à Column de prendre la hauteur de l'image + texte
+                        height:
+                            null, // null permet à Column de prendre la hauteur de l'image + texte
                         imageHeight: cardHeight,
                         imageBorderRadius: 16.0,
                         enableInnerBorder: true,
                         enableOuterBorder: true,
                         innerBorderWidth: 0.5, // Très petit contour
                         outerBorderWidth: 0.5,
-                        innerBorderColor: (item['color'] as Color).withOpacity(0.3),
+                        innerBorderColor: (item['color'] as Color).withOpacity(
+                          0.3,
+                        ),
                         color: item['color'] as Color,
                         onTap: () {
                           if (item['key'] == 'notes') {
-                            if (_matricule != null && _anneeId != null && _classeId != null) {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => NotesScreenJson(
-                                  matricule: _matricule!,
-                                  anneeId: _anneeId!.toString(),
-                                  classeId: _classeId!.toString(),
-                                  anneeLibelle: 'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
-                                  ecoleId: _ecoleId?.toString(),
+                            if (_matricule != null &&
+                                _anneeId != null &&
+                                _classeId != null) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => NotesScreenJson(
+                                    matricule: _matricule!,
+                                    anneeId: _anneeId!.toString(),
+                                    classeId: _classeId!.toString(),
+                                    anneeLibelle:
+                                        'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+                                    ecoleId: _ecoleId?.toString(),
+                                  ),
                                 ),
-                              ));
+                              );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Informations élève non disponibles')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Informations élève non disponibles',
+                                  ),
+                                ),
                               );
                             }
                           } else if (item['key'] == 'bulletins') {
@@ -4825,6 +4938,24 @@ class _ChildListScreenState extends State<ChildListScreen>
               onTap: () => _showSuppliesBottomSheet(),
             ),
             EstablishmentAction(
+              key: 'kits_scolaires',
+              title: 'Kits Scolaires',
+              subtitle: 'Voir les kits',
+              imagePath: 'assets/images/icons/fournitures.png', // Or another icon
+              iconData: Icons.backpack_rounded,
+              color: const Color(0xFF673AB7), // Violet color matching kits_bottom_sheet
+              actionText: 'Voir kits',
+              onTap: () {
+                if (_ecoleCode == null) return;
+                showChildKitsBottomSheet(
+                  context,
+                  schoolId: _ecoleCode!,
+                  niveau: widget.child.grade,
+                  childName: widget.child.firstName,
+                );
+              },
+            ),
+            EstablishmentAction(
               key: 'consult_requests',
               title: 'Commandes',
               subtitle: 'Voir commandes',
@@ -4843,7 +4974,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: const Color(0xFFE91E63),
               actionText: 'Voir tickets',
               onTap: () {
-                MainScreenWrapper.of(context).navigateToExtraScreen(const MyTicketsScreen());
+                MainScreenWrapper.of(
+                  context,
+                ).navigateToExtraScreen(const MyTicketsScreen());
               },
             ),
             EstablishmentAction(
@@ -4908,13 +5041,19 @@ class _ChildListScreenState extends State<ChildListScreen>
       loadReservationData: () async {
         // Si les données ne sont pas chargées, on les charge ici pour afficher le loader du bottom sheet
         if (_apiEcoleData == null) {
-          if (_ecoleCode == null && _matricule != null && _anneeId != null && _classeId != null) {
+          if (_ecoleCode == null &&
+              _matricule != null &&
+              _anneeId != null &&
+              _classeId != null) {
             await _loadStudentClassInfo();
           }
 
           if (_ecoleCode != null) {
             try {
-              final ecoleData = await EcoleEleveService.getEcoleParametresForEleve(_ecoleCode!);
+              final ecoleData =
+                  await EcoleEleveService.getEcoleParametresForEleve(
+                    _ecoleCode!,
+                  );
               if (mounted) {
                 setState(() {
                   _apiEcoleData = ecoleData;
@@ -4925,7 +5064,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             }
           }
         }
-        
+
         final finalSchoolData = _schoolService.getSchoolData();
         return {
           'debutReservation':
@@ -5251,7 +5390,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         height: 86,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          physics: isTablet ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
+          physics: isTablet
+              ? const NeverScrollableScrollPhysics()
+              : const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           itemCount: cards.length,
           itemBuilder: (context, index) {
@@ -5514,11 +5655,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.wifi_off_rounded,
-              size: 48,
-              color: Colors.orange[400],
-            ),
+            Icon(Icons.wifi_off_rounded, size: 48, color: Colors.orange[400]),
             const SizedBox(height: 16),
             Text(
               'Erreur de chargement',
@@ -5553,10 +5690,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
                 child: const Text(
                   'Réessayer',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -5772,8 +5906,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                     color: isSelected
                         ? Colors.white.withOpacity(0.9)
                         : (_themeService.isDarkMode
-                            ? Colors.grey[400]
-                            : Colors.grey[500]),
+                              ? Colors.grey[400]
+                              : Colors.grey[500]),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -8026,9 +8160,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             : (isDarkMode ? const Color(0xFF1E1E1E) : Colors.white),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isExpanded
-              ? color.withOpacity(0.5)
-              : Colors.transparent,
+          color: isExpanded ? color.withOpacity(0.5) : Colors.transparent,
           width: isExpanded ? 1.5 : 1,
         ),
         boxShadow: AppDimensions.getSettingsCardShadow(context),
@@ -8355,7 +8487,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       final dateFinStr =
           '${_selectedAccessDateFin.year}-${_selectedAccessDateFin.month.toString().padLeft(2, '0')}-${_selectedAccessDateFin.day.toString().padLeft(2, '0')}';
       final entries = await _accessControlService
-          .getAccessControlEntriesForStudent(matricule, dateDebut: dateDebutStr, dateFin: dateFinStr);
+          .getAccessControlEntriesForStudent(
+            matricule,
+            dateDebut: dateDebutStr,
+            dateFin: dateFinStr,
+          );
       print('✅ Réponse reçue: ${entries.length} pointages');
 
       if (mounted) {
@@ -8837,7 +8973,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     final s = subject.toLowerCase();
     if (s.contains('math')) return Colors.blue;
     if (s.contains('fran')) return Colors.green;
-    if (s.contains('arab') || s.contains('aqidah') || s.contains('fiq')) return Colors.brown;
+    if (s.contains('arab') || s.contains('aqidah') || s.contains('fiq'))
+      return Colors.brown;
     if (s.contains('histoir')) return Colors.orange;
     if (s.contains('phys') || s.contains('chim')) return Colors.purple;
     if (s.contains('angl')) return Colors.indigo;
@@ -8854,7 +8991,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (s.contains('math')) return Icons.calculate_rounded;
     if (s.contains('fran')) return Icons.menu_book_rounded;
     if (s.contains('arab')) return Icons.translate_rounded;
-    if (s.contains('aqidah') || s.contains('fiq')) return Icons.menu_book_rounded;
+    if (s.contains('aqidah') || s.contains('fiq'))
+      return Icons.menu_book_rounded;
     if (s.contains('histoir')) return Icons.public_rounded;
     if (s.contains('phys') || s.contains('chim')) return Icons.science_rounded;
     if (s.contains('angl')) return Icons.language_rounded;
@@ -9074,23 +9212,26 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _loadBulletinsSchoolYears([StateSetter? setModalState]) async {
     if (_bulletinsSchoolYears.isNotEmpty) return;
-    
+
     final ecole = _ecoleId?.toString() ?? '38';
-    
+
     void updateState(VoidCallback fn) {
       if (setModalState != null) setModalState(fn);
       if (mounted) setState(fn);
     }
-    
+
     updateState(() => _isLoadingBulletinsYears = true);
-    
+
     try {
       final years = await _notesApiService.getSchoolYears(ecoleId: ecole);
       updateState(() {
         if (years != null && years.isNotEmpty) {
           _bulletinsSchoolYears = years;
           _bulletinsAvailableYears = years
-              .map<String>((y) => (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString())
+              .map<String>(
+                (y) =>
+                    (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString(),
+              )
               .toList();
         }
         _isLoadingBulletinsYears = false;
@@ -9111,6 +9252,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         if (setModalState != null) setModalState(fn);
         if (mounted) setState(fn);
       }
+
       updateState(() {
         _anneeId = int.tryParse(year['id'].toString());
         // Collapse the filter automatically when a year is selected
@@ -9121,7 +9263,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildBulletinsFiltersSection(StateSetter setModalState) {
-    if (_bulletinsSchoolYears.isEmpty && !_isLoadingBulletinsYears) return const SizedBox.shrink();
+    if (_bulletinsSchoolYears.isEmpty && !_isLoadingBulletinsYears)
+      return const SizedBox.shrink();
 
     String currentYearLabel = 'Année scolaire';
     final currentYear = _bulletinsSchoolYears.firstWhere(
@@ -9129,7 +9272,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       orElse: () => null,
     );
     if (currentYear != null) {
-      currentYearLabel = currentYear['customLibelle'] ?? currentYear['libelle'] ?? 'Année scolaire';
+      currentYearLabel =
+          currentYear['customLibelle'] ??
+          currentYear['libelle'] ??
+          'Année scolaire';
     }
 
     return GestureDetector(
@@ -9159,7 +9305,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
-                borderRadius: _isBulletinsFilterExpanded 
+                borderRadius: _isBulletinsFilterExpanded
                     ? const BorderRadius.vertical(top: Radius.circular(20))
                     : BorderRadius.circular(20),
               ),
@@ -9171,7 +9317,10 @@ class _ChildListScreenState extends State<ChildListScreen>
                     height: 40,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
+                        colors: [
+                          AppColors.screenOrange,
+                          AppColors.screenOrangeDark,
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -9185,7 +9334,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       ],
                     ),
                     child: Icon(
-                      _isBulletinsFilterExpanded ? Icons.filter_list : Icons.tune,
+                      _isBulletinsFilterExpanded
+                          ? Icons.filter_list
+                          : Icons.tune,
                       color: Colors.white,
                       size: 20,
                     ),
@@ -9206,7 +9357,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _isBulletinsFilterExpanded ? 'Réduire' : 'Étendre pour filtrer par année',
+                          _isBulletinsFilterExpanded
+                              ? 'Réduire'
+                              : 'Étendre pour filtrer par année',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -9252,7 +9405,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                               Icon(
                                 Icons.calendar_today_rounded,
                                 size: 16,
-                                color: AppColors.screenTextPrimaryThemed(context),
+                                color: AppColors.screenTextPrimaryThemed(
+                                  context,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -9260,7 +9415,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.screenTextPrimaryThemed(context),
+                                  color: AppColors.screenTextPrimaryThemed(
+                                    context,
+                                  ),
                                 ),
                               ),
                             ],
@@ -9270,7 +9427,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                             const Center(
                               child: Padding(
                                 padding: EdgeInsets.all(8.0),
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           else
@@ -9278,8 +9437,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                               label: "Sélectionner l'année",
                               value: currentYearLabel,
                               items: _bulletinsAvailableYears,
-                              isDarkMode: Theme.of(context).brightness == Brightness.dark,
-                              onChanged: (val) => _onBulletinYearChanged(val, setModalState),
+                              isDarkMode:
+                                  Theme.of(context).brightness ==
+                                  Brightness.dark,
+                              onChanged: (val) =>
+                                  _onBulletinYearChanged(val, setModalState),
                             ),
                         ],
                       ),
@@ -9348,7 +9510,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildBulletinsEmptyState() {
     final isDarkMode = _themeService.isDarkMode;
-    
+
     // Check if it's likely a network error based on the empty state with no years loaded
     final isNetworkError = _bulletinsSchoolYears.isEmpty;
 
@@ -9361,19 +9523,27 @@ class _ChildListScreenState extends State<ChildListScreen>
             height: 80,
             decoration: BoxDecoration(
               color: isDarkMode
-                  ? (isNetworkError ? const Color(0xFF8B0000) : const Color(0xFF8B4513))
-                  : (isNetworkError ? Colors.red[100] : AppColors.screenOrangeLight),
+                  ? (isNetworkError
+                        ? const Color(0xFF8B0000)
+                        : const Color(0xFF8B4513))
+                  : (isNetworkError
+                        ? Colors.red[100]
+                        : AppColors.screenOrangeLight),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isNetworkError ? Icons.wifi_off_rounded : Icons.description_outlined,
+              isNetworkError
+                  ? Icons.wifi_off_rounded
+                  : Icons.description_outlined,
               size: 40,
               color: isNetworkError ? Colors.red : AppColors.screenOrange,
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            isNetworkError ? 'Erreur de connexion' : 'Aucun bulletin disponible',
+            isNetworkError
+                ? 'Erreur de connexion'
+                : 'Aucun bulletin disponible',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -9382,8 +9552,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            isNetworkError 
-                ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+            isNetworkError
+                ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
                 : 'Les bulletins ne sont pas encore disponibles pour cette période scolaire.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -9516,7 +9686,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.15), width: 1),
+        border: isExpanded 
+            ? Border.all(color: color.withOpacity(0.15), width: 1)
+            : null,
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -10425,7 +10598,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildOrdersStatItem(String title, String value, bool isDark, IconData icon, Color color) {
+  Widget _buildOrdersStatItem(
+    String title,
+    String value,
+    bool isDark,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -10465,20 +10644,25 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildOrdersStatsHeader(List<Order> rawOrders) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Calculate stats
     final int totalCount = rawOrders.length;
     final double totalSum = rawOrders.fold<double>(
       0.0,
       (sum, order) => sum + order.totalAmount,
     );
-    final int pendingCount = rawOrders.where((order) => order.status == OrderStatus.pending).length;
-    final int validatedCount = rawOrders.where((order) => 
-      order.status == OrderStatus.confirmed || 
-      order.status == OrderStatus.processing || 
-      order.status == OrderStatus.shipped || 
-      order.status == OrderStatus.delivered
-    ).length;
+    final int pendingCount = rawOrders
+        .where((order) => order.status == OrderStatus.pending)
+        .length;
+    final int validatedCount = rawOrders
+        .where(
+          (order) =>
+              order.status == OrderStatus.confirmed ||
+              order.status == OrderStatus.processing ||
+              order.status == OrderStatus.shipped ||
+              order.status == OrderStatus.delivered,
+        )
+        .length;
 
     String sumStr = "";
     if (totalSum >= 1000) {
@@ -10494,19 +10678,46 @@ class _ChildListScreenState extends State<ChildListScreen>
       decoration: BoxDecoration(
         color: AppColors.screenCardThemed(context),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.screenDividerThemed(context).withOpacity(0.5), width: 1),
+        border: Border.all(
+          color: AppColors.screenDividerThemed(context).withOpacity(0.5),
+          width: 1,
+        ),
         boxShadow: AppDimensions.getBottomSheetShadow(context),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildOrdersStatItem('Total', totalCount.toString(), isDark, Icons.shopping_bag_outlined, AppColors.shopBlue),
+          _buildOrdersStatItem(
+            'Total',
+            totalCount.toString(),
+            isDark,
+            Icons.shopping_bag_outlined,
+            AppColors.shopBlue,
+          ),
           _buildOrdersStatVerticalDivider(isDark),
-          _buildOrdersStatItem('Somme', '$sumStr F', isDark, Icons.monetization_on_outlined, AppColors.shopGreen),
+          _buildOrdersStatItem(
+            'Somme',
+            '$sumStr F',
+            isDark,
+            Icons.monetization_on_outlined,
+            AppColors.shopGreen,
+          ),
           _buildOrdersStatVerticalDivider(isDark),
-          _buildOrdersStatItem('En attente', pendingCount.toString(), isDark, Icons.hourglass_empty_rounded, Colors.orange[700]!),
+          _buildOrdersStatItem(
+            'En attente',
+            pendingCount.toString(),
+            isDark,
+            Icons.hourglass_empty_rounded,
+            Colors.orange[700]!,
+          ),
           _buildOrdersStatVerticalDivider(isDark),
-          _buildOrdersStatItem('Validées', validatedCount.toString(), isDark, Icons.check_circle_outline_rounded, Colors.green[600]!),
+          _buildOrdersStatItem(
+            'Validées',
+            validatedCount.toString(),
+            isDark,
+            Icons.check_circle_outline_rounded,
+            Colors.green[600]!,
+          ),
         ],
       ),
     );
@@ -10576,7 +10787,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         }
 
         final rawOrders = snapshot.data ?? [];
-        
+
         final filteredByStatus = rawOrders.where((order) {
           if (_ordersStatusFilter == 'Tous') return true;
           if (_ordersStatusFilter == 'En attente') {
@@ -10598,9 +10809,9 @@ class _ChildListScreenState extends State<ChildListScreen>
         }).toList();
 
         final orders = filteredByStatus.where((order) {
-            if (_ordersSearchController.text.isEmpty) return true;
-            final q = _ordersSearchController.text.toLowerCase();
-            return order.id.toLowerCase().contains(q);
+          if (_ordersSearchController.text.isEmpty) return true;
+          final q = _ordersSearchController.text.toLowerCase();
+          return order.id.toLowerCase().contains(q);
         }).toList();
 
         Widget content;
@@ -10642,14 +10853,14 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
           );
         } else {
-            content = Column(
-              children: orders.map((order) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildOrderCardFromOrder(order),
-                );
-              }).toList(),
-            );
+          content = Column(
+            children: orders.map((order) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildOrderCardFromOrder(order),
+              );
+            }).toList(),
+          );
         }
 
         return SingleChildScrollView(
@@ -10658,7 +10869,13 @@ class _ChildListScreenState extends State<ChildListScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               FilterRowWidget(
-                filters: const ['Tous', 'En attente', 'En cours', 'Livrées', 'Annulées'],
+                filters: const [
+                  'Tous',
+                  'En attente',
+                  'En cours',
+                  'Livrées',
+                  'Annulées',
+                ],
                 selectedFilter: _ordersStatusFilter,
                 onFilterSelected: (String filter) {
                   setModalState(() {
@@ -10668,25 +10885,25 @@ class _ChildListScreenState extends State<ChildListScreen>
               ),
               _buildOrdersStatsHeader(rawOrders),
               Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: SearchBarWidget(
-                      isSearching: true,
-                      searchController: _ordersSearchController,
-                      onChanged: (val) {
-                          setModalState(() {});
-                      },
-                      onClear: () {
-                          setModalState(() {
-                              _ordersSearchController.clear();
-                          });
-                      },
-                      hintText: 'Rechercher une commande...',
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: SearchBarWidget(
+                  isSearching: true,
+                  searchController: _ordersSearchController,
+                  onChanged: (val) {
+                    setModalState(() {});
+                  },
+                  onClear: () {
+                    setModalState(() {
+                      _ordersSearchController.clear();
+                    });
+                  },
+                  hintText: 'Rechercher une commande...',
+                ),
               ),
-              Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: content,
-              ),
+              Padding(padding: const EdgeInsets.all(16), child: content),
             ],
           ),
         );
@@ -10861,9 +11078,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isExpanded
-              ? statusColor.withOpacity(0.4)
-              : Colors.transparent,
+          color: isExpanded ? statusColor.withOpacity(0.4) : Colors.transparent,
           width: isExpanded ? 1.5 : 1,
         ),
         boxShadow: [
@@ -10988,7 +11203,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                               height: 1,
                             ),
                             const SizedBox(height: 12),
-                            
+
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(12),
@@ -11432,8 +11647,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       child: Row(
         children: [
-          if (_filterStartDateController.text.isNotEmpty || 
-              _filterEndDateController.text.isNotEmpty || 
+          if (_filterStartDateController.text.isNotEmpty ||
+              _filterEndDateController.text.isNotEmpty ||
               _filterType != null) ...[
             Expanded(
               flex: 1,
@@ -11489,9 +11704,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     )
                   : const Icon(Icons.search_rounded, size: 20),
               label: Text(
-                _isLoadingPresence
-                    ? 'Recherche...'
-                    : 'Rechercher',
+                _isLoadingPresence ? 'Recherche...' : 'Rechercher',
                 style: const TextStyle(fontSize: 13),
               ),
               style: ElevatedButton.styleFrom(
@@ -11784,8 +11997,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Filtres pour la liste des absences
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
-  final TextEditingController _filterStartDateController = TextEditingController();
-  final TextEditingController _filterEndDateController = TextEditingController();
+  final TextEditingController _filterStartDateController =
+      TextEditingController();
+  final TextEditingController _filterEndDateController =
+      TextEditingController();
   int? _filterType; // null = tous, 0 = absent, 1 = présent
   bool _isFilterExpanded = false;
 
@@ -11793,7 +12008,11 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (text.length == 10) {
       try {
         final parts = text.split('/');
-        return DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+        return DateTime(
+          int.parse(parts[2]),
+          int.parse(parts[1]),
+          int.parse(parts[0]),
+        );
       } catch (_) {}
     }
     return null;
@@ -11842,99 +12061,89 @@ class _ChildListScreenState extends State<ChildListScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Badge Status
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: statusBgColor,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    isPresent ? 'Présent' : 'Absent',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService
-                                          .getScaledFontSize(11),
-                                      fontWeight: FontWeight.bold,
-                                      color: statusColor,
-                                    ),
-                                  ),
-                                ),
-                                // Subject Name
-                                Expanded(
-                                  child: Text(
-                                    entry.matiere ?? 'Matière inconnue',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService
-                                          .getScaledFontSize(14),
-                                      fontWeight: FontWeight.bold,
-                                      color: isDarkMode
-                                          ? Colors.white
-                                          : const Color(0xFF1F2937),
-                                    ),
-                                    textAlign: TextAlign.end,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                // Time
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 14,
-                                  color: isDarkMode
-                                      ? Colors.white38
-                                      : Colors.grey[500],
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  timeStr,
-                                  style: TextStyle(
-                                    fontSize: _textSizeService
-                                        .getScaledFontSize(12),
-                                    color: isDarkMode
-                                        ? Colors.white70
-                                        : Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const Spacer(),
-                                // Professor name
-                                if (entry.nomProf != null &&
-                                    entry.prenomProf != null) ...[
-                                  Icon(
-                                    Icons.person_outline_rounded,
-                                    size: 14,
-                                    color: isDarkMode
-                                        ? Colors.white38
-                                        : Colors.grey[500],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${entry.prenomProf} ${entry.nomProf}',
-                                    style: TextStyle(
-                                      fontSize: _textSizeService
-                                          .getScaledFontSize(12),
-                                      color: isDarkMode
-                                          ? Colors.white70
-                                          : Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Badge Status
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
+                        decoration: BoxDecoration(
+                          color: statusBgColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          isPresent ? 'Présent' : 'Absent',
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(11),
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                      // Subject Name
+                      Expanded(
+                        child: Text(
+                          entry.matiere ?? 'Matière inconnue',
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(14),
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode
+                                ? Colors.white
+                                : const Color(0xFF1F2937),
+                          ),
+                          textAlign: TextAlign.end,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // Time
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: isDarkMode ? Colors.white38 : Colors.grey[500],
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(12),
+                          color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Professor name
+                      if (entry.nomProf != null &&
+                          entry.prenomProf != null) ...[
+                        Icon(
+                          Icons.person_outline_rounded,
+                          size: 14,
+                          color: isDarkMode ? Colors.white38 : Colors.grey[500],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${entry.prenomProf} ${entry.nomProf}',
+                          style: TextStyle(
+                            fontSize: _textSizeService.getScaledFontSize(12),
+                            color: isDarkMode
+                                ? Colors.white70
+                                : Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             );
           }),
         ],
@@ -11971,6 +12180,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               ],
             ),
           ),
+          
+        const BottomSpacer(),
       ],
     );
   }
@@ -12005,18 +12216,24 @@ class _ChildListScreenState extends State<ChildListScreen>
         dateParam =
             '${_filterStartDate!.year}-${_filterStartDate!.month.toString().padLeft(2, '0')}-${_filterStartDate!.day.toString().padLeft(2, '0')}';
       }
+      String? dateEndParam;
+      if (_filterEndDate != null) {
+        dateEndParam =
+            '${_filterEndDate!.year}-${_filterEndDate!.month.toString().padLeft(2, '0')}-${_filterEndDate!.day.toString().padLeft(2, '0')}';
+      }
       String? typeParam;
       if (_filterType != null) {
         typeParam = _filterType.toString();
       }
 
       print(
-        '📡 Chargement présence/absence: matricule=$_matricule, ecole=$_ecoleCode, date=$dateParam, type=$typeParam',
+        '📡 Chargement présence/absence: matricule=$_matricule, ecole=$_ecoleCode, dateDebut=$dateParam, dateFin=$dateEndParam, type=$typeParam',
       );
       final entries = await GestionPresenceEleveService.getGestionPresenceEleve(
         _matricule!,
         _ecoleCode!,
-        date: dateParam,
+        dateDebut: dateParam,
+        dateFin: dateEndParam,
         type: typeParam,
       );
 
@@ -13969,7 +14186,7 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
       "Erreur d'article / quantité",
       "Achat accidentel",
       "Délai de livraison trop long",
-      "Autre raison (saisir ci-dessous)"
+      "Autre raison (saisir ci-dessous)",
     ];
 
     final confirmed = await showDialog<bool>(
@@ -14008,14 +14225,18 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: isSelected 
-                              ? Colors.red[500]!.withOpacity(isDark ? 0.15 : 0.05)
+                          color: isSelected
+                              ? Colors.red[500]!.withOpacity(
+                                  isDark ? 0.15 : 0.05,
+                                )
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected 
-                                ? Colors.red[400]! 
-                                : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+                            color: isSelected
+                                ? Colors.red[400]!
+                                : (isDark
+                                      ? Colors.grey[800]!
+                                      : Colors.grey[200]!),
                             width: 1.2,
                           ),
                         ),
@@ -14027,11 +14248,16 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                             });
                           },
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             child: Row(
                               children: [
                                 Icon(
-                                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                                  isSelected
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_off,
                                   color: isSelected ? Colors.red : Colors.grey,
                                   size: 18,
                                 ),
@@ -14041,10 +14267,16 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                                     reason,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected 
-                                          ? (isDark ? Colors.red[300] : Colors.red[700])
-                                          : (isDark ? Colors.grey[300] : Colors.grey[800]),
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? (isDark
+                                                ? Colors.red[300]
+                                                : Colors.red[700])
+                                          : (isDark
+                                                ? Colors.grey[300]
+                                                : Colors.grey[800]),
                                     ),
                                   ),
                                 ),
@@ -14054,18 +14286,26 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                         ),
                       );
                     }).toList(),
-                    if (selectedReason == "Autre raison (saisir ci-dessous)") ...[
+                    if (selectedReason ==
+                        "Autre raison (saisir ci-dessous)") ...[
                       const SizedBox(height: 12),
                       TextField(
                         controller: reasonController,
                         maxLines: 3,
                         decoration: InputDecoration(
                           hintText: 'Saisissez votre motif ici...',
-                          hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
                           contentPadding: const EdgeInsets.all(12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[300]!),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? Colors.grey[800]!
+                                  : Colors.grey[300]!,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -14081,7 +14321,10 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Retour', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Retour',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(true),
@@ -14090,11 +14333,18 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
                   child: const Text(
                     'Confirmer',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -14106,22 +14356,31 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
 
     if (confirmed != true) return;
 
-    final String finalReason = selectedReason == "Autre raison (saisir ci-dessous)"
-        ? (reasonController.text.trim().isNotEmpty ? reasonController.text.trim() : "Autre motif")
+    final String finalReason =
+        selectedReason == "Autre raison (saisir ci-dessous)"
+        ? (reasonController.text.trim().isNotEmpty
+              ? reasonController.text.trim()
+              : "Autre motif")
         : selectedReason;
 
     setState(() => _isLoading = true);
     try {
-      final success = await OrderService().cancelOrder(widget.order.id, reason: finalReason);
+      final success = await OrderService().cancelOrder(
+        widget.order.id,
+        reason: finalReason,
+      );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Commande annulée avec succès',
-                style: TextStyle(color: Colors.white)),
+            content: const Text(
+              'Commande annulée avec succès',
+              style: TextStyle(color: Colors.white),
+            ),
             backgroundColor: Colors.green[500],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -14130,12 +14389,15 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Échec de l\'annulation de la commande',
-                  style: TextStyle(color: Colors.white)),
+              content: const Text(
+                'Échec de l\'annulation de la commande',
+                style: TextStyle(color: Colors.white),
+              ),
               backgroundColor: Colors.red[400],
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               margin: const EdgeInsets.all(16),
             ),
           );
@@ -14145,12 +14407,15 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e',
-                style: const TextStyle(color: Colors.white)),
+            content: Text(
+              'Erreur: $e',
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: Colors.red[400],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );

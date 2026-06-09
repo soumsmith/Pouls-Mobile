@@ -5,6 +5,7 @@ import '../config/app_dimensions.dart';
 import '../utils/image_helper.dart';
 import '../services/blog_service.dart';
 import '../services/pays_service.dart';
+import '../services/category_api_service.dart';
 import '../models/blog.dart';
 import '../widgets/filter_row_widget.dart';
 import 'blog_detail_screen.dart';
@@ -48,6 +49,9 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   Map<String, String> _paysReverseMap = {'': 'Tous'};
   bool _isLoadingPays = true;
 
+  List<String> _categoriesList = ['Toutes'];
+  bool _isLoadingCategories = true;
+
   String? _getApiFormattedDate(String dateStr) {
     if (dateStr.trim().isEmpty) return null;
     if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateStr)) {
@@ -74,9 +78,11 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   late AnimationController _fadeController;
   late Animation<double>   _fadeAnim;
 
-  final List<String> _filters = [
+  final List<String> _oldFilters = [
     'Tous', 'Actualité', 'Communication', 'Événement', 'Information', 'Annonce',
   ];
+
+  List<String> _filters = ['Tous'];
 
   // ── Lifecycle ────────────────────────────────────────────
   @override
@@ -88,6 +94,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     );
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _loadPays();
+    _loadCategories();
     _loadBlogs();
   }
 
@@ -99,6 +106,26 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     _dateController.dispose();
     _fadeController.dispose();
     super.dispose();
+  }
+
+  // ── Chargement des catégories depuis l'API ────────────────
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await CategoryApiService.getEventBlogCategories();
+      if (mounted) {
+        setState(() {
+          _categoriesList = ['Toutes', ...cats];
+          _filters = ['Tous', ...cats];
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCategories = false;
+        });
+      }
+    }
   }
 
   // ── Chargement des pays depuis l'API ────────────────────
@@ -350,13 +377,18 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: CustomTextInput(
+                        child: SearchableDropdown(
                           label: 'Catégorie',
-                          hint: 'Catégorie',
-                          icon: Icons.category_rounded,
-                          controller: _categoryController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
+                          value: _categoryController.text.isEmpty
+                              ? 'Toutes'
+                              : _categoryController.text,
+                          items: _categoriesList,
+                          isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                          onChanged: (String val) {
+                            setState(() {
+                              _categoryController.text = val == 'Toutes' ? '' : val;
+                            });
+                          },
                         ),
                       ),
                     ],

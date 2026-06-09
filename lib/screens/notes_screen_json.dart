@@ -9,6 +9,7 @@ import '../widgets/custom_loader.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/subtle_retry_button.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 class NotesScreenJson extends StatefulWidget {
   final String matricule;
@@ -151,10 +152,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   void _startAutoPlay() {
     _autoPlayTimer?.cancel();
-    _autoPlayTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
       if (_bulletinData != null) {
         setState(() {
-          _currentPage = (_currentPage + 1) % 3;
+          _currentPage = (_currentPage + 1) % 2;
         });
         _pageController.animateToPage(
           _currentPage,
@@ -273,10 +274,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   Color _getAverageColor(double avg) {
-    if (avg >= 16) return const Color(0xFF10B981);
-    if (avg >= 14) return const Color(0xFF3B82F6);
-    if (avg >= 12) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (avg >= 12) return const Color(0xFF10B981); // Vert (Bien/Excellent)
+    if (avg >= 10) return const Color(0xFFF59E0B); // Orange (Passable)
+    return const Color(0xFFEF4444); // Rouge (Insuffisant)
   }
 
   IconData _getSubjectIcon(String subject) {
@@ -517,6 +517,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           ),
         ),
       ),
+      const SliverToBoxAdapter(
+        child: BottomSpacer(height: 125),
+      ),
     ];
   }
 
@@ -654,7 +657,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
             width: 8,
@@ -675,11 +678,57 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     final prenoms = _bulletinData!['prenoms'] ?? '';
     final matricule = _bulletinData!['matricule'] ?? '';
     final anneeLibelle = _bulletinData!['anneeLibelle'] ?? '';
-    final moyFr = _bulletinData!['moyFr'] ?? 0.0;
     final moyGeneral = _bulletinData!['moyGeneral'] ?? 0.0;
+    final libellePeriode = _bulletinData!['libellePeriode'] ?? '';
+    final periodesMoyenne = _bulletinData!['periodesMoyenne'] as List<dynamic>? ?? [];
+
+    // Regrouper toutes les moyennes et les trier
+    List<Map<String, dynamic>> allPeriods = [];
+    allPeriods.add({
+      'libelle': libellePeriode.toString(),
+      'moyenne': moyGeneral,
+      'isCurrent': true,
+    });
+
+    for (var periode in periodesMoyenne) {
+      allPeriods.add({
+        'libelle': periode['periodeLibelle']?.toString() ?? '',
+        'moyenne': periode['moyenne'],
+        'isCurrent': false,
+      });
+    }
+
+    int getSortKey(String libelle) {
+      final lower = libelle.toLowerCase();
+      if (lower.contains('premier') || lower.contains('1er')) return 1;
+      if (lower.contains('deuxième') || lower.contains('deuxieme') || lower.contains('2ème') || lower.contains('2nd')) return 2;
+      if (lower.contains('troisième') || lower.contains('troisieme') || lower.contains('3ème')) return 3;
+      if (lower.contains('quatrième') || lower.contains('quatrieme') || lower.contains('4ème')) return 4;
+      return 99;
+    }
+
+    allPeriods.sort((a, b) => getSortKey(a['libelle']).compareTo(getSortKey(b['libelle'])));
+
+    List<Widget> averageCards = [];
+    for (var p in allPeriods) {
+      final moy = p['moyenne'] ?? 0.0;
+      final double parsedMoy = (moy is num) ? moy.toDouble() : (double.tryParse(moy.toString()) ?? 0.0);
+      averageCards.add(
+        Container(
+          width: 140,
+          margin: const EdgeInsets.only(right: 12),
+          child: _buildCompactAverageCard(
+            p['libelle'],
+            parsedMoy.toStringAsFixed(1),
+            p['isCurrent'] ? Icons.analytics_outlined : Icons.menu_book_outlined,
+            _getAverageColor(parsedMoy),
+          ),
+        ),
+      );
+    }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -786,26 +835,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 ),
                 const SizedBox(height: 16),
                 // Section des moyennes
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildCompactAverageCard(
-                        'Moyenne Française',
-                        moyFr.toStringAsFixed(1),
-                        Icons.menu_book_outlined,
-                        _getAverageColor(moyFr),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildCompactAverageCard(
-                        'Moyenne Générale',
-                        moyGeneral.toStringAsFixed(1),
-                        Icons.analytics_outlined,
-                        _getAverageColor(moyGeneral),
-                      ),
-                    ),
-                  ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: averageCards,
+                  ),
                 ),
               ],
             ),
@@ -889,7 +923,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     final details = _bulletinData!['details'] as List<dynamic>? ?? [];
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1520,12 +1554,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: Colors.grey.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
                         _getSubjectIcon(subjectName),
-                        color: color,
+                        color: Colors.grey[600],
                         size: 20,
                       ),
                     ),
@@ -1610,7 +1644,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             width: 4,
                             height: 14,
                             decoration: BoxDecoration(
-                              color: color,
+                              color: Colors.grey,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -1620,7 +1654,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: color,
+                              color: Colors.grey[700],
                               letterSpacing: 0.1,
                             ),
                           ),
@@ -1636,7 +1670,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             width: 4,
                             height: 14,
                             decoration: BoxDecoration(
-                              color: color,
+                              color: Colors.grey,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -1646,7 +1680,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: color,
+                              color: Colors.grey[700],
                               letterSpacing: 0.1,
                             ),
                           ),
@@ -1659,7 +1693,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             child: _buildStatBadge(
                               'Coef',
                               '${matiere['coef'] ?? '1.0'}',
-                              const Color(0xFF3B82F6),
+                              Colors.grey[600]!,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -1667,7 +1701,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             child: _buildStatBadge(
                               'Appréciation',
                               '${matiere['appreciation'] ?? 'N/A'}',
-                              const Color(0xFF9C27B0),
+                              Colors.grey[600]!,
                             ),
                           ),
                           const SizedBox(width: 8),

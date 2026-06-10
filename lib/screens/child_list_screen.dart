@@ -1457,8 +1457,10 @@ class _ChildListScreenState extends State<ChildListScreen>
     final now = DateTime.now();
     _filterStartDate = DateTime(now.year, now.month - 1, now.day);
     _filterEndDate = DateTime(now.year, now.month, now.day);
-    _filterStartDateController.text = "${_filterStartDate!.day.toString().padLeft(2, '0')}/${_filterStartDate!.month.toString().padLeft(2, '0')}/${_filterStartDate!.year}";
-    _filterEndDateController.text = "${_filterEndDate!.day.toString().padLeft(2, '0')}/${_filterEndDate!.month.toString().padLeft(2, '0')}/${_filterEndDate!.year}";
+    _filterStartDateController.text =
+        "${_filterStartDate!.day.toString().padLeft(2, '0')}/${_filterStartDate!.month.toString().padLeft(2, '0')}/${_filterStartDate!.year}";
+    _filterEndDateController.text =
+        "${_filterEndDate!.day.toString().padLeft(2, '0')}/${_filterEndDate!.month.toString().padLeft(2, '0')}/${_filterEndDate!.year}";
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -3312,242 +3314,245 @@ class _ChildListScreenState extends State<ChildListScreen>
             onTap: () {}, // Empêche la fermeture lors d'un clic dans le contenu
             child: Container(
               decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey[900] : Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              BottomSheetHeader(
-                icon: Icons.info_outline,
-                title: 'Informations complètes',
-                description: 'Détails complets sur l\'élève et sa scolarité',
-                iconColor: Colors.blue,
-                onClose: () => Navigator.of(context).pop(),
-                draggableController: draggableController,
-              ),
-
-              // Contenu complet
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: controller,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      // QR Code d'identification - affiché en premier et centré
-                      Center(
-                        child: _buildFamilySection(
-                          title: 'QR Code d\'identification',
-                          icon: Icons.qr_code_2_rounded,
-                          iconColor: Colors.purple,
-                          children: [
-                            Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    QrImageView(
-                                      data: _generateStudentQRData(eleve),
-                                      version: QrVersions.auto,
-                                      size: 150.0,
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Matricule: ${eleve['matricule']?.toString() ?? 'N/A'}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${eleve['prenom']?.toString() ?? ''} ${eleve['nom']?.toString() ?? ''}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Informations personnelles
-                      _buildFamilySection(
-                        title: 'Informations personnelles',
-                        icon: Icons.person,
-                        iconColor: Colors.blue,
-                        children: [
-                          _buildFamilyItem(
-                            icon: Icons.badge,
-                            label: 'Matricule',
-                            value: eleve['matricule']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.cake,
-                            label: 'Né(e)',
-                            value: _formatDate(
-                              eleve['datenaissance']?.toString() ?? 'N/A',
-                            ),
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.wc,
-                            label: 'Sexe',
-                            value: eleve['sexe']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.location_on,
-                            label: 'Lieu',
-                            value: eleve['lieun']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.flag,
-                            label: 'Nationalité',
-                            value: eleve['nationalite']?.toString() ?? 'N/A',
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Informations scolaires
-                      _buildFamilySection(
-                        title: 'Informations scolaires',
-                        icon: Icons.school,
-                        iconColor: Colors.orange,
-                        children: [
-                          _buildFamilyItem(
-                            icon: Icons.grade,
-                            label: 'Niveau',
-                            value: eleve['niveau']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.category,
-                            label: 'Filière',
-                            value: eleve['filiere']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.auto_stories,
-                            label: 'Série',
-                            value: eleve['serie']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.refresh,
-                            label: 'Redoublant',
-                            value: eleve['redoublant']?.toString() ?? 'N/A',
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Contact
-                      _buildFamilySection(
-                        title: 'Contact',
-                        icon: Icons.contact_phone,
-                        iconColor: Colors.green,
-                        children: [
-                          _buildFamilyItem(
-                            icon: Icons.home,
-                            label: 'Adresse',
-                            value: eleve['adresse']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.phone,
-                            label: 'Mobile',
-                            value: eleve['mobile']?.toString() ?? 'N/A',
-                            isClickable: true,
-                            onTap: () => _makePhoneCall(
-                              eleve['mobile']?.toString() ?? '',
-                            ),
-                          ),
-                          if (eleve['mobile2']?.toString().isNotEmpty == true)
-                            _buildFamilyItem(
-                              icon: Icons.phone_android,
-                              label: 'Mobile 2',
-                              value: eleve['mobile2']?.toString() ?? 'N/A',
-                              isClickable: true,
-                              onTap: () => _makePhoneCall(
-                                eleve['mobile2']?.toString() ?? '',
-                              ),
-                            ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Parents
-                      _buildFamilySection(
-                        title: 'Parents',
-                        icon: Icons.people,
-                        iconColor: Colors.purple,
-                        children: [
-                          _buildFamilyItem(
-                            icon: Icons.person_outline,
-                            label: 'Père',
-                            value: eleve['pere']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.person_outline,
-                            label: 'Mère',
-                            value: eleve['mere']?.toString() ?? 'N/A',
-                          ),
-                          _buildFamilyItem(
-                            icon: Icons.supervisor_account,
-                            label: 'Tuteur',
-                            value: eleve['tuteur']?.toString() ?? 'N/A',
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Bouton pour retirer l'enfant
-                      _buildRemoveChildSection(),
-                    ],
-                  ),
+                color: isDarkMode ? Colors.grey[900] : Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
-            ],
+              child: Column(
+                children: [
+                  BottomSheetHeader(
+                    icon: Icons.info_outline,
+                    title: 'Informations complètes',
+                    description:
+                        'Détails complets sur l\'élève et sa scolarité',
+                    iconColor: Colors.blue,
+                    onClose: () => Navigator.of(context).pop(),
+                    draggableController: draggableController,
+                  ),
+
+                  // Contenu complet
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          // QR Code d'identification - affiché en premier et centré
+                          Center(
+                            child: _buildFamilySection(
+                              title: 'QR Code d\'identification',
+                              icon: Icons.qr_code_2_rounded,
+                              iconColor: Colors.purple,
+                              children: [
+                                Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        QrImageView(
+                                          data: _generateStudentQRData(eleve),
+                                          version: QrVersions.auto,
+                                          size: 150.0,
+                                          backgroundColor: Colors.white,
+                                          foregroundColor: Colors.black,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Matricule: ${eleve['matricule']?.toString() ?? 'N/A'}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${eleve['prenom']?.toString() ?? ''} ${eleve['nom']?.toString() ?? ''}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Informations personnelles
+                          _buildFamilySection(
+                            title: 'Informations personnelles',
+                            icon: Icons.person,
+                            iconColor: Colors.blue,
+                            children: [
+                              _buildFamilyItem(
+                                icon: Icons.badge,
+                                label: 'Matricule',
+                                value: eleve['matricule']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.cake,
+                                label: 'Né(e)',
+                                value: _formatDate(
+                                  eleve['datenaissance']?.toString() ?? 'N/A',
+                                ),
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.wc,
+                                label: 'Sexe',
+                                value: eleve['sexe']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.location_on,
+                                label: 'Lieu',
+                                value: eleve['lieun']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.flag,
+                                label: 'Nationalité',
+                                value:
+                                    eleve['nationalite']?.toString() ?? 'N/A',
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Informations scolaires
+                          _buildFamilySection(
+                            title: 'Informations scolaires',
+                            icon: Icons.school,
+                            iconColor: Colors.orange,
+                            children: [
+                              _buildFamilyItem(
+                                icon: Icons.grade,
+                                label: 'Niveau',
+                                value: eleve['niveau']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.category,
+                                label: 'Filière',
+                                value: eleve['filiere']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.auto_stories,
+                                label: 'Série',
+                                value: eleve['serie']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.refresh,
+                                label: 'Redoublant',
+                                value: eleve['redoublant']?.toString() ?? 'N/A',
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Contact
+                          _buildFamilySection(
+                            title: 'Contact',
+                            icon: Icons.contact_phone,
+                            iconColor: Colors.green,
+                            children: [
+                              _buildFamilyItem(
+                                icon: Icons.home,
+                                label: 'Adresse',
+                                value: eleve['adresse']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.phone,
+                                label: 'Mobile',
+                                value: eleve['mobile']?.toString() ?? 'N/A',
+                                isClickable: true,
+                                onTap: () => _makePhoneCall(
+                                  eleve['mobile']?.toString() ?? '',
+                                ),
+                              ),
+                              if (eleve['mobile2']?.toString().isNotEmpty ==
+                                  true)
+                                _buildFamilyItem(
+                                  icon: Icons.phone_android,
+                                  label: 'Mobile 2',
+                                  value: eleve['mobile2']?.toString() ?? 'N/A',
+                                  isClickable: true,
+                                  onTap: () => _makePhoneCall(
+                                    eleve['mobile2']?.toString() ?? '',
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Parents
+                          _buildFamilySection(
+                            title: 'Parents',
+                            icon: Icons.people,
+                            iconColor: Colors.purple,
+                            children: [
+                              _buildFamilyItem(
+                                icon: Icons.person_outline,
+                                label: 'Père',
+                                value: eleve['pere']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.person_outline,
+                                label: 'Mère',
+                                value: eleve['mere']?.toString() ?? 'N/A',
+                              ),
+                              _buildFamilyItem(
+                                icon: Icons.supervisor_account,
+                                label: 'Tuteur',
+                                value: eleve['tuteur']?.toString() ?? 'N/A',
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Bouton pour retirer l'enfant
+                          _buildRemoveChildSection(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   // ─── MÉTHODES DE SUPPRESSION D'ENFANT ─────────────────────────────────────
@@ -3584,7 +3589,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       width: 48,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: _themeService.isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[700]
+                            : Colors.grey[300],
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -3623,7 +3630,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                       'Cette action est irréversible',
                       style: TextStyle(
                         fontSize: 15,
-                        color: _themeService.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -3642,21 +3651,27 @@ class _ChildListScreenState extends State<ChildListScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode ? Colors.white : Colors.grey[800],
+                      color: _themeService.isDarkMode
+                          ? Colors.white
+                          : Colors.grey[800],
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Child Info Card
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _themeService.isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
+                      color: _themeService.isDarkMode
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _themeService.isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+                        color: _themeService.isDarkMode
+                            ? Colors.grey[800]!
+                            : Colors.grey[200]!,
                         width: 1,
                       ),
                       boxShadow: [
@@ -3696,15 +3711,22 @@ class _ChildListScreenState extends State<ChildListScreen>
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: _themeService.isDarkMode ? Colors.white : Colors.black87,
+                                  color: _themeService.isDarkMode
+                                      ? Colors.white
+                                      : Colors.black87,
                                   letterSpacing: -0.3,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: _themeService.isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                                  color: _themeService.isDarkMode
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100],
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -3712,7 +3734,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
-                                    color: _themeService.isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                    color: _themeService.isDarkMode
+                                        ? Colors.grey[300]
+                                        : Colors.grey[700],
                                   ),
                                 ),
                               ),
@@ -3723,10 +3747,13 @@ class _ChildListScreenState extends State<ChildListScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Warning Banner
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
@@ -3973,7 +4000,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           SizedBox(
             width: double.infinity,
             child: CustomButton(
-              onPressed: () => _showRemoveChildConfirmation(fromChildInfos: true),
+              onPressed: () =>
+                  _showRemoveChildConfirmation(fromChildInfos: true),
               icon: Icons.delete_forever,
               text: 'Retirer cet enfant',
               backgroundColor: Colors.red,
@@ -4487,7 +4515,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AllEventsScreen(schoolCode: schoolCode),
+                      builder: (context) =>
+                          AllEventsScreen(schoolCode: schoolCode),
                     ),
                   );
                 } else {
@@ -4944,9 +4973,12 @@ class _ChildListScreenState extends State<ChildListScreen>
               key: 'kits_scolaires',
               title: 'Kits Scolaires',
               subtitle: 'Voir les kits',
-              imagePath: 'assets/images/icons/fournitures.png', // Or another icon
+              imagePath:
+                  'assets/images/icons/fournitures.png', // Or another icon
               iconData: Icons.backpack_rounded,
-              color: const Color(0xFF673AB7), // Violet color matching kits_bottom_sheet
+              color: const Color(
+                0xFF673AB7,
+              ), // Violet color matching kits_bottom_sheet
               actionText: 'Voir kits',
               onTap: () {
                 if (_ecoleCode == null) return;
@@ -8856,7 +8888,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         final appreciation = apiData['appreciation'] as String?;
         final moyFr = (apiData['moyFr'] as num?)?.toDouble();
         final moyGeneral = (apiData['moyGeneral'] as num?)?.toDouble();
-        final moyenneAnnuelleProjettee = (apiData['moyenneAnnuelleProjettee'] as num?)?.toDouble();
+        final moyenneAnnuelleProjettee =
+            (apiData['moyenneAnnuelleProjettee'] as num?)?.toDouble();
 
         if (mounted) {
           setState(() {
@@ -9704,7 +9737,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: isExpanded 
+        border: isExpanded
             ? Border.all(color: color.withOpacity(0.15), width: 1)
             : null,
         boxShadow: AppDimensions.getSettingsCardShadow(context),
@@ -9842,6 +9875,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                               () => _viewBulletin(bulletinData),
                             ),
                           ),
+                          /*
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildActionButton(
@@ -9851,6 +9885,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                               () => _downloadBulletin(bulletinData),
                             ),
                           ),
+                          */
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildActionButton(
@@ -10068,7 +10103,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final encodedPeriode = Uri.encodeComponent(periode);
     final encodedAnneeLibelle = Uri.encodeComponent(anneeLibelle);
 
-    return '${AppConfig.POULS_SCOLAIRE_API_URL}/imprimer-bulletin-list/spider-bulletin-matricule/$ecoleId/$encodedPeriode/$encodedAnneeLibelle/$classeId/$matricule/false/2/false/true/true/false/false/true/false/false/false/false';
+    return '${AppConfig.POULS_SCOLAIRE_API_URL}/imprimer-bulletin-list/spider-bulletin-matricule-mobile/$ecoleId/$encodedPeriode/$encodedAnneeLibelle/$classeId/$matricule/false/2/false/true/true/false/false/true/false/false/false/false';
   }
 
   Widget _buildDifficultiesTab() {
@@ -12198,7 +12233,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               ],
             ),
           ),
-          
+
         const BottomSpacer(),
       ],
     );

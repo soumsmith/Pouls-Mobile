@@ -10,6 +10,7 @@ import '../screens/my_tickets_screen.dart';
 import '../screens/referred_users_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
+import 'components/bottom_spacer.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
@@ -129,7 +130,8 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
               onClose: () => Navigator.of(context).pop(),
             ),
             _buildMenuList(),
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+            const SizedBox(height: 16),
+            const BottomSpacer(),
           ],
         ),
     );

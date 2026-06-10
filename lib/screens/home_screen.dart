@@ -272,41 +272,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Variables pour les vidéos Coulisses de l'Excellence
   List<CoulisseExcellence> _coulisseVideos = [];
+  List<CoulisseExcellence> _filteredCoulisseVideos = [];
   bool _coulisseVideosLoading = true;
   String? _coulisseVideosError;
 
   bool get _hasCoulisseExcellenceData =>
       !_coulisseVideosLoading &&
       _coulisseVideosError == null &&
-      _coulisseVideos.isNotEmpty;
+      _filteredCoulisseVideos.isNotEmpty;
 
   // Variables pour les événements
   List<Event> _events = [];
+  List<Event> _filteredEvents = [];
   bool _eventsLoading = true;
   String? _eventsError;
 
   bool get _hasEventsData =>
-      !_eventsLoading && _eventsError == null && _events.isNotEmpty;
+      !_eventsLoading && _eventsError == null && _filteredEvents.isNotEmpty;
 
   // Variables pour les blogs/actualités
   List<Blog> _blogs = [];
+  List<Blog> _filteredBlogs = [];
   bool _blogsLoading = true;
   String? _blogsError;
 
   bool get _hasBlogsData =>
-      !_blogsLoading && _blogsError == null && _blogs.isNotEmpty;
+      !_blogsLoading && _blogsError == null && _filteredBlogs.isNotEmpty;
 
   final List<String> _filters = ['Tout', 'Alertes', 'Paiements', 'Notes'];
 
   // Variables pour les vidéos de visite guidée
   List<Video> _visiteGuideeVideos = [];
+  List<Video> _filteredVisiteGuideeVideos = [];
   bool _visiteGuideeVideosLoading = true;
   String? _visiteGuideeVideosError;
 
   bool get _hasVisiteGuideeData =>
       !_visiteGuideeVideosLoading &&
       _visiteGuideeVideosError == null &&
-      _visiteGuideeVideos.isNotEmpty;
+      _filteredVisiteGuideeVideos.isNotEmpty;
 
   @override
   void initState() {
@@ -795,6 +799,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _coulisseVideos = videos;
+          _filteredCoulisseVideos = List.from(videos);
           _coulisseVideosLoading = false;
           _coulisseVideosError = null;
         });
@@ -822,6 +827,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _visiteGuideeVideos = videos;
+          _filteredVisiteGuideeVideos = List.from(videos);
           _visiteGuideeVideosLoading = false;
           _visiteGuideeVideosError = null;
         });
@@ -849,6 +855,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _events = events;
+          _filteredEvents = List.from(events);
           _eventsLoading = false;
           _eventsError = null;
         });
@@ -876,6 +883,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _blogs = blogs;
+          _filteredBlogs = List.from(blogs);
           _blogsLoading = false;
           _blogsError = null;
         });
@@ -1040,14 +1048,14 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _events.length > limit
+        itemCount: _filteredEvents.length > limit
             ? limit + 1
-            : _events.length + 1,
+            : _filteredEvents.length + 1,
         itemBuilder: (context, index) {
-          if (index < _events.length && index < limit) {
-            return _buildEventCard(_events[index]);
+          if (index < _filteredEvents.length && index < limit) {
+            return _buildEventCard(_filteredEvents[index]);
           } else if (index == limit ||
-              (index == _events.length && _events.length <= limit)) {
+              (index == _filteredEvents.length && _filteredEvents.length <= limit)) {
             return _buildSeeMoreEventsCard();
           } else {
             return const SizedBox.shrink();
@@ -1218,14 +1226,14 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _blogs.length > limit
+        itemCount: _filteredBlogs.length > limit
             ? limit + 1
-            : _blogs.length + 1,
+            : _filteredBlogs.length + 1,
         itemBuilder: (context, index) {
-          if (index < _blogs.length && index < limit) {
-            return _buildBlogCard(_blogs[index]);
+          if (index < _filteredBlogs.length && index < limit) {
+            return _buildBlogCard(_filteredBlogs[index]);
           } else if (index == limit ||
-              (index == _blogs.length && _blogs.length <= limit)) {
+              (index == _filteredBlogs.length && _filteredBlogs.length <= limit)) {
             return _buildSeeMoreBlogsCard();
           } else {
             return const SizedBox.shrink();
@@ -1401,15 +1409,15 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _coulisseVideos.length > limit
+        itemCount: _filteredCoulisseVideos.length > limit
             ? limit + 1
-            : _coulisseVideos.length + 1,
+            : _filteredCoulisseVideos.length + 1,
         itemBuilder: (context, index) {
-          if (index < _coulisseVideos.length && index < limit) {
-            return _buildVideoCard(_coulisseVideos[index]);
+          if (index < _filteredCoulisseVideos.length && index < limit) {
+            return _buildVideoCard(_filteredCoulisseVideos[index]);
           } else if (index == limit ||
-              (index == _coulisseVideos.length &&
-                  _coulisseVideos.length <= limit)) {
+              (index == _filteredCoulisseVideos.length &&
+                  _filteredCoulisseVideos.length <= limit)) {
             return _buildSeeMoreVideosCard();
           } else {
             return const SizedBox.shrink();
@@ -1568,15 +1576,15 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _visiteGuideeVideos.length > limit
+        itemCount: _filteredVisiteGuideeVideos.length > limit
             ? limit + 1
-            : _visiteGuideeVideos.length + 1,
+            : _filteredVisiteGuideeVideos.length + 1,
         itemBuilder: (context, index) {
-          if (index < _visiteGuideeVideos.length && index < limit) {
-            return _buildVisiteGuideeCard(_visiteGuideeVideos[index], index);
+          if (index < _filteredVisiteGuideeVideos.length && index < limit) {
+            return _buildVisiteGuideeCard(_filteredVisiteGuideeVideos[index], index);
           } else if (index == limit ||
-              (index == _visiteGuideeVideos.length &&
-                  _visiteGuideeVideos.length <= limit)) {
+              (index == _filteredVisiteGuideeVideos.length &&
+                  _filteredVisiteGuideeVideos.length <= limit)) {
             return _buildSeeMoreVisiteGuideeCard();
           } else {
             return const SizedBox.shrink();
@@ -3154,13 +3162,23 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!_isSearching) {
         _searchController.clear();
         _filteredChildren = List.from(_children);
+        _filteredEvents = List.from(_events);
+        _filteredBlogs = List.from(_blogs);
+        _filteredVisiteGuideeVideos = List.from(_visiteGuideeVideos);
+        _filteredCoulisseVideos = List.from(_coulisseVideos);
       }
     });
   }
 
   void _onSearchChanged(String query) {
     if (query.isEmpty) {
-      setState(() => _filteredChildren = List.from(_children));
+      setState(() {
+        _filteredChildren = List.from(_children);
+        _filteredEvents = List.from(_events);
+        _filteredBlogs = List.from(_blogs);
+        _filteredVisiteGuideeVideos = List.from(_visiteGuideeVideos);
+        _filteredCoulisseVideos = List.from(_coulisseVideos);
+      });
       return;
     }
     final lq = query.toLowerCase();
@@ -3168,6 +3186,26 @@ class _HomeScreenState extends State<HomeScreen> {
       _filteredChildren = _children.where((c) {
         final name = '${c.firstName} ${c.lastName}'.toLowerCase();
         return name.contains(lq) || c.establishment.toLowerCase().contains(lq);
+      }).toList();
+
+      _filteredEvents = _events.where((e) {
+        return e.title.toLowerCase().contains(lq) || 
+               e.nomecole.toLowerCase().contains(lq);
+      }).toList();
+
+      _filteredBlogs = _blogs.where((b) {
+        return b.title.toLowerCase().contains(lq) || 
+               b.nomecole.toLowerCase().contains(lq);
+      }).toList();
+
+      _filteredVisiteGuideeVideos = _visiteGuideeVideos.where((v) {
+        return v.title.toLowerCase().contains(lq) || 
+               v.description.toLowerCase().contains(lq);
+      }).toList();
+
+      _filteredCoulisseVideos = _coulisseVideos.where((v) {
+        return v.titre.toLowerCase().contains(lq) || 
+               v.description.toLowerCase().contains(lq);
       }).toList();
     });
   }

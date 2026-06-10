@@ -27,6 +27,8 @@ import '../config/app_config.dart';
 import '../models/event.dart';
 import '../models/avis.dart';
 import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
+import 'all_events_screen.dart';
+import 'all_blogs_screen.dart';
 import 'gallery_screen.dart';
 import 'blog_detail_screen.dart';
 import '../models/fee.dart';
@@ -1774,7 +1776,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         color: isDark ? Colors.white : const Color(0xFF1A202C),
                         height: 1.3,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -3234,21 +3236,26 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   void _showActionBottomSheet(String actionType, _ActionDef def) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // 1. CAS SPÉCIAL : ÉVÉNEMENTS (Utilisation du nouveau widget externalisé)
+    // 1. CAS SPÉCIAL : ÉVÉNEMENTS (Navigation directe)
     if (actionType == 'school_events') {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => SchoolEventBottomSheet(
-          schoolCode: widget.ecole.parametreCode,
-          schoolName: widget.ecole.parametreNom,
-          imagePath: def.imagePath ?? 'assets/images/icons/evenements_scolaires.png',
-          imageBackgroundColor: def.color,
-          imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AllEventsScreen(schoolCode: widget.ecole.parametreCode),
         ),
       );
       return; // On arrête ici pour ce cas
+    }
+
+    // 1.1 CAS SPÉCIAL : ACTUALITÉS (Navigation directe)
+    if (actionType == 'communication') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AllBlogsScreen(schoolCode: widget.ecole.parametreCode),
+        ),
+      );
+      return;
     }
 
     // 2. CAS SPÉCIAL : COULISSES (Navigation directe)
@@ -8617,7 +8624,7 @@ class _AnimatedPulseButtonState extends State<AnimatedPulseButton> with SingleTi
             widget.isExpanded ? 'Voir moins' : 'Voir plus',
             style: TextStyle(
               color: widget.isExpanded ? const Color(0xFFDC2626) : const Color(0xFF6B7280),
-              fontSize: 14,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
           ),

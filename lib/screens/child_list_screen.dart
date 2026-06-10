@@ -8,6 +8,7 @@ import 'package:parents_responsable/widgets/image_menu_card.dart';
 import 'package:parents_responsable/widgets/main_screen_wrapper.dart';
 import '../services/student_scolarite_service.dart';
 import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
+import 'all_events_screen.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/school_life_item_card.dart';
 import '../widgets/custom_loader.dart';
@@ -3298,13 +3299,18 @@ class _ChildListScreenState extends State<ChildListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        controller: draggableController,
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: BoxDecoration(
+      builder: (context) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).pop(),
+        child: DraggableScrollableSheet(
+          controller: draggableController,
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (_, controller) => GestureDetector(
+            onTap: () {}, // Empêche la fermeture lors d'un clic dans le contenu
+            child: Container(
+              decoration: BoxDecoration(
             color: isDarkMode ? Colors.grey[900] : Colors.white,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(24),
@@ -3332,6 +3338,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               // Contenu complet
               Expanded(
                 child: SingleChildScrollView(
+                  controller: controller,
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
@@ -3537,7 +3544,9 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   // ─── MÉTHODES DE SUPPRESSION D'ENFANT ─────────────────────────────────────
@@ -4474,17 +4483,10 @@ class _ChildListScreenState extends State<ChildListScreen>
               onTap: () {
                 final schoolCode = _ecoleCode ?? widget.child.ecoleCode;
                 if (schoolCode != null && schoolCode.isNotEmpty) {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => SchoolEventBottomSheet(
-                      schoolCode: schoolCode,
-                      schoolName: widget.child.establishment,
-                      imagePath: 'assets/images/icons/evenements_scolaires.png',
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(
-                        context,
-                      ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AllEventsScreen(schoolCode: schoolCode),
                     ),
                   );
                 } else {

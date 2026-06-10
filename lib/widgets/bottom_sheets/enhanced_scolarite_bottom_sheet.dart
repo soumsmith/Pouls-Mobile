@@ -908,12 +908,17 @@ void showEnhancedScolariteBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      controller: draggableController,
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (_, controller) => EnhancedScolariteBottomSheet(
+    builder: (context) => GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).pop(),
+      child: DraggableScrollableSheet(
+        controller: draggableController,
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => GestureDetector(
+          onTap: () {}, // Empêche la fermeture lors d'un clic dans le contenu
+          child: EnhancedScolariteBottomSheet(
         childName: childName,
         childMatricule: childMatricule,
         scolariteEntries: scolariteEntries,
@@ -935,6 +940,8 @@ void showEnhancedScolariteBottomSheet(
         scrollController: controller,
       ),
     ),
+  ),
+),
   );
 }
 

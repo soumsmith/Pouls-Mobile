@@ -20,7 +20,9 @@ import '../widgets/components/bottom_spacer.dart';
 
 // ─── Écran principal ──────────────────────────────────────────────────────────
 class AllBlogsScreen extends StatefulWidget {
-  const AllBlogsScreen({super.key});
+  final String? schoolCode;
+
+  const AllBlogsScreen({super.key, this.schoolCode});
 
   @override
   State<AllBlogsScreen> createState() => _AllBlogsScreenState();
@@ -167,13 +169,23 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     }
 
     try {
-      final response = await BlogService.getBlogs(
-        page: _currentPage, 
-        perPage: 16,
-        country: _countryController.text.trim().isNotEmpty ? _countryController.text.trim() : null,
-        categorie: _categoryController.text.trim().isNotEmpty ? _categoryController.text.trim() : null,
-        date: _dateController.text.trim().isNotEmpty ? _getApiFormattedDate(_dateController.text.trim()) : null,
-      );
+      final BlogsResponse response;
+      if (widget.schoolCode != null && widget.schoolCode!.isNotEmpty) {
+        response = await _blogService.getBlogsByEcole(
+          '',
+          widget.schoolCode!,
+          page: _currentPage,
+          perPage: 16,
+        );
+      } else {
+        response = await BlogService.getBlogs(
+          page: _currentPage, 
+          perPage: 16,
+          country: _countryController.text.trim().isNotEmpty ? _countryController.text.trim() : null,
+          categorie: _categoryController.text.trim().isNotEmpty ? _categoryController.text.trim() : null,
+          date: _dateController.text.trim().isNotEmpty ? _getApiFormattedDate(_dateController.text.trim()) : null,
+        );
+      }
       final newBlogs = response.data;
       
       setState(() {
@@ -231,6 +243,8 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       ),
     );
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
       body: Stack(
@@ -239,17 +253,18 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
             slivers: [
               CustomSliverAppBar(
                 title: 'Actualités',
-                isDark: Theme.of(context).brightness == Brightness.dark,
+                isDark: isDark,
                 actions: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.tune_rounded,
-                      color: _showAdvancedFilters ? AppColors.screenOrange : AppColors.screenTextPrimaryThemed(context),
+                  if (widget.schoolCode == null)
+                    IconButton(
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        color: _showAdvancedFilters ? AppColors.screenOrange : AppColors.screenTextPrimaryThemed(context),
+                      ),
+                      onPressed: () => setState(() {
+                        _showAdvancedFilters = !_showAdvancedFilters;
+                      }),
                     ),
-                    onPressed: () => setState(() {
-                      _showAdvancedFilters = !_showAdvancedFilters;
-                    }),
-                  ),
                   IconButton(
                     icon: Icon(
                       _isSearching ? Icons.close_rounded : Icons.search_rounded,
@@ -262,14 +277,16 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                   ),
                 ],
               ),
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    _buildAdvancedFilters(),
-                    if (_showAdvancedFilters) const SizedBox(height: 16),
-                  ],
+              if (widget.schoolCode == null)
+                SliverToBoxAdapter(
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: _showAdvancedFilters 
+                        ? _buildAdvancedFilters()
+                        : const SizedBox.shrink(),
+                  ),
                 ),
-              ),
               SliverToBoxAdapter(child: _buildSearchBar()),
               SliverToBoxAdapter(child: _buildFilterRow()),
               ..._buildBodySlivers(),

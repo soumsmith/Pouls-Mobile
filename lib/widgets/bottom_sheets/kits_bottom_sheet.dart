@@ -41,6 +41,15 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
   String? _kitsError;
   List<Map<String, dynamic>> _kits = [];
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.niveaux.isNotEmpty) {
+      _selectedNiveau = widget.niveaux.first;
+      _fetchKitsForNiveau(_selectedNiveau!);
+    }
+  }
+
   Future<void> _fetchKitsForNiveau(Niveau niveau) async {
     setState(() {
       _selectedNiveau = niveau;

@@ -36,7 +36,9 @@ Color _statusColor(String status) {
 
 // ─── Écran principal ──────────────────────────────────────────────────────────
 class AllEventsScreen extends StatefulWidget {
-  const AllEventsScreen({super.key});
+  final String? schoolCode;
+
+  const AllEventsScreen({super.key, this.schoolCode});
 
   @override
   State<AllEventsScreen> createState() => _AllEventsScreenState();
@@ -178,31 +180,49 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     }
 
     try {
-      final response = await EventService.getEvents(
-        page: _currentPage,
-        perPage: 16,
-        country: _countryController.text.trim().isNotEmpty
-            ? _countryController.text.trim()
-            : null,
-        categorie: _categoryController.text.trim().isNotEmpty
-            ? _categoryController.text.trim()
-            : null,
-        date: _dateController.text.trim().isNotEmpty
-            ? _getApiFormattedDate(_dateController.text.trim())
-            : null,
-      );
-      final newEvents = response.data.map((e) => e.toUiMap()).toList();
+      if (widget.schoolCode != null && widget.schoolCode!.isNotEmpty) {
+        final newEvents = await EventService.getEventsForUI(
+          schoolCode: widget.schoolCode!,
+          page: _currentPage,
+          perPage: 16,
+        );
+        setState(() {
+          if (loadMore) {
+            _allEvents.addAll(newEvents);
+            _isLoadingMore = false;
+          } else {
+            _allEvents = newEvents;
+            _isLoading = false;
+          }
+          _hasMore = newEvents.length >= 16;
+        });
+      } else {
+        final response = await EventService.getEvents(
+          page: _currentPage,
+          perPage: 16,
+          country: _countryController.text.trim().isNotEmpty
+              ? _countryController.text.trim()
+              : null,
+          categorie: _categoryController.text.trim().isNotEmpty
+              ? _categoryController.text.trim()
+              : null,
+          date: _dateController.text.trim().isNotEmpty
+              ? _getApiFormattedDate(_dateController.text.trim())
+              : null,
+        );
+        final newEvents = response.data.map((e) => e.toUiMap()).toList();
 
-      setState(() {
-        if (loadMore) {
-          _allEvents.addAll(newEvents);
-          _isLoadingMore = false;
-        } else {
-          _allEvents = newEvents;
-          _isLoading = false;
-        }
-        _hasMore = response.currentPage < response.totalPages;
-      });
+        setState(() {
+          if (loadMore) {
+            _allEvents.addAll(newEvents);
+            _isLoadingMore = false;
+          } else {
+            _allEvents = newEvents;
+            _isLoading = false;
+          }
+          _hasMore = response.currentPage < response.totalPages;
+        });
+      }
 
       if (!loadMore) _fadeController.forward(from: 0);
     } catch (e) {
@@ -258,17 +278,18 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                 title: 'Événements scolaires',
                 isDark: Theme.of(context).brightness == Brightness.dark,
                 actions: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.tune_rounded,
-                      color: _showAdvancedFilters
-                          ? AppColors.screenOrange
-                          : AppColors.screenTextPrimaryThemed(context),
+                  if (widget.schoolCode == null || widget.schoolCode!.isEmpty)
+                    IconButton(
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        color: _showAdvancedFilters
+                            ? AppColors.screenOrange
+                            : AppColors.screenTextPrimaryThemed(context),
+                      ),
+                      onPressed: () => setState(() {
+                        _showAdvancedFilters = !_showAdvancedFilters;
+                      }),
                     ),
-                    onPressed: () => setState(() {
-                      _showAdvancedFilters = !_showAdvancedFilters;
-                    }),
-                  ),
                   IconButton(
                     icon: Icon(
                       _isSearching ? Icons.close_rounded : Icons.search_rounded,

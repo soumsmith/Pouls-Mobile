@@ -110,13 +110,18 @@ class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueShee
       ecoleCode: widget.ecoleCode,
     );
 
-    return DraggableScrollableSheet(
-      controller: _draggableController,
-      initialChildSize: 0.75,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).pop(),
+      child: DraggableScrollableSheet(
+        controller: _draggableController,
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (context, scrollController) => GestureDetector(
+          onTap: () {}, // Empêche la fermeture lors d'un clic dans le contenu
+          child: Container(
+            decoration: BoxDecoration(
           color: widget.isDark ? Colors.grey[900] : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -290,7 +295,9 @@ class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueShee
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

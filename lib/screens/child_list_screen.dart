@@ -394,6 +394,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   String? _appreciation;
   double? _moyFr;
   double? _moyGeneral;
+  double? _moyenneAnnuelleProjettee;
   bool _isLoadingNotes = false;
 
   // Variables pour les logs d'accès
@@ -5424,7 +5425,19 @@ class _ChildListScreenState extends State<ChildListScreen>
     List<Widget> cards = [];
 
     // Carte Moyenne
-    if (_moyGeneral != null) {
+    if (_moyenneAnnuelleProjettee != null) {
+      cards.add(
+        _buildEnhancedSummaryCard(
+          'Moy. Annuelle',
+          '${_moyenneAnnuelleProjettee!.toStringAsFixed(2)}',
+          Colors.green,
+          Icons.trending_up,
+          subtitle: 'Projetée',
+          isLoading: _isLoadingNotes,
+          gradient: _getGradientForColor(Colors.green),
+        ),
+      );
+    } else if (_moyGeneral != null) {
       cards.add(
         _buildEnhancedSummaryCard(
           'Moy. Annuelle',
@@ -8841,14 +8854,16 @@ class _ChildListScreenState extends State<ChildListScreen>
 
         // Extraire les données de la réponse API
         final appreciation = apiData['appreciation'] as String?;
-        final moyFr = apiData['moyFr'] as double?;
-        final moyGeneral = apiData['moyGeneral'] as double?;
+        final moyFr = (apiData['moyFr'] as num?)?.toDouble();
+        final moyGeneral = (apiData['moyGeneral'] as num?)?.toDouble();
+        final moyenneAnnuelleProjettee = (apiData['moyenneAnnuelleProjettee'] as num?)?.toDouble();
 
         if (mounted) {
           setState(() {
             _appreciation = appreciation;
             _moyFr = moyFr;
             _moyGeneral = moyGeneral;
+            _moyenneAnnuelleProjettee = moyenneAnnuelleProjettee;
             _isLoadingNotes = false;
           });
         }
@@ -8857,6 +8872,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         print('   - Appreciation: $appreciation');
         print('   - Moyenne Français: $moyFr');
         print('   - Moyenne Générale: $moyGeneral');
+        print('   - Moyenne Annuelle Projetée: $moyenneAnnuelleProjettee');
       } else {
         print(' Erreur lors du chargement des statistiques de notes');
         if (mounted) {

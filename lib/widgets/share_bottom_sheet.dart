@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import '../services/theme_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_colors.dart';
+import 'components/bottom_spacer.dart';
 
 class ShareBottomSheet extends StatelessWidget {
   final String title;
@@ -42,11 +44,17 @@ class ShareBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Theme colors to make it adapt to dark/light mode
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1E2A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B); // AppColors.slate900 equivalent
-    final subtextColor = isDark ? Colors.white70 : const Color(0xFF64748B); // AppColors.slate500 equivalent
-    final handleColor = isDark ? Colors.white24 : const Color(0xFFCBD5E1); // AppColors.slate300 equivalent
+    final isDark = ThemeService().isDarkMode;
+    final bgColor = isDark ? Colors.black : Colors.white;
+    final textColor = isDark
+        ? Colors.white
+        : const Color(0xFF1E293B); // AppColors.slate900 equivalent
+    final subtextColor = isDark
+        ? Colors.white70
+        : const Color(0xFF64748B); // AppColors.slate500 equivalent
+    final handleColor = isDark
+        ? Colors.white24
+        : const Color(0xFFCBD5E1); // AppColors.slate300 equivalent
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -69,7 +77,11 @@ class ShareBottomSheet extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             title,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: textColor),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -120,6 +132,8 @@ class ShareBottomSheet extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          const BottomSpacer(),
         ],
       ),
     );
@@ -143,7 +157,7 @@ class _ShareOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ThemeService().isDarkMode;
     final labelColor = isDark ? Colors.white70 : const Color(0xFF64748B);
 
     return GestureDetector(

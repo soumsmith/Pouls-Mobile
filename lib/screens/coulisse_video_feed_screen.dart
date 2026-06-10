@@ -16,6 +16,7 @@ import '../widgets/snackbar.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -1539,8 +1540,57 @@ class _RatingSheet extends StatefulWidget {
 class _RatingSheetState extends State<_RatingSheet> {
   int _currentRating = 0;
   bool _hasRated = false;
-  double _averageRating = 4.2;
-  int _totalRatings = 127;
+  double _averageRating = 0.0;
+  int _totalRatings = 0;
+  bool _isLoading = true;
+  int? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUserId = InteractionApiService.getCurrentUserId();
+    _loadRatings();
+  }
+
+  Future<void> _loadRatings() async {
+    try {
+      final ratings = await InteractionApiService.listInteractions(
+        videoId: widget.video.id,
+        type: 'rating',
+      );
+
+      if (!mounted) return;
+
+      int total = ratings.length;
+      double sum = 0;
+      bool hasRated = false;
+      int userRating = 0;
+
+      for (var r in ratings) {
+        final val = int.tryParse(r.content?.toString() ?? '') ?? 0;
+        sum += val;
+        if (_currentUserId != null && r.userId == _currentUserId) {
+          hasRated = true;
+          userRating = val;
+        }
+      }
+
+      setState(() {
+        _totalRatings = total;
+        _averageRating = total > 0 ? sum / total : 0.0;
+        _hasRated = hasRated;
+        if (hasRated) {
+          _currentRating = userRating;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1619,10 +1669,16 @@ class _RatingSheetState extends State<_RatingSheet> {
 
                 const SizedBox(height: 16),
 
-                // Current rating stats
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else ...[
+                  // Current rating stats
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
                     color: cardBgColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1721,35 +1777,73 @@ class _RatingSheetState extends State<_RatingSheet> {
                     ),
                   ),
                 ],
+                ],
               ],
             ),
           ),
 
           const SizedBox(height: 8),
+          const BottomSpacer(),
         ],
       ),
     );
   }
 
   Future<void> _submitRating() async {
-    setState(() {
-      _hasRated = true;
-      // Mettre à jour les statistiques (simulation)
-      _totalRatings++;
-      _averageRating =
-          ((_averageRating * (_totalRatings - 1)) + _currentRating) /
-          _totalRatings;
-    });
+    final userId = InteractionApiService.getCurrentUserId();
+    if (userId == null) {
+      CartSnackBar.showOverlay(
+        context,
+        productName: '',
+        message: 'Vous devez être connecté pour noter',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
+      );
+      return;
+    }
 
-    // Simuler l'envoi au serveur
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final newRating = await InteractionApiService.createInteraction(
+        videoId: widget.video.id,
+        userId: userId,
+        type: 'rating',
+        content: _currentRating.toString(),
+      );
 
-    if (mounted) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      });
+      if (mounted) {
+        CartSnackBar.showOverlay(
+          context,
+          productName: '',
+          message: 'Note envoyée avec succès',
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
+        );
+        
+        setState(() {
+          _hasRated = true;
+          // Mettre à jour les statistiques
+          _totalRatings++;
+          _averageRating =
+              ((_averageRating * (_totalRatings - 1)) + _currentRating) /
+              _totalRatings;
+        });
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        CartSnackBar.showOverlay(
+          context,
+          productName: '',
+          message: 'Erreur lors de l\'envoi de la note: $e',
+          backgroundColor: Colors.red,
+          icon: Icons.error_outline,
+        );
+      }
     }
   }
 }

@@ -28,9 +28,9 @@ import '../widgets/components/bottom_spacer.dart';
 //  Design tokens
 // ─────────────────────────────────────────────
 class _AppColors {
-  static const indigo = Color(0xFF6366F1);
-  static const indigoDark = Color(0xFF4F46E5);
-  static const indigoLight = Color(0xFFEEF2FF);
+  static const indigo = Color(0xFF3B82F6);
+  static const indigoDark = Color(0xFF2563EB);
+  static const indigoLight = Color(0xFFEFF6FF);
   static const emerald = Color(0xFF10B981);
   static const emeraldLight = Color(0xFFD1FAE5);
   static const amber = Color(0xFFF59E0B);
@@ -1734,6 +1734,8 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          const BottomSpacer(),
         ],
       ),
     );

@@ -105,6 +105,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 color: AppColors.settingsBlue,
                                 onTap: _navigateToProfile,
                               ),
+                              /*
                               _SettingsItem(
                                 title: 'Sécurité',
                                 subtitle: 'Mot de passe et authentification',
@@ -121,6 +122,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 onTap: () => _showSnack(
                                     'Paramètres de confidentialité bientôt disponibles !'),
                               ),
+                              */
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -140,6 +142,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 toggleValue: isDark,
                                 onTap: () => _themeService.toggleTheme(),
                               ),
+                              /*
                               _SettingsItem(
                                 title: 'Langue',
                                 subtitle: 'Français',
@@ -148,6 +151,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 onTap: () => _showSnack(
                                     'Choix de langue bientôt disponible !'),
                               ),
+                              */
                               _SettingsItem(
                                 title: 'Taille du texte',
                                 subtitle: _textSizeService.getLabel(),
@@ -208,6 +212,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 color: AppColors.settingsBlue,
                                 onTap: _navigateToHelpSupport,
                               ),
+                              /*
                               _SettingsItem(
                                 title: 'Signaler un problème',
                                 subtitle: 'Nous faire remonter un bug',
@@ -224,6 +229,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 onTap: () => _showSnack(
                                     'Formulaire de suggestions bientôt disponible !'),
                               ),
+                              */
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -239,6 +245,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 color: AppColors.settingsGrey,
                                 onTap: _showVersionInfo,
                               ),
+                              /*
                               _SettingsItem(
                                 title: 'Conditions d\'utilisation',
                                 subtitle: 'Mentions légales et CGU',
@@ -255,6 +262,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 onTap: () => _showSnack(
                                     'Politique de confidentialité bientôt disponible !'),
                               ),
+                              */
                             ],
                           ),
                           const SizedBox(height: 24),

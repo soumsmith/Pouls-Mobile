@@ -132,6 +132,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/document/
     - assets/images/img-shcool-not-found.jpg
     - assets/images/video-placeholder.jpg
     - assets/images/icons/controle_acces.png

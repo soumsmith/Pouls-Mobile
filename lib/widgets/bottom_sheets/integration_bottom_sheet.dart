@@ -414,16 +414,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         _isLoadingEcoles = false;
         _ecoleErrorMessage = 'Erreur chargement des établissements';
       });
-      final isDns =
-          e.toString().contains('Failed host lookup') ||
-          e.toString().contains('No address associated');
-      if (isDns && mounted) {
-        _showSnack(
-          'Erreur de connexion. Vérifiez votre internet.',
-          isError: true,
-        );
-      } else if (mounted) {
-        _showSnack('Erreur : ${e.toString()}', isError: true);
+      final errorStr = e.toString().toLowerCase();
+      final isNetworkError =
+          errorStr.contains('pas de connexion internet') ||
+          errorStr.contains('failed host lookup') ||
+          errorStr.contains('no address associated');
+      
+      if (!isNetworkError && mounted) {
+        _showSnack('Erreur : ${e.toString().replaceAll('Exception: ', '')}', isError: true);
       }
     }
   }

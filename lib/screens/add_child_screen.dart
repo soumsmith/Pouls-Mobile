@@ -242,13 +242,15 @@ class _AddChildScreenState extends State<AddChildScreen>
         _isLoadingEcoles = false;
         _errorMessage = 'Erreur chargement des écoles';
       });
-      final isDns =
-          e.toString().contains('Failed host lookup') ||
-          e.toString().contains('No address associated');
-      if (isDns && mounted)
-        _showDnsDialog();
-      else if (mounted)
-        _showSnackbar('Erreur : ${e.toString()}', isError: true);
+      final errorStr = e.toString().toLowerCase();
+      final isNetworkError =
+          errorStr.contains('pas de connexion internet') ||
+          errorStr.contains('failed host lookup') ||
+          errorStr.contains('no address associated');
+      
+      if (!isNetworkError && mounted) {
+        _showSnackbar('Erreur : ${e.toString().replaceAll('Exception: ', '')}', isError: true);
+      }
     }
   }
 

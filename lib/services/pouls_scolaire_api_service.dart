@@ -178,13 +178,7 @@ class PoulsScolaireApiService {
         if (errorMsg.contains('failed host lookup') ||
             errorMsg.contains('no address associated')) {
           throw Exception(
-            'Impossible de résoudre le nom de domaine "api-pro.pouls-scolaire.net".\n\n'
-            'Vérifications à faire :\n'
-            '1. Vérifiez votre connexion internet\n'
-            '2. Testez l\'URL dans un navigateur : https://api-pro.pouls-scolaire.net/api/connecte/ecole\n'
-            '3. Si vous êtes sur un émulateur Android, vérifiez que l\'émulateur a accès à internet\n'
-            '4. Vérifiez que le nom de domaine est correct\n'
-            '5. Vérifiez les paramètres DNS de votre réseau',
+            'Pas de connexion internet. Veuillez vérifier votre réseau.',
           );
         }
         throw Exception(

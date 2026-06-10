@@ -108,6 +108,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       );
+    } else if (result == DirectLoginResult.connectionError) {
+      // Ne rien faire, l'ApiExceptionHandler a déjà affiché une notification de connexion
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

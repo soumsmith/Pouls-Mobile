@@ -11,6 +11,7 @@ enum DirectLoginResult {
   success,
   userNotFound,
   error,
+  connectionError,
 }
 
 /// Résultat de l'envoi d'OTP
@@ -105,7 +106,13 @@ class AuthService {
         return DirectLoginResult.userNotFound;
       }
       
-      return DirectLoginResult.error;
+      final errorStr = e.toString().toLowerCase();
+      print('DEBUG LOGIN ERROR: $errorStr');
+      
+      // Toutes les autres exceptions ont déjà été traitées et notifiées par 
+      // ApiExceptionHandler via HttpService.post, on retourne donc connectionError
+      // pour éviter la double notification dans login_screen.dart
+      return DirectLoginResult.connectionError;
     }
   }
 

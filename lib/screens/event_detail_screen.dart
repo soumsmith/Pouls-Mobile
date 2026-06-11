@@ -124,7 +124,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   Future<void> _checkTicketAvailability() async {
     try {
-      final id = widget.event.id ?? widget.event.slug;
+      final id = widget.event.slug;
       final categories = await TicketService.getTicketCategories(
         id,
         fallbackSlug: widget.event.slug,
@@ -973,7 +973,7 @@ Découvrez plus d'événements sur notre application! 📱
       });
     }
     try {
-      final id = widget.event.id ?? widget.event.slug;
+      final id = widget.event.slug;
       final categories = await TicketService.getTicketCategories(
         id,
         fallbackSlug: widget.event.slug,

@@ -640,9 +640,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       return;
     }
 
-    setState(() {
-      _isLoadingOrders = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingOrders = true;
+      });
+    }
 
     try {
       print(
@@ -650,19 +652,20 @@ class _ChildListScreenState extends State<ChildListScreen>
       );
       final orders = await OrderService().getUserOrders(currentUser!.phone);
 
-      setState(() {
-        _orders = orders;
-        _isLoadingOrders = false;
-      });
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+          _isLoadingOrders = false;
+        });
+      }
 
       print('✅ Commandes chargées: ${_orders.length} commandes');
     } catch (e) {
       print('❌ Erreur lors du chargement des commandes: $e');
-      setState(() {
-        _isLoadingOrders = false;
-      });
-
       if (mounted) {
+        setState(() {
+          _isLoadingOrders = false;
+        });
         _showSnackBarDeferred(
           SnackBar(
             content: Text('Erreur lors du chargement des commandes: $e'),
@@ -676,9 +679,11 @@ class _ChildListScreenState extends State<ChildListScreen>
     print(
       '📋 Début du chargement des données pour l\'enfant: ${widget.child.id}',
     );
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final wrapper = MainScreenWrapper.maybeOf(context);
@@ -768,13 +773,15 @@ class _ChildListScreenState extends State<ChildListScreen>
       final feesResult = await apiService.getFeesForChild(widget.child.id);
       await Future.delayed(const Duration(milliseconds: 200));
 
-      setState(() {
-        _notes = notesResult;
-        _timetable = timetableResult;
-        _messages = messagesResult;
-        _fees = feesResult;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _notes = notesResult;
+          _timetable = timetableResult;
+          _messages = messagesResult;
+          _fees = feesResult;
+          _isLoading = false;
+        });
+      }
 
       print('✅ Données de base chargées');
       print('   📝 Notes: ${_notes.length}');
@@ -799,10 +806,10 @@ class _ChildListScreenState extends State<ChildListScreen>
     } catch (e) {
       print('❌ Erreur lors du chargement des données: $e');
       print('Stack trace: ${StackTrace.current}');
-      setState(() {
-        _isLoading = false;
-      });
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         _showSnackBarDeferred(SnackBar(content: Text('Erreur: $e')));
       }
     }
@@ -3817,9 +3824,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                         Navigator.of(
                           context,
                         ).pop(); // Fermer le bottom sheet de confirmation
-                        Navigator.of(
-                          context,
-                        ).pop(); // Fermer le bottom sheet d'informations
+                        if (fromChildInfos) {
+                          Navigator.of(
+                            context,
+                          ).pop(); // Fermer le bottom sheet d'informations
+                        }
                         _removeChild();
                       },
                       text: 'Retirer',
@@ -3869,7 +3878,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           wrapper.goBackToPreviousTab();
           wrapper.refreshCurrentUser();
         } else if (Navigator.canPop(context)) {
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
         }
       }
     } catch (e) {

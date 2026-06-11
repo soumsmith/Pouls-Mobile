@@ -27,22 +27,19 @@ class MockApiService implements ApiService {
     // Charger depuis la base de données locale en priorité
     try {
       final dbChildren = await DatabaseService.instance.getChildrenByParent(parentId);
-      if (dbChildren.isNotEmpty) {
-        // Synchroniser avec le cache en mémoire
-        _childrenByParent[parentId] = List.from(dbChildren);
-        return dbChildren;
-      }
+      // Toujours synchroniser avec le cache en mémoire, même si c'est vide (car ça peut être une suppression du dernier enfant)
+      _childrenByParent[parentId] = List.from(dbChildren);
+      return dbChildren;
     } catch (e) {
       print('Erreur lors du chargement depuis la base de données: $e');
     }
     
-    // Si pas d'enfants en base de données, vérifier le cache en mémoire
+    // Si la base de données a échoué (exception), vérifier le cache en mémoire
     if (_childrenByParent.containsKey(parentId)) {
       return _childrenByParent[parentId]!;
     }
     
     // Si aucun enfant trouvé, retourner une liste vide
-    // (plus de données de test par défaut)
     _childrenByParent[parentId] = [];
     return [];
   }

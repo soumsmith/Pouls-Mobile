@@ -231,14 +231,17 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
   // Child card
   Widget _buildChildCard(Child child, int index) {
     return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
+      onTap: () async {
+        final result = await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => ChildListScreen(
               child: child,
             ),
           ),
         );
+        if (result == true) {
+          _loadChildren();
+        }
       },
       child: Container(
         decoration: BoxDecoration(

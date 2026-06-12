@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'dart:io';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pdf_viewer_screen.dart';
@@ -187,6 +188,30 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
       await _loadTickets();
     }
+  }
+
+  Future<void> _deleteLocalTicket(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final localTicketsJson = prefs.getString('local_purchased_tickets') ?? '[]';
+    final List<dynamic> localTickets = json.decode(localTicketsJson);
+    
+    final ticketToDelete = localTickets.firstWhere((t) => t['id'] == id, orElse: () => null);
+    if (ticketToDelete != null && ticketToDelete['pdfPath'] != null) {
+      try {
+        final file = File(ticketToDelete['pdfPath']);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (e) {
+        debugPrint('Erreur lors de la suppression du fichier PDF: $e');
+      }
+    }
+
+    localTickets.removeWhere((t) => t['id'] == id);
+    await prefs.setString('local_purchased_tickets', json.encode(localTickets));
+    
+    // Recharge les tickets après suppression
+    _loadTickets();
   }
 
   List<UserTicket> _getFilteredTickets() {
@@ -834,12 +859,19 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     final isValid = statusLower == 'valide' || statusLower == 'non_utilise' || statusLower == 'non_utilisé';
     final isUsed = statusLower == 'utilise' || statusLower == 'utilisé';
 
+    final isLocalPdf = ticket.rawData['isLocalPdf'] == true;
+
     Color statusThemeColor;
     Color badgeBgColor;
     String statusLabelText;
     IconData statusIcon;
 
-    if (isValid) {
+    if (isLocalPdf) {
+      statusThemeColor = AppColors.primary;
+      badgeBgColor = isDark ? AppColors.primary.withOpacity(0.18) : AppColors.primary.withOpacity(0.1);
+      statusLabelText = 'Ouvrir PDF';
+      statusIcon = Icons.picture_as_pdf_outlined;
+    } else if (isValid) {
       statusThemeColor = AppColors.success;
       badgeBgColor = AppColors.successSurface;
       statusLabelText = 'Valide';
@@ -1007,36 +1039,80 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                // Styled Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isDark ? statusThemeColor.withOpacity(0.18) : badgeBgColor,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: statusThemeColor.withOpacity(isDark ? 0.3 : 0.4),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        statusIcon,
-                        size: 11,
-                        color: statusThemeColor,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Styled Status Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: badgeBgColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: statusThemeColor.withOpacity(isDark ? 0.3 : 0.4),
+                          width: 1,
+                        ),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        statusLabelText,
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(10),
-                          fontWeight: FontWeight.bold,
-                          color: statusThemeColor,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            statusIcon,
+                            size: 11,
+                            color: statusThemeColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            statusLabelText,
+                            style: TextStyle(
+                              fontSize: _textSizeService.getScaledFontSize(10),
+                              fontWeight: FontWeight.bold,
+                              color: statusThemeColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isLocalPdf) ...[
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Supprimer le ticket'),
+                              content: const Text('Voulez-vous vraiment supprimer ce ticket téléchargé ?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('Annuler'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    _deleteLocalTicket(ticket.id);
+                                  },
+                                  child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: Colors.red,
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ],
             ),

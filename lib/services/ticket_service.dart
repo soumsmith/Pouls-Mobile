@@ -4,6 +4,9 @@ import 'dart:developer' as developer;
 import '../models/ticket_category.dart';
 import '../models/user_ticket.dart';
 import '../config/app_config.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TicketService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
@@ -75,6 +78,8 @@ class TicketService {
     required String eventId,
     required Map<String, int> tickets,
     required String phoneNumber,
+    String? eventName,
+    String? establishment,
   }) async {
     try {
       final url = '$baseUrl/vie-ecoles/billetterie/participer/$eventId';
@@ -99,8 +104,35 @@ class TicketService {
       developer.log('Response Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        return data;
+        if (response.body.startsWith('%PDF')) {
+          final dir = await getApplicationDocumentsDirectory();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final file = File('${dir.path}/ticket_${eventId}_$timestamp.pdf');
+          await file.writeAsBytes(response.bodyBytes);
+
+          final prefs = await SharedPreferences.getInstance();
+          final ticketsJson = prefs.getString('local_purchased_tickets') ?? '[]';
+          final List<dynamic> savedTickets = json.decode(ticketsJson);
+
+          final ticketData = {
+            'id': 'ticket_$timestamp',
+            'eventId': eventId,
+            'eventName': eventName ?? 'Ticket Événement',
+            'establishment': establishment ?? 'Établissement scolaire',
+            'pdfPath': file.path,
+            'date': DateTime.now().toIso8601String(),
+            'tickets': tickets,
+            'isLocalPdf': true,
+          };
+
+          savedTickets.add(ticketData);
+          await prefs.setString('local_purchased_tickets', json.encode(savedTickets));
+
+          return ticketData;
+        } else {
+          final Map<String, dynamic> data = json.decode(response.body);
+          return data;
+        }
       } else {
         throw Exception(_parseError(response));
       }

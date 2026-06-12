@@ -23,6 +23,7 @@ import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
+import 'pdf_viewer_screen.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -1018,8 +1019,10 @@ Découvrez plus d'événements sur notre application! 📱
     try {
       final tickets = {_selectedTicketCategory!.id: _selectedQuantity};
       final id = widget.event.id ?? widget.event.slug;
-      await TicketService.purchaseTicket(
+      final result = await TicketService.purchaseTicket(
         eventId: id,
+        eventName: widget.event.title,
+        establishment: widget.event.nomecole,
         tickets: tickets,
         phoneNumber: currentUser.phone,
       );
@@ -1033,6 +1036,18 @@ Découvrez plus d'événements sur notre application! 📱
           _selectedTicketCategory = null;
           _selectedQuantity = 1;
         });
+
+        if (result['pdfPath'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PDFViewerScreen(
+                pdfUrl: result['pdfPath'],
+                title: 'Votre Ticket',
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

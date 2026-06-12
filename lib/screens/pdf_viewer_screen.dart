@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import '../config/app_colors.dart';
@@ -37,17 +39,29 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
           enableDoubleTapZooming: true,
           pageLayoutMode: PdfPageLayoutMode.continuous,
         )
-      : SfPdfViewer.network(
-          widget.pdfUrl,
-          key: _pdfViewerKey,
-          onDocumentLoaded: _onDocumentLoaded,
-          onDocumentLoadFailed: _onDocumentLoadFailed,
-          onPageChanged: _onPageChanged,
-          canShowScrollHead: true,
-          canShowScrollStatus: true,
-          enableDoubleTapZooming: true,
-          pageLayoutMode: PdfPageLayoutMode.continuous,
-        );
+      : widget.pdfUrl.startsWith('http')
+          ? SfPdfViewer.network(
+              widget.pdfUrl,
+              key: _pdfViewerKey,
+              onDocumentLoaded: _onDocumentLoaded,
+              onDocumentLoadFailed: _onDocumentLoadFailed,
+              onPageChanged: _onPageChanged,
+              canShowScrollHead: true,
+              canShowScrollStatus: true,
+              enableDoubleTapZooming: true,
+              pageLayoutMode: PdfPageLayoutMode.continuous,
+            )
+          : SfPdfViewer.file(
+              File(widget.pdfUrl),
+              key: _pdfViewerKey,
+              onDocumentLoaded: _onDocumentLoaded,
+              onDocumentLoadFailed: _onDocumentLoadFailed,
+              onPageChanged: _onPageChanged,
+              canShowScrollHead: true,
+              canShowScrollStatus: true,
+              enableDoubleTapZooming: true,
+              pageLayoutMode: PdfPageLayoutMode.continuous,
+            );
 
   void _onDocumentLoaded(PdfDocumentLoadedDetails details) {
     if (!mounted) return;
@@ -75,6 +89,17 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     super.dispose();
   }
 
+  void _downloadPdf() async {
+    if (!widget.pdfUrl.startsWith('http') && !widget.pdfUrl.startsWith('assets/')) {
+      final file = File(widget.pdfUrl);
+      if (await file.exists()) {
+        await Share.shareXFiles([XFile(file.path)], text: 'Mon ticket');
+      }
+    } else {
+      Share.share(widget.pdfUrl, subject: 'Mon ticket');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,6 +113,14 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
             elevation: 0,
             backgroundColor: AppColors.screenBg(context),
             surfaceTintColor: Colors.transparent,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.file_download_outlined),
+                onPressed: _downloadPdf,
+                tooltip: 'Télécharger / Partager',
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           SliverFillRemaining(
             child: Container(

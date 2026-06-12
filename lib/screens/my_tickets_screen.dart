@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'pdf_viewer_screen.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/auth_service.dart';
@@ -62,8 +65,27 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
     try {
       final response = await TicketService.getUserTickets(phone);
+      
+      // Load local tickets
+      final prefs = await SharedPreferences.getInstance();
+      final localTicketsJson = prefs.getString('local_purchased_tickets') ?? '[]';
+      final List<dynamic> localTickets = json.decode(localTicketsJson);
+      final List<UserTicket> localUserTickets = localTickets.map((t) => UserTicket(
+        id: t['id'] ?? '',
+        eventName: t['eventName'] ?? 'Ticket Événement',
+        establishment: t['establishment'] ?? 'Établissement',
+        date: t['date'] != null ? t['date'].toString().split('T')[0] : '',
+        time: '',
+        quantity: 1,
+        unitPrice: '-',
+        totalPrice: '-',
+        status: 'Valide (Local)',
+        purchaseDate: t['date'] ?? '',
+        rawData: t,
+      )).toList();
+
       setState(() {
-        _myTickets = response.tickets;
+        _myTickets = [...localUserTickets, ...response.tickets];
         _stats = response.stats;
         _isLoading = false;
       });
@@ -852,7 +874,21 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: InkWell(
-          onTap: () => _showTicketQRCodeBottomSheet(ticket),
+          onTap: () {
+            if (ticket.rawData['isLocalPdf'] == true && ticket.rawData['pdfPath'] != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PDFViewerScreen(
+                    pdfUrl: ticket.rawData['pdfPath'],
+                    title: ticket.eventName,
+                  ),
+                ),
+              );
+            } else {
+              _showTicketQRCodeBottomSheet(ticket);
+            }
+          },
           child: Container(
             padding: const EdgeInsets.all(16),
             child: Row(

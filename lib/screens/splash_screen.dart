@@ -19,14 +19,14 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  
+
   String _displayText = '';
   int _charIndex = 0;
   final String _fullText = 'Parent responsable';
   bool _showCursor = true;
   bool _showSubtitle = false;
   Timer? _cursorTimer;
-  
+
   @override
   void initState() {
     super.initState();
@@ -35,21 +35,13 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
     _animationController.forward();
     _startTextAnimation();
@@ -92,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
       setState(() {
         _showCursor = false;
       });
-      
+
       // Afficher le sous-titre avec un effet de fondu après 300ms
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
@@ -101,7 +93,7 @@ class _SplashScreenState extends State<SplashScreen>
           });
         }
       });
-      
+
       // Attendre 2 secondes après l'affichage du sous-titre avant de rediriger
       Future.delayed(const Duration(seconds: 2), () {
         _navigateToLogin();
@@ -122,9 +114,9 @@ class _SplashScreenState extends State<SplashScreen>
       final hasSession = await AuthService.instance.loadSavedSession();
       if (hasSession && AuthService.instance.isLoggedIn) {
         // Connexion automatique
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const App()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const App()));
       } else {
         // Aller à l'écran d'introduction
         Navigator.of(context).pushReplacement(
@@ -137,7 +129,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -145,13 +137,12 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [
-                    AppColors.pureBlack,
-                    AppColors.pureBlack,
-                  ]
+                ? [AppColors.pureBlack, AppColors.pureBlack]
                 : [
                     Theme.of(context).colorScheme.surface,
-                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withOpacity(0.3),
                   ],
           ),
         ),
@@ -195,10 +186,13 @@ class _SplashScreenState extends State<SplashScreen>
                         opacity: _fadeAnimation,
                         child: Text(
                           '$_displayText${_showCursor ? '|' : ''}',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.primary,
-                                fontSize: AppDimensions.getSplashTitleFontSize(context),
+                                fontSize: AppDimensions.getSplashTitleFontSize(
+                                  context,
+                                ),
                               ),
                         ),
                       );
@@ -212,10 +206,16 @@ class _SplashScreenState extends State<SplashScreen>
                         opacity: _showSubtitle ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 800),
                         child: Text(
-                          'Premier réseau social éducatif.',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                fontSize: AppDimensions.getSplashSubtitleFontSize(context),
+                          'La vie scolaire simplifiée.',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.7),
+                                fontSize:
+                                    AppDimensions.getSplashSubtitleFontSize(
+                                      context,
+                                    ),
                               ),
                         ),
                       );
@@ -235,9 +235,11 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       'Développé par',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                            fontSize: AppDimensions.isMobile(context) ? 12 : 14,
-                          ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.5),
+                        fontSize: AppDimensions.isMobile(context) ? 12 : 14,
+                      ),
                     ),
                     const SizedBox(height: AppDimensions.spacingXS),
                     // Logo développeur (placeholder)

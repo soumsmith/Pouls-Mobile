@@ -70,6 +70,51 @@ class PaiementService {
     }
   }
 
+  Future<PaiementResponse> initierPaiementAbonnement(
+    String phone,
+    String offerId,
+    int montant,
+  ) async {
+    try {
+      // TODO: Ajustez l'URL ci-dessous avec le bon endpoint pour le paiement d'abonnement
+      final urlStr = '$baseUrl/parent/abonnement/paiement-en-ligne/$phone?montant=$montant&offre=$offerId';
+      print('================= PAIEMENT ABONNEMENT =================');
+      print('💳 REQUÊTE PAIEMENT - URL: $urlStr');
+      print('💳 REQUÊTE PAIEMENT - METHODE: POST');
+
+      final response = await http.post(
+        Uri.parse(urlStr),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('💳 API Paiement - Status: ${response.statusCode}');
+      print('💳 API Paiement - Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final paiementResponse = PaiementResponse.fromJson(responseData);
+
+        print('✅ Paiement initié: ${paiementResponse.success}');
+        print('🔗 URL de paiement: ${paiementResponse.url}');
+
+        return paiementResponse;
+      } else {
+        print(
+          '❌ Erreur API Paiement: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Erreur lors de l\'initialisation du paiement: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('❌ Exception lors de l\'initialisation du paiement: $e');
+      throw Exception('Impossible d\'initialiser le paiement: $e');
+    }
+  }
+
   Future<bool> lancerUrlPaiement(String url) async {
     try {
       final uri = Uri.parse(url);

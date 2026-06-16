@@ -8,6 +8,7 @@ import '../screens/new_settings_screen.dart';
 import '../screens/messages_screen.dart';
 import '../screens/my_tickets_screen.dart';
 import '../screens/referred_users_screen.dart';
+import '../screens/subscription_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import 'components/bottom_spacer.dart';
@@ -162,6 +163,19 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         MainScreenWrapper.of(
           widget.parentContext,
         ).navigateToExtraScreen(const MessagesScreen());
+      },
+    ),
+    _MenuItem(
+      title: 'Passer Premium',
+      subtitle: 'Découvrez nos offres exclusives',
+      icon: Icons.star_rounded,
+      color: Colors.amber.shade600,
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.push(
+          widget.parentContext,
+          MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
+        );
       },
     ),
     _MenuItem(

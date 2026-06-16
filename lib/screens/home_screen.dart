@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../widgets/privilege_guard.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +37,7 @@ import 'cart_screen.dart';
 import 'orders_screen.dart';
 import 'shop_screen.dart';
 import 'profile_screen.dart';
+import 'subscription_screen.dart';
 import 'add_child_screen.dart';
 import 'inscription_screen.dart' as inscription;
 import '../widgets/payment_bottom_sheet.dart';
@@ -117,10 +119,13 @@ class _AnimatedEmptyChildrenMessage extends StatefulWidget {
   const _AnimatedEmptyChildrenMessage({super.key});
 
   @override
-  State<_AnimatedEmptyChildrenMessage> createState() => _AnimatedEmptyChildrenMessageState();
+  State<_AnimatedEmptyChildrenMessage> createState() =>
+      _AnimatedEmptyChildrenMessageState();
 }
 
-class _AnimatedEmptyChildrenMessageState extends State<_AnimatedEmptyChildrenMessage> with SingleTickerProviderStateMixin {
+class _AnimatedEmptyChildrenMessageState
+    extends State<_AnimatedEmptyChildrenMessage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -131,10 +136,11 @@ class _AnimatedEmptyChildrenMessageState extends State<_AnimatedEmptyChildrenMes
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    
-    _animation = Tween<double>(begin: 0.0, end: 10.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 10.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -145,6 +151,10 @@ class _AnimatedEmptyChildrenMessageState extends State<_AnimatedEmptyChildrenMes
 
   @override
   Widget build(BuildContext context) {
+    final userLevel =
+        AuthService.instance.getCurrentUser()?.userLevel ?? 'free';
+    final isPremium = userLevel == 'premium' || userLevel == 'vip';
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -167,29 +177,39 @@ class _AnimatedEmptyChildrenMessageState extends State<_AnimatedEmptyChildrenMes
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Aucun enfant pour le moment',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: AppDimensions.getChildNameTextSize(context) + 1,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      isPremium
+                          ? 'Aucun enfant pour le moment'
+                          : 'Débloquez le suivi scolaire',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize:
+                            AppDimensions.getChildNameTextSize(context) + 1,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Commencez à suivre leur parcours',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: AppDimensions.getChildNameTextSize(context) - 1,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 4),
+                    Text(
+                      isPremium
+                          ? 'Commencez à suivre leur parcours'
+                          : 'Passez Premium pour ajouter vos enfants',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize:
+                            AppDimensions.getChildNameTextSize(context) - 1,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(width: 16),
               Transform.translate(
@@ -380,13 +400,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      final response = await http.get(Uri.parse('https://api2.vie-ecoles.com/api/vie-ecoles/flash-infos'));
+      final response = await http.get(
+        Uri.parse('https://api2.vie-ecoles.com/api/vie-ecoles/flash-infos'),
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        final items = data.map((json) => _FlashInfoItem.fromJson(json)).toList();
-        
+        final items = data
+            .map((json) => _FlashInfoItem.fromJson(json))
+            .toList();
+
         final visibleItems = items
-            .where((i) => !_dismissedPresenceBannerItemKeys.contains(i.id.toString()))
+            .where(
+              (i) =>
+                  !_dismissedPresenceBannerItemKeys.contains(i.id.toString()),
+            )
             .toList();
 
         print('🎯 Flash Infos visibles: ${visibleItems.length}');
@@ -1040,9 +1067,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Construire la section Événements et Faits Scolaires
   Widget _buildEventsSection() {
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
-    
+
     return Container(
       height: isTablet ? 200 : 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1055,7 +1083,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (index < _filteredEvents.length && index < limit) {
             return _buildEventCard(_filteredEvents[index]);
           } else if (index == limit ||
-              (index == _filteredEvents.length && _filteredEvents.length <= limit)) {
+              (index == _filteredEvents.length &&
+                  _filteredEvents.length <= limit)) {
             return _buildSeeMoreEventsCard();
           } else {
             return const SizedBox.shrink();
@@ -1098,7 +1127,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: Radius.circular(16),
               ),
               child: Container(
-                height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 95 : 65,
+                height:
+                    (AppDimensions.isTablet(context) ||
+                        AppDimensions.isLargeTablet(context))
+                    ? 95
+                    : 65,
                 width: double.infinity,
                 color: Colors.grey[200],
                 child: event.image != null && event.image!.isNotEmpty
@@ -1128,7 +1161,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     event.title,
                     style: TextStyle(
-                      fontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context) || AppDimensions.isDesktop(context)) ? 16 : 14,
+                      fontSize:
+                          (AppDimensions.isTablet(context) ||
+                              AppDimensions.isLargeTablet(context) ||
+                              AppDimensions.isDesktop(context))
+                          ? 16
+                          : 14,
                       fontWeight: FontWeight.bold,
                       color: isDarkMode ? Colors.white : Color(0xFF1A1A2A),
                     ),
@@ -1157,12 +1195,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (uiData['typebilleterie'] != null && (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini')
+                      if (uiData['typebilleterie'] != null &&
+                          (uiData['typebilleterie'] as String).toLowerCase() !=
+                              'non_defini')
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
-                                ? Colors.green.withOpacity(0.1) 
+                            color:
+                                (uiData['typebilleterie'] as String)
+                                        .toLowerCase() ==
+                                    'gratuit'
+                                ? Colors.green.withOpacity(0.1)
                                 : Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -1171,8 +1217,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
-                              color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
-                                  ? Colors.green[700] 
+                              color:
+                                  (uiData['typebilleterie'] as String)
+                                          .toLowerCase() ==
+                                      'gratuit'
+                                  ? Colors.green[700]
                                   : Colors.orange[700],
                             ),
                           ),
@@ -1202,25 +1251,34 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: _handleSeeMoreEvents,
       icon: Icons.add,
       width: _getCardWidth(context, 0.0),
-      height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 100 : 80,
+      height:
+          (AppDimensions.isTablet(context) ||
+              AppDimensions.isLargeTablet(context))
+          ? 100
+          : 80,
     );
   }
 
   // Gérer l'action sur un événement
   void _handleEventAction(Event event) {
-    MainScreenWrapper.of(context).navigateToExtraScreen(EventDetailScreen(event: event));
+    MainScreenWrapper.of(
+      context,
+    ).navigateToExtraScreen(EventDetailScreen(event: event));
   }
 
   // Gérer l'action "Voir+"
   void _handleSeeMoreEvents() {
-    MainScreenWrapper.of(context).navigateToExtraScreen(const AllEventsScreen());
+    MainScreenWrapper.of(
+      context,
+    ).navigateToExtraScreen(const AllEventsScreen());
   }
 
   // Construire la section Actualités/Blogs
   Widget _buildBlogsSection() {
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
-    
+
     return Container(
       height: isTablet ? 200 : 160,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1233,7 +1291,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (index < _filteredBlogs.length && index < limit) {
             return _buildBlogCard(_filteredBlogs[index]);
           } else if (index == limit ||
-              (index == _filteredBlogs.length && _filteredBlogs.length <= limit)) {
+              (index == _filteredBlogs.length &&
+                  _filteredBlogs.length <= limit)) {
             return _buildSeeMoreBlogsCard();
           } else {
             return const SizedBox.shrink();
@@ -1276,7 +1335,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: Radius.circular(16),
               ),
               child: Container(
-                height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 95 : 65,
+                height:
+                    (AppDimensions.isTablet(context) ||
+                        AppDimensions.isLargeTablet(context))
+                    ? 95
+                    : 65,
                 width: double.infinity,
                 color: Colors.grey[200],
                 child: blog.image != null && blog.image!.isNotEmpty
@@ -1355,13 +1418,19 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: _handleSeeMoreBlogs,
       icon: Icons.add,
       width: _getCardWidth(context, 0.0),
-      height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 100 : 80,
+      height:
+          (AppDimensions.isTablet(context) ||
+              AppDimensions.isLargeTablet(context))
+          ? 100
+          : 80,
     );
   }
 
   // Gérer l'action sur un blog
   void _handleBlogAction(Blog blog) {
-    MainScreenWrapper.of(context).navigateToExtraScreen(BlogDetailScreen(blog: blog));
+    MainScreenWrapper.of(
+      context,
+    ).navigateToExtraScreen(BlogDetailScreen(blog: blog));
   }
 
   // Gérer l'action "Voir+" pour les blogs
@@ -1371,23 +1440,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Gérer l'action "Voir+" pour les vidéos
   void _handleSeeMoreVideos() {
-    MainScreenWrapper.of(context).navigateToExtraScreen(const AllVideosScreen());
+    MainScreenWrapper.of(
+      context,
+    ).navigateToExtraScreen(const AllVideosScreen());
   }
 
   // Construire la section Coulisse de l'Excellence
   // Helper pour calculer la largeur des cartes dynamiquement
   double _getCardWidth(BuildContext context, double rightMargin) {
-    final isTablet = AppDimensions.isTablet(context) ||
+    final isTablet =
+        AppDimensions.isTablet(context) ||
         AppDimensions.isLargeTablet(context) ||
         AppDimensions.isDesktop(context);
     if (isTablet) {
       final availableWidth = MediaQuery.sizeOf(context).width - 32.0;
-      final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
+      final isLandscape =
+          MediaQuery.orientationOf(context) == Orientation.landscape;
       // En paysage, on montre ~5.2 éléments. En portrait, on montre ~3.2 éléments.
       final itemsCount = isLandscape ? 5.2 : 3.2;
       return (availableWidth / itemsCount) - rightMargin;
     }
-    return AppDimensions.getScaledSize(context, 105.0); // Réduit de 120.0 à 105.0
+    return AppDimensions.getScaledSize(
+      context,
+      105.0,
+    ); // Réduit de 120.0 à 105.0
   }
 
   Widget _buildCoulisseSection() {
@@ -1395,13 +1471,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return const SizedBox.shrink();
     }
 
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
 
     final double cardWidth = _getCardWidth(context, 16.0);
     final double imageRatio = isTablet ? 0.62 : 0.9;
     final double imageHeight = cardWidth * imageRatio; // Format dynamique
-    final double textHeight = AppDimensions.getScaledSize(context, 85.0); // Espace suffisant pour le texte
+    final double textHeight = AppDimensions.getScaledSize(
+      context,
+      85.0,
+    ); // Espace suffisant pour le texte
     final double containerHeight = imageHeight + textHeight;
 
     return Container(
@@ -1449,11 +1529,23 @@ class _HomeScreenState extends State<HomeScreen> {
         //tag: schoolData['tag'] as String?, // Permettre null
         titleMaxLines: 2,
         externalTitleSpacing: 4,
-        titleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 16.0 : null,
-        subtitleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 14.0 : null,
-        height: null, 
-        imageHeight: _getCardWidth(context, 16.0) * 
-            ((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 0.62 : 0.9), // Plus haut sur téléphone
+        titleFontSize:
+            (AppDimensions.isTablet(context) ||
+                AppDimensions.isLargeTablet(context))
+            ? 16.0
+            : null,
+        subtitleFontSize:
+            (AppDimensions.isTablet(context) ||
+                AppDimensions.isLargeTablet(context))
+            ? 14.0
+            : null,
+        height: null,
+        imageHeight:
+            _getCardWidth(context, 16.0) *
+            ((AppDimensions.isTablet(context) ||
+                    AppDimensions.isLargeTablet(context))
+                ? 0.62
+                : 0.9), // Plus haut sur téléphone
         width: _getCardWidth(context, 16.0),
         allowLineBreak: true,
         centerTitle: false,
@@ -1551,7 +1643,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: _handleSeeMoreVideos,
         icon: Icons.play_arrow,
         width: _getCardWidth(context, 16.0),
-        height: AppDimensions.getScaledSize(context, 100.0), // Hauteur dynamique
+        height: AppDimensions.getScaledSize(
+          context,
+          100.0,
+        ), // Hauteur dynamique
       ),
     );
   }
@@ -1562,13 +1657,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return const SizedBox.shrink();
     }
 
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
 
     final double cardWidth = _getCardWidth(context, 16.0);
     final double imageRatio = isTablet ? 0.62 : 0.8;
     final double imageHeight = cardWidth * imageRatio; // Format dynamique
-    final double textHeight = AppDimensions.getScaledSize(context, 85.0); // Espace suffisant pour le texte
+    final double textHeight = AppDimensions.getScaledSize(
+      context,
+      85.0,
+    ); // Espace suffisant pour le texte
     final double containerHeight = imageHeight + textHeight;
 
     return Container(
@@ -1581,7 +1680,10 @@ class _HomeScreenState extends State<HomeScreen> {
             : _filteredVisiteGuideeVideos.length + 1,
         itemBuilder: (context, index) {
           if (index < _filteredVisiteGuideeVideos.length && index < limit) {
-            return _buildVisiteGuideeCard(_filteredVisiteGuideeVideos[index], index);
+            return _buildVisiteGuideeCard(
+              _filteredVisiteGuideeVideos[index],
+              index,
+            );
           } else if (index == limit ||
               (index == _filteredVisiteGuideeVideos.length &&
                   _filteredVisiteGuideeVideos.length <= limit)) {
@@ -1627,11 +1729,23 @@ class _HomeScreenState extends State<HomeScreen> {
         color: const Color(0xFF3B82F6),
         titleMaxLines: 2,
         externalTitleSpacing: 4,
-        titleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 18.0 : null,
-        subtitleFontSize: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 14.0 : null,
-        height: null, 
-        imageHeight: _getCardWidth(context, 16.0) * 
-            ((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 0.62 : 0.8), // Plus haut sur téléphone
+        titleFontSize:
+            (AppDimensions.isTablet(context) ||
+                AppDimensions.isLargeTablet(context))
+            ? 18.0
+            : null,
+        subtitleFontSize:
+            (AppDimensions.isTablet(context) ||
+                AppDimensions.isLargeTablet(context))
+            ? 14.0
+            : null,
+        height: null,
+        imageHeight:
+            _getCardWidth(context, 16.0) *
+            ((AppDimensions.isTablet(context) ||
+                    AppDimensions.isLargeTablet(context))
+                ? 0.62
+                : 0.8), // Plus haut sur téléphone
         width: _getCardWidth(context, 16.0),
         allowLineBreak: true,
         centerTitle: false,
@@ -1701,7 +1815,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final bool isMobileLandscape = AppDimensions.isLandscape(context) && 
+    final bool isMobileLandscape =
+        AppDimensions.isLandscape(context) &&
         MediaQuery.sizeOf(context).width < AppDimensions.smallTabletMaxWidth;
 
     Widget bodyContent;
@@ -1731,10 +1846,7 @@ class _HomeScreenState extends State<HomeScreen> {
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
       ),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: bodyContent,
-      ),
+      child: Scaffold(backgroundColor: Colors.black, body: bodyContent),
     );
   }
 
@@ -1760,8 +1872,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildAppBar() {
     final rawFirstName = AuthService.instance.getCurrentUser()?.firstName ?? '';
     final isTablet = AppDimensions.isTablet(context);
-    final displayFirstName = (!isTablet && rawFirstName.length > 4) 
-        ? '${rawFirstName.substring(0, 4)}...' 
+    final displayFirstName = (!isTablet && rawFirstName.length > 4)
+        ? '${rawFirstName.substring(0, 4)}...'
         : rawFirstName;
 
     return Padding(
@@ -1837,7 +1949,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // User avatar
               GestureDetector(
                 onTap: () {
-                  MainScreenWrapper.of(context).navigateToExtraScreen(const ProfileScreen());
+                  MainScreenWrapper.of(
+                    context,
+                  ).navigateToExtraScreen(const ProfileScreen());
                 },
                 child: Container(
                   width: 36,
@@ -2021,7 +2135,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            timeLabel.isNotEmpty ? 'Flash Info · $timeLabel' : 'Flash Info',
+                            timeLabel.isNotEmpty
+                                ? 'Flash Info · $timeLabel'
+                                : 'Flash Info',
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: _textSizeService.getScaledFontSize(10),
@@ -2054,7 +2170,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.grey[700],
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
               ),
             ),
           ],
@@ -2078,7 +2198,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFlashInfoBottomSheet(_FlashInfoItem item) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1E1E2A) : Colors.white;
-    final cardColor = isDark ? const Color(0xFF2D2D3F) : const Color(0xFFF8FAFC);
+    final cardColor = isDark
+        ? const Color(0xFF2D2D3F)
+        : const Color(0xFFF8FAFC);
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final subtextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
     final handleColor = isDark ? Colors.white24 : const Color(0xFFCBD5E1);
@@ -2100,7 +2222,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        MediaQuery.of(context).padding.bottom + 20,
+      ),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -2121,7 +2248,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Header Row with Megaphone Icon & Close Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2143,7 +2270,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.screenOrange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -2180,7 +2310,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Title / Establishment
           Text(
             sheetTitle,
@@ -2190,7 +2320,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: textColor,
             ),
           ),
-          
+
           // Date
           if (timeLabel.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -2204,7 +2334,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          
+
           // Divider
           Divider(
             color: isDark ? Colors.white10 : Colors.grey[200],
@@ -2212,7 +2342,7 @@ class _HomeScreenState extends State<HomeScreen> {
             thickness: 1,
           ),
           const SizedBox(height: 20),
-          
+
           // Message Content Container
           Flexible(
             child: SingleChildScrollView(
@@ -2241,7 +2371,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Elegant Action/Close Button at the bottom
           SizedBox(
             width: double.infinity,
@@ -2251,10 +2381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 48,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      AppColors.screenOrange,
-                      Color(0xFFFF7A45),
-                    ],
+                    colors: [AppColors.screenOrange, Color(0xFFFF7A45)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -2431,8 +2558,8 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 350,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppColors.grey800 
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.grey800
               : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -2452,8 +2579,8 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(17),
                 fontWeight: FontWeight.w700,
-                color: Theme.of(context).brightness == Brightness.dark 
-                    ? Colors.white 
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
                     : _kTextPrimary,
               ),
             ),
@@ -2486,20 +2613,25 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => ShareBottomSheet(
         title: 'Partager l\'application',
         itemTitle: 'Invitez vos amis à suivre leurs enfants',
-        shareText: 'Découvrez Pouls Ecole, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\nTéléchargez l\'application ici : https://play.google.com/store/apps/details?id=com.pouls.ecole',
+        shareText:
+            'Découvrez Pouls Ecole, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\nTéléchargez l\'application ici : https://play.google.com/store/apps/details?id=com.pouls.ecole',
       ),
     );
   }
 
   // ─── CHILDREN SECTION ──────────────────────────────────────────────────────
   Widget _buildChildrenSection() {
+    final userLevel =
+        AuthService.instance.getCurrentUser()?.userLevel ?? 'free';
+    final isPremium = userLevel == 'premium' || userLevel == 'vip';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
         SectionRow(
           title: 'MES ENFANTS',
-          onSeeMore: _filteredChildren.length > 4
+          onSeeMore: (isPremium && _filteredChildren.length > 4)
               ? () {
                   Navigator.push(
                     context,
@@ -2525,7 +2657,8 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // ── Liste scrollable des enfants ou message vide ──
               Expanded(
-                child: _filteredChildren.isEmpty && !_isLoading
+                child:
+                    (!isPremium || (_filteredChildren.isEmpty && !_isLoading))
                     ? const _AnimatedEmptyChildrenMessage()
                     : ListView(
                         scrollDirection: Axis.horizontal,
@@ -2552,7 +2685,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        _buildChildrenCarouselIndicators(),
+        if (isPremium) _buildChildrenCarouselIndicators(),
         const SizedBox(height: 16),
       ],
     );
@@ -2663,52 +2796,115 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _defaultChildIcon() {
     return Container(
-      color: const Color(0xFF141414), // Toujours sombre car le header est toujours noir
+      color: const Color(
+        0xFF141414,
+      ), // Toujours sombre car le header est toujours noir
       child: const Icon(Icons.person, color: Color(0xFF8A8AFF), size: 26),
     );
   }
 
   Widget _buildAddChildButton() {
-    return GestureDetector(
-      onTap: () async {
-        final result = await Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
-        // Le résultat n'est plus nécessaire car la redirection est gérée dans AddChildScreen
-      },
-      child: SizedBox(
-        width: AppDimensions.getChildImageSize(context) + 16,
-        child: Column(
-          children: [
-            Container(
-              width: AppDimensions.getChildImageSize(context),
-              height: AppDimensions.getChildImageSize(context),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _kDarkBorder,
-                  width: 2,
-                  style: BorderStyle
-                      .solid, // dashed not directly supported; use a package for dashed
+    return PrivilegeGuard(
+      requiredLevel: 'premium',
+      showLockOverlay: false,
+      fallback: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
+          );
+        },
+        child: Opacity(
+          opacity: 0.5, // Effet grisé
+          child: SizedBox(
+            width: AppDimensions.getChildImageSize(context) + 16,
+            child: Column(
+              children: [
+                Container(
+                  width: AppDimensions.getChildImageSize(context),
+                  height: AppDimensions.getChildImageSize(context),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _kDarkBorder, width: 2),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.add,
+                        color: const Color.fromARGB(
+                          255,
+                          226,
+                          226,
+                          240,
+                        ).withOpacity(0.3),
+                        size: AppDimensions.getChildImageSize(context) * 0.33,
+                      ),
+                      const Icon(
+                        Icons.lock_rounded,
+                        color: Colors.amber,
+                        size: 26,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Nouveau',
+                  style: TextStyle(
+                    color: _kTextSecondary,
+                    fontSize: AppDimensions.getChildNameTextSize(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      child: GestureDetector(
+        onTap: () async {
+          final result = await Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
+          // Le résultat n'est plus nécessaire car la redirection est gérée dans AddChildScreen
+        },
+        child: SizedBox(
+          width: AppDimensions.getChildImageSize(context) + 16,
+          child: Column(
+            children: [
+              Container(
+                width: AppDimensions.getChildImageSize(context),
+                height: AppDimensions.getChildImageSize(context),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _kDarkBorder,
+                    width: 2,
+                    style: BorderStyle
+                        .solid, // dashed not directly supported; use a package for dashed
+                  ),
+                ),
+                child: Icon(
+                  Icons.add,
+                  color: const Color.fromARGB(255, 226, 226, 240),
+                  size: AppDimensions.getChildImageSize(context) * 0.33,
                 ),
               ),
-              child: Icon(
-                Icons.add,
-                color: const Color.fromARGB(255, 226, 226, 240),
-                size: AppDimensions.getChildImageSize(context) * 0.33,
+              SizedBox(height: 5),
+              Text(
+                'Nouveau',
+                style: TextStyle(
+                  color: _kTextSecondary,
+                  fontSize: AppDimensions.getChildNameTextSize(context),
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            SizedBox(height: 5),
-            Text(
-              'Nouveau',
-              style: TextStyle(
-                color: _kTextSecondary,
-                fontSize: AppDimensions.getChildNameTextSize(context),
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -2730,7 +2926,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 20), // ← fixe, ne scroll pas
+                padding: const EdgeInsets.only(
+                  top: 20,
+                ), // ← fixe, ne scroll pas
                 child: isMobileLandscape
                     ? ListView(
                         shrinkWrap: true,
@@ -2757,301 +2955,265 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildBottomSheetChildren() {
+    final userLevel =
+        AuthService.instance.getCurrentUser()?.userLevel ?? 'free';
+    final isPremium = userLevel == 'premium' || userLevel == 'vip';
+
     return [
       SectionRow(title: 'ACTIONS RAPIDES'),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height:
-                        AppDimensions.getSquareCardHeightSize(context) + 20,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.symmetric(
-                        horizontal:
-                            AppDimensions.getPaymentBannerCardSpacing(context) *
-                            0.9,
-                      ),
-                      children: [
-                        _buildCard(
-                          index: 0,
-                          cardKey: 'inscription',
-                          title: 'Inscription \n en ligne',
-                          imagePath: 'assets/images/icons/inscription_en_ligne.png',
-                          color: AppColors.cardLightGrey,
-                          backgroundColor: const Color(0xFFF8FCFF),
-                          textColor: const Color(0xFF333333),
-                          actionText: '',
-                          allowLineBreak: true,
-                          enableInnerBorder: false,
-                          enableOuterBorder: false,
-                          innerBorderColor: const Color(0xFF93C5FD),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(
-                            context,
-                          ),
-                          width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(
-                            context,
-                          ),
-                          centerTitle: true,
-                          onTap: () => InscriptionBottomSheet.show(
-                            context,
-                            imagePath: 'assets/images/icons/inscription_en_ligne.png',
-                            imageBackgroundColor: const Color(0xFFF8FCFF),
-                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                          ),
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getActionButtonsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildCard(
-                          index: 1,
-                          cardKey: 'integration',
-                          title: 'Demande\nintégration',
-                          imagePath: 'assets/images/icons/demande_integration.png',
-                          color: AppColors.cardLightGrey,
-                          backgroundColor: const Color(0xFFF7FEFC),
-                          textColor: const Color(0xFF333333),
-                          actionText: '',
-                          enableInnerBorder: false,
-                          enableOuterBorder: false,
-                          allowLineBreak: true,
-                          innerBorderColor: const Color(0xFF6EE7B7),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(
-                            context,
-                          ),
-                          width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(
-                            context,
-                          ),
-                          centerTitle: true,
-                          onTap: () => showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => IntegrationBottomSheet(
-                              imagePath: 'assets/images/icons/demande_integration.png',
-                              imageBackgroundColor: const Color(0xFFF7FEFC),
-                              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getActionButtonsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildCard(
-                          index: 2,
-                          cardKey: 'consulter_demande',
-                          title: 'Consulter\ndemande',
-                          imagePath: 'assets/images/icons/consulter_demande.png',
-                          color: AppColors.cardLightGrey,
-                          backgroundColor: const Color(0xFFFFFEF7),
-                          textColor: const Color(0xFF333333),
-                          actionText: '',
-                          enableInnerBorder: false,
-                          enableOuterBorder: false,
-                          allowLineBreak: true,
-                          innerBorderColor: const Color(0xFFFCD34D),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(
-                            context,
-                          ),
-                          width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(
-                            context,
-                          ),
-                          centerTitle: true,
-                          onTap: () => IntegrationRequestBottomSheet.show(
-                            context,
-                            imagePath: 'assets/images/icons/consulter_demande.png',
-                            imageBackgroundColor: const Color(0xFFFFFEF7),
-                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                          ),
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getActionButtonsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildCard(
-                          index: 3,
-                          cardKey: 'parrainage',
-                          title: 'Parrainer\nutilisateur',
-                          imagePath: 'assets/images/icons/parrainer_utilisateur.png',
-                          color: AppColors.cardLightGrey,
-                          backgroundColor: const Color(0xFFFCFAFF),
-                          textColor: const Color(0xFF333333),
-                          actionText: '',
-                          enableInnerBorder: false,
-                          allowLineBreak: true,
-                          enableOuterBorder: false,
-                          innerBorderColor: const Color(0xFFC4B5FD),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(
-                            context,
-                          ),
-                          width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(
-                            context,
-                          ),
-                          centerTitle: true,
-                          onTap: () => showSponsorshipBottomSheet(
-                            context,
-                            imagePath: 'assets/images/icons/parrainer_utilisateur.png',
-                            imageBackgroundColor: const Color(0xFFFCFAFF),
-                            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                          ),
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getActionButtonsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildCard(
-                          index: 4,
-                          cardKey: 'panier',
-                          title: 'Mon\npanier',
-                          imagePath: 'assets/images/icons/mon_panier.png',
-                          color: AppColors.cardLightGrey,
-                          backgroundColor: const Color(0xFFFCFAFF),
-                          textColor: const Color(0xFF333333),
-                          actionText: '',
-                          enableInnerBorder: false,
-                          enableOuterBorder: false,
-                          allowLineBreak: true,
-                          innerBorderColor: const Color(0xFFFB923C),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(
-                            context,
-                          ),
-                          width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(
-                            context,
-                          ),
-                          centerTitle: true,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const CartScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getActionButtonsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildCard(
-                          index: 5,
-                          cardKey: 'commandes',
-                          title: 'Mes\ncommandes',
-                          imagePath: 'assets/images/icons/mes_commandes.png',
-                          color: AppColors.cardLightGrey,
-                          backgroundColor: const Color(0xFFFCFAFF),
-                          textColor: const Color(0xFF333333),
-                          actionText: '',
-                          enableInnerBorder: false,
-                          enableOuterBorder: false,
-                          allowLineBreak: true,
-                          innerBorderColor: const Color(0xFF34D399),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(
-                            context,
-                          ),
-                          width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(
-                            context,
-                          ),
-                          centerTitle: true,
-                          onTap: () {
-                            MainScreenWrapper.of(context)
-                                .navigateToExtraScreen(const OrdersScreen());
-                          },
-                        ),
-                        SizedBox(
-                          width: AppDimensions.getActionButtonsSpacing(
-                            context,
-                          ),
-                        ),
-                        _buildCard(
-                          index: 6,
-                          cardKey: 'recommendation',
-                          title: 'Proposer\nune école',
-                          imagePath: 'assets/images/icons/recommander_une_ecole.png',
-                          color: AppColors.cardLightGrey,
-                          backgroundColor: const Color(0xFFFCFAFF),
-                          textColor: const Color(0xFF333333),
-                          actionText: '',
-                          enableInnerBorder: false,
-                          enableOuterBorder: false,
-                          allowLineBreak: true,
-                          innerBorderColor: const Color(0xFFFDBA74),
-                          imageBorderRadius: AppDimensions.getImageBorderRadius(
-                            context,
-                          ),
-                          width: AppDimensions.getSquareCardWidthSize(context),
-                          height: AppDimensions.getSquareCardHeightSize(
-                            context,
-                          ),
-                          centerTitle: true,
-                          onTap: _showRecommendationBottomSheet,
-                        ),
-                      ],
-                    ),
+      const SizedBox(height: 16),
+      SizedBox(
+        height: AppDimensions.getSquareCardHeightSize(context) + 20,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(
+            horizontal:
+                AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
+          ),
+          children: [
+            _buildCard(
+              index: 0,
+              cardKey: 'inscription',
+              title: 'Inscription \n en ligne',
+              imagePath: 'assets/images/icons/inscription_en_ligne.png',
+              color: AppColors.cardLightGrey,
+              backgroundColor: const Color(0xFFF8FCFF),
+              textColor: const Color(0xFF333333),
+              actionText: '',
+              allowLineBreak: true,
+              enableInnerBorder: false,
+              enableOuterBorder: false,
+              innerBorderColor: const Color(0xFF93C5FD),
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              width: AppDimensions.getSquareCardWidthSize(context),
+              height: AppDimensions.getSquareCardHeightSize(context),
+              centerTitle: true,
+              isLocked: !isPremium,
+              onTap: () => InscriptionBottomSheet.show(
+                context,
+                imagePath: 'assets/images/icons/inscription_en_ligne.png',
+                imageBackgroundColor: const Color(0xFFF8FCFF),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              ),
+            ),
+            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+            _buildCard(
+              index: 1,
+              cardKey: 'integration',
+              title: 'Demande\nintégration',
+              imagePath: 'assets/images/icons/demande_integration.png',
+              color: AppColors.cardLightGrey,
+              backgroundColor: const Color(0xFFF7FEFC),
+              textColor: const Color(0xFF333333),
+              actionText: '',
+              enableInnerBorder: false,
+              enableOuterBorder: false,
+              allowLineBreak: true,
+              innerBorderColor: const Color(0xFF6EE7B7),
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              width: AppDimensions.getSquareCardWidthSize(context),
+              height: AppDimensions.getSquareCardHeightSize(context),
+              centerTitle: true,
+              isLocked: !isPremium,
+              onTap: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => IntegrationBottomSheet(
+                  imagePath: 'assets/images/icons/demande_integration.png',
+                  imageBackgroundColor: const Color(0xFFF7FEFC),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
                   ),
+                ),
+              ),
+            ),
+            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+            _buildCard(
+              index: 2,
+              cardKey: 'consulter_demande',
+              title: 'Consulter\ndemande',
+              imagePath: 'assets/images/icons/consulter_demande.png',
+              color: AppColors.cardLightGrey,
+              backgroundColor: const Color(0xFFFFFEF7),
+              textColor: const Color(0xFF333333),
+              actionText: '',
+              enableInnerBorder: false,
+              enableOuterBorder: false,
+              allowLineBreak: true,
+              innerBorderColor: const Color(0xFFFCD34D),
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              width: AppDimensions.getSquareCardWidthSize(context),
+              height: AppDimensions.getSquareCardHeightSize(context),
+              centerTitle: true,
+              isLocked: !isPremium,
+              onTap: () => IntegrationRequestBottomSheet.show(
+                context,
+                imagePath: 'assets/images/icons/consulter_demande.png',
+                imageBackgroundColor: const Color(0xFFFFFEF7),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              ),
+            ),
+            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+            _buildCard(
+              index: 3,
+              cardKey: 'parrainage',
+              title: 'Parrainer\nutilisateur',
+              imagePath: 'assets/images/icons/parrainer_utilisateur.png',
+              color: AppColors.cardLightGrey,
+              backgroundColor: const Color(0xFFFCFAFF),
+              textColor: const Color(0xFF333333),
+              actionText: '',
+              enableInnerBorder: false,
+              allowLineBreak: true,
+              enableOuterBorder: false,
+              innerBorderColor: const Color(0xFFC4B5FD),
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              width: AppDimensions.getSquareCardWidthSize(context),
+              height: AppDimensions.getSquareCardHeightSize(context),
+              centerTitle: true,
+              isLocked: !isPremium,
+              onTap: () => showSponsorshipBottomSheet(
+                context,
+                imagePath: 'assets/images/icons/parrainer_utilisateur.png',
+                imageBackgroundColor: const Color(0xFFFCFAFF),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              ),
+            ),
+            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+            _buildCard(
+              index: 4,
+              cardKey: 'panier',
+              title: 'Mon\npanier',
+              imagePath: 'assets/images/icons/mon_panier.png',
+              color: AppColors.cardLightGrey,
+              backgroundColor: const Color(0xFFFCFAFF),
+              textColor: const Color(0xFF333333),
+              actionText: '',
+              enableInnerBorder: false,
+              enableOuterBorder: false,
+              allowLineBreak: true,
+              innerBorderColor: const Color(0xFFFB923C),
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              width: AppDimensions.getSquareCardWidthSize(context),
+              height: AppDimensions.getSquareCardHeightSize(context),
+              centerTitle: true,
+              onTap: () {
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const CartScreen()));
+              },
+            ),
+            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+            _buildCard(
+              index: 5,
+              cardKey: 'commandes',
+              title: 'Mes\ncommandes',
+              imagePath: 'assets/images/icons/mes_commandes.png',
+              color: AppColors.cardLightGrey,
+              backgroundColor: const Color(0xFFFCFAFF),
+              textColor: const Color(0xFF333333),
+              actionText: '',
+              enableInnerBorder: false,
+              enableOuterBorder: false,
+              allowLineBreak: true,
+              innerBorderColor: const Color(0xFF34D399),
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              width: AppDimensions.getSquareCardWidthSize(context),
+              height: AppDimensions.getSquareCardHeightSize(context),
+              centerTitle: true,
+              onTap: () {
+                MainScreenWrapper.of(
+                  context,
+                ).navigateToExtraScreen(const OrdersScreen());
+              },
+            ),
+            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+            _buildCard(
+              index: 6,
+              cardKey: 'recommendation',
+              title: 'Proposer\nune école',
+              imagePath: 'assets/images/icons/recommander_une_ecole.png',
+              color: AppColors.cardLightGrey,
+              backgroundColor: const Color(0xFFFCFAFF),
+              textColor: const Color(0xFF333333),
+              actionText: '',
+              enableInnerBorder: false,
+              enableOuterBorder: false,
+              allowLineBreak: true,
+              innerBorderColor: const Color(0xFFFDBA74),
+              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              width: AppDimensions.getSquareCardWidthSize(context),
+              height: AppDimensions.getSquareCardHeightSize(context),
+              centerTitle: true,
+              isLocked: isPremium,
+              onTap: _showRecommendationBottomSheet,
+            ),
+          ],
+        ),
+      ),
 
-                  // Section Coulisses de l'Excellence
-                  if (_hasCoulisseExcellenceData) ...[
-                    SectionRow(
-                      title: 'COULISSES DE L\'EXCELLENCE',
-                      onSeeMore: () {
-                        MainScreenWrapper.of(context).navigateToExtraScreen(AllVideosScreen());
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildCoulisseSection(),
-                  ],
+      // Section Coulisses de l'Excellence
+      if (_hasCoulisseExcellenceData) ...[
+        SectionRow(
+          title: 'COULISSES DE L\'EXCELLENCE',
+          onSeeMore: () {
+            MainScreenWrapper.of(
+              context,
+            ).navigateToExtraScreen(AllVideosScreen());
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildCoulisseSection(),
+      ],
 
-                  // Section Événements et Faits Scolaires
-                  if (_hasEventsData) ...[
-                    const SizedBox(height: 12),
-                    SectionRow(
-                      title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES',
-                      onSeeMore: () {
-                        MainScreenWrapper.of(context).navigateToExtraScreen(AllEventsScreen());
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildEventsSection(),
-                  ],
+      // Section Événements et Faits Scolaires
+      if (_hasEventsData) ...[
+        const SizedBox(height: 12),
+        SectionRow(
+          title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES',
+          onSeeMore: () {
+            MainScreenWrapper.of(
+              context,
+            ).navigateToExtraScreen(AllEventsScreen());
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildEventsSection(),
+      ],
 
-                  // Section Actualités
-                  if (_hasBlogsData)
-                    Column(
-                      children: [
-                        const SizedBox(height: 24),
-                        SectionRow(
-                          title: 'ACTUALITÉS',
-                          onSeeMore: () {
-                            MainScreenWrapper.of(context).navigateToExtraScreen(const AllBlogsScreen());
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildBlogsSection(),
-                      ],
-                    ),
+      // Section Actualités
+      if (_hasBlogsData)
+        Column(
+          children: [
+            const SizedBox(height: 24),
+            SectionRow(
+              title: 'ACTUALITÉS',
+              onSeeMore: () {
+                MainScreenWrapper.of(
+                  context,
+                ).navigateToExtraScreen(const AllBlogsScreen());
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildBlogsSection(),
+          ],
+        ),
 
-                  // Section Visite guidée
-                  const SizedBox(height: 24),
-                  SectionRow(
-                    title: 'VISITE GUIDÉE',
-                    onSeeMore: () {
-                      MainScreenWrapper.of(context).navigateToExtraScreen(AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos));
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildVisiteGuideeSection(),
-                  const BottomSpacer(),
-                ];
+      // Section Visite guidée
+      const SizedBox(height: 24),
+      SectionRow(
+        title: 'VISITE GUIDÉE',
+        onSeeMore: () {
+          MainScreenWrapper.of(context).navigateToExtraScreen(
+            AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos),
+          );
+        },
+      ),
+      const SizedBox(height: 16),
+      _buildVisiteGuideeSection(),
+      const BottomSpacer(),
+    ];
   }
 
   // ─── CARD BUILDER (wrapper ImageMenuCardExternalTitle) ─────────────────────
@@ -3074,9 +3236,10 @@ class _HomeScreenState extends State<HomeScreen> {
     double doubleBorderGap = 1.0,
     bool centerTitle = false,
     bool allowLineBreak = false,
+    bool isLocked = false,
   }) {
     final isDark = _themeService.isDarkMode;
-    return ImageMenuCardExternalTitle(
+    Widget card = ImageMenuCardExternalTitle(
       index: index,
       cardKey: cardKey,
       title: title,
@@ -3086,7 +3249,8 @@ class _HomeScreenState extends State<HomeScreen> {
       imagePath: imagePath,
       isDark: isDark,
       titleFontSize: AppDimensions.getScaledSize(context, 11.0),
-      imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
+      imageBorderRadius:
+          width / 2, // Moitié de la largeur pour un cercle parfait
       doubleBorderGap: doubleBorderGap,
       color: color,
       backgroundColor: isDark
@@ -3094,14 +3258,50 @@ class _HomeScreenState extends State<HomeScreen> {
           : backgroundColor,
       textColor: isDark ? Colors.white : textColor,
       actionText: actionText,
-      //actionTextColor: color,
-      onTap: onTap,
+      onTap: isLocked
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SubscriptionScreen(),
+                ),
+              );
+            }
+          : onTap,
       enableInnerBorder: enableInnerBorder,
       enableOuterBorder: enableOuterBorder,
       innerBorderColor: innerBorderColor,
       centerTitle: centerTitle,
       allowLineBreak: allowLineBreak,
     );
+
+    if (isLocked) {
+      return Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          Opacity(opacity: 0.6, child: card),
+          Positioned(
+            top: (width / 2) - 12,
+            child: IgnorePointer(
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_rounded,
+                  color: Colors.amber,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return card;
   }
 
   // ─── FILTER ROW ────────────────────────────────────────────────────────────
@@ -3189,23 +3389,23 @@ class _HomeScreenState extends State<HomeScreen> {
       }).toList();
 
       _filteredEvents = _events.where((e) {
-        return e.title.toLowerCase().contains(lq) || 
-               e.nomecole.toLowerCase().contains(lq);
+        return e.title.toLowerCase().contains(lq) ||
+            e.nomecole.toLowerCase().contains(lq);
       }).toList();
 
       _filteredBlogs = _blogs.where((b) {
-        return b.title.toLowerCase().contains(lq) || 
-               b.nomecole.toLowerCase().contains(lq);
+        return b.title.toLowerCase().contains(lq) ||
+            b.nomecole.toLowerCase().contains(lq);
       }).toList();
 
       _filteredVisiteGuideeVideos = _visiteGuideeVideos.where((v) {
-        return v.title.toLowerCase().contains(lq) || 
-               v.description.toLowerCase().contains(lq);
+        return v.title.toLowerCase().contains(lq) ||
+            v.description.toLowerCase().contains(lq);
       }).toList();
 
       _filteredCoulisseVideos = _coulisseVideos.where((v) {
-        return v.titre.toLowerCase().contains(lq) || 
-               v.description.toLowerCase().contains(lq);
+        return v.titre.toLowerCase().contains(lq) ||
+            v.description.toLowerCase().contains(lq);
       }).toList();
     });
   }

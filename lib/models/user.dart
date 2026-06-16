@@ -11,6 +11,7 @@ class User {
   final String role;
   final String? referralCode;
   final int smsCredits;
+  final String userLevel;
 
   User({
     required this.id,
@@ -24,6 +25,7 @@ class User {
     this.role = 'parent',
     this.referralCode,
     this.smsCredits = 0,
+    this.userLevel = 'free',
   });
 
   String get fullName => '$firstName $lastName';
@@ -41,6 +43,7 @@ class User {
       role: json['role'] as String? ?? 'parent',
       referralCode: json['referral_code'],
       smsCredits: json['smsCredits'] as int? ?? 0,
+      userLevel: (json['userLevel'] as String?)?.toLowerCase() ?? json['subscriptionLevel'] as String? ?? 'free',
     );
   }
 
@@ -57,11 +60,12 @@ class User {
       'role': role,
       'referral_code': referralCode,
       'smsCredits': smsCredits,
+      'userLevel': userLevel,
     };
   }
 
-  /// Crée une copie de l'utilisateur avec des crédits SMS modifiés
-  User copyWith({int? smsCredits}) {
+  /// Crée une copie de l'utilisateur
+  User copyWith({int? smsCredits, String? userLevel}) {
     return User(
       id: id,
       email: email,
@@ -69,6 +73,7 @@ class User {
       lastName: lastName,
       phone: phone,
       smsCredits: smsCredits ?? this.smsCredits,
+      userLevel: userLevel ?? this.userLevel,
     );
   }
 }

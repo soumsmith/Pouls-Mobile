@@ -66,12 +66,14 @@ class AuthService {
     try {
       print('🔐 Tentative de connexion directe avec: $phone');
       
+      print('🌐 Appel API: POST /vie-ecoles/auth/parent/connexion');
       final response = await HttpService.post(
         '/vie-ecoles/auth/parent/connexion',
         body: {
           'numero': phone,
         },
       );
+      print('📦 Réponse API: $response');
 
       if (response['status'] == true && response['data'] != null) {
         final data = response['data'] as Map<String, dynamic>;
@@ -256,6 +258,15 @@ class AuthService {
     await prefs.remove(_keyPhone);
     await prefs.remove(_keyUser);
     await prefs.remove(_keyToken);
+  }
+  
+  /// Met à jour le niveau d'abonnement de l'utilisateur courant (utilisé par SubscriptionService)
+  Future<void> updateUserSubscription(String newLevel) async {
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(userLevel: newLevel);
+      await _saveSession();
+      await DatabaseService.instance.saveUser(_currentUser!);
+    }
   }
   
   /// Sauvegarde la session actuelle

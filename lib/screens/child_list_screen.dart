@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../services/connectivity_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -313,7 +314,7 @@ class ChildListScreen extends StatefulWidget {
 }
 
 class _ChildListScreenState extends State<ChildListScreen>
-    with TickerProviderStateMixin
+    with TickerProviderStateMixin, ConnectivityReloadMixin
     implements MainScreenChild {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -483,6 +484,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   @override
   void initState() {
     super.initState();
+    registerConnectivityReload();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -572,7 +574,15 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   @override
+  void onConnectionRestored() {
+    _didInitialLoad = false;
+    _loadData();
+    _loadNotifications();
+  }
+
+  @override
   void dispose() {
+    unregisterConnectivityReload();
     _animationController.dispose();
     _accessDateDebutController.dispose();
     _accessDateFinController.dispose();
@@ -3549,6 +3559,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
                           // Bouton pour retirer l'enfant
                           _buildRemoveChildSection(),
+                          const BottomSpacer(),
                         ],
                       ),
                     ),
@@ -5032,7 +5043,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: const Color(0xFF9C27B0),
               actionText: 'Voir tuteur',
               onTap: () async {
-                final Uri url = Uri.parse('http://46.105.52.105:3002/');
+                final Uri url = Uri.parse(
+                  'https://tuteur-adom.pouls-scolaire.net/',
+                );
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 } else {
@@ -10086,7 +10099,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       final prenoms = bulletinData['prenoms'] as String? ?? '';
 
       // Share PDF URL
-      final shareText = 'Bulletin $periode de $prenoms $nom - $annee\n$pdfUrl';
+      final shareText =
+          'Bulletin $periode de $prenoms $nom - $annee\n$pdfUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}';
 
       await Share.share(
         shareText,

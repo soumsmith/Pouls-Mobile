@@ -39,8 +39,11 @@ class VideoService {
 
   static Future<List<Video>> getAllVideos() async {
     try {
-      developer.log('GET Request URL: $baseUrl');
-      final response = await http.get(Uri.parse(baseUrl));
+      final uri = Uri.parse(baseUrl).replace(queryParameters: {
+        'per_page': '1000',
+      });
+      developer.log('GET Request URL: $uri');
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);

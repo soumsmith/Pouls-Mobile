@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+
 /// Configuration de l'application
 ///
 /// MOCK_MODE : Active le mode mock (données statiques)
@@ -56,4 +59,20 @@ class AppConfig {
 
   // TODO: Configurer le timeout des requêtes HTTP
   static const Duration API_TIMEOUT = Duration(seconds: 30);
+
+  // ─── External URLs ───────────────────────────────────────────────────────
+  static const String TUTEUR_ADOM_URL = 'https://tuteur-adom.pouls-scolaire.net/';
+
+  // ─── Store URLs pour le Partage ──────────────────────────────────────────
+  static const String IOS_STORE_URL = 'https://apps.apple.com/app/parent-responsable/id6763526336';
+  static const String ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr';
+
+  /// Retourne l'URL du store adaptée à la plateforme actuelle
+  static String get storeUrl {
+    if (kIsWeb) return ANDROID_STORE_URL;
+    if (Platform.isIOS) {
+      return IOS_STORE_URL;
+    }
+    return ANDROID_STORE_URL;
+  }
 }

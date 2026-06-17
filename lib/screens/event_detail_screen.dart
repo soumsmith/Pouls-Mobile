@@ -24,6 +24,10 @@ import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
 import 'pdf_viewer_screen.dart';
+import '../config/app_config.dart';
+import '../widgets/image_menu_card_external_title.dart';
+import 'all_events_screen.dart';
+import '../widgets/snackbar.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -380,7 +384,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
               icon: Icons.location_on_rounded,
               iconBg: _AppColors.emeraldLight,
               iconColor: _AppColors.emerald,
-              title: widget.event.nomecole,
+              title: widget.event.lieu != null && widget.event.lieu!.isNotEmpty 
+                  ? widget.event.lieu! 
+                  : widget.event.nomecole,
               subtitle: 'Voir sur la carte',
             ),
           ),
@@ -739,132 +745,122 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   // ─────────────────────────────────────────────
   //  Other Events
   // ─────────────────────────────────────────────
+  double _getCardWidth(BuildContext context, double rightMargin) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - (rightMargin * 2);
+
+    if (AppDimensions.isLargeTablet(context)) {
+      return availableWidth / 4.5;
+    } else if (AppDimensions.isTablet(context)) {
+      return availableWidth / 3.5;
+    }
+    return availableWidth / 2.2;
+  }
+
   Widget _buildOtherEvents() {
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0);
+    final double containerHeight = imageHeight + textHeight;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'Autres événements',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimaryThemed(context),
-              letterSpacing: -0.3,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Autres événements',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.screenTextPrimaryThemed(context),
+                  letterSpacing: -0.3,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  MainScreenWrapper.of(context).navigateToExtraScreen(
+                    AllEventsScreen(schoolCode: widget.event.codeecole),
+                  );
+                },
+                child: const Text(
+                  'Voir plus',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.screenOrange,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 14),
         SizedBox(
-          height: 185,
+          height: containerHeight,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: _schoolEvents.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, __) => const SizedBox(width: 0),
             itemBuilder: (context, i) =>
-                _buildSchoolEventCard(_schoolEvents[i]),
+                _buildSchoolEventCard(_schoolEvents[i], i),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSchoolEventCard(Event event) {
+  Widget _buildSchoolEventCard(Event event, int index) {
     final uiData = event.toUiMap();
-    return GestureDetector(
-      onTap: () => Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)),
-      ),
-      child: Container(
-        width: 155,
-        decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 90,
-              child: event.image != null && event.image!.isNotEmpty
-                  ? Image.network(
-                      event.image!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (_, __, ___) => _EventCardPlaceholder(
-                        color: uiData['color'] as Color,
-                      ),
-                    )
-                  : _EventCardPlaceholder(color: uiData['color'] as Color),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today_rounded,
-                            size: 10,
-                            color: uiData['color'] as Color,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            uiData['date'] as String,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: uiData['color'] as Color,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (uiData['typebilleterie'] != null && (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini')
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
-                                ? Colors.green.withOpacity(0.1) 
-                                : Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            (uiData['typebilleterie'] as String).toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                              color: (uiData['typebilleterie'] as String).toLowerCase() == 'gratuit' 
-                                  ? Colors.green[700] 
-                                  : Colors.orange[700],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+
+    String? typeBilleterie;
+    Color? tagColor;
+    if (uiData['typebilleterie'] != null && (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini') {
+      typeBilleterie = (uiData['typebilleterie'] as String).toUpperCase();
+      tagColor = typeBilleterie.toLowerCase() == 'gratuit' ? Colors.green : Colors.orange;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: 'event_${event.id ?? event.slug}',
+        title: event.title,
+        subtitle: event.nomecole,
+        actionText: uiData['date'] as String,
+        actionTextColor: uiData['color'] as Color,
+        tag: typeBilleterie,
+        color: tagColor ?? (uiData['color'] as Color),
+        imagePath: event.image,
+        iconData: Icons.event,
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        titleFontSize: isTablet ? 16.0 : 14.0,
+        subtitleFontSize: 11.0,
+        height: null,
+        imageHeight: _getCardWidth(context, 16.0) * (isTablet ? 0.62 : 0.8),
+        width: _getCardWidth(context, 16.0),
+        allowLineBreak: true,
+        centerTitle: false,
+        showPlayIcon: false,
+        onTap: () {
+          if (MainScreenWrapper.maybeOf(context) != null) {
+            MainScreenWrapper.of(context).navigateToExtraScreen(
+              EventDetailScreen(key: UniqueKey(), event: event),
+            );
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => EventDetailScreen(key: UniqueKey(), event: event)),
+            );
+          }
+        },
       ),
     );
   }
@@ -892,6 +888,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 ${widget.event.content}
 ${widget.event.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${widget.event.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d'événements sur notre application! 📱
+Téléchargez l'application ici : ${AppConfig.storeUrl}
 ''',
       ),
     );
@@ -1067,9 +1064,13 @@ Découvrez plus d'événements sur notre application! 📱
   }
 
   void _showSnack(String msg, Color color) {
-    ScaffoldMessenger.of(
+    CartSnackBar.showOverlay(
       context,
-    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
+      productName: '',
+      message: msg,
+      backgroundColor: color,
+      icon: Icons.info_outline,
+    );
   }
 
   // ── Comment bottom sheet ────────────────────
@@ -1171,6 +1172,7 @@ class _HeroBanner extends StatelessWidget {
 ${event.content}
 ${event.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${event.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d'événements sur notre application! 📱
+Téléchargez l'application ici : ${AppConfig.storeUrl}
 ''',
                     ),
                   );
@@ -2511,6 +2513,7 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
               ),
             ],
           ),
+          const BottomSpacer(),
         ],
       ),
     );

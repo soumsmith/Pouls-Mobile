@@ -20,10 +20,12 @@ class AllVisiteGuideeVideosScreen extends StatefulWidget {
   const AllVisiteGuideeVideosScreen({super.key, required this.videos});
 
   @override
-  State<AllVisiteGuideeVideosScreen> createState() => _AllVisiteGuideeVideosScreenState();
+  State<AllVisiteGuideeVideosScreen> createState() =>
+      _AllVisiteGuideeVideosScreenState();
 }
 
-class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScreen> {
+class _AllVisiteGuideeVideosScreenState
+    extends State<AllVisiteGuideeVideosScreen> {
   List<Video> _allVideos = [];
   List<Video> _filteredVideos = [];
 
@@ -59,15 +61,30 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
     });
     try {
       final nextPage = _currentPage + 1;
-      final newVideos = await VideoService.getVideosByType('visiteguide', page: nextPage, perPage: 20);
+
+      // Log de l'URL de l'API
+      final String apiUrl =
+          '${VideoService.baseUrl}?type_video=visiteguide&page=$nextPage&per_page=20';
+      print('🌐 [API LOG] Fetching videos from: $apiUrl');
+
+      final newVideos = await VideoService.getVideosByType(
+        'visiteguide',
+        page: nextPage,
+        perPage: 20,
+      );
       setState(() {
-        if (newVideos.isEmpty) {
+        final uniqueNewVideos = newVideos.where((v) => !_allVideos.contains(v)).toList();
+
+        if (uniqueNewVideos.isEmpty) {
           _hasMore = false;
         } else {
           _currentPage = nextPage;
-          _allVideos.addAll(newVideos);
-          _hasMore = newVideos.length == 20;
-          _filteredVideos = _getFilteredList(_allVideos, _searchController.text);
+          _allVideos.addAll(uniqueNewVideos);
+          _hasMore = newVideos.length == 20; // S'il y a 20 éléments, on tente la page suivante, même si certains étaient des doublons
+          _filteredVideos = _getFilteredList(
+            _allVideos,
+            _searchController.text,
+          );
         }
         _isLoadingMore = false;
       });
@@ -86,8 +103,12 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
   List<Video> _getFilteredList(List<Video> list, String query) {
     if (query.isEmpty) return list;
     return list.where((video) {
-      final titleMatch = video.title.toLowerCase().contains(query.toLowerCase());
-      final descMatch = video.description != null && video.description!.toLowerCase().contains(query.toLowerCase());
+      final titleMatch = video.title.toLowerCase().contains(
+        query.toLowerCase(),
+      );
+      final descMatch =
+          video.description != null &&
+          video.description!.toLowerCase().contains(query.toLowerCase());
       return titleMatch || descMatch;
     }).toList();
   }
@@ -117,7 +138,9 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                 actions: [
                   IconButton(
                     icon: Icon(
-                      _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
+                      _isSearching
+                          ? Icons.search_off_rounded
+                          : Icons.search_rounded,
                       color: const Color(0xFF3B82F6),
                     ),
                     onPressed: () {
@@ -159,7 +182,9 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _isSearching ? 'Aucun résultat trouvé' : 'Aucune vidéo disponible',
+                          _isSearching
+                              ? 'Aucun résultat trouvé'
+                              : 'Aucune vidéo disponible',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -171,7 +196,10 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                           _isSearching
                               ? 'Essayez d\'autres mots clés'
                               : 'Les vidéos de visite guidée apparaîtront ici dès qu\'elles seront disponibles.',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -183,23 +211,33 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                   padding: const EdgeInsets.all(16),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: AppDimensions.getEcolesGridColumns(context),
+                      crossAxisCount: AppDimensions.getEcolesGridColumns(
+                        context,
+                      ),
                       mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
-                      crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
-                          (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+                      crossAxisSpacing:
+                          AppDimensions.getAdaptiveGridSpacing(context) *
+                          (((AppDimensions.isTablet(context) ||
+                                      AppDimensions.isLargeTablet(context)) &&
                                   AppDimensions.isLandscape(context))
                               ? 1.8
                               : 1.0),
-                      mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+                      mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
+                        context,
+                      ),
                     ),
                     delegate: SliverChildBuilderDelegate((context, index) {
                       if (index == _filteredVideos.length && _hasMore) {
                         return SeeMoreCard(
                           cardColor: AppColors.screenCardThemed(context),
-                          borderColor: const Color(0xFF3B82F6).withOpacity(0.3), // Blue
+                          borderColor: const Color(
+                            0xFF3B82F6,
+                          ).withOpacity(0.3), // Blue
                           iconColor: const Color(0xFF3B82F6),
                           textColor: const Color(0xFF3B82F6),
-                          subtitleColor: const Color(0xFF3B82F6).withOpacity(0.5),
+                          subtitleColor: const Color(
+                            0xFF3B82F6,
+                          ).withOpacity(0.5),
                           title: _isLoadingMore ? 'Chargement...' : 'Voir plus',
                           subtitle: _isLoadingMore ? '' : 'de vidéos',
                           onTap: _isLoadingMore ? () {} : _loadMoreVideos,
@@ -213,9 +251,7 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
                     }, childCount: _filteredVideos.length + (_hasMore ? 1 : 0)),
                   ),
                 ),
-                const SliverToBoxAdapter(
-                  child: BottomSpacer(height: 125),
-                ),
+                const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
               ],
             ],
           ),
@@ -227,8 +263,8 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
 
   Widget _buildVideoCard(BuildContext context, Video video) {
     return ImageMenuCardExternalTitle(
-      index: widget.videos.indexOf(video),
-      cardKey: 'visite_${video.youtubeVideoId}_${widget.videos.indexOf(video)}',
+      index: _filteredVideos.indexOf(video),
+      cardKey: 'visite_${video.youtubeVideoId}_${_filteredVideos.indexOf(video)}',
       title: video.title,
       subtitle: video.etablissement.isNotEmpty
           ? video.etablissement
@@ -251,8 +287,8 @@ class _AllVisiteGuideeVideosScreenState extends State<AllVisiteGuideeVideosScree
   }
 
   void _handleVideoAction(BuildContext context, Video video) {
-    final initialIndex = widget.videos.indexOf(video);
-    final visiteVideos = widget.videos
+    final initialIndex = _filteredVideos.indexOf(video);
+    final visiteVideos = _filteredVideos
         .map(
           (v) => VisiteGuideeVideo(
             typeVideo: v.typevideo,

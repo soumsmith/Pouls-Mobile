@@ -17,6 +17,7 @@ import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../config/app_config.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -229,7 +230,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
         title: 'Partager la vidéo',
         itemTitle: video.titre,
         shareText:
-            '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\nRegardez la vidéo ici : $videoUrl\n\n#CoulissesExcellence #Éducation',
+            '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}\n\n#CoulissesExcellence #Éducation',
       ),
     );
   }

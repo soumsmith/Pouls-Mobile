@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../utils/api_exception_handler.dart';
@@ -9,6 +10,27 @@ class HttpService {
   static String get baseUrl => AppConfig.VIE_ECOLES_API_BASE_URL;
   static const Duration timeout = Duration(seconds: 30);
 
+  static bool _hasConnection = true;
+  static DateTime _lastConnectionCheck = DateTime.now().subtract(const Duration(minutes: 1));
+
+  /// Vérifie la connexion internet avec un cache de 5 secondes
+  static Future<void> _ensureConnection() async {
+    final now = DateTime.now();
+    if (now.difference(_lastConnectionCheck).inSeconds > 5) {
+      try {
+        final result = await InternetAddress.lookup('google.com');
+        _hasConnection = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      } on SocketException catch (_) {
+        _hasConnection = false;
+      }
+      _lastConnectionCheck = now;
+    }
+
+    if (!_hasConnection) {
+      throw const SocketException('Pas de connexion internet détectée');
+    }
+  }
+
   /// Effectue une requête POST
   static Future<Map<String, dynamic>> post(
     String endpoint, {
@@ -17,6 +39,7 @@ class HttpService {
     bool showNotification = true,
   }) async {
     try {
+      await _ensureConnection();
       final uri = Uri.parse('$baseUrl$endpoint');
 
       final response = await http
@@ -44,6 +67,7 @@ class HttpService {
     bool showNotification = true,
   }) async {
     try {
+      await _ensureConnection();
       final uri = Uri.parse('$baseUrl$endpoint');
       print('🌐 HttpService GET URL: $uri');
 
@@ -77,6 +101,7 @@ class HttpService {
     bool showNotification = true,
   }) async {
     try {
+      await _ensureConnection();
       final uri = Uri.parse('$baseUrl$endpoint');
       print('🌐 HttpService DELETE URL: $uri');
 

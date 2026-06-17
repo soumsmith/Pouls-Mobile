@@ -18,6 +18,7 @@ import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
 import '../services/ecole_api_service.dart';
 import 'establishment_detail_screen.dart';
+import '../config/app_config.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
@@ -229,7 +230,7 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
         itemTitle: video.displayTitle,
-        shareText: '🎬 Découvrez cette visite guidée : ${video.displayTitle}\n\nRegardez la vidéo ici : $videoUrl',
+        shareText: '🎬 Découvrez cette visite guidée : ${video.displayTitle}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
       ),
     );
   }

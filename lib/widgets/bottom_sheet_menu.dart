@@ -64,7 +64,7 @@ class BottomSheetMenu extends StatefulWidget {
 class _BottomSheetMenuState extends State<BottomSheetMenu> {
   final CartService _cartService = MockCartService();
   int _cartItemCount = 0;
-  int _ticketCount = 0; 
+  int _ticketCount = 0;
 
   @override
   void initState() {
@@ -82,7 +82,8 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
     final user = AuthService.instance.getCurrentUser();
     if (user != null && user.phone.isNotEmpty) {
       try {
-        final url = '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/billetterie/ticket-commande/${user.phone}';
+        final url =
+            '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/billetterie/ticket-commande/${user.phone}';
         final response = await http.get(Uri.parse(url));
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
@@ -104,37 +105,41 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF141414) : _kCard,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? Colors.black.withOpacity(0.3) : const Color(0x18000000),
-              blurRadius: 32,
-              offset: const Offset(0, -8),
-            ),
-            BoxShadow(
-              color: isDark ? Colors.black.withOpacity(0.1) : const Color(0x08000000),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            BottomSheetHeader(
-              icon: Icons.grid_view_rounded,
-              iconColor: _kOrange,
-              title: 'Menu',
-              description: 'Navigation principale',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            _buildMenuList(),
-            const SizedBox(height: 16),
-            const BottomSpacer(),
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141414) : _kCard,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : const Color(0x18000000),
+            blurRadius: 32,
+            offset: const Offset(0, -8),
+          ),
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.1)
+                : const Color(0x08000000),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BottomSheetHeader(
+            icon: Icons.grid_view_rounded,
+            iconColor: _kOrange,
+            title: 'Menu',
+            description: 'Navigation principale',
+            onClose: () => Navigator.of(context).pop(),
+          ),
+          _buildMenuList(),
+          const SizedBox(height: 16),
+          const BottomSpacer(),
+        ],
+      ),
     );
   }
 
@@ -165,6 +170,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         ).navigateToExtraScreen(const MessagesScreen());
       },
     ),
+    /*
     _MenuItem(
       title: 'Passer Premium',
       subtitle: 'Découvrez nos offres exclusives',
@@ -178,6 +184,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         );
       },
     ),
+    */
     _MenuItem(
       title: 'Mes Tickets',
       subtitle: 'Voir vos tickets achetés',
@@ -198,7 +205,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       color: const Color(0xFF8B5CF6),
       onTap: () async {
         Navigator.of(context).pop();
-        final url = Uri.parse('http://46.105.52.105:3002/');
+        final url = Uri.parse(AppConfig.TUTEUR_ADOM_URL);
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }

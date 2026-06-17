@@ -13,6 +13,9 @@ import '../screens/text_size_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'splash_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -35,6 +38,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  String _appVersion = '1.0.0';
 
   @override
   void initState() {
@@ -46,6 +50,20 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
     _fadeAnimation =
         CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _fadeController.forward();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = packageInfo.version;
+        });
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du chargement de la version: $e');
+    }
   }
 
   @override
@@ -240,7 +258,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                             items: [
                               _SettingsItem(
                                 title: 'Version',
-                                subtitle: '1.0.0',
+                                subtitle: _appVersion,
                                 icon: Icons.info_outline,
                                 color: AppColors.settingsGrey,
                                 onTap: _showVersionInfo,
@@ -266,7 +284,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                             ],
                           ),
                           const SizedBox(height: 24),
-                          _buildLogoutButton(),
+                          _buildDeleteAccountButton(),
                           const BottomSpacer(),
                         ],
                       ),
@@ -436,7 +454,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
   }
 
   // ─── LOGOUT BUTTON ────────────────────────────────────────────────────────
-  Widget _buildLogoutButton() {
+  Widget _buildDeleteAccountButton() {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 700),
@@ -447,7 +465,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
             offset: Offset(0, 20 * (1 - value)), child: child),
       ),
       child: GestureDetector(
-        onTap: _confirmLogout,
+        onTap: _showDeleteConfirmation,
         child: Container(
           width: double.infinity,
           height: 56,
@@ -459,10 +477,10 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.logout_outlined, color: Colors.red[400], size: 18),
+              Icon(Icons.delete_forever_outlined, color: Colors.red[400], size: 18),
               const SizedBox(width: 10),
               Text(
-                'Déconnexion',
+                'Supprimer mon compte',
                 style: TextStyle(
                   color: Colors.red[400],
                   fontSize: 15,
@@ -478,28 +496,45 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
   }
 
   // ─── ACTIONS ──────────────────────────────────────────────────────────────
-  Future<void> _confirmLogout() async {
-    final confirmed = await showDialog<bool>(
+  void _showDeleteConfirmation() {
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Déconnexion ?',
+          'Supprimer le compte ?',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         content: const Text(
-          'Êtes-vous sûr de vouloir vous déconnecter ?',
+          'Cette action est irréversible. Toutes vos données seront supprimées.',
           style: TextStyle(color: AppColors.screenTextSecondary),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(color: AppColors.screenTextSecondary)),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Déconnexion',
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              // Effacer toutes les données stockées
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              
+              // Déconnecter l'utilisateur
+              await AuthService.instance.logout();
+              
+              if (!mounted) return;
+              
+              // Rediriger vers le SplashScreen en réinitialisant la pile de navigation
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const SplashScreen()),
+                (route) => false,
+              );
+            },
+            child: Text('Supprimer',
                 style: TextStyle(
                     color: Colors.red[400],
                     fontWeight: FontWeight.w700)),
@@ -507,16 +542,6 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
         ],
       ),
     );
-
-    if (confirmed == true) {
-      await AuthService.instance.logout();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
-      }
-    }
   }
 
   void _navigateToProfile() {

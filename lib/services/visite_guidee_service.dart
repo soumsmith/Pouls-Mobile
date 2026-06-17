@@ -8,7 +8,7 @@ class VisiteGuideeService {
 
   static Future<List<VisiteGuideeVideo>> getVideosByEcole(String ecoleCode) async {
     try {
-      final url = '$baseUrl/videos?ecole=$ecoleCode&type_video=visiteguide';
+      final url = '$baseUrl/videos?ecole=$ecoleCode&type_video=visiteguide&per_page=1000';
       print('=== API VISITES GUIDÉES ===');
       print('URL: $url');
       

@@ -46,60 +46,74 @@ class NotificationHelper {
     // 1. Annuler la notification précédente
     dismiss();
 
-    // 2. Tenter d'afficher via un Overlay global (au-dessus des bottomsheets)
-    final overlay = navigatorKey.currentState?.overlay;
-    if (overlay == null) {
-      // Repli (fallback) sur le ScaffoldMessenger classique si l'overlay n'est pas disponible
-      _showFallbackSnackBar(
-        message: message,
-        type: type,
-        duration: duration,
-        actionText: actionText,
-        onActionPressed: onActionPressed,
+    // 2. Fonction interne pour insérer la notification dans l'overlay
+    void doInsert() {
+      final overlay = navigatorKey.currentState?.overlay;
+      if (overlay == null) {
+        // Repli (fallback) sur le ScaffoldMessenger classique
+        _showFallbackSnackBar(
+          message: message,
+          type: type,
+          duration: duration,
+          actionText: actionText,
+          onActionPressed: onActionPressed,
+        );
+        return;
+      }
+
+      final GlobalKey<_NotificationOverlayCardState> cardKey = GlobalKey<_NotificationOverlayCardState>();
+
+      final overlayEntry = OverlayEntry(
+        builder: (context) {
+          final bottomPadding = MediaQuery.of(context).padding.bottom;
+          return Positioned(
+            bottom: bottomPadding + 24,
+            left: 16,
+            right: 16,
+            child: Material(
+              color: Colors.transparent,
+              child: _NotificationOverlayCard(
+                key: cardKey,
+                message: message,
+                type: type,
+                actionText: actionText,
+                onActionPressed: onActionPressed,
+                onDismiss: () {
+                  if (_currentOverlayEntry != null) {
+                    _currentOverlayEntry!.remove();
+                    _currentOverlayEntry = null;
+                  }
+                },
+              ),
+            ),
+          );
+        },
       );
-      return;
+
+      _currentOverlayEntry = overlayEntry;
+      overlay.insert(overlayEntry);
+
+      // Forcer Flutter à repeindre immédiatement (critique pour les callbacks platform)
+      WidgetsBinding.instance.ensureVisualUpdate();
+
+      // 3. Fermeture automatique après la durée
+      _autoDismissTimer = Timer(duration, () {
+        if (cardKey.currentState != null) {
+          cardKey.currentState!.dismiss();
+        } else {
+          dismiss();
+        }
+      });
     }
 
-    final GlobalKey<_NotificationOverlayCardState> cardKey = GlobalKey<_NotificationOverlayCardState>();
-
-    final overlayEntry = OverlayEntry(
-      builder: (context) {
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
-        return Positioned(
-          bottom: bottomPadding + 24,
-          left: 16,
-          right: 16,
-          child: Material(
-            color: Colors.transparent,
-            child: _NotificationOverlayCard(
-              key: cardKey,
-              message: message,
-              type: type,
-              actionText: actionText,
-              onActionPressed: onActionPressed,
-              onDismiss: () {
-                if (_currentOverlayEntry != null) {
-                  _currentOverlayEntry!.remove();
-                  _currentOverlayEntry = null;
-                }
-              },
-            ),
-          ),
-        );
-      },
-    );
-
-    _currentOverlayEntry = overlayEntry;
-    overlay.insert(overlayEntry);
-
-    // 3. Fermeture automatique après la durée
-    _autoDismissTimer = Timer(duration, () {
-      if (cardKey.currentState != null) {
-        cardKey.currentState!.dismiss();
-      } else {
-        dismiss();
-      }
-    });
+    // Si l'overlay est déjà prêt, insérer tout de suite
+    if (navigatorKey.currentState?.overlay != null) {
+      doInsert();
+    } else {
+      // Sinon attendre le prochain frame pour que l'overlay soit construit
+      WidgetsBinding.instance.addPostFrameCallback((_) => doInsert());
+      WidgetsBinding.instance.ensureVisualUpdate();
+    }
   }
 
   /// Affiche une notification avec un BuildContext (alternative locale)
@@ -226,7 +240,15 @@ class NotificationHelper {
     );
   }
 
+  static DateTime? _lastNoConnectionTime;
+
   static void showNoConnection({String? customMessage}) {
+    final now = DateTime.now();
+    if (_lastNoConnectionTime != null && now.difference(_lastNoConnectionTime!).inSeconds < 5) {
+      return; // Ignore si on a déjà affiché l'erreur très récemment
+    }
+    _lastNoConnectionTime = now;
+    
     show(
       message: customMessage ?? 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.',
       type: NotificationType.noConnection,

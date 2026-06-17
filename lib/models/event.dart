@@ -14,6 +14,11 @@ class Event {
   final String? image;
   final String? typebilleterie;
   final String? liendetailblog;
+  final String? dateDebut;
+  final String? dateFin;
+  final String? heureDebut;
+  final String? heureFin;
+  final String? lieu;
 
   Event({
     this.id,
@@ -29,6 +34,11 @@ class Event {
     this.image,
     this.typebilleterie,
     this.liendetailblog,
+    this.dateDebut,
+    this.dateFin,
+    this.heureDebut,
+    this.heureFin,
+    this.lieu,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -47,6 +57,11 @@ class Event {
       image: json['image'] as String?,
       typebilleterie: json['typebilleterie'] as String?,
       liendetailblog: json['liendetailblog'] as String?,
+      dateDebut: json['datedebut'] as String?,
+      dateFin: json['datefin'] as String?,
+      heureDebut: json['heuredebut'] as String?,
+      heureFin: json['heurefin'] as String?,
+      lieu: json['lieu'] as String?,
     );
   }
 
@@ -65,16 +80,66 @@ class Event {
       'image': image,
       'typebilleterie': typebilleterie,
       'liendetailblog': liendetailblog,
+      'datedebut': dateDebut,
+      'datefin': dateFin,
+      'heuredebut': heureDebut,
+      'heurefin': heureFin,
+      'lieu': lieu,
     };
   }
 
   /// Convertit l'événement en format compatible avec l'UI existant
   Map<String, dynamic> toUiMap() {
-    // Déterminer si l'événement est disponible
-    bool isAvailable = statutevent != 'terminé';
+    // Calculer le statut dynamique de l'événement
+    String computedStatus = statutevent ?? 'en cours';
+    
+    try {
+      String? targetDateStr;
+      if (dateFin != null && dateFin!.isNotEmpty) {
+        targetDateStr = dateFin;
+      } else if (dateDebut != null && dateDebut!.isNotEmpty) {
+        targetDateStr = dateDebut;
+      } else {
+        targetDateStr = publishedAt;
+      }
+      
+      if (targetDateStr != null && targetDateStr.isNotEmpty) {
+        final targetDate = DateTime.parse(targetDateStr);
+        final now = DateTime.now();
+      
+      // On considère que l'événement se termine à la fin de la journée (23:59:59)
+      final eventEnd = DateTime(targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
+      
+      if (now.isAfter(eventEnd)) {
+        computedStatus = 'terminé';
+      } else {
+        computedStatus = 'en cours';
+      }
+      }
+    } catch (e) {
+      // Fallback
+    }
 
-    // Extraire la date de publishedAt
-    String date = _formatDate(publishedAt);
+    // Déterminer si l'événement est disponible
+    bool isAvailable = computedStatus != 'terminé';
+
+    // Extraire la date
+    String date = _formatDate(dateDebut ?? publishedAt);
+    if (dateDebut != null && dateFin != null && dateDebut != dateFin) {
+      date = '${_formatDate(dateDebut!)} - ${_formatDate(dateFin!)}';
+    }
+
+    // Extraire l'heure
+    String time = 'Toute la journée';
+    if (heureDebut != null && heureDebut!.isNotEmpty) {
+      String startTime = heureDebut!.length >= 5 ? heureDebut!.substring(0, 5) : heureDebut!;
+      if (heureFin != null && heureFin!.isNotEmpty) {
+        String endTime = heureFin!.length >= 5 ? heureFin!.substring(0, 5) : heureFin!;
+        time = '$startTime - $endTime';
+      } else {
+        time = 'À partir de $startTime';
+      }
+    }
 
     // Déterminer une couleur en fonction de la catégorie
     Color color = _getCategoryColor(
@@ -96,7 +161,7 @@ class Event {
       'title': title,
       'subtitle': nomecole,
       'date': date,
-      'time': 'Toute la journée', // L'API ne fournit pas d'heure
+      'time': time,
       'establishment': nomecole,
       'type': categories.isNotEmpty ? categories.first : 'Education',
       'price': 'Gratuit', // L'API ne fournit pas de prix
@@ -105,7 +170,7 @@ class Event {
       'image': image,
       'icon': icon,
       'content': content,
-      'statutevent': statutevent,
+      'statutevent': computedStatus,
       'published_at': publishedAt,
       'typebilleterie': typebilleterie,
       'liendetailblog': liendetailblog,

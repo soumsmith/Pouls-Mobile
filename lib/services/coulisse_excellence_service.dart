@@ -11,7 +11,7 @@ class CoulisseExcellenceService {
     String ecoleId,
   ) async {
     try {
-      final url = '$baseUrl/coulisseexcellencelist?ecole=$ecoleId';
+      final url = '$baseUrl/coulisseexcellencelist?ecole=$ecoleId&per_page=1000';
       print('=== API COULISSE EXCELLENCE ===');
       print('URL: $url');
 
@@ -62,7 +62,7 @@ class CoulisseExcellenceService {
   static Future<List<CoulisseExcellence>>
   getAllCoulisseExcellenceVideos({int page = 1, int perPage = 20}) async {
     try {
-      final url = '$baseUrl/coulisseexcellencelist?page=$page&per_page=$perPage';
+      final url = '$baseUrl/coulisseexcellencelist?per_page=1000';
       developer.log('GET Request URL: $url');
       print('=== API COULISSE EXCELLENCE (ALL) ===');
       print('URL: $url');

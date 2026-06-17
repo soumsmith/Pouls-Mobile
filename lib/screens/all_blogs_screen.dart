@@ -14,6 +14,7 @@ import '../widgets/searchable_dropdown.dart';
 import '../widgets/components/custom_date_input.dart';
 import '../widgets/components/custom_text_input.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/advanced_filters_form.dart';
 import '../widgets/components/bottom_spacer.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
@@ -31,10 +32,10 @@ class AllBlogsScreen extends StatefulWidget {
 class _AllBlogsScreenState extends State<AllBlogsScreen>
     with TickerProviderStateMixin {
 
-  // ── État ────────────────────────────────────────────────
   String  _selectedFilter   = 'Tous';
   bool    _isSearching      = false;
   final   _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final   _blogService      = BlogService();
   List<Blog> _allBlogs = [];
   bool    _isLoading        = true;
@@ -107,6 +108,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     _categoryController.dispose();
     _dateController.dispose();
     _fadeController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -250,6 +252,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _scrollController,
             slivers: [
               CustomSliverAppBar(
                 title: 'Actualités',
@@ -261,19 +264,45 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                         Icons.tune_rounded,
                         color: _showAdvancedFilters ? AppColors.screenOrange : AppColors.screenTextPrimaryThemed(context),
                       ),
-                      onPressed: () => setState(() {
-                        _showAdvancedFilters = !_showAdvancedFilters;
-                      }),
+                      onPressed: () {
+                        setState(() {
+                          _showAdvancedFilters = !_showAdvancedFilters;
+                          if (_showAdvancedFilters) {
+                            _isSearching = false;
+                            _searchController.clear();
+                          }
+                        });
+                        if (_showAdvancedFilters && _scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            0.0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
                     ),
                   IconButton(
                     icon: Icon(
                       _isSearching ? Icons.close_rounded : Icons.search_rounded,
                       color: AppColors.screenTextPrimaryThemed(context),
                     ),
-                    onPressed: () => setState(() {
-                      _isSearching = !_isSearching;
-                      if (!_isSearching) _searchController.clear();
-                    }),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = !_isSearching;
+                        if (!_isSearching) {
+                          _searchController.clear();
+                        } else {
+                          _showAdvancedFilters = false;
+                        }
+                      });
+                      if (_isSearching && _scrollController.hasClients) {
+                        _scrollController.animateTo(
+                          0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
@@ -334,7 +363,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                 color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.screenBorder(context)),
-                boxShadow: AppColors.screenCardShadowThemed(context),
+                boxShadow: AppColors.screenCardShadow,
               ),
               child: TextField(
                 controller: _searchController,
@@ -366,82 +395,26 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   }
 
   Widget _buildAdvancedFilters() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      height: _showAdvancedFilters ? 165 : 0,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: _showAdvancedFilters
-          ? SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: SearchableDropdown(
-                          label: 'Pays',
-                          value: _paysReverseMap[_countryController.text] ?? 'Tous',
-                          items: _countriesList,
-                          isDarkMode: Theme.of(context).brightness == Brightness.dark,
-                          onChanged: (String val) {
-                            setState(() {
-                              _countryController.text = _paysMap[val] ?? '';
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SearchableDropdown(
-                          label: 'Catégorie',
-                          value: _categoryController.text.isEmpty
-                              ? 'Toutes'
-                              : _categoryController.text,
-                          items: _categoriesList,
-                          isDarkMode: Theme.of(context).brightness == Brightness.dark,
-                          onChanged: (String val) {
-                            setState(() {
-                              _categoryController.text = val == 'Toutes' ? '' : val;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: CustomDateInput(
-                          label: 'Date',
-                          hint: 'JJ/MM/AAAA',
-                          icon: Icons.calendar_today_rounded,
-                          controller: _dateController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
-                          inputFormatters: [DateInputFormatter()],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => _loadBlogs(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.screenOrange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        ),
-                        child: const Text('Appliquer', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            )
-          : null,
+    return AdvancedFiltersForm(
+      isVisible: _showAdvancedFilters,
+      countryController: _countryController,
+      countriesList: _countriesList,
+      paysMap: _paysMap,
+      paysReverseMap: _paysReverseMap,
+      categoryController: _categoryController,
+      categoriesList: _categoriesList,
+      dateController: _dateController,
+      onApply: () => _loadBlogs(),
+      onCountryChanged: (String val) {
+        setState(() {
+          _countryController.text = _paysMap[val] ?? '';
+        });
+      },
+      onCategoryChanged: (String val) {
+        setState(() {
+          _categoryController.text = val == 'Toutes' ? '' : val;
+        });
+      },
     );
   }
 
@@ -450,7 +423,16 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     return FilterRowWidget(
       filters: _filters,
       selectedFilter: _selectedFilter,
-      onFilterSelected: (f) => setState(() => _selectedFilter = f),
+      onFilterSelected: (f) {
+        setState(() => _selectedFilter = f);
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
     );
   }
 
@@ -797,8 +779,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
             decoration: BoxDecoration(
               color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.screenBorder(context)),
-              boxShadow: AppColors.screenCardShadowThemed(context),
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: const Text(
               'Voir plus d\'actualités',
@@ -840,16 +821,7 @@ class _BlogCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? AppColors.screenBorder(context) : const Color(0xFFF1F1F1),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? const Color(0x1A000000) : const Color(0x08000000),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         padding: const EdgeInsets.all(12),
         child: Row(

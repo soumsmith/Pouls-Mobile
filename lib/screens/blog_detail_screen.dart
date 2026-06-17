@@ -15,6 +15,10 @@ import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../config/app_config.dart';
+import '../services/blog_service.dart';
+import '../widgets/image_menu_card_external_title.dart';
+import 'all_blogs_screen.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens (cohérents avec EventDetailScreen)
@@ -60,6 +64,9 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
   List<Map<String, dynamic>> _comments = [];
   bool _isSubmittingComment = false;
 
+  List<Blog> _schoolBlogs = [];
+  bool _schoolBlogsLoading = true;
+
   bool _isBookmarked = false;
   AnimationController? _bookmarkController;
   Animation<double>? _bookmarkAnim;
@@ -74,6 +81,26 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
     _bookmarkAnim = Tween<double>(begin: 1.0, end: 1.35).animate(
       CurvedAnimation(parent: _bookmarkController!, curve: Curves.elasticOut),
     );
+    _loadSchoolBlogs();
+  }
+
+  Future<void> _loadSchoolBlogs() async {
+    try {
+      final blogsResponse = await BlogService().getBlogsByEcole(
+        '',
+        widget.blog.codeecole ?? '',
+      );
+      if (mounted) {
+        setState(() {
+          _schoolBlogs = blogsResponse.data
+              .where((b) => b.slug != widget.blog.slug)
+              .toList();
+          _schoolBlogsLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _schoolBlogsLoading = false);
+    }
   }
 
   @override
@@ -107,6 +134,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
 ${widget.blog.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
 ${widget.blog.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${widget.blog.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d\'actualités sur notre application! 📱
+Téléchargez l'application ici : ${AppConfig.storeUrl}
 ''',
       ),
     );
@@ -282,6 +310,8 @@ Découvrez plus d\'actualités sur notre application! 📱
           const SizedBox(height: 24),
           _buildContent(),
           const SizedBox(height: 28),
+          _buildOtherBlogs(),
+          const SizedBox(height: 28),
           _buildRatingAndComments(),
           const SizedBox(height: 40),
           const BottomSpacer(height: 125),
@@ -411,6 +441,132 @@ Découvrez plus d\'actualités sur notre application! 📱
             child: _ExpandableText(text: _stripHtmlTags(widget.blog.content)),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Other Blogs ─────────────────────────────
+  double _getCardWidth(BuildContext context, double rightMargin) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - (rightMargin * 2);
+
+    if (AppDimensions.isLargeTablet(context)) {
+      return availableWidth / 4.5;
+    } else if (AppDimensions.isTablet(context)) {
+      return availableWidth / 3.5;
+    }
+    return availableWidth / 2.2;
+  }
+
+  Widget _buildOtherBlogs() {
+    if (_schoolBlogsLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_schoolBlogs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0);
+    final double containerHeight = imageHeight + textHeight;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Autres actualités',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.screenTextPrimaryThemed(context),
+                  letterSpacing: -0.3,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  MainScreenWrapper.of(context).navigateToExtraScreen(
+                    AllBlogsScreen(schoolCode: widget.blog.codeecole),
+                  );
+                },
+                child: const Text(
+                  'Voir plus',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.screenOrange,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: containerHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _schoolBlogs.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 0),
+            itemBuilder: (context, i) =>
+                _buildSchoolBlogCard(_schoolBlogs[i], i),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSchoolBlogCard(Blog blog, int index) {
+    final uiData = blog.toUiMap();
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: 'blog_${blog.slug}',
+        title: blog.title,
+        subtitle: blog.nomecole,
+        actionText: uiData['date'] as String,
+        actionTextColor: uiData['color'] as Color,
+        tag: (uiData['type'] as String).toUpperCase(),
+        color: uiData['color'] as Color,
+        imagePath: blog.image,
+        iconData: uiData['icon'] as IconData,
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        titleFontSize: isTablet ? 16.0 : 14.0,
+        subtitleFontSize: 11.0,
+        height: null,
+        imageHeight: _getCardWidth(context, 16.0) * (isTablet ? 0.62 : 0.8),
+        width: _getCardWidth(context, 16.0),
+        allowLineBreak: true,
+        centerTitle: false,
+        showPlayIcon: false,
+        onTap: () {
+          if (MainScreenWrapper.maybeOf(context) != null) {
+            MainScreenWrapper.of(context).navigateToExtraScreen(
+              BlogDetailScreen(key: UniqueKey(), blog: blog),
+            );
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BlogDetailScreen(key: UniqueKey(), blog: blog)),
+            );
+          }
+        },
       ),
     );
   }
@@ -870,6 +1026,7 @@ class _HeroBanner extends StatelessWidget {
 ${blog.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
 ${blog.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${blog.toUiMap()['liendetailblog']}\n' : ''}
 Découvrez plus d\'actualités sur notre application! 📱
+Téléchargez l'application ici : ${AppConfig.storeUrl}
 ''',
                     ),
                   );

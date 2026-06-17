@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:parents_responsable/config/app_config.dart';
+
+import '../services/connectivity_service.dart';
 import 'dart:ui';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -183,7 +186,7 @@ class _AnimatedEmptyChildrenMessageState
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      isPremium
+                      !isPremium
                           ? 'Aucun enfant pour le moment'
                           : 'Débloquez le suivi scolaire',
                       textAlign: TextAlign.right,
@@ -197,7 +200,7 @@ class _AnimatedEmptyChildrenMessageState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isPremium
+                      !isPremium
                           ? 'Commencez à suivre leur parcours'
                           : 'Passez Premium pour ajouter vos enfants',
                       textAlign: TextAlign.right,
@@ -236,7 +239,7 @@ class _AnimatedEmptyChildrenMessageState
   }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   List<Child> _children = [];
   List<Child> _filteredChildren = [];
   bool _isLoading = true;
@@ -335,6 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    registerConnectivityReload();
     _textSizeService.addListener(() {
       if (mounted) setState(() {});
     });
@@ -346,6 +350,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadBlogs(); // Charger les blogs/actualités
     _loadVisiteGuideeVideos(); // Ajouter cette ligne
     _startPresenceAutoScrollIfNeeded();
+  }
+
+  @override
+  void onConnectionRestored() {
+    _refreshHome();
   }
 
   Future<void> _refreshHome() async {
@@ -363,6 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    unregisterConnectivityReload();
     _textSizeService.removeListener(() {});
     _matriculeController.dispose();
     _searchController.dispose();
@@ -1071,8 +1081,14 @@ class _HomeScreenState extends State<HomeScreen> {
         AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
 
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0);
+    final double containerHeight = imageHeight + textHeight;
+
     return Container(
-      height: isTablet ? 200 : 160,
+      height: containerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1081,7 +1097,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : _filteredEvents.length + 1,
         itemBuilder: (context, index) {
           if (index < _filteredEvents.length && index < limit) {
-            return _buildEventCard(_filteredEvents[index]);
+            return _buildEventCard(_filteredEvents[index], index);
           } else if (index == limit ||
               (index == _filteredEvents.length &&
                   _filteredEvents.length <= limit)) {
@@ -1095,144 +1111,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Construire une carte d'événement
-  Widget _buildEventCard(Event event) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildEventCard(Event event, int index) {
     final uiData = event.toUiMap();
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
 
-    return GestureDetector(
-      onTap: () {
-        // Action pour voir les détails de l'événement
-        _handleEventAction(event);
-      },
-      child: Container(
+    String? typeBilleterie;
+    Color? tagColor;
+    if (uiData['typebilleterie'] != null && (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini') {
+      typeBilleterie = (uiData['typebilleterie'] as String).toUpperCase();
+      tagColor = typeBilleterie.toLowerCase() == 'gratuit' ? Colors.green : Colors.orange;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: 'event_${event.id ?? event.slug}',
+        title: event.title,
+        subtitle: event.nomecole,
+        actionText: uiData['date'] as String,
+        actionTextColor: uiData['color'] as Color,
+        tag: typeBilleterie,
+        color: tagColor ?? (uiData['color'] as Color),
+        imagePath: event.image,
+        iconData: Icons.event,
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        titleFontSize: isTablet ? 16.0 : 14.0,
+        subtitleFontSize: 11.0,
+        height: null,
+        imageHeight: _getCardWidth(context, 16.0) * (isTablet ? 0.62 : 0.8),
         width: _getCardWidth(context, 16.0),
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: isDarkMode ? AppColors.grey800 : Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image de l'événement
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Container(
-                height:
-                    (AppDimensions.isTablet(context) ||
-                        AppDimensions.isLargeTablet(context))
-                    ? 95
-                    : 65,
-                width: double.infinity,
-                color: Colors.grey[200],
-                child: event.image != null && event.image!.isNotEmpty
-                    ? Image.network(
-                        event.image!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: Icon(
-                              Icons.event,
-                              color: Colors.grey[600],
-                              size: 40,
-                            ),
-                          );
-                        },
-                      )
-                    : Icon(Icons.event, color: Colors.grey[600], size: 40),
-              ),
-            ),
-            // Informations de l'événement
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.title,
-                    style: TextStyle(
-                      fontSize:
-                          (AppDimensions.isTablet(context) ||
-                              AppDimensions.isLargeTablet(context) ||
-                              AppDimensions.isDesktop(context))
-                          ? 16
-                          : 14,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Color(0xFF1A1A2A),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    event.nomecole,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 1),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        uiData['date'] as String,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: uiData['color'] as Color,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (uiData['typebilleterie'] != null &&
-                          (uiData['typebilleterie'] as String).toLowerCase() !=
-                              'non_defini')
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                (uiData['typebilleterie'] as String)
-                                        .toLowerCase() ==
-                                    'gratuit'
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            (uiData['typebilleterie'] as String).toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  (uiData['typebilleterie'] as String)
-                                          .toLowerCase() ==
-                                      'gratuit'
-                                  ? Colors.green[700]
-                                  : Colors.orange[700],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        allowLineBreak: true,
+        centerTitle: false,
+        showPlayIcon: false,
+        onTap: () {
+          _handleEventAction(event);
+        },
       ),
     );
   }
@@ -1241,7 +1156,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSeeMoreEventsCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return SeeMoreCard(
-      cardColor: isDarkMode ? AppColors.grey800 : const Color(0xFFF3F4F6),
+      cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
       borderColor: const Color(0xFFFF7A3C),
       iconColor: Colors.white,
       textColor: const Color(0xFFFF7A3C),
@@ -1279,8 +1194,14 @@ class _HomeScreenState extends State<HomeScreen> {
         AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final limit = isTablet ? 6 : 5;
 
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0);
+    final double containerHeight = imageHeight + textHeight;
+
     return Container(
-      height: isTablet ? 200 : 160,
+      height: containerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1289,7 +1210,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : _filteredBlogs.length + 1,
         itemBuilder: (context, index) {
           if (index < _filteredBlogs.length && index < limit) {
-            return _buildBlogCard(_filteredBlogs[index]);
+            return _buildBlogCard(_filteredBlogs[index], index);
           } else if (index == limit ||
               (index == _filteredBlogs.length &&
                   _filteredBlogs.length <= limit)) {
@@ -1303,103 +1224,35 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Construire une carte de blog
-  Widget _buildBlogCard(Blog blog) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildBlogCard(Blog blog, int index) {
     final uiData = blog.toUiMap();
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
 
-    return GestureDetector(
-      onTap: () {
-        // Action pour voir les détails du blog
-        _handleBlogAction(blog);
-      },
-      child: Container(
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: 'blog_${blog.slug}',
+        title: blog.title,
+        subtitle: blog.nomecole,
+        actionText: uiData['date'] as String,
+        actionTextColor: uiData['color'] as Color,
+        color: uiData['color'] as Color,
+        imagePath: blog.image,
+        iconData: Icons.article,
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        titleFontSize: isTablet ? 16.0 : 14.0,
+        subtitleFontSize: 11.0,
+        height: null,
+        imageHeight: _getCardWidth(context, 16.0) * (isTablet ? 0.62 : 0.8),
         width: _getCardWidth(context, 16.0),
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: isDarkMode ? AppColors.grey800 : Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image du blog
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Container(
-                height:
-                    (AppDimensions.isTablet(context) ||
-                        AppDimensions.isLargeTablet(context))
-                    ? 95
-                    : 65,
-                width: double.infinity,
-                color: Colors.grey[200],
-                child: blog.image != null && blog.image!.isNotEmpty
-                    ? Image.network(
-                        blog.image!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: Icon(
-                              Icons.article,
-                              color: Colors.grey[600],
-                              size: 40,
-                            ),
-                          );
-                        },
-                      )
-                    : Icon(Icons.article, color: Colors.grey[600], size: 40),
-              ),
-            ),
-            // Informations du blog
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    blog.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Color(0xFF1A1A2A),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    blog.nomecole,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    uiData['date'] as String,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: uiData['color'] as Color,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        allowLineBreak: true,
+        centerTitle: false,
+        showPlayIcon: false,
+        onTap: () {
+          _handleBlogAction(blog);
+        },
       ),
     );
   }
@@ -1408,7 +1261,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSeeMoreBlogsCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return SeeMoreCard(
-      cardColor: isDarkMode ? AppColors.grey800 : const Color(0xFFF3F4F6),
+      cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
       borderColor: const Color(0xFF8B5CF6),
       iconColor: Colors.white,
       textColor: const Color(0xFF8B5CF6),
@@ -1633,7 +1486,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SeeMoreCard(
         cardColor: isDarkMode
             ? const Color.fromARGB(255, 0, 0, 0)
-            : const Color(0xFFF3F4F6),
+            : Colors.white,
         borderColor: const Color(0xFF10B981),
         iconColor: Colors.white,
         textColor: const Color(0xFF10B981),
@@ -1700,7 +1553,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSeeMoreVisiteGuideeCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return SeeMoreCard(
-      cardColor: isDarkMode ? AppColors.grey800 : const Color(0xFFF3F4F6),
+      cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
       borderColor: const Color(0xFF3B82F6),
       iconColor: Colors.white,
       textColor: const Color(0xFF3B82F6),
@@ -2614,7 +2467,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'Partager l\'application',
         itemTitle: 'Invitez vos amis à suivre leurs enfants',
         shareText:
-            'Découvrez Pouls Ecole, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\nTéléchargez l\'application ici : https://play.google.com/store/apps/details?id=com.pouls.ecole',
+            'Découvrez Parents Responsable, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
       ),
     );
   }
@@ -2657,8 +2510,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // ── Liste scrollable des enfants ou message vide ──
               Expanded(
-                child:
-                    (!isPremium || (_filteredChildren.isEmpty && !_isLoading))
+                child: (isPremium || (_filteredChildren.isEmpty && !_isLoading))
                     ? const _AnimatedEmptyChildrenMessage()
                     : ListView(
                         scrollDirection: Axis.horizontal,
@@ -2685,7 +2537,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        if (isPremium) _buildChildrenCarouselIndicators(),
+        if (!isPremium) _buildChildrenCarouselIndicators(),
         const SizedBox(height: 16),
       ],
     );
@@ -2805,7 +2657,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAddChildButton() {
     return PrivilegeGuard(
-      requiredLevel: 'premium',
+      requiredLevel: 'free',
       showLockOverlay: false,
       fallback: GestureDetector(
         onTap: () {
@@ -2988,7 +2840,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: AppDimensions.getSquareCardWidthSize(context),
               height: AppDimensions.getSquareCardHeightSize(context),
               centerTitle: true,
-              isLocked: !isPremium,
+              //isLocked: !isPremium,
               onTap: () => InscriptionBottomSheet.show(
                 context,
                 imagePath: 'assets/images/icons/inscription_en_ligne.png',
@@ -3014,7 +2866,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: AppDimensions.getSquareCardWidthSize(context),
               height: AppDimensions.getSquareCardHeightSize(context),
               centerTitle: true,
-              isLocked: !isPremium,
+              //isLocked: !isPremium,
               onTap: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -3046,7 +2898,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: AppDimensions.getSquareCardWidthSize(context),
               height: AppDimensions.getSquareCardHeightSize(context),
               centerTitle: true,
-              isLocked: !isPremium,
+              //isLocked: !isPremium,
               onTap: () => IntegrationRequestBottomSheet.show(
                 context,
                 imagePath: 'assets/images/icons/consulter_demande.png',
@@ -3072,7 +2924,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: AppDimensions.getSquareCardWidthSize(context),
               height: AppDimensions.getSquareCardHeightSize(context),
               centerTitle: true,
-              isLocked: !isPremium,
+              //isLocked: !isPremium,
               onTap: () => showSponsorshipBottomSheet(
                 context,
                 imagePath: 'assets/images/icons/parrainer_utilisateur.png',
@@ -3146,7 +2998,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: AppDimensions.getSquareCardWidthSize(context),
               height: AppDimensions.getSquareCardHeightSize(context),
               centerTitle: true,
-              isLocked: isPremium,
+              //isLocked: isPremium,
               onTap: _showRecommendationBottomSheet,
             ),
           ],
@@ -3171,7 +3023,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_hasEventsData) ...[
         const SizedBox(height: 12),
         SectionRow(
-          title: 'ÉVÉNEMENTS ET FAITS SCOLAIRES',
+          title: 'ÉVÉNEMENTS',
           onSeeMore: () {
             MainScreenWrapper.of(
               context,
@@ -3188,7 +3040,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const SizedBox(height: 24),
             SectionRow(
-              title: 'ACTUALITÉS',
+              title: 'ACTUALITÉS  ET FAITS SCOLAIRES',
               onSeeMore: () {
                 MainScreenWrapper.of(
                   context,

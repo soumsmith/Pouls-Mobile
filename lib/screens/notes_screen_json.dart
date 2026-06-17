@@ -48,12 +48,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  
+
   // Variables pour le carrousel auto-play
   late PageController _pageController;
   Timer? _autoPlayTimer;
   int _currentPage = 0;
-  
+
   // Variable pour l'état d'extension du filtre
   bool _isFilterExpanded = false;
 
@@ -73,10 +73,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-    
+
     // Initialiser le PageController pour le carrousel
     _pageController = PageController(viewportFraction: 1.0);
-    
+
     _studentMatricule = widget.matricule;
     _anneeId = widget.anneeId;
     _classeId = widget.classeId;
@@ -95,7 +95,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         setState(() {
           _schoolYears = years;
           _availableYears = years
-              .map<String>((y) => (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString())
+              .map<String>(
+                (y) =>
+                    (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString(),
+              )
               .toList();
           _isLoadingYears = false;
         });
@@ -107,7 +110,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         );
         if (currentYear != null) {
           setState(() {
-            _selectedYear = currentYear['customLibelle'] ?? currentYear['libelle'] ?? _selectedYear;
+            _selectedYear =
+                currentYear['customLibelle'] ??
+                currentYear['libelle'] ??
+                _selectedYear;
           });
         }
       } else {
@@ -134,7 +140,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       _loadApiData();
     }
   }
-
 
   @override
   void didChangeDependencies() {
@@ -189,7 +194,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           _isLoading = false;
         });
         _fadeController.forward(from: 0);
-        
+
         // Démarrer l'auto-play du carrousel
         _startAutoPlay();
 
@@ -354,7 +359,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   child: Container(
                     width: 40,
                     height: 40,
-                    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.screenCardThemed(context),
                       borderRadius: BorderRadius.circular(12),
@@ -517,9 +525,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           ),
         ),
       ),
-      const SliverToBoxAdapter(
-        child: BottomSpacer(height: 125),
-      ),
+      const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
     ];
   }
 
@@ -534,10 +540,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFFFF7A3C), 
-            AppColors.screenOrange,
-          ],
+          colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -621,7 +624,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     if (_bulletinData == null) return const SizedBox.shrink();
 
     return Container(
-      height: 245, // Increased height for combined slide
+      height: 265, // Increased height to prevent overflow with new card
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         children: [
@@ -640,10 +643,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   }
                 });
               },
-              children: [
-                _buildStudentInfoPage(),
-                _buildChartPage(),
-              ],
+              children: [_buildStudentInfoPage(), _buildChartPage()],
             ),
           ),
           const SizedBox(height: 8),
@@ -664,9 +664,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _currentPage == i
-                  ? AppColors.primary
-                  : AppColors.grey300,
+              color: _currentPage == i ? AppColors.primary : AppColors.grey300,
             ),
           ),
       ],
@@ -680,7 +678,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     final anneeLibelle = _bulletinData!['anneeLibelle'] ?? '';
     final moyGeneral = _bulletinData!['moyGeneral'] ?? 0.0;
     final libellePeriode = _bulletinData!['libellePeriode'] ?? '';
-    final periodesMoyenne = _bulletinData!['periodesMoyenne'] as List<dynamic>? ?? [];
+    final periodesMoyenne =
+        _bulletinData!['periodesMoyenne'] as List<dynamic>? ?? [];
+    final moyenneAnnuelleProjettee = _bulletinData!['moyenneAnnuelleProjettee'];
 
     // Regrouper toutes les moyennes et les trier
     List<Map<String, dynamic>> allPeriods = [];
@@ -701,18 +701,32 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     int getSortKey(String libelle) {
       final lower = libelle.toLowerCase();
       if (lower.contains('premier') || lower.contains('1er')) return 1;
-      if (lower.contains('deuxième') || lower.contains('deuxieme') || lower.contains('2ème') || lower.contains('2nd')) return 2;
-      if (lower.contains('troisième') || lower.contains('troisieme') || lower.contains('3ème')) return 3;
-      if (lower.contains('quatrième') || lower.contains('quatrieme') || lower.contains('4ème')) return 4;
+      if (lower.contains('deuxième') ||
+          lower.contains('deuxieme') ||
+          lower.contains('2ème') ||
+          lower.contains('2nd'))
+        return 2;
+      if (lower.contains('troisième') ||
+          lower.contains('troisieme') ||
+          lower.contains('3ème'))
+        return 3;
+      if (lower.contains('quatrième') ||
+          lower.contains('quatrieme') ||
+          lower.contains('4ème'))
+        return 4;
       return 99;
     }
 
-    allPeriods.sort((a, b) => getSortKey(a['libelle']).compareTo(getSortKey(b['libelle'])));
+    allPeriods.sort(
+      (a, b) => getSortKey(a['libelle']).compareTo(getSortKey(b['libelle'])),
+    );
 
     List<Widget> averageCards = [];
     for (var p in allPeriods) {
       final moy = p['moyenne'] ?? 0.0;
-      final double parsedMoy = (moy is num) ? moy.toDouble() : (double.tryParse(moy.toString()) ?? 0.0);
+      final double parsedMoy = (moy is num)
+          ? moy.toDouble()
+          : (double.tryParse(moy.toString()) ?? 0.0);
       averageCards.add(
         Container(
           width: 140,
@@ -720,8 +734,28 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           child: _buildCompactAverageCard(
             p['libelle'],
             parsedMoy.toStringAsFixed(1),
-            p['isCurrent'] ? Icons.analytics_outlined : Icons.menu_book_outlined,
+            p['isCurrent']
+                ? Icons.analytics_outlined
+                : Icons.menu_book_outlined,
             _getAverageColor(parsedMoy),
+          ),
+        ),
+      );
+    }
+
+    if (moyenneAnnuelleProjettee != null) {
+      final double parsedAnnuelle = (moyenneAnnuelleProjettee is num)
+          ? moyenneAnnuelleProjettee.toDouble()
+          : (double.tryParse(moyenneAnnuelleProjettee.toString()) ?? 0.0);
+      averageCards.insert(
+        0,
+        Container(
+          width: 140,
+          margin: const EdgeInsets.only(right: 12),
+          child: _buildCompactAverageCardLight(
+            'Moy. Annuelle Proj.',
+            parsedAnnuelle.toStringAsFixed(2),
+            Icons.auto_graph_outlined,
           ),
         ),
       );
@@ -738,10 +772,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  AppColors.screenOrange,
-                  AppColors.screenOrangeDark,
-                ],
+                colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -792,11 +823,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(
-                      Icons.badge,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                    Icon(Icons.badge, color: Colors.white, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       'Matricule: $matricule',
@@ -811,11 +838,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                    Icon(Icons.calendar_today, color: Colors.white, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       anneeLibelle,
@@ -829,17 +852,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 ),
                 const SizedBox(height: 16),
                 // Séparateur
-                Container(
-                  height: 1,
-                  color: Colors.white.withOpacity(0.3),
-                ),
+                Container(height: 1, color: Colors.white.withOpacity(0.3)),
                 const SizedBox(height: 16),
                 // Section des moyennes
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: averageCards,
-                  ),
+                  child: Row(children: averageCards),
                 ),
               ],
             ),
@@ -860,10 +878,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,11 +892,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 12,
-                ),
+                child: Icon(icon, color: Colors.white, size: 12),
               ),
               const SizedBox(width: 8),
               Text(
@@ -919,9 +930,78 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     );
   }
 
+  Widget _buildCompactAverageCardLight(
+    String title,
+    String value,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.screenOrange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(icon, color: AppColors.screenOrange, size: 12),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenOrange,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              Text(
+                '/20',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.screenOrange.withOpacity(0.9),
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.screenOrange,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildChartPage() {
     final details = _bulletinData!['details'] as List<dynamic>? ?? [];
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -935,10 +1015,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withOpacity(0.1),
@@ -959,11 +1036,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.bar_chart,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                child: Icon(Icons.bar_chart, color: Colors.white, size: 16),
               ),
               const SizedBox(width: 12),
               Text(
@@ -997,9 +1070,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   Widget _buildNotesChart(List<dynamic> details) {
     // Trier les matières par moyenne pour un meilleur affichage
-    final sortedDetails = List<Map<String, dynamic>>.from(
-      details.map((item) => item as Map<String, dynamic>)
-    )..sort((a, b) => (b['moyenne'] as double).compareTo(a['moyenne'] as double));
+    final sortedDetails =
+        List<Map<String, dynamic>>.from(
+          details.map((item) => item as Map<String, dynamic>),
+        )..sort(
+          (a, b) => (b['moyenne'] as double).compareTo(a['moyenne'] as double),
+        );
 
     // Prendre TOUTES les matières pour un affichage complet
     final allSubjects = sortedDetails;
@@ -1007,7 +1083,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
-        width: (allSubjects.length * 35.0).clamp(300.0, double.infinity), // Largeur dynamique ajustée
+        width: (allSubjects.length * 35.0).clamp(
+          300.0,
+          double.infinity,
+        ), // Largeur dynamique ajustée
         height: 180,
         child: BarChart(
           BarChartData(
@@ -1015,7 +1094,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             maxY: 20,
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
-                getTooltipColor: (_) => Theme.of(context).scaffoldBackgroundColor,
+                getTooltipColor: (_) =>
+                    Theme.of(context).scaffoldBackgroundColor,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final subject = allSubjects[group.x.toInt()];
                   return BarTooltipItem(
@@ -1044,12 +1124,13 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < allSubjects.length) {
+                    if (value.toInt() >= 0 &&
+                        value.toInt() < allSubjects.length) {
                       final subject = allSubjects[value.toInt()];
                       final name = subject['matiereLibelle'] as String;
                       // Abréger les noms longs
-                      final displayName = name.length > 6 
-                          ? '${name.substring(0, 4)}...' 
+                      final displayName = name.length > 6
+                          ? '${name.substring(0, 4)}...'
                           : name;
                       return Padding(
                         padding: const EdgeInsets.only(top: 4),
@@ -1058,7 +1139,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           child: Text(
                             displayName,
                             style: TextStyle(
-                              color: AppColors.screenTextSecondaryThemed(context),
+                              color: AppColors.screenTextSecondaryThemed(
+                                context,
+                              ),
                               fontSize: 8,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1087,15 +1170,19 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   },
                 ),
               ),
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
             ),
             borderData: FlBorderData(show: false),
             barGroups: allSubjects.asMap().entries.map((entry) {
               final index = entry.key;
               final subject = entry.value;
               final average = (subject['moyenne'] as double);
-              
+
               // Déterminer la couleur selon la moyenne
               Color barColor;
               if (average >= 16) {
@@ -1140,25 +1227,16 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }) {
     return Container(
       width: 160, // Increased width for better content fit
-      margin: EdgeInsets.only(
-        left: isFirst ? 0 : 0,
-        right: isLast ? 0 : 0,
-      ),
+      margin: EdgeInsets.only(left: isFirst ? 0 : 0, right: isLast ? 0 : 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.1),
-            color.withOpacity(0.05),
-          ],
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16), // Simplified border radius
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.1),
@@ -1180,11 +1258,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   color: color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 16,
-                ),
+                child: Icon(icon, color: color, size: 16),
               ),
               const Spacer(),
               Container(
@@ -1264,7 +1338,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
               ),
               child: Row(
                 children: [
@@ -1314,7 +1390,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _isFilterExpanded ? 'Réduire' : 'Étendre pour filtrer',
+                          _isFilterExpanded
+                              ? 'Réduire'
+                              : 'Étendre pour filtrer',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -1353,61 +1431,64 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 ],
               ),
             ),
-          // Contenu du filtre avec animation
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            height: _isFilterExpanded ? null : 0,
-            child: _isFilterExpanded 
-                ? Container(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Divider(color: AppColors.screenDividerThemed(context), height: 1),
-                        const SizedBox(height: 14),
+            // Contenu du filtre avec animation
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              height: _isFilterExpanded ? null : 0,
+              child: _isFilterExpanded
+                  ? Container(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Divider(
+                            color: AppColors.screenDividerThemed(context),
+                            height: 1,
+                          ),
+                          const SizedBox(height: 14),
 
-          // Année scolaire
-          SearchableDropdown(
-            label: 'Année scolaire',
-            value: _selectedYear ?? 'Chargement...',
-            items: _availableYears,
-            onChanged: _onYearChanged,
-            isDarkMode: AppColors.isDarkMode(context),
-          ),
-          const SizedBox(height: 12),
+                          // Année scolaire
+                          SearchableDropdown(
+                            label: 'Année scolaire',
+                            value: _selectedYear ?? 'Chargement...',
+                            items: _availableYears,
+                            onChanged: _onYearChanged,
+                            isDarkMode: AppColors.isDarkMode(context),
+                          ),
+                          const SizedBox(height: 12),
 
-          // Matière + Trimestre
-          Row(
-            children: [
-              Expanded(
-                child: SearchableDropdown(
-                  label: 'Matière',
-                  value: _selectedSubject ?? 'Toutes',
-                  items: _availableSubjects,
-                  onChanged: _onSubjectChanged,
-                  isDarkMode: AppColors.isDarkMode(context),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SearchableDropdown(
-                  label: 'Trimestre',
-                  value: _selectedTrimester ?? 'Tous',
-                  items: _availableTrimesters,
-                  onChanged: _onTrimesterChanged,
-                  isDarkMode: AppColors.isDarkMode(context),
-                ),
-              ),
-            ],
-          ),
-                      ],
-                    ),
-                  )
-                : null,
-          ),
-        ],
-      ),
+                          // Matière + Trimestre
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SearchableDropdown(
+                                  label: 'Matière',
+                                  value: _selectedSubject ?? 'Toutes',
+                                  items: _availableSubjects,
+                                  onChanged: _onSubjectChanged,
+                                  isDarkMode: AppColors.isDarkMode(context),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: SearchableDropdown(
+                                  label: 'Trimestre',
+                                  value: _selectedTrimester ?? 'Tous',
+                                  items: _availableTrimesters,
+                                  onChanged: _onTrimesterChanged,
+                                  isDarkMode: AppColors.isDarkMode(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    )
+                  : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1483,7 +1564,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         Container(
           decoration: BoxDecoration(
             color: AppColors.screenCardThemed(context),
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(20),
+            ),
             // boxShadow: [
             //   BoxShadow(
             //     color: AppColors.screenShadow,
@@ -1501,7 +1584,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   if (!isLast)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Divider(color: AppColors.screenDividerThemed(context), height: 1),
+                      child: Divider(
+                        color: AppColors.screenDividerThemed(context),
+                        height: 1,
+                      ),
                     ),
                 ],
               );
@@ -1583,7 +1669,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             '${notes.length} évaluation${notes.length > 1 ? 's' : ''}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.screenTextSecondaryThemed(context),
+                              color: AppColors.screenTextSecondaryThemed(
+                                context,
+                              ),
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -1634,7 +1722,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 14),
-                      Divider(color: AppColors.screenDividerThemed(context), height: 1),
+                      Divider(
+                        color: AppColors.screenDividerThemed(context),
+                        height: 1,
+                      ),
                       const SizedBox(height: 14),
 
                       // Titre détail

@@ -9,6 +9,8 @@ import 'models/child.dart';
 import 'services/theme_service.dart';
 import 'services/database_service.dart';
 import 'services/auth_service.dart';
+import 'services/connectivity_service.dart';
+import 'utils/notification_helper.dart';
 
 // NavigatorKey global pour accéder au contexte depuis n'importe quel écran
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -48,6 +50,11 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _themeService.loadTheme();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override

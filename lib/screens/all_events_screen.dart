@@ -13,8 +13,11 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/components/custom_date_input.dart';
 import '../widgets/components/custom_text_input.dart';
+import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/advanced_filters_form.dart';
+import '../config/app_dimensions.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -50,6 +53,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   String _selectedFilter = 'Tous';
   bool _isSearching = false;
   final _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _allEvents = [];
   bool _isLoading = true;
   String? _error;
@@ -117,6 +121,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     _categoryController.dispose();
     _dateController.dispose();
     _fadeController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -273,6 +278,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _scrollController,
             slivers: [
               CustomSliverAppBar(
                 title: 'Événements scolaires',
@@ -286,19 +292,45 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                             ? AppColors.screenOrange
                             : AppColors.screenTextPrimaryThemed(context),
                       ),
-                      onPressed: () => setState(() {
-                        _showAdvancedFilters = !_showAdvancedFilters;
-                      }),
+                      onPressed: () {
+                        setState(() {
+                          _showAdvancedFilters = !_showAdvancedFilters;
+                          if (_showAdvancedFilters) {
+                            _isSearching = false;
+                            _searchController.clear();
+                          }
+                        });
+                        if (_showAdvancedFilters && _scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            0.0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
                     ),
                   IconButton(
                     icon: Icon(
                       _isSearching ? Icons.close_rounded : Icons.search_rounded,
                       color: AppColors.screenTextPrimaryThemed(context),
                     ),
-                    onPressed: () => setState(() {
-                      _isSearching = !_isSearching;
-                      if (!_isSearching) _searchController.clear();
-                    }),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = !_isSearching;
+                        if (!_isSearching) {
+                          _searchController.clear();
+                        } else {
+                          _showAdvancedFilters = false;
+                        }
+                      });
+                      if (_isSearching && _scrollController.hasClients) {
+                        _scrollController.animateTo(
+                          0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
@@ -357,7 +389,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                 color: AppColors.screenSurfaceThemed(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.screenBorder(context)),
-                boxShadow: AppColors.screenCardShadowThemed(context),
+                boxShadow: AppColors.screenCardShadow,
               ),
               child: TextField(
                 controller: _searchController,
@@ -398,96 +430,26 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   }
 
   Widget _buildAdvancedFilters() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      height: _showAdvancedFilters ? 165 : 0,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: _showAdvancedFilters
-          ? SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: SearchableDropdown(
-                          label: 'Pays',
-                          value:
-                              _paysReverseMap[_countryController.text] ??
-                              'Tous',
-                          items: _countriesList,
-                          isDarkMode:
-                              Theme.of(context).brightness == Brightness.dark,
-                          onChanged: (String val) {
-                            setState(() {
-                              _countryController.text = _paysMap[val] ?? '';
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SearchableDropdown(
-                          label: 'Catégorie',
-                          value: _categoryController.text.isEmpty
-                              ? 'Toutes'
-                              : _categoryController.text,
-                          items: _categoriesList,
-                          isDarkMode: Theme.of(context).brightness == Brightness.dark,
-                          onChanged: (String val) {
-                            setState(() {
-                              _categoryController.text = val == 'Toutes' ? '' : val;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: CustomDateInput(
-                          label: 'Date',
-                          hint: 'JJ/MM/AAAA',
-                          icon: Icons.calendar_today_rounded,
-                          controller: _dateController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
-                          inputFormatters: [DateInputFormatter()],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => _loadEvents(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.screenOrange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                        child: const Text(
-                          'Appliquer',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            )
-          : null,
+    return AdvancedFiltersForm(
+      isVisible: _showAdvancedFilters,
+      countryController: _countryController,
+      countriesList: _countriesList,
+      paysMap: _paysMap,
+      paysReverseMap: _paysReverseMap,
+      categoryController: _categoryController,
+      categoriesList: _categoriesList,
+      dateController: _dateController,
+      onApply: () => _loadEvents(),
+      onCountryChanged: (String val) {
+        setState(() {
+          _countryController.text = _paysMap[val] ?? '';
+        });
+      },
+      onCategoryChanged: (String val) {
+        setState(() {
+          _categoryController.text = val == 'Toutes' ? '' : val;
+        });
+      },
     );
   }
 
@@ -496,7 +458,16 @@ class _AllEventsScreenState extends State<AllEventsScreen>
     return FilterRowWidget(
       filters: _filters,
       selectedFilter: _selectedFilter,
-      onFilterSelected: (f) => setState(() => _selectedFilter = f),
+      onFilterSelected: (f) {
+        setState(() => _selectedFilter = f);
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
     );
   }
 
@@ -546,16 +517,17 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   }
 
   Widget _buildErrorState() {
-    final isNetworkError = _error!.contains('SocketException') || 
-                           _error!.contains('ClientException') ||
-                           _error!.contains('Failed host lookup') ||
-                           _error!.contains('No address associated') ||
-                           _error!.contains('Connection refused') ||
-                           _error!.contains('Network is unreachable') ||
-                           _error!.contains('Software caused connection abort');
-                           
-    final errorMessage = isNetworkError 
-        ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+    final isNetworkError =
+        _error!.contains('SocketException') ||
+        _error!.contains('ClientException') ||
+        _error!.contains('Failed host lookup') ||
+        _error!.contains('No address associated') ||
+        _error!.contains('Connection refused') ||
+        _error!.contains('Network is unreachable') ||
+        _error!.contains('Software caused connection abort');
+
+    final errorMessage = isNetworkError
+        ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
         : _error!;
 
     return Center(
@@ -572,7 +544,9 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
-                isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
+                isNetworkError
+                    ? Icons.wifi_off_rounded
+                    : Icons.error_outline_rounded,
                 size: 36,
                 color: const Color(0xFFEF4444),
               ),
@@ -897,18 +871,7 @@ class _EventCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark
-                ? AppColors.screenBorder(context)
-                : const Color(0xFFF1F1F1),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -990,12 +953,17 @@ class _EventCard extends StatelessWidget {
                   const SizedBox(height: 10),
 
                   // Ligne Date et Statut
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    alignment: WrapAlignment.spaceBetween,
                     children: [
                       // Badge Date et Billeterie
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -1022,13 +990,14 @@ class _EventCard extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                     color: color,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
-                          if (typeBilleterie.toLowerCase() == 'non_defini' ||
-                              typeBilleterie.toLowerCase() == 'payant') ...[
-                            const SizedBox(width: 6),
+                          if (typeBilleterie.toLowerCase() == 'gratuit' ||
+                              typeBilleterie.toLowerCase() == 'payant')
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -1052,7 +1021,6 @@ class _EventCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ],
                         ],
                       ),
 

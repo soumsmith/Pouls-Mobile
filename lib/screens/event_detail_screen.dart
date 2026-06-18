@@ -1773,14 +1773,9 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? _AppColors.indigoLight : Colors.white,
+          color: isSelected ? _AppColors.indigoLight : AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected
-                ? _AppColors.indigo
-                : _AppColors.slate300.withOpacity(0.5),
-            width: isSelected ? 1.5 : 0.5,
-          ),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

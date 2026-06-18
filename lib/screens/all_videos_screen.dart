@@ -365,6 +365,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
       centerTitle: false,
       allowLineBreak: true,
       titleMaxLines: 2,
+      showPlayIcon: true,
       onTap: () => _handleVideoAction(video),
     );
   }

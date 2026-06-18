@@ -476,7 +476,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       decoration: BoxDecoration(
         color: _T.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _T.cardBorder(context)),
         boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Column(
@@ -675,7 +674,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       decoration: BoxDecoration(
         color: _T.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _T.cardBorder(context)),
         boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
       child: Row(

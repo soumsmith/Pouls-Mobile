@@ -67,6 +67,7 @@ import '../services/blog_service.dart';
 import '../models/blog.dart';
 import 'all_blogs_screen.dart';
 import 'blog_detail_screen.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -2799,6 +2800,16 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
                       ),
               ),
               const BottomFadeGradient(),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: ScrollToTopFab(
+                    scrollController: _scrollController,
+                    bottomSpacerHeight: 115.0,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

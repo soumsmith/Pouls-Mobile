@@ -174,6 +174,7 @@ class EstablishmentCommunitySection extends StatelessWidget {
                 outerBorderWidth: 0.5,
                 innerBorderColor: action.color.withOpacity(0.3),
                 color: action.color,
+                actionText: action.actionText,
                 onTap: action.onTap,
               );
             },

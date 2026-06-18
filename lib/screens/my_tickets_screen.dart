@@ -16,6 +16,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   const MyTicketsScreen({super.key});
@@ -35,6 +36,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   UserTicketStats _stats = UserTicketStats(nombreCommandes: 0, nonUtilise: 0, utilise: 0, annule: 0);
   String _searchQuery = '';
 
+  final ScrollController _mainScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +46,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
   @override
   void dispose() {
+    _mainScrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -544,7 +548,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     final isDark = _themeService.isDarkMode;
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+      floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
       body: CustomScrollView(
+        controller: _mainScrollController,
         slivers: [
           CustomSliverAppBar(
             title: 'Mes Tickets',

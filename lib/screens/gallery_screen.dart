@@ -7,6 +7,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 class GalleryScreen extends StatefulWidget {
   final String ecoleCode;
@@ -26,6 +27,14 @@ class _GalleryScreenState extends State<GalleryScreen> {
   List<GalleryImage> _images = [];
   bool _isLoading = true;
   String? _error;
+
+  final ScrollController _mainScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _mainScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -70,7 +79,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
       body: CustomScrollView(
+        controller: _mainScrollController,
         slivers: [
           CustomSliverAppBar(
             title: 'Galerie',

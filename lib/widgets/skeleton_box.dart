@@ -5,6 +5,7 @@ class SkeletonBox extends StatefulWidget {
   final double? height;
   final double borderRadius;
   final EdgeInsetsGeometry? margin;
+  final Widget? child;
 
   const SkeletonBox({
     super.key,
@@ -12,6 +13,7 @@ class SkeletonBox extends StatefulWidget {
     this.height,
     this.borderRadius = 16,
     this.margin,
+    this.child,
   });
 
   @override
@@ -63,6 +65,7 @@ class _SkeletonBoxState extends State<SkeletonBox> with SingleTickerProviderStat
             color: _colorAnimation.value,
             borderRadius: BorderRadius.circular(widget.borderRadius),
           ),
+          child: widget.child,
         );
       },
     );

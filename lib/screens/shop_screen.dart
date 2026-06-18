@@ -32,6 +32,7 @@ import 'cart_screen.dart';
 import 'orders_screen.dart';
 import '../services/pays_service.dart';
 import '../widgets/searchable_dropdown.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 class LibraryScreen extends StatefulWidget implements MainScreenChild {
   const LibraryScreen({super.key});
@@ -93,6 +94,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  final ScrollController _mainScrollController = ScrollController();
 
   // ✅ FIX: Ratio calculé pour inclure image + texte externe sans overflow.
   // Formule : largeur_cellule / (hauteur_image + hauteur_texte_estimée)
@@ -136,6 +138,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     _nomProduitController.dispose();
     _typeController.dispose();
     _fadeController.dispose();
+    _mainScrollController.dispose();
     super.dispose();
   }
 
@@ -195,21 +198,22 @@ class _LibraryScreenState extends State<LibraryScreen>
     } catch (e) {
       if (mounted) {
         final errorString = e.toString();
-        final isNetworkError = errorString.contains('SocketException') || 
-                               errorString.contains('ClientException') ||
-                               errorString.contains('Failed host lookup') ||
-                               errorString.contains('No address associated') ||
-                               errorString.contains('Connection refused') ||
-                               errorString.contains('Network is unreachable') ||
-                               errorString.contains('Software caused connection abort');
-        
+        final isNetworkError =
+            errorString.contains('SocketException') ||
+            errorString.contains('ClientException') ||
+            errorString.contains('Failed host lookup') ||
+            errorString.contains('No address associated') ||
+            errorString.contains('Connection refused') ||
+            errorString.contains('Network is unreachable') ||
+            errorString.contains('Software caused connection abort');
+
         setState(() {
-          _error = isNetworkError 
+          _error = isNetworkError
               ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
               : 'Une erreur est survenue lors du chargement des produits.';
           _isLoading = false;
         });
-        
+
         if (!isNetworkError) {
           _showError('Erreur lors du chargement des produits: $e');
         }
@@ -258,15 +262,16 @@ class _LibraryScreenState extends State<LibraryScreen>
     } catch (e) {
       if (mounted) {
         final errorString = e.toString();
-        final isNetworkError = errorString.contains('SocketException') || 
-                               errorString.contains('ClientException') ||
-                               errorString.contains('Failed host lookup') ||
-                               errorString.contains('No address associated') ||
-                               errorString.contains('Connection refused') ||
-                               errorString.contains('Network is unreachable') ||
-                               errorString.contains('Software caused connection abort');
+        final isNetworkError =
+            errorString.contains('SocketException') ||
+            errorString.contains('ClientException') ||
+            errorString.contains('Failed host lookup') ||
+            errorString.contains('No address associated') ||
+            errorString.contains('Connection refused') ||
+            errorString.contains('Network is unreachable') ||
+            errorString.contains('Software caused connection abort');
         setState(() {
-          _categoryError = isNetworkError 
+          _categoryError = isNetworkError
               ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
               : 'Une erreur est survenue lors du chargement des catégories.';
           _isLoadingCategories = false;
@@ -438,18 +443,34 @@ class _LibraryScreenState extends State<LibraryScreen>
       ),
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
-        body: CustomScrollView(
-          slivers: [
-            _buildSliverAppBar(),
-            SliverToBoxAdapter(child: _buildSearchBar()),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 24),
-                child: _buildFilterTabs(),
-              ),
+        floatingActionButton: ScrollToTopFab(
+          scrollController: _mainScrollController,
+          bottomSpacerHeight: 70,
+        ),
+        body: Stack(
+          children: [
+            CustomScrollView(
+              controller: _mainScrollController,
+              slivers: [
+                _buildSliverAppBar(),
+                SliverToBoxAdapter(child: _buildSearchBar()),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 24),
+                    child: _buildFilterTabs(),
+                  ),
+                ),
+                SliverToBoxAdapter(child: _buildResultsHeader()),
+                ..._buildGridSlivers(),
+              ],
             ),
-            SliverToBoxAdapter(child: _buildResultsHeader()),
-            SliverFillRemaining(child: _buildGrid()),
+            if (!_isLoading && _error == null && _filteredProducts.isNotEmpty)
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: BottomFadeGradient(),
+              ),
           ],
         ),
       ),
@@ -890,14 +911,14 @@ class _LibraryScreenState extends State<LibraryScreen>
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Row(
         children: [
-          Text(
-            '${_filteredProducts.length} résultat${_filteredProducts.length > 1 ? 's' : ''}',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          // Text(
+          //   '${_filteredProducts.length} résultat${_filteredProducts.length > 1 ? 's' : ''}',
+          //   style: const TextStyle(
+          //     fontSize: 13,
+          //     color: AppColors.screenTextSecondary,
+          //     fontWeight: FontWeight.w500,
+          //   ),
+          // ),
           if (_selectedFilter != 'Tous') ...[
             const SizedBox(width: 8),
             Container(
@@ -940,89 +961,94 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  // ─── GRID ──────────────────────────────────────────────────────────────────
-  Widget _buildGrid() {
+  // ─── GRID SLIVERS ──────────────────────────────────────────────────────────
+  List<Widget> _buildGridSlivers() {
     if (_isLoading) {
-      return GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _getCrossAxisCount(context),
-          crossAxisSpacing:
-              AppDimensions.getAdaptiveGridSpacing(context) *
-              (((AppDimensions.isTablet(context) ||
-                          AppDimensions.isLargeTablet(context)) &&
-                      AppDimensions.isLandscape(context))
-                  ? 1.8
-                  : 1.0),
-          mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
-          mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
-        ),
-        itemCount: 16,
-        itemBuilder: (context, index) {
-          return const SkeletonBox();
-        },
-      );
-    }
-
-    if (_error != null) return _buildErrorState();
-    if (_filteredProducts.isEmpty) return _buildEmptyState();
-
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                sliver: SliverGrid(
-                  // ✅ FIX: childAspectRatio via _getCardAspectRatio() qui inclut
-                  // image + texte externe pour éviter tout overflow.
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing:
-                        AppDimensions.getAdaptiveGridSpacing(context) *
-                        (((AppDimensions.isTablet(context) ||
-                                    AppDimensions.isLargeTablet(context)) &&
-                                AppDimensions.isLandscape(context))
-                            ? 1.8
-                            : 1.0), // Plus d'espace horizontal uniquement sur tablette en paysage
-                    mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(
-                      context,
+      return [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _getCrossAxisCount(context),
+              crossAxisSpacing:
+                  AppDimensions.getAdaptiveGridSpacing(context) *
+                  (((AppDimensions.isTablet(context) ||
+                              AppDimensions.isLargeTablet(context)) &&
+                          AppDimensions.isLandscape(context))
+                      ? 1.8
+                      : 1.0),
+              mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+              mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return SkeletonBox(
+                child: Center(
+                  child: Text(
+                    'Chargement...',
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[600]
+                          : Colors.grey[400],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
-                    mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index == _filteredProducts.length &&
-                          _hasMoreProducts) {
-                        return SeeMoreCard(
-                          cardColor: AppColors.screenCard,
-                          borderColor: AppColors.shopGreen.withOpacity(0.3),
-                          iconColor: AppColors.shopGreen,
-                          textColor: AppColors.shopGreen,
-                          subtitleColor: const Color(0xFF999999),
-                          title: 'Voir plus',
-                          subtitle: 'produits',
-                          onTap: _loadMoreProducts,
-                          icon: Icons.add,
-                        );
-                      }
-                      return _buildProductCard(_filteredProducts[index], index);
-                    },
-                    childCount:
-                        _filteredProducts.length + (_hasMoreProducts ? 1 : 0),
                   ),
                 ),
-              ),
-              const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
-            ],
+              );
+            }, childCount: 16),
           ),
-          // Gradient fade at bottom
-          const BottomFadeGradient(),
-        ],
+        ),
+      ];
+    }
+
+    if (_error != null) return [SliverToBoxAdapter(child: _buildErrorState())];
+    if (_filteredProducts.isEmpty)
+      return [
+        SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState()),
+      ];
+
+    return [
+      SliverFadeTransition(
+        opacity: _fadeAnimation,
+        sliver: SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _getCrossAxisCount(context),
+              crossAxisSpacing:
+                  AppDimensions.getAdaptiveGridSpacing(context) *
+                  (((AppDimensions.isTablet(context) ||
+                              AppDimensions.isLargeTablet(context)) &&
+                          AppDimensions.isLandscape(context))
+                      ? 1.8
+                      : 1.0),
+              mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
+              mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (index == _filteredProducts.length && _hasMoreProducts) {
+                  return SeeMoreCard(
+                    cardColor: AppColors.screenCard,
+                    borderColor: AppColors.shopGreen.withOpacity(0.3),
+                    iconColor: AppColors.shopGreen,
+                    textColor: AppColors.shopGreen,
+                    subtitleColor: const Color(0xFF999999),
+                    title: 'Voir plus',
+                    subtitle: 'produits',
+                    onTap: _loadMoreProducts,
+                    icon: Icons.add,
+                  );
+                }
+                return _buildProductCard(_filteredProducts[index], index);
+              },
+              childCount: _filteredProducts.length + (_hasMoreProducts ? 1 : 0),
+            ),
+          ),
+        ),
       ),
-    );
+      const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
+    ];
   }
 
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────

@@ -58,6 +58,7 @@ import '../widgets/bottom_sheets/enhanced_scolarite_bottom_sheet.dart';
 import '../widgets/bottom_sheets/my_reservations_bottom_sheet.dart';
 import '../widgets/components/custom_date_input.dart';
 import 'my_tickets_screen.dart';
+import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/components/section_row.dart';
@@ -586,6 +587,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     _animationController.dispose();
     _accessDateDebutController.dispose();
     _accessDateFinController.dispose();
+    _absencesScrollController.dispose();
+    _mainScrollController.dispose();
     super.dispose();
   }
 
@@ -1142,9 +1145,14 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
+      floatingActionButton: ScrollToTopFab(
+        scrollController: _mainScrollController,
+        bottomSpacerHeight: 70,
+      ),
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _mainScrollController,
             slivers: [
               _buildModernSliverAppBar(),
               SliverToBoxAdapter(
@@ -4994,7 +5002,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               title: 'Kits Scolaires',
               subtitle: 'Voir les kits',
               imagePath:
-                  'assets/images/icons/fournitures.png', // Or another icon
+                  'assets/images/icons/kitscolaite.png', // Or another icon
               iconData: Icons.backpack_rounded,
               color: const Color(
                 0xFF673AB7,
@@ -10939,49 +10947,51 @@ class _ChildListScreenState extends State<ChildListScreen>
           );
         }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              FilterRowWidget(
-                filters: const [
-                  'Tous',
-                  'En attente',
-                  'En cours',
-                  'Livrées',
-                  'Annulées',
-                ],
-                selectedFilter: _ordersStatusFilter,
-                onFilterSelected: (String filter) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilterRowWidget(
+              filters: const [
+                'Tous',
+                'En attente',
+                'En cours',
+                'Livrées',
+                'Annulées',
+              ],
+              selectedFilter: _ordersStatusFilter,
+              onFilterSelected: (String filter) {
+                setModalState(() {
+                  _ordersStatusFilter = filter;
+                });
+              },
+            ),
+            _buildOrdersStatsHeader(rawOrders),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              child: SearchBarWidget(
+                isSearching: true,
+                searchController: _ordersSearchController,
+                onChanged: (val) {
+                  setModalState(() {});
+                },
+                onClear: () {
                   setModalState(() {
-                    _ordersStatusFilter = filter;
+                    _ordersSearchController.clear();
                   });
                 },
+                hintText: 'Rechercher une commande...',
               ),
-              _buildOrdersStatsHeader(rawOrders),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: SearchBarWidget(
-                  isSearching: true,
-                  searchController: _ordersSearchController,
-                  onChanged: (val) {
-                    setModalState(() {});
-                  },
-                  onClear: () {
-                    setModalState(() {
-                      _ordersSearchController.clear();
-                    });
-                  },
-                  hintText: 'Rechercher une commande...',
-                ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: content,
               ),
-              Padding(padding: const EdgeInsets.all(16), child: content),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -11703,18 +11713,45 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildAbsencesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildPresenceFilters(),
-          const SizedBox(height: 12),
-          _buildAttendanceSummary(),
-          const SizedBox(height: 20),
-          _buildAbsencesList(),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 16,
+          ).copyWith(bottom: 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildPresenceFilters(),
+              const SizedBox(height: 12),
+              _buildAttendanceSummary(),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                controller: _absencesScrollController,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                ).copyWith(bottom: 16),
+                child: _buildAbsencesList(),
+              ),
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: ScrollToTopFab(
+                  scrollController: _absencesScrollController,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -12077,6 +12114,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       TextEditingController();
   final TextEditingController _filterEndDateController =
       TextEditingController();
+  final ScrollController _absencesScrollController = ScrollController();
+  final ScrollController _mainScrollController = ScrollController();
   int? _filterType; // null = tous, 0 = absent, 1 = présent
   bool _isFilterExpanded = false;
 

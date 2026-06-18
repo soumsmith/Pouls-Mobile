@@ -13,9 +13,9 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/components/custom_date_input.dart';
 import '../widgets/components/custom_text_input.dart';
-import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/advanced_filters_form.dart';
 import '../config/app_dimensions.dart';
 
@@ -275,6 +275,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
 
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
+      floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
       body: Stack(
         children: [
           CustomScrollView(

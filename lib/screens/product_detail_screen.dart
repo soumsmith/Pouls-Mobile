@@ -11,6 +11,7 @@ import '../widgets/snackbar.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 // ─── DESIGN TOKENS THEME-AWARE ─────────────────────────────────────────────────
 // Utilise les méthodes theme-aware d'AppColors pour le dark/light mode
@@ -89,6 +90,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   int _quantity = 1;
   Product? _detailedProduct;
   bool _descExpanded = false;
+  final ScrollController _scrollController = ScrollController();
 
   // ── Animations ────────────────────────────────────────────────────────
   // late final : initialisé au premier accès, garanti après création du State.
@@ -119,6 +121,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _fadeCtrl.dispose();
     _slideCtrl.dispose();
     super.dispose();
@@ -184,6 +187,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       ),
       child: Scaffold(
         backgroundColor: _T.bg(context),
+        floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
         body: _isDetailLoading
             ? Center(
                 child: CustomLoader(
@@ -199,6 +203,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   children: [
                     // ── Scrollable content ──
                     CustomScrollView(
+                      controller: _scrollController,
                       slivers: [
                         _buildSliverAppBar(p, productColor),
                         SliverToBoxAdapter(

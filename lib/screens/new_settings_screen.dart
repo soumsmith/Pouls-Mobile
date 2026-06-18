@@ -13,6 +13,7 @@ import '../screens/text_size_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/scroll_to_top_fab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'splash_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -35,6 +36,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
   bool _pushNotifications = true;
   bool _emailNotifications = false;
   bool _smsNotifications = false;
+  final ScrollController _scrollController = ScrollController();
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -68,6 +70,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -99,7 +102,9 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
         builder: (context, child) {
           return Scaffold(
             backgroundColor: AppColors.screenSurfaceThemed(context),
+            floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
             body: CustomScrollView(
+              controller: _scrollController,
               slivers: [
                 CustomSliverAppBar(
                   title: 'Paramètres',

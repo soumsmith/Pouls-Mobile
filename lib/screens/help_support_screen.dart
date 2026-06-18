@@ -10,6 +10,7 @@ import 'add_child_screen.dart';
 import 'pdf_viewer_screen.dart';
 import 'visite_guidee_video_feed_screen.dart';
 import '../models/visite_guidee_video.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -25,6 +26,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   final TextSizeService _textSizeService = TextSizeService();
+  final ScrollController _scrollController = ScrollController();
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -48,6 +50,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _fadeController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -74,6 +77,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
+        floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
@@ -81,6 +85,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               _buildAppBar(),
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

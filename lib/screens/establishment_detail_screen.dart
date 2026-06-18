@@ -53,6 +53,7 @@ import '../models/school_supply.dart';
 import '../models/place_reservation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../widgets/scroll_to_top_fab.dart';
 import '../models/classe.dart';
 import '../models/matiere.dart';
 import '../models/eleve.dart';
@@ -366,7 +367,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   List<CoulisseExcellence> _coulisseExcellenceVideos = [];
   bool _isLoadingCoulisseExcellence = true;
   String? _coulisseExcellenceError;
-  
+
   // Variables pour les Résultats Scolaires
   List<Map<String, dynamic>> _resultatsScolaires = [];
   bool _isLoadingResultatsScolaires = true;
@@ -384,6 +385,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   bool _isAcademicExpanded = false;
   late TextEditingController _searchController;
   late FocusNode _searchFocusNode;
+  final ScrollController _mainScrollController = ScrollController();
 
   // Variables pour les notifications
   List<GroupMessage> _notifications = [];
@@ -782,34 +784,40 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     });
 
     // Handle Blogs
-    _blogService.getBlogsForUI('grand', code).then((blogs) {
-      if (!mounted) return;
-      setState(() {
-        _blogs = blogs;
-        _isLoadingBlogs = false;
-      });
-    }).catchError((e) {
-      if (!mounted) return;
-      setState(() {
-        _blogsError = e.toString();
-        _isLoadingBlogs = false;
-      });
-    });
+    _blogService
+        .getBlogsForUI('grand', code)
+        .then((blogs) {
+          if (!mounted) return;
+          setState(() {
+            _blogs = blogs;
+            _isLoadingBlogs = false;
+          });
+        })
+        .catchError((e) {
+          if (!mounted) return;
+          setState(() {
+            _blogsError = e.toString();
+            _isLoadingBlogs = false;
+          });
+        });
 
     // Handle Avis
-    _avisService.getAvisForUI(code).then((avis) {
-      if (!mounted) return;
-      setState(() {
-        _avis = avis;
-        _isLoadingAvis = false;
-      });
-    }).catchError((e) {
-      if (!mounted) return;
-      setState(() {
-        _avisError = e.toString();
-        _isLoadingAvis = false;
-      });
-    });
+    _avisService
+        .getAvisForUI(code)
+        .then((avis) {
+          if (!mounted) return;
+          setState(() {
+            _avis = avis;
+            _isLoadingAvis = false;
+          });
+        })
+        .catchError((e) {
+          if (!mounted) return;
+          setState(() {
+            _avisError = e.toString();
+            _isLoadingAvis = false;
+          });
+        });
   }
 
   Future<void> _loadVisiteGuideeVideos() async {
@@ -825,10 +833,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       final videos = await VisiteGuideeService.getVideosByEcole(code);
       if (mounted) {
         setState(() {
-          _visiteGuideeVideos = videos.map((v) => v.copyWith(
-            code: v.code.isEmpty ? code : v.code,
-            etablissement: v.etablissement.isEmpty ? (widget.ecole.parametreNom) : v.etablissement,
-          )).toList();
+          _visiteGuideeVideos = videos
+              .map(
+                (v) => v.copyWith(
+                  code: v.code.isEmpty ? code : v.code,
+                  etablissement: v.etablissement.isEmpty
+                      ? (widget.ecole.parametreNom)
+                      : v.etablissement,
+                ),
+              )
+              .toList();
           _isLoadingVisiteGuidee = false;
         });
       }
@@ -1007,6 +1021,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     // Search controller
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _mainScrollController.dispose();
     super.dispose();
   }
 
@@ -1029,6 +1044,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               backgroundColor: isDark
                   ? const Color(0xFF0F0F0F)
                   : AppColors.screenSurface,
+              floatingActionButton: ScrollToTopFab(
+                scrollController: _mainScrollController,
+                bottomSpacerHeight: 70,
+              ),
               body: Stack(
                 children: [
                   FadeTransition(
@@ -1051,19 +1070,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         return false;
                       },
                       child: CustomScrollView(
+                        controller: _mainScrollController,
                         slivers: [
                           _buildSliverAppBar(isDark),
-                          SliverToBoxAdapter(
-  child: _buildContent(isDark),
-),
+                          SliverToBoxAdapter(child: _buildContent(isDark)),
                         ],
                       ),
                     ),
                   ),
                   // Bottom fade gradient effect
                   const BottomFadeGradient(),
-
-
                 ],
               ),
             ),
@@ -1503,7 +1519,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                   _isInfoCardExpanded = false; // Fermer
                                 } else {
                                   _isInfoCardExpanded = true; // Ouvrir
-                                  _scrollPosition = 0.0; // Réinitialiser la position de scroll
+                                  _scrollPosition =
+                                      0.0; // Réinitialiser la position de scroll
                                 }
                               });
                             },
@@ -2585,7 +2602,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         key: 'consult_requests',
         title: 'Consulter une demande',
         subtitle: 'Consulter',
-        imagePath: 'assets/images/icons/consulter_une_demande_etablissement.png',
+        imagePath:
+            'assets/images/icons/consulter_une_demande_etablissement.png',
         color: _kActions['consult_requests']!.color,
         actionText: 'Consulter',
         onTap: () => _showActionBottomSheet(
@@ -2614,9 +2632,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ),
       EstablishmentAction(
         key: 'kits_scolaires',
-        title: 'Kits d\'articles',
+        title: 'Kits scolaires',
         subtitle: 'Fournitures',
-        imagePath: 'assets/images/icons/scolarite_tarifs.png', // Utilise l'icône existante temporairement
+        imagePath:
+            'assets/images/icons/kitscolaite.png', // Utilise l'icône existante temporairement
         color: const Color(0xFF8B5CF6),
         actionText: 'Voir',
         onTap: () => _showKitsBottomSheetAction(),
@@ -2690,7 +2709,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       // ),
     ];
 
-    final isTablet = AppDimensions.isTablet(context) ||
+    final isTablet =
+        AppDimensions.isTablet(context) ||
         AppDimensions.isLargeTablet(context) ||
         AppDimensions.isDesktop(context);
 
@@ -2703,7 +2723,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       children: [
         // Section Résultats Scolaires
         _buildResultatsScolairesSection(isDark),
-        
+
         // Section École
         SectionRow(title: 'École'),
         const SizedBox(height: 8),
@@ -2757,7 +2777,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           const SizedBox(height: 20),
         ],
 
-        if (_isLoadingCoulisseExcellence || _coulisseExcellenceVideos.isNotEmpty) ...[
+        if (_isLoadingCoulisseExcellence ||
+            _coulisseExcellenceVideos.isNotEmpty) ...[
           // Section Coulisses de l'Excellence
           SectionRow(
             title: 'COULISSES DE L\'EXCELLENCE',
@@ -2776,12 +2797,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           const SizedBox(height: 10),
           _buildCoulisseExcellenceSection(),
         ],
+        const BottomSpacer(height: 125),
       ],
     );
   }
 
   double _getCardWidth(BuildContext context, double horizontalSpacing) {
-    final isTablet = AppDimensions.isTablet(context) ||
+    final isTablet =
+        AppDimensions.isTablet(context) ||
         AppDimensions.isLargeTablet(context) ||
         AppDimensions.isDesktop(context);
 
@@ -2796,7 +2819,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // Construire la section des visites guidées
   Widget _buildVisiteGuideeSection() {
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final sectionHeight = isTablet ? 180.0 : 140.0;
 
     if (_isLoadingVisiteGuidee) {
@@ -2845,15 +2869,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _visiteGuideeVideos.length > 5
-            ? 6 // 5 vidéos + bouton Voir+
-            : _visiteGuideeVideos.length, // Uniquement les vidéos si ≤5
+        itemCount: _visiteGuideeVideos.length > 4
+            ? 5 // 4 vidéos + bouton Voir+
+            : _visiteGuideeVideos.length, // Uniquement les vidéos
         itemBuilder: (context, index) {
-          if (index < _visiteGuideeVideos.length && index < 5) {
-            // Afficher les 5 premières vidéos
+          if (index < _visiteGuideeVideos.length && index < 4) {
+            // Afficher jusqu'à 4 vidéos
             return _buildVisiteGuideeVideoCard(_visiteGuideeVideos[index]);
-          } else if (index == 5 && _visiteGuideeVideos.length > 5) {
-            // Afficher le bouton Voir+ uniquement s'il y a plus de 5 vidéos
+          } else if (index == 4 && _visiteGuideeVideos.length > 4) {
+            // Afficher le bouton Voir+
             return _buildSeeMoreVisitesCard();
           } else {
             return const SizedBox.shrink();
@@ -2885,7 +2909,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         //tag: schoolData['tag'] as String?, // Permettre null
         titleMaxLines: 1,
         externalTitleSpacing: 4,
-        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 180 : 140,
+        height:
+            (AppDimensions.isTablet(context) ||
+                AppDimensions.isLargeTablet(context))
+            ? 180
+            : 140,
         width: _getCardWidth(context, 16.0),
         allowLineBreak: false,
         centerTitle: false,
@@ -2968,8 +2996,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ), // Espacement horizontal cohérent
       child: SeeMoreCard(
         cardColor: isDarkMode
-            ? const Color.fromARGB(255, 0, 0, 0)
-            : const Color(0xFFF3F4F6),
+            ? Colors.black
+            : Colors.white,
         borderColor: const Color(0xFF3F51B5),
         iconColor: Colors.white,
         textColor: const Color(0xFF3F51B5),
@@ -2998,7 +3026,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // Construire la section des Coulisses de l'Excellence
   Widget _buildCoulisseExcellenceSection() {
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final sectionHeight = isTablet ? 180.0 : 140.0;
 
     if (_isLoadingCoulisseExcellence) {
@@ -3047,15 +3076,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _coulisseExcellenceVideos.length > 5
-            ? 6 // 5 vidéos + bouton Voir+
-            : _coulisseExcellenceVideos.length, // Uniquement les vidéos si ≤5
+        itemCount: _coulisseExcellenceVideos.length > 4
+            ? 5 // 4 vidéos + bouton Voir+
+            : _coulisseExcellenceVideos.length, // Uniquement les vidéos
         itemBuilder: (context, index) {
-          if (index < _coulisseExcellenceVideos.length && index < 5) {
-            // Afficher les 5 premières vidéos
+          if (index < _coulisseExcellenceVideos.length && index < 4) {
+            // Afficher jusqu'à 4 vidéos
             return _buildVideoCard(_coulisseExcellenceVideos[index]);
-          } else if (index == 5 && _coulisseExcellenceVideos.length > 5) {
-            // Afficher le bouton Voir+ uniquement s'il y a plus de 5 vidéos
+          } else if (index == 4 && _coulisseExcellenceVideos.length > 4) {
+            // Afficher le bouton Voir+
             return _buildSeeMoreVideosCard();
           } else {
             return const SizedBox.shrink();
@@ -3087,7 +3116,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         //tag: schoolData['tag'] as String?, // Permettre null
         titleMaxLines: 1,
         externalTitleSpacing: 4,
-        height: (AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) ? 180 : 140,
+        height:
+            (AppDimensions.isTablet(context) ||
+                AppDimensions.isLargeTablet(context))
+            ? 180
+            : 140,
         width: _getCardWidth(context, 16.0),
         allowLineBreak: false,
         centerTitle: false,
@@ -3176,8 +3209,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ), // Espacement horizontal cohérent
       child: SeeMoreCard(
         cardColor: isDarkMode
-            ? const Color.fromARGB(255, 0, 0, 0)
-            : const Color(0xFFF3F4F6),
+            ? Colors.black
+            : Colors.white,
         borderColor: const Color(0xFF10B981),
         iconColor: Colors.white,
         textColor: const Color(0xFF10B981),
@@ -3241,7 +3274,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AllEventsScreen(schoolCode: widget.ecole.parametreCode),
+          builder: (context) =>
+              AllEventsScreen(schoolCode: widget.ecole.parametreCode),
         ),
       );
       return; // On arrête ici pour ce cas
@@ -3252,7 +3286,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AllBlogsScreen(schoolCode: widget.ecole.parametreCode),
+          builder: (context) =>
+              AllBlogsScreen(schoolCode: widget.ecole.parametreCode),
         ),
       );
       return;
@@ -3279,30 +3314,35 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       setState(() {
         _searchQuery = '';
         _searchController.clear();
-        _niveauxFuture ??= NiveauService.getNiveauxByEcole(widget.ecole.parametreCode ?? '').then((niveaux) {
-          if (niveaux.isNotEmpty) {
-            final niveauLabels = <String>{};
-            for (final n in niveaux) {
-              final label = (n.niveau?.isNotEmpty == true) ? n.niveau! : n.nom;
-              if (label != null) {
-                niveauLabels.add(label);
+        _niveauxFuture ??=
+            NiveauService.getNiveauxByEcole(
+              widget.ecole.parametreCode ?? '',
+            ).then((niveaux) {
+              if (niveaux.isNotEmpty) {
+                final niveauLabels = <String>{};
+                for (final n in niveaux) {
+                  final label = (n.niveau?.isNotEmpty == true)
+                      ? n.niveau!
+                      : n.nom;
+                  if (label != null) {
+                    niveauLabels.add(label);
+                  }
+                }
+                final sortedLabels = niveauLabels.toList()..sort();
+                if (sortedLabels.isNotEmpty) {
+                  setState(() {
+                    _selectedNiveauFiltre = sortedLabels.first;
+                    _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                      widget.ecole.parametreCode ?? '',
+                      niveau: sortedLabels.first,
+                    );
+                  });
+                  // Force bottom sheet rebuild to display _scolariteFuture
+                  _avisNotifier.value++;
+                }
               }
-            }
-            final sortedLabels = niveauLabels.toList()..sort();
-            if (sortedLabels.isNotEmpty) {
-              setState(() {
-                _selectedNiveauFiltre = sortedLabels.first;
-                _scolariteFuture = ScolariteService.getScolaritesByEcole(
-                  widget.ecole.parametreCode ?? '',
-                  niveau: sortedLabels.first,
-                );
-              });
-              // Force bottom sheet rebuild to display _scolariteFuture
-              _avisNotifier.value++;
-            }
-          }
-          return niveaux;
-        });
+              return niveaux;
+            });
       });
     }
 
@@ -3318,10 +3358,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           child: ValueListenableBuilder<int>(
             valueListenable: _avisNotifier,
             builder: (context, _, __) {
-            return Container(
+              return Container(
                 height: MediaQuery.sizeOf(context).height * 0.95,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
+                  color: isDark
+                      ? const Color(0xFF1A1A1A)
+                      : AppColors.screenCard,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(28),
                   ),
@@ -3339,7 +3381,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       icon: def.icon,
                       imagePath: def.imagePath,
                       imageBackgroundColor: def.color,
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                      imageBorderRadius: AppDimensions.getImageBorderRadius(
+                        context,
+                      ),
                       iconColor: def.color,
                       title: def.label,
                       description: def.subtitle,
@@ -3347,14 +3391,31 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     ),
                     Expanded(
                       child: SingleChildScrollView(
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: EdgeInsets.fromLTRB(20, 20, 20, actionType == 'voir_les_avis' ? 0 : 20 + MediaQuery.of(context).viewInsets.bottom),
-                        child: _buildActionContent(actionType, def.color, setSheetState),
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          20,
+                          20,
+                          actionType == 'voir_les_avis'
+                              ? 0
+                              : 20 + MediaQuery.of(context).viewInsets.bottom,
+                        ),
+                        child: _buildActionContent(
+                          actionType,
+                          def.color,
+                          setSheetState,
+                        ),
                       ),
                     ),
                     if (actionType == 'voir_les_avis')
                       Padding(
-                        padding: EdgeInsets.fromLTRB(20, 10, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          10,
+                          20,
+                          20 + MediaQuery.of(context).viewInsets.bottom,
+                        ),
                         child: _buildComposeAvisBar(),
                       ),
                   ],
@@ -3364,8 +3425,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           ),
         ),
       ),
-  );
-}
+    );
+  }
 
   // ── Bottom sheet pour les kits scolaires ──────────────────────────────────────────────
   Future<void> _showKitsBottomSheetAction() async {
@@ -3384,14 +3445,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     try {
       final codeEcole = widget.ecole.parametreCode ?? '';
       _niveauxFuture ??= NiveauService.getNiveauxByEcole(codeEcole);
-      
+
       final niveaux = await _niveauxFuture!;
-      
+
       if (mounted) {
         Navigator.of(context).pop(); // Ferme le loader
-        
+
         final schoolName = widget.ecole.parametreNom ?? 'École';
-        
+
         showKitsBottomSheet(
           context,
           schoolId: codeEcole,
@@ -3436,7 +3497,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ══════════════════════════════════════════════════════════════════════════
   //  ACTION CONTENT ROUTER
   // ══════════════════════════════════════════════════════════════════════════
-  Widget _buildActionContent(String actionType, Color headerColor, StateSetter setSheetState) {
+  Widget _buildActionContent(
+    String actionType,
+    Color headerColor,
+    StateSetter setSheetState,
+  ) {
     switch (actionType) {
       case 'rating':
         return _buildRatingForm(headerColor);
@@ -3677,7 +3742,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             borderRadius: BorderRadius.circular(
               AppDimensions.getLargeCardBorderRadius(context),
             ),
-             boxShadow: AppDimensions.getSettingsCardShadow(context),
+            boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3837,7 +3902,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? AppColors.screenBorder(context) : const Color(0xFFF1F1F1),
+            color: isDark
+                ? AppColors.screenBorder(context)
+                : const Color(0xFFF1F1F1),
           ),
           boxShadow: [
             BoxShadow(
@@ -4007,7 +4074,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             blog['establishment'] as String? ?? '',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.screenTextSecondaryThemed(context),
+                              color: AppColors.screenTextSecondaryThemed(
+                                context,
+                              ),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -4020,7 +4089,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   Divider(
                     height: 1,
                     thickness: 1,
-                    color: isDark ? const Color(0xFF333333) : AppColors.screenDivider,
+                    color: isDark
+                        ? const Color(0xFF333333)
+                        : AppColors.screenDivider,
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -4029,7 +4100,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       TextButton(
                         onPressed: () => _navigateToBlogDetail(blog),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           backgroundColor: color.withOpacity(0.08),
                           foregroundColor: color,
                           shape: RoundedRectangleBorder(
@@ -4047,10 +4121,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               ),
                             ),
                             const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 14,
-                            ),
+                            Icon(Icons.arrow_forward_rounded, size: 14),
                           ],
                         ),
                       ),
@@ -4070,7 +4141,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       slug: blog['id'] as String? ?? blog['slug'] as String? ?? '',
       codeecole: widget.ecole.parametreCode ?? '',
       nomecole: widget.ecole.parametreNom ?? '',
-      categories: List<String>.from(blog['categories'] as List? ?? [blog['type'] as String? ?? 'Actualité']),
+      categories: List<String>.from(
+        blog['categories'] as List? ?? [blog['type'] as String? ?? 'Actualité'],
+      ),
       title: blog['title'] as String? ?? '',
       content: blog['content'] as String? ?? '',
       publishedAt: DateTime.now().toIso8601String(),
@@ -4903,8 +4976,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
             IconButton(
               icon: Icon(
-                _isSearchingScolarite ? Icons.search_off_rounded : Icons.search_rounded,
-                color: _isSearchingScolarite ? AppColors.screenOrange : AppColors.screenTextSecondaryThemed(context),
+                _isSearchingScolarite
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: _isSearchingScolarite
+                    ? AppColors.screenOrange
+                    : AppColors.screenTextSecondaryThemed(context),
                 size: 24,
               ),
               onPressed: () {
@@ -4945,14 +5022,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                 );
               }
-              if (levelsSnapshot.hasError || !levelsSnapshot.hasData || levelsSnapshot.data!.isEmpty) {
+              if (levelsSnapshot.hasError ||
+                  !levelsSnapshot.hasData ||
+                  levelsSnapshot.data!.isEmpty) {
                 return const SizedBox.shrink();
               }
 
               // Extraire les noms uniques des niveaux
               final niveauLabels = <String>{};
               for (final n in levelsSnapshot.data!) {
-                final label = (n.niveau?.isNotEmpty == true) ? n.niveau! : n.nom;
+                final label = (n.niveau?.isNotEmpty == true)
+                    ? n.niveau!
+                    : n.nom;
                 if (label != null) {
                   niveauLabels.add(label);
                 }
@@ -4965,7 +5046,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4), // Padding pour l'ombre
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 4,
+                  ), // Padding pour l'ombre
                   physics: const BouncingScrollPhysics(),
                   children: [
                     // Chips des niveaux individuels
@@ -4976,30 +5060,43 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
+                            boxShadow: AppDimensions.getSettingsCardShadow(
+                              context,
+                            ),
                           ),
                           child: ChoiceChip(
                             label: Text(lbl),
                             selected: isSelected,
-                            selectedColor: AppColors.screenOrange.withOpacity(0.2),
-                            backgroundColor: AppColors.screenSurfaceThemed(context),
+                            selectedColor: AppColors.screenOrange.withOpacity(
+                              0.2,
+                            ),
+                            backgroundColor: AppColors.screenSurfaceThemed(
+                              context,
+                            ),
                             side: BorderSide.none,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                             labelStyle: TextStyle(
                               color: isSelected
                                   ? AppColors.screenOrange
-                                  : AppColors.screenTextSecondaryThemed(context),
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  : AppColors.screenTextSecondaryThemed(
+                                      context,
+                                    ),
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               fontSize: 13,
                             ),
                             onSelected: (selected) {
                               if (selected && !isSelected) {
                                 setSheetState(() {
                                   _selectedNiveauFiltre = lbl;
-                                  _scolariteFuture = ScolariteService.getScolaritesByEcole(
-                                    widget.ecole.parametreCode ?? '',
-                                    niveau: _selectedNiveauFiltre!,
-                                  );
+                                  _scolariteFuture =
+                                      ScolariteService.getScolaritesByEcole(
+                                        widget.ecole.parametreCode ?? '',
+                                        niveau: _selectedNiveauFiltre!,
+                                      );
                                 });
                               }
                             },
@@ -5043,32 +5140,38 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               }
               if (snapshot.hasError) {
                 return ErrorStateWidget(
-                  error: snapshot.error.toString().replaceAll('Exception: ', ''), 
+                  error: snapshot.error.toString().replaceAll(
+                    'Exception: ',
+                    '',
+                  ),
                   onRetry: () {
                     setSheetState(() {
                       if (_selectedNiveauFiltre != null) {
-                        _scolariteFuture = ScolariteService.getScolaritesByEcole(
-                          widget.ecole.parametreCode ?? '',
-                          niveau: _selectedNiveauFiltre!,
-                        );
+                        _scolariteFuture =
+                            ScolariteService.getScolaritesByEcole(
+                              widget.ecole.parametreCode ?? '',
+                              niveau: _selectedNiveauFiltre!,
+                            );
                       }
                     });
-                  }, 
-                  headerColor: _kActions['scolarite']!.color
+                  },
+                  headerColor: _kActions['scolarite']!.color,
                 );
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return EmptyStateWidget(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Aucun frais de scolarité',
-                  subtitle: 'Cette école n\'a pas de frais configurés pour ce niveau',
+                  subtitle:
+                      'Cette école n\'a pas de frais configurés pour ce niveau',
                   onRefresh: () {
                     setSheetState(() {
                       if (_selectedNiveauFiltre != null) {
-                        _scolariteFuture = ScolariteService.getScolaritesByEcole(
-                          widget.ecole.parametreCode ?? '',
-                          niveau: _selectedNiveauFiltre!,
-                        );
+                        _scolariteFuture =
+                            ScolariteService.getScolaritesByEcole(
+                              widget.ecole.parametreCode ?? '',
+                              niveau: _selectedNiveauFiltre!,
+                            );
                       }
                     });
                   },
@@ -5083,14 +5186,20 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               final scolaritesParBranche = ScolariteService.grouperParBranche(
                 scolarites,
               );
-              
-              final visibleEntries = scolaritesParBranche.entries.where(
+
+              final visibleEntries = scolaritesParBranche.entries
+                  .where(
                     (e) =>
                         _searchQuery.isEmpty ||
                         e.key.toLowerCase().contains(_searchQuery) ||
-                        e.value.any((scol) => (scol.rubriqueLibelle.toLowerCase().contains(_searchQuery))),
-                  ).toList();
-                  
+                        e.value.any(
+                          (scol) => (scol.rubriqueLibelle
+                              .toLowerCase()
+                              .contains(_searchQuery)),
+                        ),
+                  )
+                  .toList();
+
               if (visibleEntries.isEmpty) {
                 return EmptyStateWidget(
                   icon: Icons.search_off_rounded,
@@ -5101,23 +5210,25 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
               return Column(
                 children: [
-                  ...visibleEntries.map(
-                    (e) => StatefulBuilder(
-                      builder: (context, setState) {
-                        String? expandedBranche = _expandedBranche;
-                        return _buildBrancheSection(
-                          e.key,
-                          e.value,
-                          setState,
-                          expandedBranche,
-                          (newValue) {
-                            setState(() => expandedBranche = newValue);
-                            setState(() => _expandedBranche = newValue);
+                  ...visibleEntries
+                      .map(
+                        (e) => StatefulBuilder(
+                          builder: (context, setState) {
+                            String? expandedBranche = _expandedBranche;
+                            return _buildBrancheSection(
+                              e.key,
+                              e.value,
+                              setState,
+                              expandedBranche,
+                              (newValue) {
+                                setState(() => expandedBranche = newValue);
+                                setState(() => _expandedBranche = newValue);
+                              },
+                            );
                           },
-                        );
-                      },
-                    ),
-                  ).toList(),
+                        ),
+                      )
+                      .toList(),
                   const SizedBox(height: 70),
                 ],
               );
@@ -5221,7 +5332,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     decoration: BoxDecoration(
                       color: AppColors.screenSurfaceThemed(context),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.screenBorder(context)),
+                      border: Border.all(
+                        color: AppColors.screenBorder(context),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -5230,20 +5343,70 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         final int aff = totaux['AFF'] ?? 0;
                         final int ecol = totaux['ECOLIER'] ?? 0;
                         final int naff = totaux['NAFF'] ?? 0;
-                        
+
                         if (aff > 0) {
-                          items.add(Expanded(child: _buildTotalItem('Affectés', aff, const Color(0xFF3B82F6), Icons.check_circle_rounded)));
+                          items.add(
+                            Expanded(
+                              child: _buildTotalItem(
+                                'Affectés',
+                                aff,
+                                const Color(0xFF3B82F6),
+                                Icons.check_circle_rounded,
+                              ),
+                            ),
+                          );
                         }
                         if (ecol > 0) {
-                          if (items.isNotEmpty) items.add(Container(width: 1, height: 24, color: AppColors.screenDivider));
-                          items.add(Expanded(child: _buildTotalItem('Écolier', ecol, const Color(0xFF10B981), Icons.face_rounded)));
+                          if (items.isNotEmpty)
+                            items.add(
+                              Container(
+                                width: 1,
+                                height: 24,
+                                color: AppColors.screenDivider,
+                              ),
+                            );
+                          items.add(
+                            Expanded(
+                              child: _buildTotalItem(
+                                'Écolier',
+                                ecol,
+                                const Color(0xFF10B981),
+                                Icons.face_rounded,
+                              ),
+                            ),
+                          );
                         }
                         if (naff > 0) {
-                          if (items.isNotEmpty) items.add(Container(width: 1, height: 24, color: AppColors.screenDivider));
-                          items.add(Expanded(child: _buildTotalItem('Non Affectés', naff, const Color(0xFFEF4444), Icons.remove_circle_rounded)));
+                          if (items.isNotEmpty)
+                            items.add(
+                              Container(
+                                width: 1,
+                                height: 24,
+                                color: AppColors.screenDivider,
+                              ),
+                            );
+                          items.add(
+                            Expanded(
+                              child: _buildTotalItem(
+                                'Non Affectés',
+                                naff,
+                                const Color(0xFFEF4444),
+                                Icons.remove_circle_rounded,
+                              ),
+                            ),
+                          );
                         }
                         if (items.isEmpty) {
-                          items.add(Expanded(child: _buildTotalItem('Aucun', 0, AppColors.screenTextSecondaryThemed(context), Icons.info_outline_rounded)));
+                          items.add(
+                            Expanded(
+                              child: _buildTotalItem(
+                                'Aucun',
+                                0,
+                                AppColors.screenTextSecondaryThemed(context),
+                                Icons.info_outline_rounded,
+                              ),
+                            ),
+                          );
                         }
                         return items;
                       }(),
@@ -5656,7 +5819,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             borderRadius: BorderRadius.circular(
               AppDimensions.getHeroCardBorderRadius(context),
             ),
-             boxShadow: AppDimensions.getSettingsCardShadow(context),
+            boxShadow: AppDimensions.getSettingsCardShadow(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -5710,7 +5873,6 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-
 
               const SizedBox(height: 20),
 
@@ -6085,7 +6247,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           Flexible(
             child: Container(
               constraints: BoxConstraints(
-                maxWidth: AppDimensions.isTablet(context) || AppDimensions.isSmallTablet(context) || AppDimensions.isLargeTablet(context) ? 400.0 : MediaQuery.sizeOf(context).width * 0.75,
+                maxWidth:
+                    AppDimensions.isTablet(context) ||
+                        AppDimensions.isSmallTablet(context) ||
+                        AppDimensions.isLargeTablet(context)
+                    ? 400.0
+                    : MediaQuery.sizeOf(context).width * 0.75,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
@@ -6096,7 +6263,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   bottomLeft: Radius.circular(4),
                   bottomRight: Radius.circular(18),
                 ),
-                 boxShadow: AppDimensions.getSettingsCardShadow(context),
+                boxShadow: AppDimensions.getSettingsCardShadow(context),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -6124,7 +6291,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     style: TextStyle(
                       fontSize: 14,
                       height: 1.4,
-                      color: isDark ? Colors.white70 : AppColors.screenTextPrimary,
+                      color: isDark
+                          ? Colors.white70
+                          : AppColors.screenTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -6170,7 +6339,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                  color: isDark
+                      ? const Color(0xFF2A2A2A)
+                      : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -6220,10 +6391,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     maxHeight: 100,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                    color: isDark
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF3B3B3B) : const Color(0xFFE8E8E8),
+                      color: isDark
+                          ? const Color(0xFF3B3B3B)
+                          : const Color(0xFFE8E8E8),
                       width: 0.5,
                     ),
                   ),
@@ -6233,13 +6408,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     textInputAction: TextInputAction.newline,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDark ? Colors.white : AppColors.screenTextPrimary,
+                      color: isDark
+                          ? Colors.white
+                          : AppColors.screenTextPrimary,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Votre avis...',
                       hintStyle: TextStyle(
                         fontSize: 14,
-                        color: isDark ? Colors.white30 : const Color(0xFFBBBBBB),
+                        color: isDark
+                            ? Colors.white30
+                            : const Color(0xFFBBBBBB),
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
@@ -6260,7 +6439,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF0288D1),
                     borderRadius: BorderRadius.circular(22),
-                     boxShadow: AppDimensions.getSettingsCardShadow(context),
+                    boxShadow: AppDimensions.getSettingsCardShadow(context),
                   ),
                   child: const Icon(
                     Icons.send_rounded,
@@ -6432,7 +6611,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   // ── Informations content ───────────────────────────────────────────────────
-  Widget _buildInformationsContent(Color headerColor, StateSetter setSheetState) {
+  Widget _buildInformationsContent(
+    Color headerColor,
+    StateSetter setSheetState,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -6571,9 +6753,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               child: GestureDetector(
                                 onTap: () {
                                   final latitude =
-                                      _ecoleDetail?.data.latitude ?? widget.ecole.latitude;
+                                      _ecoleDetail?.data.latitude ??
+                                      widget.ecole.latitude;
                                   final longitude =
-                                      _ecoleDetail?.data.longitude ?? widget.ecole.longitude;
+                                      _ecoleDetail?.data.longitude ??
+                                      widget.ecole.longitude;
                                   if (latitude != null &&
                                       longitude != null &&
                                       latitude != 0.0 &&
@@ -6600,7 +6784,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                             Expanded(
                               child: _buildStatCard(
                                 'Numéro d’autorisation',
-                                _ecoleDetail?.data.numautorisation?.isNotEmpty == true
+                                _ecoleDetail
+                                            ?.data
+                                            .numautorisation
+                                            ?.isNotEmpty ==
+                                        true
                                     ? _ecoleDetail!.data.numautorisation
                                     : 'Non renseigné',
                                 Icons.confirmation_num_rounded,
@@ -6624,15 +6812,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.screenTextPrimaryThemed(context),
+                                  color: AppColors.screenTextPrimaryThemed(
+                                    context,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                widget.ecole.parametreNom ?? 'Aucune description disponible',
+                                widget.ecole.parametreNom ??
+                                    'Aucune description disponible',
                                 style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(13),
-                                  color: AppColors.screenTextSecondaryThemed(context),
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    13,
+                                  ),
+                                  color: AppColors.screenTextSecondaryThemed(
+                                    context,
+                                  ),
                                   height: 1.5,
                                 ),
                               ),
@@ -7146,13 +7341,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   Widget _buildResultatsScolairesSection(bool isDark) {
     if (_isLoadingResultatsScolaires) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: CustomLoader(
-          message: 'Chargement des résultats...',
-          loaderColor: AppColors.screenOrange,
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: CustomLoader(
+            message: 'Chargement des résultats...',
+            loaderColor: AppColors.screenOrange,
+          ),
         ),
-      ));
+      );
     }
 
     if (_resultatsScolairesError != null || _resultatsScolaires.isEmpty) {
@@ -7180,7 +7377,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         maxItems = items.length;
       }
     }
-    
+
     int maxRows = (maxItems / 2).ceil();
     // 50 (en-tête + paddings) + 24 par ligne de résultats (car childAspectRatio = 7.5 et width = ~150)
     double dynamicHeight = 50.0 + (maxRows * 24.0);
@@ -7212,15 +7409,20 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     );
   }
 
-  Widget _buildResultatAnneeCard(String annee, List<Map<String, dynamic>> items) {
+  Widget _buildResultatAnneeCard(
+    String annee,
+    List<Map<String, dynamic>> items,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : AppColors.screenCard,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.12),
+          color: isDark
+              ? Colors.white.withOpacity(0.08)
+              : Colors.grey.withOpacity(0.12),
         ),
         boxShadow: AppDimensions.getSettingsCardShadow(context),
       ),
@@ -7285,9 +7487,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   final admis = res["admis"]?.toString() ?? '0';
                   final total = res["total"]?.toString() ?? '0';
                   final taux = res["taux_reussite"]?.toString() ?? '0.00';
-                  
+
                   final double tauxValue = double.tryParse(taux) ?? 0.0;
-                  final Color tauxColor = tauxValue >= 50.0 ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
+                  final Color tauxColor = tauxValue >= 50.0
+                      ? const Color(0xFF4CAF50)
+                      : const Color(0xFFF44336);
 
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -7302,17 +7506,25 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               TextSpan(
                                 text: '$niveau ',
                                 style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(12),
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    12,
+                                  ),
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.screenTextPrimaryThemed(context),
+                                  color: AppColors.screenTextPrimaryThemed(
+                                    context,
+                                  ),
                                 ),
                               ),
                               TextSpan(
                                 text: '($admis/$total)',
                                 style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    11,
+                                  ),
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.screenTextSecondaryThemed(context),
+                                  color: AppColors.screenTextSecondaryThemed(
+                                    context,
+                                  ),
                                 ),
                               ),
                             ],
@@ -7341,14 +7553,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   Future<void> _loadResultatsScolaires() async {
     try {
-      final url = '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/resultatscolaire/${widget.ecole.parametreCode}';
+      final url =
+          '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/resultatscolaire/${widget.ecole.parametreCode}';
       print('🌐 GET RESULTATS SCOLAIRES: $url');
-      
+
       final response = await http.get(Uri.parse(url));
-      
+
       print('📥 RÉPONSE RESULTATS SCOLAIRES (Code: ${response.statusCode})');
       print('Corps: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
@@ -8562,7 +8775,8 @@ class AnimatedPulseButton extends StatefulWidget {
   State<AnimatedPulseButton> createState() => _AnimatedPulseButtonState();
 }
 
-class _AnimatedPulseButtonState extends State<AnimatedPulseButton> with SingleTickerProviderStateMixin {
+class _AnimatedPulseButtonState extends State<AnimatedPulseButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -8573,9 +8787,10 @@ class _AnimatedPulseButtonState extends State<AnimatedPulseButton> with SingleTi
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -8588,42 +8803,47 @@ class _AnimatedPulseButtonState extends State<AnimatedPulseButton> with SingleTi
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _scaleAnimation,
-      builder: (context, child) => Transform.scale(
-        scale: _scaleAnimation.value,
-        child: child,
-      ),
+      builder: (context, child) =>
+          Transform.scale(scale: _scaleAnimation.value, child: child),
       child: GestureDetector(
         onTap: widget.onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: widget.isExpanded
                 ? const Color(0xFFFEE2E2)
-                : (widget.isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F4F6)),
+                : (widget.isDark
+                      ? const Color(0xFF2A2A2A)
+                      : const Color(0xFFF3F4F6)),
             border: Border.all(
               color: widget.isExpanded
                   ? const Color(0xFFFCA5A5)
-                  : (widget.isDark ? const Color(0xFF4A4A4A) : const Color(0xFFD1D5DB)),
+                  : (widget.isDark
+                        ? const Color(0xFF4A4A4A)
+                        : const Color(0xFFD1D5DB)),
               width: 1,
             ),
             borderRadius: BorderRadius.circular(
               AppDimensions.getSmallCardBorderRadius(context),
             ),
-            boxShadow: widget.isExpanded ? [] : [
-              BoxShadow(
-                color: widget.isDark ? Colors.black26 : Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                spreadRadius: 1,
-              ),
-            ],
+            boxShadow: widget.isExpanded
+                ? []
+                : [
+                    BoxShadow(
+                      color: widget.isDark
+                          ? Colors.black26
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
           ),
           child: Text(
             widget.isExpanded ? 'Voir moins' : 'Voir plus',
             style: TextStyle(
-              color: widget.isExpanded ? const Color(0xFFDC2626) : const Color(0xFF6B7280),
+              color: widget.isExpanded
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFF6B7280),
               fontSize: 10,
               fontWeight: FontWeight.w700,
             ),

@@ -14,6 +14,7 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/filter_row_widget.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -36,6 +37,8 @@ class _OrdersScreenState extends State<OrdersScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
+  final ScrollController _mainScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +53,7 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   @override
   void dispose() {
+    _mainScrollController.dispose();
     _fadeController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -147,6 +151,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: isDark ? Colors.black : Colors.white,
+        floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
         body: _buildBody(),
       ),
     );
@@ -160,6 +165,7 @@ class _OrdersScreenState extends State<OrdersScreen>
         backgroundColor: isDark ? Colors.black : Colors.white,
         body: SafeArea(
           child: CustomScrollView(
+            controller: _mainScrollController,
             slivers: [
               _buildSliverAppBar(),
               SliverFillRemaining(
@@ -183,6 +189,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       child: Stack(
         children: [
           CustomScrollView(
+            controller: _mainScrollController,
             slivers: [
               _buildSliverAppBar(),
               SliverToBoxAdapter(

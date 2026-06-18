@@ -19,6 +19,7 @@ import '../config/app_config.dart';
 import '../services/blog_service.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import 'all_blogs_screen.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens (cohérents avec EventDetailScreen)
@@ -228,6 +229,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
+        floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
         body: CustomScrollView(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),

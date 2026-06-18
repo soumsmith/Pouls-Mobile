@@ -8,7 +8,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import 'child_list_screen.dart';
-import '../widgets/components/bottom_spacer.dart';
+import '../widgets/components/bottom_spacer.dart';import '../widgets/scroll_to_top_fab.dart';
 
 class AllChildrenScreen extends StatefulWidget {
   const AllChildrenScreen({super.key});
@@ -45,8 +45,11 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
     _searchController.addListener(_onSearchChanged);
   }
 
+  final ScrollController _mainScrollController = ScrollController();
+
   @override
   void dispose() {
+    _mainScrollController.dispose();
     _fadeController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -99,9 +102,11 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
       ),
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
+        floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: CustomScrollView(
+            controller: _mainScrollController,
             slivers: [
               CustomSliverAppBar(
                 title: 'Tous les Enfants',

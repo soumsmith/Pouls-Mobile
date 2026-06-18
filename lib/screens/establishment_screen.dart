@@ -40,6 +40,7 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/skeleton_box.dart';
 import 'rating_children_list_screen.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -191,6 +192,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Animations ─────────────────────────────────────────────
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
+  final ScrollController _mainScrollController = ScrollController();
 
   int _getCrossAxisCount(BuildContext context) {
     return AppDimensions.getEcolesGridColumns(context);
@@ -208,7 +210,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     {'value': 'primaire', 'label': 'Primaire'},
     {'value': 'secondaire', 'label': 'Secondaire'},
     {'value': 'superieur', 'label': 'Supérieur'},
-    {'value': 'groupe_scolaire', 'label': 'Groupe scolaire (ex: maternelle + primaire)'},
+    {
+      'value': 'groupe_scolaire',
+      'label': 'Groupe scolaire (ex: maternelle + primaire)',
+    },
     {'value': 'technique', 'label': 'Technique'},
     {'value': 'professionnel', 'label': 'Professionnel'},
     {'value': 'grande_ecole', 'label': 'Grande école'},
@@ -216,7 +221,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     {'value': 'autre', 'label': 'Autre'},
   ];
 
-  late final List<String> _filters = typeOptions.map((e) => e['label']!).toList();
+  late final List<String> _filters = typeOptions
+      .map((e) => e['label']!)
+      .toList();
 
   // ── Lifecycle ──────────────────────────────────────────────
   @override
@@ -273,6 +280,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _villeParentController.dispose();
     _adresseParentController.dispose();
     _fadeController.dispose();
+    _mainScrollController.dispose();
     super.dispose();
   }
 
@@ -357,11 +365,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     } catch (e) {
       if (mounted) {
         final errorString = e.toString();
-        final isNetworkError = errorString.contains('SocketException') || 
-                               errorString.contains('ClientException') ||
-                               errorString.contains('Failed host lookup');
+        final isNetworkError =
+            errorString.contains('SocketException') ||
+            errorString.contains('ClientException') ||
+            errorString.contains('Failed host lookup');
         setState(() {
-          _videoError = isNetworkError 
+          _videoError = isNetworkError
               ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
               : 'Une erreur est survenue lors du chargement des vidéos.';
           _isLoadingVideos = false;
@@ -445,11 +454,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     } catch (e) {
       if (mounted) {
         final errorString = e.toString();
-        final isNetworkError = errorString.contains('SocketException') || 
-                               errorString.contains('ClientException') ||
-                               errorString.contains('Failed host lookup');
+        final isNetworkError =
+            errorString.contains('SocketException') ||
+            errorString.contains('ClientException') ||
+            errorString.contains('Failed host lookup');
         setState(() {
-          _error = isNetworkError 
+          _error = isNetworkError
               ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
               : 'Une erreur est survenue lors du chargement des écoles.';
           _isLoading = false;
@@ -519,7 +529,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     setState(() {
       _nomEtablissement = query.trim().isEmpty ? null : query.trim();
     });
-    
+
     if (query.trim().isEmpty) {
       _loadEcoles();
     } else {
@@ -568,16 +578,22 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       ).copyWith(textScaler: TextScaler.linear(_currentTextScale)),
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
+        floatingActionButton: ScrollToTopFab(
+          scrollController: _mainScrollController,
+          bottomSpacerHeight: 70,
+        ),
         body: Stack(
           children: [
             FadeTransition(
               opacity: _fadeAnim,
               child: CustomScrollView(
+                controller: _mainScrollController,
                 slivers: [
                   CustomSliverAppBar(
                     title: 'Établissements',
                     isDark: false,
-                    onBackTap: () => MainScreenWrapper.of(context).navigateToHome(),
+                    onBackTap: () =>
+                        MainScreenWrapper.of(context).navigateToHome(),
                     actions: [
                       _buildHeaderAction(
                         icon: _isSearching
@@ -663,121 +679,154 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildAdvancedSearchBottomSheet(ctx),
+      builder: (ctx) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          return _buildAdvancedSearchBottomSheet(context, setModalState);
+        },
+      ),
     );
   }
 
-  Widget _buildAdvancedSearchBottomSheet(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildAdvancedSearchBottomSheet(BuildContext context, StateSetter setModalState) {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.95,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.screenSurfaceThemed(context),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grey300Adaptive(context),
-                borderRadius: BorderRadius.circular(2),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: AppColors.screenSurfaceThemed(context),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.tune_rounded,
-                    size: 20,
-                    color: AppColors.screenOrange,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.grey300Adaptive(context),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Recherche avancée',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: _clearAdvancedSearch,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.tune_rounded,
+                        size: 20,
+                        color: AppColors.screenOrange,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.screenOrangeLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Effacer',
+                      const SizedBox(width: 12),
+                      Text(
+                        'Recherche avancée',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.screenOrange,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          _clearAdvancedSearch();
+                          setModalState(() {});
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.screenOrangeLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Effacer',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.screenOrange,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.grey100Adaptive(context),
-                        borderRadius: BorderRadius.circular(18),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.grey100Adaptive(context),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 20,
+                            color: AppColors.grey666Adaptive(context),
+                          ),
+                        ),
                       ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: AppColors.grey666Adaptive(context),
-                      ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
-                child: Column(
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      20,
+                      20,
+                      20 + MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: SearchableDropdown(
                             label: 'Pays',
-                            value: _paysReverseMap[_paysController.text] ?? 'Tous',
+                            value:
+                                _paysReverseMap[_paysController.text] ?? 'Tous',
                             items: _countriesList,
-                            isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                            isDarkMode:
+                                Theme.of(context).brightness == Brightness.dark,
                             onChanged: (String val) {
                               setState(() {
                                 _paysController.text = _paysMap[val] ?? '';
                               });
+                              setModalState(() {});
                             },
                           ),
                         ),
                         const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            label: 'Code pays',
+                            hint: 'Entrez le code',
+                            icon: Icons.code_rounded,
+                            controller: _codepaysController,
+                            iconColor: AppColors.screenOrange,
+                            focusBorderColor: AppColors.screenOrange,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
                         Expanded(
                           child: CustomTextField(
                             label: 'Ville',
@@ -788,11 +837,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             focusBorderColor: AppColors.screenOrange,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
+                        const SizedBox(width: 12),
                         Expanded(
                           child: CustomTextField(
                             label: 'Quartier',
@@ -803,6 +848,35 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             focusBorderColor: AppColors.screenOrange,
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SearchableDropdown(
+                            label: 'Catégorie',
+                            value: _categorieController.text.isEmpty
+                                ? 'Tous'
+                                : typeOptions.firstWhere(
+                                    (e) => e['value'] == _categorieController.text,
+                                    orElse: () => {'label': 'Tous'},
+                                  )['label']!,
+                            items: _filters,
+                            isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                            onChanged: (String val) {
+                              setState(() {
+                                final selectedValue = typeOptions.firstWhere(
+                                  (e) => e['label'] == val,
+                                  orElse: () => {'value': 'tous'},
+                                )['value'];
+                                _categorieController.text =
+                                    selectedValue == 'tous' ? '' : selectedValue!;
+                              });
+                              setModalState(() {});
+                            },
+                          ),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: CustomTextField(
@@ -810,32 +884,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             hint: 'Entrez le nom',
                             icon: Icons.business_rounded,
                             controller: _nomEtablissementController,
-                            iconColor: AppColors.screenOrange,
-                            focusBorderColor: AppColors.screenOrange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Catégorie',
-                            hint: 'Ex: Primaire, Collège...',
-                            icon: Icons.category_rounded,
-                            controller: _categorieController,
-                            iconColor: AppColors.screenOrange,
-                            focusBorderColor: AppColors.screenOrange,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Code pays',
-                            hint: 'Entrez le code',
-                            icon: Icons.code_rounded,
-                            controller: _codepaysController,
                             iconColor: AppColors.screenOrange,
                             focusBorderColor: AppColors.screenOrange,
                           ),
@@ -861,7 +909,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         ),
                         child: const Text(
                           'Appliquer les filtres',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -872,6 +923,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             ),
           ],
         ),
+      );
+      },
       ),
     );
   }
@@ -918,9 +971,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         ),
       ),
       SliverToBoxAdapter(child: const SizedBox(height: 0)),
-      SliverToBoxAdapter(
-        child: SectionRow(title: 'Nos établissements'),
-      ),
+      SliverToBoxAdapter(child: SectionRow(title: 'Nos établissements')),
       SliverToBoxAdapter(child: const SizedBox(height: 16)),
       // ── Filtre horizontal ─────────────────────────────
       SliverToBoxAdapter(
@@ -930,7 +981,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           onFilterSelected: (filter) {
             setState(() {
               _selectedFilter = filter;
-              final selectedValue = typeOptions.firstWhere((e) => e['label'] == filter)['value'];
+              final selectedValue = typeOptions.firstWhere(
+                (e) => e['label'] == filter,
+              )['value'];
               _categorie = selectedValue == 'tous' ? null : selectedValue;
             });
             _loadEcoles();
@@ -944,11 +997,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       else if (_error != null)
         SliverPadding(
           padding: const EdgeInsets.symmetric(vertical: 40),
-          sliver: SliverToBoxAdapter(
-            child: Center(
-              child: _buildErrorState(),
-            ),
-          ),
+          sliver: SliverToBoxAdapter(child: Center(child: _buildErrorState())),
         )
       else if (items.isEmpty)
         SliverFillRemaining(
@@ -1003,9 +1052,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.screenOrange.withOpacity(
-                            0.3,
-                          ),
+                          color: AppColors.screenOrange.withOpacity(0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 3),
                         ),
@@ -1034,8 +1081,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: _getCrossAxisCount(context),
-              crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
-                  (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+              crossAxisSpacing:
+                  AppDimensions.getAdaptiveGridSpacing(context) *
+                  (((AppDimensions.isTablet(context) ||
+                              AppDimensions.isLargeTablet(context)) &&
                           AppDimensions.isLandscape(context))
                       ? 1.8
                       : 1.0),
@@ -1072,7 +1121,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   allowLineBreak: true,
                   externalTitleSpacing: 8,
                   height: AppDimensions.getEcoleCardHeight(context),
-                  onTap: () => MainScreenWrapper.of(context).navigateToEstablishmentDetail(items[i]),
+                  onTap: () => MainScreenWrapper.of(
+                    context,
+                  ).navigateToEstablishmentDetail(items[i]),
                 );
               }
               return const SizedBox.shrink();
@@ -1235,7 +1286,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
-            onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(AllEventsScreen()),
+            onTap: () => MainScreenWrapper.of(
+              context,
+            ).navigateToExtraScreen(AllEventsScreen()),
           ),
         ],
       ),
@@ -1266,10 +1319,13 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       imagePath: imagePath,
       isDark: isDark,
       titleFontSize: AppDimensions.getScaledSize(context, 11.0),
-      imageBorderRadius: width / 2, // Moitié de la largeur pour un cercle parfait
+      imageBorderRadius:
+          width / 2, // Moitié de la largeur pour un cercle parfait
       centerTitle: true,
       color: color,
-      backgroundColor: isDark ? backgroundColor.withOpacity(0.15) : backgroundColor,
+      backgroundColor: isDark
+          ? backgroundColor.withOpacity(0.15)
+          : backgroundColor,
       textColor: isDark ? Colors.white : textColor,
       enableInnerBorder: false,
       enableOuterBorder: false,
@@ -1425,7 +1481,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       ),
     );
   }
-
 
   Widget _buildSponsorshipForm() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1601,7 +1656,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  Widget _buildShareOption(IconData icon, String label, Color color, {String? imageAsset}) {
+  Widget _buildShareOption(
+    IconData icon,
+    String label,
+    Color color, {
+    String? imageAsset,
+  }) {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).pop();
@@ -1648,7 +1708,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     if (actionType == 'integration') {
       showIntegrationBottomSheet(
         context: context,
-        imagePath: def.imagePath ?? 'assets/images/icons/demande_integration.png',
+        imagePath:
+            def.imagePath ?? 'assets/images/icons/demande_integration.png',
         imageBackgroundColor: def.color.withOpacity(0.1),
         imageBorderRadius: AppDimensions.getImageBorderRadius(context),
         onSuccess: (demandeUid) {},
@@ -1684,60 +1745,60 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
           paysRecommendController: _paysRecommendController,
           villeRecommendController: _villeRecommendController,
           parentNomController: _parentNomController,
-            parentPrenomController: _parentPrenomController,
-            parentTelephoneController: _parentTelephoneController,
-            parentEmailController: _parentEmailController,
-            ordreController: _ordreController,
-            adresseEtablissementController: _adresseEtablissementController,
-            paysParentController: _paysParentController,
-            villeParentController: _villeParentController,
-            adresseParentController: _adresseParentController,
-            onSubmit: (context) async {
-              try {
-                await RecommendationService.submitRecommendation(
-                  etablissement: _etablissementController.text,
-                  pays: _paysRecommendController.text,
-                  ville: _villeRecommendController.text,
-                  ordre: _ordreController.text.isEmpty
-                      ? '1'
-                      : _ordreController.text,
-                  adresseEtablissement:
-                      _adresseEtablissementController.text.isEmpty
-                      ? 'Non spécifiée'
-                      : _adresseEtablissementController.text,
-                  nomParent: _parentNomController.text,
-                  prenomParent: _parentPrenomController.text,
-                  telephone: _parentTelephoneController.text,
-                  email: _parentEmailController.text.isEmpty
-                      ? 'email@example.com'
-                      : _parentEmailController.text,
-                  paysParent: _paysParentController.text.isEmpty
-                      ? _paysRecommendController.text
-                      : _paysParentController.text,
-                  villeParent: _villeParentController.text.isEmpty
-                      ? _villeRecommendController.text
-                      : _villeParentController.text,
-                  adresseParent: _adresseParentController.text.isEmpty
-                      ? 'Non spécifiée'
-                      : _adresseParentController.text,
-                );
-                Navigator.pop(context);
-                CartSnackBar.showOverlay(
-                  context,
-                  productName: 'Recommandation',
-                  message: 'Votre recommandation a été envoyée avec succès !',
-                  backgroundColor: Colors.green,
-                );
-              } catch (e) {
-                CartSnackBar.showOverlay(
-                  context,
-                  productName: 'Erreur',
-                  message: e.toString(),
-                  backgroundColor: Colors.red,
-                );
-              }
-            },
-          ),
+          parentPrenomController: _parentPrenomController,
+          parentTelephoneController: _parentTelephoneController,
+          parentEmailController: _parentEmailController,
+          ordreController: _ordreController,
+          adresseEtablissementController: _adresseEtablissementController,
+          paysParentController: _paysParentController,
+          villeParentController: _villeParentController,
+          adresseParentController: _adresseParentController,
+          onSubmit: (context) async {
+            try {
+              await RecommendationService.submitRecommendation(
+                etablissement: _etablissementController.text,
+                pays: _paysRecommendController.text,
+                ville: _villeRecommendController.text,
+                ordre: _ordreController.text.isEmpty
+                    ? '1'
+                    : _ordreController.text,
+                adresseEtablissement:
+                    _adresseEtablissementController.text.isEmpty
+                    ? 'Non spécifiée'
+                    : _adresseEtablissementController.text,
+                nomParent: _parentNomController.text,
+                prenomParent: _parentPrenomController.text,
+                telephone: _parentTelephoneController.text,
+                email: _parentEmailController.text.isEmpty
+                    ? 'email@example.com'
+                    : _parentEmailController.text,
+                paysParent: _paysParentController.text.isEmpty
+                    ? _paysRecommendController.text
+                    : _paysParentController.text,
+                villeParent: _villeParentController.text.isEmpty
+                    ? _villeRecommendController.text
+                    : _villeParentController.text,
+                adresseParent: _adresseParentController.text.isEmpty
+                    ? 'Non spécifiée'
+                    : _adresseParentController.text,
+              );
+              Navigator.pop(context);
+              CartSnackBar.showOverlay(
+                context,
+                productName: 'Recommandation',
+                message: 'Votre recommandation a été envoyée avec succès !',
+                backgroundColor: Colors.green,
+              );
+            } catch (e) {
+              CartSnackBar.showOverlay(
+                context,
+                productName: 'Erreur',
+                message: e.toString(),
+                backgroundColor: Colors.red,
+              );
+            }
+          },
+        ),
       );
       return;
     }
@@ -2727,6 +2788,18 @@ class _SliderSkeleton extends StatelessWidget {
     return SkeletonBox(
       height: AppDimensions.getCarouselHeight(context),
       borderRadius: AppDimensions.getHeroCardBorderRadius(context),
+      child: Center(
+        child: Text(
+          'Chargement en cours...',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[600]
+                : Colors.grey[400],
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2734,11 +2807,8 @@ class _SliderSkeleton extends StatelessWidget {
 // ─── Skeleton Loader pour la grille d'établissements ───────────────────────
 class _EstablishmentGridSkeleton extends StatelessWidget {
   final int itemCount;
-  
-  const _EstablishmentGridSkeleton({
-    super.key,
-    this.itemCount = 16,
-  });
+
+  const _EstablishmentGridSkeleton({super.key, this.itemCount = 16});
 
   @override
   Widget build(BuildContext context) {
@@ -2747,22 +2817,33 @@ class _EstablishmentGridSkeleton extends StatelessWidget {
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: AppDimensions.getEcolesGridColumns(context),
-          crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
-              (((AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context)) &&
+          crossAxisSpacing:
+              AppDimensions.getAdaptiveGridSpacing(context) *
+              (((AppDimensions.isTablet(context) ||
+                          AppDimensions.isLargeTablet(context)) &&
                       AppDimensions.isLandscape(context))
                   ? 1.8
                   : 1.0),
           mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
           mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            return const SkeletonBox();
-          },
-          childCount: itemCount,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          return SkeletonBox(
+            child: Center(
+              child: Text(
+                'Chargement...',
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[600]
+                      : Colors.grey[400],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        }, childCount: itemCount),
       ),
     );
   }
 }
-

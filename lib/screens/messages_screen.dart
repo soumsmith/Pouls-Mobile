@@ -20,6 +20,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/custom_button.dart';
 import 'add_child_screen.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 // ─── ENUM : types de pièce jointe ────────────────────────────────────────────
 enum AttachmentType { none, image, audio, document }
@@ -395,6 +396,12 @@ class _MessagesScreenState extends State<MessagesScreen>
       ),
       child: Scaffold(
         backgroundColor: AppColors.screenBg(context),
+        floatingActionButton: ScrollToTopFab(
+          scrollController: _scrollController,
+          bottomSpacerHeight: 70,
+          isScrollToTop: false,
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
         body: CustomScrollView(
           slivers: [
             _buildCustomAppBar(),

@@ -7,6 +7,7 @@ import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/scroll_to_top_fab.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/video_service.dart';
@@ -39,6 +40,8 @@ class _AllVisiteGuideeVideosScreenState
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchTimer;
 
+  final ScrollController _mainScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +52,7 @@ class _AllVisiteGuideeVideosScreenState
 
   @override
   void dispose() {
+    _mainScrollController.dispose();
     _searchController.dispose();
     _searchTimer?.cancel();
     super.dispose();
@@ -127,9 +131,11 @@ class _AllVisiteGuideeVideosScreenState
     final isDark = AppColors.isDarkMode(context);
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
+      floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _mainScrollController,
             slivers: [
               CustomSliverAppBar(
                 title: 'Visites guidées',

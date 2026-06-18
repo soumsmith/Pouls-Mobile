@@ -16,6 +16,7 @@ import '../widgets/components/custom_text_input.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/advanced_filters_form.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -249,6 +250,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
 
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
+      floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
       body: Stack(
         children: [
           CustomScrollView(

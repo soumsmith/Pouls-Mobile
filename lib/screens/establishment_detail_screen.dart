@@ -3351,6 +3351,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
+      ),
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),

@@ -269,85 +269,97 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
         children: [
           _sectionLabel('Aide Rapide'),
           const SizedBox(height: 14),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.1,
-            ),
-            itemCount: cards.length,
-            itemBuilder: (context, index) {
-              final card = cards[index];
-              final color = card['color'] as Color;
-              return GestureDetector(
-                onTap: () {
-                  if (card['title'] == 'Ajouter un enfant') {
-                    MainScreenWrapper.of(
-                      context,
-                    ).navigateToExtraScreen(const AddChildScreen());
-                  } else if (card['title'] == 'Premiers pas') {
-                    MainScreenWrapper.of(context).navigateToExtraScreen(
-                      const PDFViewerScreen(
-                        pdfUrl: 'assets/document/guide-complet.pdf',
-                        title: 'Guide Complet',
-                      ),
-                    );
-                  } else {
-                    _showSnack('Ouverture de ${card['title']}...');
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCardThemed(context),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: AppDimensions.getSettingsCardShadow(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          card['icon'] as IconData,
-                          color: color,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        card['title'] as String,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.screenTextPrimaryThemed(context),
-                          letterSpacing: -0.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        card['subtitle'] as String,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.screenTextSecondaryThemed(context),
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+              final double screenWidth = MediaQuery.of(context).size.width;
+              final double horizontalPadding = 32.0; // 16 margin on each side
+              final double spacing = 12.0;
+              final double columnWidth = (screenWidth - horizontalPadding - spacing) / 2;
+              final double targetHeight = isTablet ? 150.0 : 135.0;
+              final double childAspectRatio = columnWidth / targetHeight;
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: childAspectRatio,
                 ),
+                itemCount: cards.length,
+                itemBuilder: (context, index) {
+                  final card = cards[index];
+                  final color = card['color'] as Color;
+                  return GestureDetector(
+                    onTap: () {
+                      if (card['title'] == 'Ajouter un enfant') {
+                        MainScreenWrapper.of(
+                          context,
+                        ).navigateToExtraScreen(const AddChildScreen());
+                      } else if (card['title'] == 'Premiers pas') {
+                        MainScreenWrapper.of(context).navigateToExtraScreen(
+                          const PDFViewerScreen(
+                            pdfUrl: 'assets/document/guide-complet.pdf',
+                            title: 'Guide Complet',
+                          ),
+                        );
+                      } else {
+                        _showSnack('Ouverture de ${card['title']}...');
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.screenCardThemed(context),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: AppDimensions.getSettingsCardShadow(context),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              card['icon'] as IconData,
+                              color: color,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            card['title'] as String,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.screenTextPrimaryThemed(context),
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            card['subtitle'] as String,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.screenTextSecondaryThemed(context),
+                              fontWeight: FontWeight.w400,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),

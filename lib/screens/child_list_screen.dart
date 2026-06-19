@@ -4701,6 +4701,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'imagePath': 'assets/images/icons/mes-notes.png',
                 'color': const Color(0xFF1976D2),
                 'key': 'notes',
+                'actionText': 'Cliquer pour découvrir',
               },
               {
                 'overtitle': 'BILAN TRIMESTRIEL',
@@ -4709,6 +4710,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 'imagePath': 'assets/images/icons/bulletin-scolaire.png',
                 'color': const Color(0xFF4CAF50),
                 'key': 'bulletins',
+                'actionText': 'Cliquer pour découvrir',
               },
             ];
 
@@ -4757,7 +4759,36 @@ class _ChildListScreenState extends State<ChildListScreen>
                 0.55; // Augmentation du ratio pour une carte d'image plus haute
             final containerHeight =
                 cardHeight +
-                75.0; // Espace supplémentaire pour le texte sous l'image
+                95.0; // Espace supplémentaire pour le texte sous l'image
+
+            void handleGroup1Tap(Map<String, Object?> item) {
+              if (item['key'] == 'notes') {
+                if (_matricule != null &&
+                    _anneeId != null &&
+                    _classeId != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => NotesScreenJson(
+                        matricule: _matricule!,
+                        anneeId: _anneeId!.toString(),
+                        classeId: _classeId!.toString(),
+                        anneeLibelle:
+                            'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+                        ecoleId: _ecoleId?.toString(),
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Informations élève non disponibles'),
+                    ),
+                  );
+                }
+              } else if (item['key'] == 'bulletins') {
+                _showBulletinsBottomSheet();
+              }
+            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4791,36 +4822,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                           0.3,
                         ),
                         color: item['color'] as Color,
-                        onTap: () {
-                          if (item['key'] == 'notes') {
-                            if (_matricule != null &&
-                                _anneeId != null &&
-                                _classeId != null) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => NotesScreenJson(
-                                    matricule: _matricule!,
-                                    anneeId: _anneeId!.toString(),
-                                    classeId: _classeId!.toString(),
-                                    anneeLibelle:
-                                        'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
-                                    ecoleId: _ecoleId?.toString(),
-                                  ),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Informations élève non disponibles',
-                                  ),
-                                ),
-                              );
-                            }
-                          } else if (item['key'] == 'bulletins') {
-                            _showBulletinsBottomSheet();
-                          }
-                        },
+                        actionText: item['actionText'] as String?,
+                        onTap: () => handleGroup1Tap(item),
                       );
                     },
                   ),

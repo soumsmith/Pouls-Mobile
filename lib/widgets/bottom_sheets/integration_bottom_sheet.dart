@@ -32,6 +32,7 @@ void showIntegrationBottomSheet({
   double? imageBorderRadius,
 }) {
   showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
     context: context,
     isScrollControlled: true, // OBLIGATOIRE pour que le padding clavier fonctionne
     useSafeArea: true,        // Évite le chevauchement avec la barre système

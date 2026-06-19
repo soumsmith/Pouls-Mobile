@@ -641,6 +641,7 @@ void showScolariteBottomSheet(
   String? description,
 }) {
   showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

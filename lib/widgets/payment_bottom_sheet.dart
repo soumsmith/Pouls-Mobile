@@ -62,6 +62,7 @@ class PaymentBottomSheet extends StatefulWidget {
     onPayment,
   }) {
     return showModalBottomSheet<void>(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

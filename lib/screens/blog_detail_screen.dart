@@ -121,6 +121,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
 
   void _showShareMenu() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => ShareBottomSheet(
@@ -1014,6 +1015,7 @@ class _HeroBanner extends StatelessWidget {
                 icon: const Icon(Icons.share_rounded, color: Colors.white),
                 onPressed: () {
                   showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
                     context: context,
                     backgroundColor: Colors.transparent,
                     builder: (context) => ShareBottomSheet(

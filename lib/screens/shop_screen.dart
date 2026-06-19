@@ -685,6 +685,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   void _showAdvancedSearchBottomSheet() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

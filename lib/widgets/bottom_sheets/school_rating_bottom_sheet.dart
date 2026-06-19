@@ -37,6 +37,7 @@ class SchoolRatingBottomSheet extends StatefulWidget {
     onRatingSubmitted,
   }) {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -73,16 +74,15 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
       );
     }
 
-    return Padding(
+    return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
           ),
         ),
         child: Column(
@@ -216,8 +216,7 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildSchoolDropdown() {

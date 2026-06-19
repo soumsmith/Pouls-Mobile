@@ -18,6 +18,7 @@ class PaiementHistoriqueBottomSheet {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

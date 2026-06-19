@@ -38,6 +38,7 @@ class InscriptionBottomSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (_) => InscriptionBottomSheet(
         imagePath: imagePath,
         imageBackgroundColor: imageBackgroundColor,

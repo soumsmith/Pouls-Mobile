@@ -18,6 +18,7 @@ class PaymentChoiceBottomSheet extends StatelessWidget {
     required VoidCallback onCashPayment,
   }) {
     return showModalBottomSheet<void>(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

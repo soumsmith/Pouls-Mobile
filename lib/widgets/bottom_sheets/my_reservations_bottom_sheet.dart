@@ -30,6 +30,7 @@ class MyReservationsBottomSheet extends StatefulWidget {
     double? imageBorderRadius,
   }) {
     return showModalBottomSheet<void>(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

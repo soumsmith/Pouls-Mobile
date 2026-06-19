@@ -943,6 +943,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
   void _shareProduct() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

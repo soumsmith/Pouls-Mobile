@@ -420,6 +420,11 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   // ── Ticket CTA ──────────────────────────────
   Widget _buildTicketButton() {
+    final uiData = widget.event.toUiMap();
+    if (uiData['statutevent'] == 'terminé') {
+      return const SizedBox.shrink();
+    }
+
     if (_hasCheckedTickets && _ticketCategories.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -441,6 +446,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   //  Ratings Section
   // ─────────────────────────────────────────────
   Widget _buildRatingsSection() {
+    if (!_commentsLoading && _comments.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1084,12 +1093,8 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
       constraints: BoxConstraints(
         maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: _CommentBottomSheet(
-          existingComment: _userComment,
+      builder: (context) => _CommentBottomSheet(
+        existingComment: _userComment,
           onSave: (rating, comment) async {
             Navigator.pop(context);
             try {
@@ -1119,7 +1124,6 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
               _showSnack('Erreur: $e', Colors.red);
             }
           },
-        ),
       ),
     );
   }
@@ -1297,6 +1301,28 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                       ),
                     ),
                   ],
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: uiData['statutevent'] == 'terminé'
+                          ? Colors.grey.withOpacity(0.9)
+                          : const Color(0xFF3B82F6).withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      (uiData['statutevent'] as String).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -2322,16 +2348,19 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existingComment != null;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 32 + bottomInset),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Drag handle
           Center(
             child: Container(
@@ -2510,6 +2539,7 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           ),
           const BottomSpacer(),
         ],
+      ),
       ),
     );
   }

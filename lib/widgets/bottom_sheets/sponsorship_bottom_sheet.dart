@@ -253,6 +253,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
   // ── Parrainage Code Bottom Sheet ────────────────────────────────────────────
   void _showParrainageCodeModal(String codeParrainage) {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -473,6 +474,7 @@ void showSponsorshipBottomSheet(
   double? imageBorderRadius,
 }) {
   showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

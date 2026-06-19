@@ -488,6 +488,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
 
   void _showRecommendationBottomSheet() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1156,22 +1157,29 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+"
   Widget _buildSeeMoreEventsCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return SeeMoreCard(
-      cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
-      borderColor: const Color(0xFFFF7A3C),
-      iconColor: Colors.white,
-      textColor: const Color(0xFFFF7A3C),
-      subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
-      title: 'Voir+',
-      subtitle: 'd\'événements',
-      onTap: _handleSeeMoreEvents,
-      icon: Icons.add,
-      width: _getCardWidth(context, 0.0),
-      height:
-          (AppDimensions.isTablet(context) ||
-              AppDimensions.isLargeTablet(context))
-          ? 100
-          : 80,
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SeeMoreCard(
+          cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
+          borderColor: const Color(0xFFFF7A3C),
+          iconColor: Colors.white,
+          textColor: const Color(0xFFFF7A3C),
+          subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+          title: 'Voir+',
+          subtitle: 'd\'événements',
+          onTap: _handleSeeMoreEvents,
+          icon: Icons.add,
+          width: cardWidth,
+          height: imageHeight * 1.15,
+        ),
+      ),
     );
   }
 
@@ -1261,22 +1269,29 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+" pour les blogs
   Widget _buildSeeMoreBlogsCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return SeeMoreCard(
-      cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
-      borderColor: const Color(0xFF8B5CF6),
-      iconColor: Colors.white,
-      textColor: const Color(0xFF8B5CF6),
-      subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
-      title: 'Voir+',
-      subtitle: 'd\'actualités',
-      onTap: _handleSeeMoreBlogs,
-      icon: Icons.add,
-      width: _getCardWidth(context, 0.0),
-      height:
-          (AppDimensions.isTablet(context) ||
-              AppDimensions.isLargeTablet(context))
-          ? 100
-          : 80,
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SeeMoreCard(
+          cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
+          borderColor: const Color(0xFF8B5CF6),
+          iconColor: Colors.white,
+          textColor: const Color(0xFF8B5CF6),
+          subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+          title: 'Voir+',
+          subtitle: 'd\'actualités',
+          onTap: _handleSeeMoreBlogs,
+          icon: Icons.add,
+          width: cardWidth,
+          height: imageHeight * 1.15,
+        ),
+      ),
     );
   }
 
@@ -1480,27 +1495,32 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+" pour les vidéos
   Widget _buildSeeMoreVideosCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.9;
+    final double imageHeight = cardWidth * imageRatio;
+
     return Padding(
       padding: const EdgeInsets.only(
         right: 16,
       ), // Espacement horizontal cohérent
-      child: SeeMoreCard(
-        cardColor: isDarkMode
-            ? const Color.fromARGB(255, 0, 0, 0)
-            : Colors.white,
-        borderColor: const Color(0xFF10B981),
-        iconColor: Colors.white,
-        textColor: const Color(0xFF10B981),
-        subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
-        title: 'Voir+',
-        subtitle: 'de vidéos',
-        onTap: _handleSeeMoreVideos,
-        icon: Icons.play_arrow,
-        width: _getCardWidth(context, 16.0),
-        height: AppDimensions.getScaledSize(
-          context,
-          100.0,
-        ), // Hauteur dynamique
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SeeMoreCard(
+          cardColor: isDarkMode
+              ? const Color.fromARGB(255, 0, 0, 0)
+              : Colors.white,
+          borderColor: const Color(0xFF10B981),
+          iconColor: Colors.white,
+          textColor: const Color(0xFF10B981),
+          subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+          title: 'Voir+',
+          subtitle: 'de vidéos',
+          onTap: _handleSeeMoreVideos,
+          icon: Icons.play_arrow,
+          width: cardWidth,
+          height: imageHeight * 1.15,
+        ),
       ),
     );
   }
@@ -1553,18 +1573,29 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+" pour la visite guidée
   Widget _buildSeeMoreVisiteGuideeCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return SeeMoreCard(
-      cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
-      borderColor: const Color(0xFF3B82F6),
-      iconColor: Colors.white,
-      textColor: const Color(0xFF3B82F6),
-      subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
-      title: 'Voir+',
-      subtitle: 'de visites',
-      onTap: _handleSeeMoreVisiteGuidee,
-      icon: Icons.play_circle_outline,
-      width: _getCardWidth(context, 0.0),
-      height: AppDimensions.getScaledSize(context, 80.0), // Hauteur dynamique
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SeeMoreCard(
+          cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
+          borderColor: const Color(0xFF3B82F6),
+          iconColor: Colors.white,
+          textColor: const Color(0xFF3B82F6),
+          subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+          title: 'Voir+',
+          subtitle: 'de visites',
+          onTap: _handleSeeMoreVisiteGuidee,
+          icon: Icons.play_circle_outline,
+          width: cardWidth,
+          height: imageHeight * 1.15,
+        ),
+      ),
     );
   }
 
@@ -2043,6 +2074,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (context) => _buildFlashInfoBottomSheet(item),
     ).then((_) {
       _startPresenceAutoScrollIfNeeded();
@@ -2408,6 +2440,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (context) => Container(
         height: 350,
         padding: const EdgeInsets.all(20),
@@ -2464,6 +2497,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (context) => ShareBottomSheet(
         title: 'Partager l\'application',
         itemTitle: 'Invitez vos amis à suivre leurs enfants',
@@ -2879,6 +2913,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
               centerTitle: true,
               //isLocked: !isPremium,
               onTap: () => showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,

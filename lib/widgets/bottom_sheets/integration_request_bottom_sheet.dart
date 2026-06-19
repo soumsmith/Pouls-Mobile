@@ -59,6 +59,7 @@ class IntegrationRequestBottomSheet extends StatefulWidget {
     double? imageBorderRadius,
   }) {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

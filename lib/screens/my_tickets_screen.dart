@@ -239,6 +239,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     final isValid = statusLower == 'valide' || statusLower == 'non_utilise' || statusLower == 'non_utilisé';
 
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

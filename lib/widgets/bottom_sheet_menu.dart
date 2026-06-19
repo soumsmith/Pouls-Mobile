@@ -441,6 +441,7 @@ class _Badge extends StatelessWidget {
 // ─── Helper function ──────────────────────────────────────────────────────────
 void showMenuBottomSheet(BuildContext context) {
   showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

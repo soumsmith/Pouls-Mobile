@@ -789,6 +789,7 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   void _showOrderDetails(Order order) {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

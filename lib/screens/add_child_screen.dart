@@ -112,6 +112,7 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   void _showRecommendationBottomSheet() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -486,6 +487,7 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   void _showHelpDialog() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -674,6 +676,7 @@ class _AddChildScreenState extends State<AddChildScreen>
 
     _isFoundStudentSheetOpen = true;
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

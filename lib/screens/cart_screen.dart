@@ -800,6 +800,7 @@ class _CartScreenState extends State<CartScreen>
 
   void _showOrderBottomSheet() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

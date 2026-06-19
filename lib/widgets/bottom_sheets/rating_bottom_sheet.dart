@@ -146,9 +146,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> with WidgetsBindi
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSizeService = TextSizeService();
 
-    return Padding(
-      padding: MediaQuery.of(context).viewInsets,
-      child: DraggableScrollableSheet(
+    return DraggableScrollableSheet(
         controller: _draggableController,
         initialChildSize: 0.85,
         minChildSize: 0.5,
@@ -161,6 +159,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> with WidgetsBindi
             onTap: () => FocusScope.of(context).unfocus(),
             behavior: HitTestBehavior.opaque,
             child: Container(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF141414) : AppColors.screenCard,
                 borderRadius: const BorderRadius.vertical(
@@ -238,8 +237,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> with WidgetsBindi
             ),
           );
         },
-      ),
-    );
+      );
   }
 
   // Bulle d'avis (style WhatsApp)
@@ -625,6 +623,7 @@ void showRatingBottomSheet(
   bool popOnSuccess = true,
 }) {
   showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
     context: context,
     isScrollControlled: true,
     useSafeArea: true,

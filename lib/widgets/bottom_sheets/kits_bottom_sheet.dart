@@ -456,6 +456,7 @@ void showKitsBottomSheet(
   Color primaryColor = const Color(0xFF8B5CF6),
 }) {
   showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
     context: context,
     isScrollControlled: true,
     useSafeArea: true,

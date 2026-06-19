@@ -676,6 +676,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   // ── Advanced Search BottomSheet ─────────────────────────────────//  Advanced Search BottomSheet
   void _showAdvancedSearchBottomSheet() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1732,6 +1733,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
     if (actionType == 'recommend') {
       showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -1805,6 +1807,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
     if (actionType == 'share') {
       showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -1815,6 +1818,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

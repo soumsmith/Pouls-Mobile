@@ -793,9 +793,18 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                     child: _EventCard(
                       event: event,
                       onTap: () {
-                        MainScreenWrapper.of(context).navigateToExtraScreen(
-                          EventDetailScreen(event: Event.fromJson(event)),
-                        );
+                        final wrapper = MainScreenWrapper.maybeOf(context);
+                        if (wrapper != null) {
+                          wrapper.navigateToExtraScreen(
+                            EventDetailScreen(event: Event.fromJson(event)),
+                          );
+                        } else {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => EventDetailScreen(event: Event.fromJson(event)),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ),

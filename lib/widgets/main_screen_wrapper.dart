@@ -185,9 +185,13 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   void navigateToEstablishmentDetail(dynamic ecole) {
     setState(() {
       _previousIndex = _currentIndex != -1 ? _currentIndex : _previousIndex;
-      _currentEstablishmentDetailScreen = EstablishmentDetailScreen(ecole: ecole);
-      _currentChildDetailScreen = null;
-      _extraScreenStack.clear();
+      if (_extraScreenStack.isNotEmpty) {
+        _extraScreenStack.add(EstablishmentDetailScreen(ecole: ecole));
+      } else {
+        _currentEstablishmentDetailScreen = EstablishmentDetailScreen(ecole: ecole);
+        _currentChildDetailScreen = null;
+        _extraScreenStack.clear();
+      }
       _currentIndex = -1; // Désactive tous les onglets du bottom nav
     });
   }
@@ -197,8 +201,6 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
     setState(() {
       _previousIndex = _currentIndex != -1 ? _currentIndex : _previousIndex;
       _extraScreenStack.add(screen);
-      _currentChildDetailScreen = null;
-      _currentEstablishmentDetailScreen = null;
       _currentIndex = -1; // Désactive tous les onglets du bottom nav
     });
   }
@@ -220,6 +222,9 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
         _extraScreenStack.removeLast();
         if (_extraScreenStack.isNotEmpty) {
           return; // Reste sur l'écran précédent de la pile
+        }
+        if (_currentChildDetailScreen != null || _currentEstablishmentDetailScreen != null) {
+          return; // Reste sur le détail parent
         }
       }
       _currentIndex = _previousIndex ?? 0;

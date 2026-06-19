@@ -1224,6 +1224,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     bool hasAttemptedLoad = false;
 
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1318,6 +1319,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     _isTimetableSheetOpen = true;
 
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1487,6 +1489,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     _filterEndDateController.text =
         "${_filterEndDate!.day.toString().padLeft(2, '0')}/${_filterEndDate!.month.toString().padLeft(2, '0')}/${_filterEndDate!.year}";
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1553,6 +1556,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     _accessControlLoaded = false;
 
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1610,6 +1614,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final matricule = _matricule ?? widget.child.matricule ?? '';
 
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1725,40 +1730,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  void _showEventsBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.event_rounded,
-              imagePath: 'assets/images/icons/evenements_scolaires.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF3F51B5),
-              title: 'Événements',
-              description: 'Participez aux événements et activités',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildEventsTab()),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showSuppliesBottomSheet() {
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1916,6 +1890,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     _ordersSearchController.clear();
     _ordersFuture = _loadOrdersFuture();
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -3324,6 +3299,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     final draggableController = DraggableScrollableController();
 
     showModalBottomSheet(
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -10311,136 +10287,6 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildEventsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [_buildEventsList()],
-      ),
-    );
-  }
-
-  Widget _buildEventsList() {
-    return Column(
-      children: [
-        _buildEventCard(
-          'Réunion parents-professeurs',
-          'Discution sur les résultats du premier trimestre',
-          '15 décembre 2023',
-          '14:00',
-          Icons.groups_rounded,
-          Colors.blue,
-        ),
-        const SizedBox(height: 12),
-        _buildEventCard(
-          'Sortie pédagogique',
-          'Visite du musée des sciences',
-          '20 janvier 2024',
-          '09:00',
-          Icons.directions_bus_rounded,
-          Colors.green,
-        ),
-        const SizedBox(height: 12),
-        _buildEventCard(
-          'Fête de l\'école',
-          'Célébration annuelle avec spectacle',
-          '10 juin 2024',
-          '15:00',
-          Icons.celebration_rounded,
-          Colors.purple,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEventCard(
-    String title,
-    String description,
-    String date,
-    String time,
-    IconData icon,
-    Color color,
-  ) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.15), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    // fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: color),
-                    const SizedBox(width: 4),
-                    Text(
-                      date,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: color,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(Icons.access_time_rounded, size: 14, color: color),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: color,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 16,
-            color: isDarkMode ? Colors.grey[400] : Colors.grey[400],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSuppliesTab() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -10967,10 +10813,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             ),
             _buildOrdersStatsHeader(rawOrders),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: SearchBarWidget(
                 isSearching: true,
                 searchController: _ordersSearchController,
@@ -13420,7 +13263,6 @@ class _ExtraScolaireSheetContentState
             description: 'Suivi de ${widget.childName}',
             onClose: () => Navigator.of(context).pop(),
           ),
-          const Divider(height: 1, thickness: 1),
 
           // Content
           Expanded(

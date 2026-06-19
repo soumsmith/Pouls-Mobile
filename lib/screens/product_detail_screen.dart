@@ -12,6 +12,8 @@ import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/share_bottom_sheet.dart';
+import '../config/app_config.dart';
 
 // ─── DESIGN TOKENS THEME-AWARE ─────────────────────────────────────────────────
 // Utilise les méthodes theme-aware d'AppColors pour le dark/light mode
@@ -334,7 +336,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       actions: [
         _buildNavButton(icon: Icons.favorite_border_rounded, onTap: () {}),
         _buildNavButton(
-          icon: Icons.ios_share_rounded,
+          icon: Icons.share_rounded,
           onTap: _shareProduct,
           rightPadding: 12,
         ),
@@ -940,6 +942,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }
 
   void _shareProduct() {
-    _showSnackBar('Partage du produit bientôt disponible');
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ShareBottomSheet(
+        title: 'Partager ce produit',
+        itemTitle: widget.product.title,
+        shareText: 'Découvrez ce produit sur Pouls : ${widget.product.title}\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
+      ),
+    );
   }
 }

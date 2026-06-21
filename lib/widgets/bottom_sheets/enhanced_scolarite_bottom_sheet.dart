@@ -9,6 +9,7 @@ import '../../config/app_dimensions.dart';
 import '../section_header_widget.dart';
 import '../search_bar_widget.dart';
 import '../components/bottom_spacer.dart';
+import 'reusable_bottom_sheet.dart';
 
 /// Bottom sheet réutilisable et amélioré pour afficher la scolarité d'un élève
 /// Fusionne le design de _showFeesBottomSheet avec les fonctionnalités de ScolariteBottomSheet
@@ -24,7 +25,7 @@ class EnhancedScolariteBottomSheet extends StatefulWidget {
   final String? description;
   final DraggableScrollableController? draggableController;
   final ScrollController? scrollController;
-  
+
   // Paramètres de personnalisation du design
   final Color? primaryColor;
   final Color? backgroundColor;
@@ -59,10 +60,12 @@ class EnhancedScolariteBottomSheet extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<EnhancedScolariteBottomSheet> createState() => _EnhancedScolariteBottomSheetState();
+  State<EnhancedScolariteBottomSheet> createState() =>
+      _EnhancedScolariteBottomSheetState();
 }
 
-class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSheet> {
+class _EnhancedScolariteBottomSheetState
+    extends State<EnhancedScolariteBottomSheet> {
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
 
@@ -76,7 +79,8 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
   Color get _iconColor => widget.iconColor ?? const Color(0xFF065F46);
   IconData get _iconData => widget.iconData ?? Icons.payments_rounded;
   String get _defaultTitle => widget.title ?? 'Frais scolaires';
-  String get _defaultDescription => widget.description ?? 'Consultez les frais de scolarité et paiements';
+  String get _defaultDescription =>
+      widget.description ?? 'Consultez les frais de scolarité et paiements';
 
   @override
   void dispose() {
@@ -86,57 +90,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[900] : Colors.white,
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildInlineHeader(),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: widget.scrollController,
-              padding: const EdgeInsets.all(20),
-              child: _buildContent(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInlineHeader() {
-    final isDarkMode = _themeService.isDarkMode;
-    
-    return BottomSheetHeader(
-      icon: _iconData,
-      iconColor: _primaryColor,
-      imagePath: widget.imagePath,
-      imageBackgroundColor: widget.imageBackgroundColor,
-      imageBorderRadius: widget.imageBorderRadius,
-      title: _defaultTitle,
-      description: _defaultDescription,
-      titleColor: isDarkMode ? Colors.white : Colors.black87,
-      descriptionColor: isDarkMode ? Colors.grey[300] : Colors.grey[600],
-      onClose: widget.onClose ?? () => Navigator.of(context).pop(),
-      iconSize: 22,
-      titleFontSize: 18,
-      descriptionFontSize: 14,
-      titleFontWeight: FontWeight.w700,
-      draggableController: widget.draggableController,
-      //padding: const EdgeInsets.all(20),
-    );
+    return Padding(padding: const EdgeInsets.all(20), child: _buildContent());
   }
 
   Widget _buildContent() {
@@ -165,11 +119,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 48,
-              color: Colors.red[400],
-            ),
+            Icon(Icons.error_outline_rounded, size: 48, color: Colors.red[400]),
             const SizedBox(height: 12),
             Text(
               'Erreur de chargement',
@@ -241,8 +191,8 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
 
       return Container(
         width: double.infinity,
-        height: widget.height != null 
-            ? widget.height! * 0.6 
+        height: widget.height != null
+            ? widget.height! * 0.6
             : MediaQuery.of(context).size.height * 0.6,
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -301,7 +251,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
     final paymentPercentage = totalMontant > 0
         ? (totalPaye / totalMontant) * 100
         : 0.0;
-    final overdueCount = widget.scolariteEntries.where((e) => e.isOverdue).length;
+    final overdueCount = widget.scolariteEntries
+        .where((e) => e.isOverdue)
+        .length;
     final isDarkMode = _themeService.isDarkMode;
 
     final filteredEntries = widget.scolariteEntries.where((entry) {
@@ -372,7 +324,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
-                            color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                            color: isDarkMode
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
                             letterSpacing: -0.3,
                           ),
                         ),
@@ -382,7 +336,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[500],
                           ),
                         ),
                       ],
@@ -390,7 +346,10 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                   ),
                   if (paymentPercentage >= 100)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(20),
@@ -398,7 +357,11 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.verified_rounded, color: Colors.green, size: 14),
+                          Icon(
+                            Icons.verified_rounded,
+                            color: Colors.green,
+                            size: 14,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Soldée',
@@ -414,7 +377,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                 ],
               ),
               const SizedBox(height: 14),
-              
+
               // Capsule grid of values
               Row(
                 children: [
@@ -447,7 +410,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                 ],
               ),
               const SizedBox(height: 14),
-              
+
               // Progression Bar
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -464,8 +427,12 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                               child: Text(
                                 progressText,
                                 style: TextStyle(
-                                  color: isDarkMode ? Colors.grey[300] : const Color(0xFF475569),
-                                  fontSize: _textSizeService.getScaledFontSize(11),
+                                  color: isDarkMode
+                                      ? Colors.grey[300]
+                                      : const Color(0xFF475569),
+                                  fontSize: _textSizeService.getScaledFontSize(
+                                    11,
+                                  ),
                                   fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 1,
@@ -477,15 +444,24 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                       ),
                       const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: (paymentPercentage >= 100 ? Colors.green : _primaryColor).withOpacity(0.12),
+                          color:
+                              (paymentPercentage >= 100
+                                      ? Colors.green
+                                      : _primaryColor)
+                                  .withOpacity(0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           '${paymentPercentage.toStringAsFixed(1)}%',
                           style: TextStyle(
-                            color: paymentPercentage >= 100 ? Colors.green : _primaryColor,
+                            color: paymentPercentage >= 100
+                                ? Colors.green
+                                : _primaryColor,
                             fontSize: _textSizeService.getScaledFontSize(12),
                             fontWeight: FontWeight.w800,
                           ),
@@ -512,14 +488,21 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                           gradient: LinearGradient(
                             colors: paymentPercentage >= 100
                                 ? [Colors.green.withOpacity(0.8), Colors.green]
-                                : [_primaryColor.withOpacity(0.8), _primaryColor],
+                                : [
+                                    _primaryColor.withOpacity(0.8),
+                                    _primaryColor,
+                                  ],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: (paymentPercentage >= 100 ? Colors.green : _primaryColor).withOpacity(0.3),
+                              color:
+                                  (paymentPercentage >= 100
+                                          ? Colors.green
+                                          : _primaryColor)
+                                      .withOpacity(0.3),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -534,23 +517,21 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
           ),
         ),
         const SizedBox(height: 24),
-        
+
         // Zone de recherche
         _buildSearchZone(),
         const SizedBox(height: 14),
-        
+
         // Liste des échéances
-        ...filteredEntries.asMap().entries.map(
-          (mapEntry) {
-            final index = mapEntry.key;
-            final entry = mapEntry.value;
-            final isExpanded = _expandedIndex == index;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: _buildScolariteEntryCard(entry, isExpanded, index),
-            );
-          }
-        ).toList(),
+        ...filteredEntries.asMap().entries.map((mapEntry) {
+          final index = mapEntry.key;
+          final entry = mapEntry.value;
+          final isExpanded = _expandedIndex == index;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _buildScolariteEntryCard(entry, isExpanded, index),
+          );
+        }).toList(),
         const BottomSpacer(),
       ],
     );
@@ -602,17 +583,19 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color, IconData icon) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
     final isDarkMode = _themeService.isDarkMode;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.07),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
       ),
       child: Column(
         children: [
@@ -641,16 +624,20 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
     );
   }
 
-  Widget _buildScolariteEntryCard(StudentScolariteEntry entry, bool isExpanded, int index) {
+  Widget _buildScolariteEntryCard(
+    StudentScolariteEntry entry,
+    bool isExpanded,
+    int index,
+  ) {
     final isDarkMode = _themeService.isDarkMode;
     final isOverdue = entry.isOverdue;
     final hasRemaining = entry.rapayer > 0;
-    
+
     // Status color & labeling
     Color statusColor;
     String statusText;
     IconData statusIcon;
-    
+
     if (!hasRemaining) {
       statusColor = Colors.green;
       statusText = 'Soldé';
@@ -681,14 +668,16 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: isExpanded
-              ? (isOverdue 
-                  ? Colors.red.withOpacity(isDarkMode ? 0.15 : 0.05) 
-                  : Colors.green.withOpacity(isDarkMode ? 0.15 : 0.05))
+              ? (isOverdue
+                    ? Colors.red.withOpacity(isDarkMode ? 0.15 : 0.05)
+                    : Colors.green.withOpacity(isDarkMode ? 0.15 : 0.05))
               : (isDarkMode ? const Color(0xFF1E1E2A) : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: isExpanded
               ? Border.all(
-                  color: isOverdue ? Colors.red.withOpacity(0.8) : Colors.green.withOpacity(0.8), 
+                  color: isOverdue
+                      ? Colors.red.withOpacity(0.8)
+                      : Colors.green.withOpacity(0.8),
                   width: 1.2,
                 )
               : Border.all(color: Colors.transparent, width: 1.2),
@@ -714,7 +703,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : const Color(0xFF1E293B),
                               letterSpacing: -0.2,
                             ),
                           ),
@@ -722,7 +713,10 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                         const SizedBox(width: 8),
                         // Premium Status badge chip
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -746,7 +740,7 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                       ],
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Single beautiful date indicator and expand icon
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -756,7 +750,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                             Icon(
                               Icons.calendar_today_rounded,
                               size: 13,
-                              color: isDarkMode ? Colors.grey[400] : const Color(0xFF64748B),
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : const Color(0xFF64748B),
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -764,7 +760,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: isDarkMode ? Colors.grey[400] : const Color(0xFF64748B),
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : const Color(0xFF64748B),
                               ),
                             ),
                           ],
@@ -772,7 +770,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                         Row(
                           children: [
                             Text(
-                              _formatAmount(hasRemaining ? entry.rapayer : entry.paye),
+                              _formatAmount(
+                                hasRemaining ? entry.rapayer : entry.paye,
+                              ),
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
@@ -782,8 +782,12 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                             ),
                             const SizedBox(width: 8),
                             Icon(
-                              isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                              color: isDarkMode ? Colors.grey[400] : const Color(0xFF64748B),
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : const Color(0xFF64748B),
                               size: 20,
                             ),
                           ],
@@ -793,13 +797,15 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                   ],
                 ),
               ),
-              
+
               // Expanded Content
               if (isExpanded) ...[
                 // Thin custom divider line
                 Container(
                   height: 1,
-                  color: isDarkMode ? const Color(0xFF2A2A3A) : const Color(0xFFF1F5F9),
+                  color: isDarkMode
+                      ? const Color(0xFF2A2A3A)
+                      : const Color(0xFFF1F5F9),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -809,7 +815,9 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
                         child: _buildAmountItem(
                           'Montant Total',
                           _formatAmount(entry.montant),
-                          isDarkMode ? Colors.grey[300]! : const Color(0xFF475569),
+                          isDarkMode
+                              ? Colors.grey[300]!
+                              : const Color(0xFF475569),
                           Icons.receipt_rounded,
                         ),
                       ),
@@ -840,7 +848,12 @@ class _EnhancedScolariteBottomSheetState extends State<EnhancedScolariteBottomSh
     );
   }
 
-  Widget _buildAmountItem(String label, String value, Color color, IconData icon) {
+  Widget _buildAmountItem(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
     final isDarkMode = _themeService.isDarkMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -903,46 +916,38 @@ void showEnhancedScolariteBottomSheet(
   IconData? iconData,
   double? height,
 }) {
-  final draggableController = DraggableScrollableController();
-  showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+  ReusableBottomSheet.show(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => Navigator.of(context).pop(),
-      child: DraggableScrollableSheet(
-        controller: draggableController,
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => GestureDetector(
-          onTap: () {}, // Empêche la fermeture lors d'un clic dans le contenu
-          child: EnhancedScolariteBottomSheet(
-        childName: childName,
-        childMatricule: childMatricule,
-        scolariteEntries: scolariteEntries,
-        isLoading: isLoading,
-        errorMessage: errorMessage,
-        onRefresh: onRefresh,
-        onClose: onClose,
-        title: title,
-        description: description,
-        primaryColor: primaryColor,
-        backgroundColor: backgroundColor,
-        imagePath: imagePath,
-        imageBackgroundColor: imageBackgroundColor,
-        imageBorderRadius: imageBorderRadius,
-        iconColor: iconColor,
-        iconData: iconData,
-        height: height,
-        draggableController: draggableController,
-        scrollController: controller,
-      ),
+    title: title ?? 'Frais scolaires',
+    subtitle: description ?? 'Consultez les frais de scolarité et paiements',
+    icon: iconData ?? Icons.payments_rounded,
+    iconColor: primaryColor ?? const Color(0xFF10B981),
+    imagePath: imagePath,
+    imageBorderRadius: imageBorderRadius,
+    initialChildSize: 0.8,
+    minChildSize: 0.5,
+    showScrollToTopFab: true,
+    maxChildSize: 0.95,
+    contentPadding: EdgeInsets.zero,
+    content: EnhancedScolariteBottomSheet(
+      childName: childName,
+      childMatricule: childMatricule,
+      scolariteEntries: scolariteEntries,
+      isLoading: isLoading,
+      errorMessage: errorMessage,
+      onRefresh: onRefresh,
+      onClose: onClose,
+      title: title,
+      description: description,
+      primaryColor: primaryColor,
+      backgroundColor: backgroundColor,
+      imagePath: imagePath,
+      imageBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
+      iconColor: iconColor,
+      iconData: iconData,
+      height: height,
     ),
-  ),
-),
   );
 }
 

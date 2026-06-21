@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../models/echeance_notification.dart';
 import '../config/app_config.dart';
 

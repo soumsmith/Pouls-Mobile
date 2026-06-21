@@ -9,13 +9,14 @@ import 'models/child.dart';
 import 'services/theme_service.dart';
 import 'services/database_service.dart';
 import 'services/auth_service.dart';
-import 'services/connectivity_service.dart';
 import 'services/notification_service.dart';
+import 'services/connectivity_service.dart';
 import 'utils/notification_helper.dart';
 
 // NavigatorKey global pour accéder au contexte depuis n'importe quel écran
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,10 @@ void main() async {
     // Initialiser les notifications locales
     await NotificationService().init();
     print('✅ Service de notifications initialisé');
+
+    // Initialiser le service de connectivité
+    await ConnectivityService().init();
+    print('✅ Service de connectivité initialisé');
   } catch (e) {
     print('⚠️ Erreur lors de l\'initialisation des services: $e');
     // Continuer même si l'initialisation échoue
@@ -82,6 +87,7 @@ class _MyAppState extends State<MyApp> {
               themeMode: _themeService.isDarkMode
                   ? ThemeMode.dark
                   : ThemeMode.light,
+              builder: (context, child) => child ?? const SizedBox.shrink(),
               home: const SplashScreen(),
               // home: InscriptionWizardScreen(
               //   child: Child(

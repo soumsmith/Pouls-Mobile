@@ -1,172 +1,94 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/material.dart';
-import '../utils/notification_helper.dart';
+import 'package:flutter/foundation.dart';
 
-/// Service singleton de surveillance de la connectivité.
-///
-/// Les écrans s'abonnent avec [addListener] en passant un callback
-/// qui sera appelé quand la connexion revient (transition offline → online).
-/// Cela permet de relancer automatiquement les appels API de l'écran actif.
-class ConnectivityService extends ChangeNotifier {
-  ConnectivityService._internal() {
-    _subscription = Connectivity().onConnectivityChanged.listen(_onStatusChanged);
-  }
+/// État de la connexion réseau
+enum ConnectivityStatus {
+  connected,
+  disconnected,
+}
 
+/// Service singleton qui vérifie le véritable accès à internet
+/// en ouvrant un Socket vers un serveur fiable (Google DNS).
+/// C'est la méthode la plus fiable sur émulateur.
+class ConnectivityService {
+  ConnectivityService._internal();
   static final ConnectivityService _instance = ConnectivityService._internal();
+  factory ConnectivityService() => _instance;
 
-  /// Accès au singleton
-  static ConnectivityService get instance => _instance;
+  bool? _isOnline;
+  bool? get isOnline => _isOnline;
 
-  StreamSubscription? _subscription;
-  Timer? _debounceTimer;
-  bool _isOnline = true;
-  bool _isInitialCheck = true;
+  ConnectivityStatus get lastStatus =>
+      _isOnline == false
+          ? ConnectivityStatus.disconnected
+          : ConnectivityStatus.connected;
 
-  /// `true` si le téléphone est actuellement connecté à internet.
-  bool get isOnline => _isOnline;
+  bool _initialized = false;
+  Timer? _pollingTimer;
 
-  /// Liste des callbacks à appeler quand la connexion revient.
-  final List<VoidCallback> _onReconnectCallbacks = [];
+  final StreamController<ConnectivityStatus> _statusController =
+      StreamController<ConnectivityStatus>.broadcast();
 
-  /// Enregistre un callback qui sera appelé à chaque reconnexion.
-  /// Typiquement appelé dans `initState()` d'un écran.
-  void onReconnect(VoidCallback callback) {
-    _onReconnectCallbacks.add(callback);
-  }
+  Stream<ConnectivityStatus> get statusStream => _statusController.stream;
 
-  /// Supprime un callback de reconnexion.
-  /// Typiquement appelé dans `dispose()` d'un écran.
-  void removeReconnectCallback(VoidCallback callback) {
-    _onReconnectCallbacks.remove(callback);
-  }
+  final List<VoidCallback> _reconnectCallbacks = [];
 
-  void _onStatusChanged(dynamic result) {
-    // Annuler le timer précédent
-    _debounceTimer?.cancel();
+  Future<void> init() async {
+    if (_initialized) return;
+    _initialized = true;
 
-    // Attendre 2 secondes pour s'assurer que le basculement réseau (ex: Wifi -> 4G) est terminé
-    _debounceTimer = Timer(const Duration(milliseconds: 2000), () async {
-      bool interfaceConnected = false;
-      
-      // Re-vérifier l'état de l'interface réseau au moment T
-      final currentResult = await Connectivity().checkConnectivity();
-      if (currentResult is List<ConnectivityResult>) {
-        interfaceConnected = currentResult.any((r) => r != ConnectivityResult.none);
-      } else if (currentResult is ConnectivityResult) {
-        interfaceConnected = currentResult != ConnectivityResult.none;
-      }
-
-      bool actuallyOnline = false;
-
-      // Si une interface est connectée, vérifier qu'elle a VRAIMENT accès à internet
-      if (interfaceConnected) {
-        try {
-          // Un test DNS ultra-rapide et fiable vers Google
-          final lookup = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 3));
-          actuallyOnline = lookup.isNotEmpty && lookup[0].rawAddress.isNotEmpty;
-        } catch (_) {
-          actuallyOnline = false; // Connecté au routeur/4G, mais pas d'internet réel
-        }
-      }
-
-      if (_isInitialCheck) {
-        _isOnline = actuallyOnline;
-        _isInitialCheck = false;
-        return;
-      }
-
-      if (_isOnline == actuallyOnline) return; // Pas de changement réel
-
-      _isOnline = actuallyOnline;
-
-      // Notifier tous les listeners (ChangeNotifier)
-      notifyListeners();
-
-      if (actuallyOnline) {
-        // Afficher la notification de succès
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          NotificationHelper.showSuccess('Connexion internet rétablie.');
-        });
-        WidgetsBinding.instance.ensureVisualUpdate();
-
-        print('🔄 Connexion rétablie — relancement des API des écrans actifs');
-        for (final callback in List<VoidCallback>.from(_onReconnectCallbacks)) {
-          try {
-            callback();
-          } catch (e) {
-            print('⚠️ Erreur dans un callback de reconnexion: $e');
-          }
-        }
-      } else {
-        // Afficher la notification de perte de connexion
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          NotificationHelper.showNoConnection(
-              customMessage: 'Connexion internet perdue. Mode hors ligne activé.');
-        });
-        WidgetsBinding.instance.ensureVisualUpdate();
-      }
+    // Première vérification immédiate
+    _isOnline = await _hasRealInternetAccess();
+    
+    // On lance une vérification en boucle toutes les 3 secondes.
+    // Infaillible sur émulateur même quand l'hôte coupe le Wi-Fi.
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      final hasNet = await _hasRealInternetAccess();
+      _applyState(hasNet);
     });
   }
 
-  @override
-  void dispose() {
-    _debounceTimer?.cancel();
-    _subscription?.cancel();
-    _onReconnectCallbacks.clear();
-    super.dispose();
-  }
-}
-
-/// Mixin pratique pour les State<> qui veulent recharger leurs données
-/// automatiquement quand la connexion revient.
-///
-/// Usage :
-/// ```dart
-/// class _MyScreenState extends State<MyScreen> with ConnectivityReloadMixin {
-///   @override
-///   void onConnectionRestored() {
-///     _loadData(); // Relancer vos appels API
-///   }
-///
-///   @override
-///   void initState() {
-///     super.initState();
-///     registerConnectivityReload(); // ← à appeler dans initState
-///     _loadData();
-///   }
-///
-///   @override
-///   void dispose() {
-///     unregisterConnectivityReload(); // ← à appeler dans dispose
-///     super.dispose();
-///   }
-/// }
-/// ```
-mixin ConnectivityReloadMixin<T extends StatefulWidget> on State<T> {
-  VoidCallback? _connectivityCallback;
-
-  /// Appelé automatiquement quand la connexion est rétablie.
-  /// À surcharger dans l'écran pour relancer les appels API.
-  void onConnectionRestored();
-
-  /// Enregistre le callback de reconnexion. À appeler dans initState().
-  void registerConnectivityReload() {
-    _connectivityCallback = () {
-      if (mounted) {
-        print('🔄 ${T.toString()} — Reconnexion détectée, rechargement des données...');
-        onConnectionRestored();
-      }
-    };
-    ConnectivityService.instance.onReconnect(_connectivityCallback!);
-  }
-
-  /// Supprime le callback. À appeler dans dispose().
-  void unregisterConnectivityReload() {
-    if (_connectivityCallback != null) {
-      ConnectivityService.instance.removeReconnectCallback(_connectivityCallback!);
-      _connectivityCallback = null;
+  /// Tente d'ouvrir une connexion TCP rapide sur le port 53 (DNS) de Google.
+  /// Ne dépend pas de la résolution DNS locale de l'émulateur (qui est souvent buggée).
+  Future<bool> _hasRealInternetAccess() async {
+    try {
+      // 8.8.8.8 est le DNS de Google, ultra rapide et fiable
+      final socket = await Socket.connect('8.8.8.8', 53, timeout: const Duration(seconds: 2));
+      socket.destroy(); // On referme immédiatement
+      return true;
+    } catch (_) {
+      return false; // TimeOut ou réseau inaccessible
     }
+  }
+
+  void _applyState(bool newState) {
+    if (_isOnline == newState) return; // Pas de changement
+
+    final wasOffline = _isOnline == false;
+    _isOnline = newState;
+
+    if (newState) {
+      _statusController.add(ConnectivityStatus.connected);
+      debugPrint('🌐 ✅ CONNEXION RÉTABLIE ! (Ping 8.8.8.8 réussi)');
+      
+      if (wasOffline) {
+        for (final cb in List<VoidCallback>.from(_reconnectCallbacks)) {
+          try { cb(); } catch (e) { debugPrint('⚠️ callback error: $e'); }
+        }
+      }
+    } else {
+      _statusController.add(ConnectivityStatus.disconnected);
+      debugPrint('🌐 ❌ CONNEXION PERDUE ! (Ping 8.8.8.8 échoué)');
+    }
+  }
+
+  void onReconnect(VoidCallback callback) => _reconnectCallbacks.add(callback);
+  void removeReconnectCallback(VoidCallback callback) => _reconnectCallbacks.remove(callback);
+
+  void dispose() {
+    _pollingTimer?.cancel();
+    _statusController.close();
+    _reconnectCallbacks.clear();
   }
 }

@@ -8,7 +8,9 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import 'child_list_screen.dart';
-import '../widgets/components/bottom_spacer.dart';import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/components/bottom_spacer.dart';
+import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/main_screen_wrapper.dart';
 
 class AllChildrenScreen extends StatefulWidget {
   const AllChildrenScreen({super.key});
@@ -113,7 +115,11 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
                 actions: [
                   IconButton(
                     onPressed: () {
-                      Navigator.of(context).pop();
+                      if (MainScreenWrapper.maybeOf(context) != null) {
+                        MainScreenWrapper.of(context).goBackToPreviousTab();
+                      } else {
+                        Navigator.of(context).pop();
+                      }
                     },
                     icon: const Icon(Icons.close, color: Colors.white),
                   ),
@@ -237,15 +243,21 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
   Widget _buildChildCard(Child child, int index) {
     return GestureDetector(
       onTap: () async {
-        final result = await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => ChildListScreen(
-              child: child,
+        if (MainScreenWrapper.maybeOf(context) != null) {
+          MainScreenWrapper.of(context).navigateToExtraScreen(
+            ChildListScreen(child: child),
+          );
+        } else {
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ChildListScreen(
+                child: child,
+              ),
             ),
-          ),
-        );
-        if (result == true) {
-          _loadChildren();
+          );
+          if (result == true) {
+            _loadChildren();
+          }
         }
       },
       child: Container(

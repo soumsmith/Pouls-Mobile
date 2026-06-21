@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../models/student_scolarite.dart';
 import '../config/app_config.dart';
 import 'school_service.dart';

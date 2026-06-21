@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui'; // Pour l'effet de verre
 import '../components/bottom_spacer.dart';
+import '../scroll_to_top_fab.dart';
 
 class ReusableBottomSheet extends StatelessWidget {
   final Widget content;
@@ -17,6 +18,8 @@ class ReusableBottomSheet extends StatelessWidget {
   final double maxChildSize;
   final bool useGlassEffect;
   final EdgeInsetsGeometry contentPadding;
+  final bool showScrollToTopFab;
+  final Widget? fixedBottomWidget;
 
   const ReusableBottomSheet({
     super.key,
@@ -34,6 +37,8 @@ class ReusableBottomSheet extends StatelessWidget {
     this.maxChildSize = 0.9,
     this.useGlassEffect = false,
     this.contentPadding = const EdgeInsets.all(16),
+    this.showScrollToTopFab = false,
+    this.fixedBottomWidget,
   });
 
   /// Méthode statique utilitaire pour afficher facilement le BottomSheet
@@ -54,6 +59,8 @@ class ReusableBottomSheet extends StatelessWidget {
     bool isDismissible = true,
     bool useGlassEffect = false,
     EdgeInsetsGeometry contentPadding = const EdgeInsets.all(16),
+    bool showScrollToTopFab = false,
+    Widget? fixedBottomWidget,
   }) {
     return showModalBottomSheet<T>(
       context: context,
@@ -81,6 +88,8 @@ class ReusableBottomSheet extends StatelessWidget {
           maxChildSize: maxChildSize,
           useGlassEffect: useGlassEffect,
           contentPadding: contentPadding,
+          showScrollToTopFab: showScrollToTopFab,
+          fixedBottomWidget: fixedBottomWidget,
         ),
       ),
     );
@@ -123,20 +132,34 @@ class ReusableBottomSheet extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  padding: contentPadding,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      content, // Le contenu dynamique passé en paramètre
-                      const BottomSpacer(),
-                    ],
-                  ),
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
+                      controller: scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      padding: contentPadding,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          content, // Le contenu dynamique passé en paramètre
+                          const BottomSpacer(),
+                        ],
+                      ),
+                    ),
+                    if (showScrollToTopFab)
+                      Positioned(
+                        right: 16,
+                        bottom: 0,
+                        child: ScrollToTopFab(
+                          scrollController: scrollController,
+                          useGlassEffect: useGlassEffect,
+                        ),
+                      ),
+                  ],
                 ),
               ),
+              if (fixedBottomWidget != null) fixedBottomWidget!,
             ],
           ),
         );

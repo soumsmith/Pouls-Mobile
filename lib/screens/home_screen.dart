@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:parents_responsable/config/app_config.dart';
 
-import '../services/connectivity_service.dart';
 import 'dart:ui';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../widgets/privilege_guard.dart';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:parents_responsable/screens/all_children_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:parents_responsable/models/video.dart';
-import 'package:parents_responsable/screens/all_children_screen.dart';
 import 'package:parents_responsable/services/video_service.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/integration_request_bottom_sheet.dart';
@@ -22,6 +22,7 @@ import '../config/app_dimensions.dart';
 import '../models/child.dart';
 import '../models/gestion_presence_eleve_entry.dart';
 import '../services/database_service.dart';
+import '../services/connectivity_service.dart';
 import '../services/gestion_presence_eleve_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/text_size_service.dart';
@@ -243,7 +244,7 @@ class _AnimatedEmptyChildrenMessageState
   }
 }
 
-class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
+class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey _one = GlobalKey();
   final GlobalKey _two = GlobalKey();
   final GlobalKey _three = GlobalKey();
@@ -369,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   @override
   void initState() {
     super.initState();
-    registerConnectivityReload();
+    ConnectivityService().onReconnect(_onReconnect);
     _textSizeService.addListener(() {
       if (mounted) setState(() {});
     });
@@ -381,11 +382,6 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
     _loadBlogs(); // Charger les blogs/actualités
     _loadVisiteGuideeVideos(); // Ajouter cette ligne
     _startPresenceAutoScrollIfNeeded();
-  }
-
-  @override
-  void onConnectionRestored() {
-    _refreshHome();
   }
 
   Future<void> _refreshHome() async {
@@ -403,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
 
   @override
   void dispose() {
-    unregisterConnectivityReload();
+    ConnectivityService().removeReconnectCallback(_onReconnect);
     _textSizeService.removeListener(() {});
     _matriculeController.dispose();
     _searchController.dispose();
@@ -428,6 +424,13 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
     _scrollController.dispose();
 
     super.dispose();
+  }
+
+  void _onReconnect() {
+    if (mounted) {
+      print('🌐 [HomeScreen] Reconnexion détectée, rafraîchissement global...');
+      _refreshHome();
+    }
   }
 
   Future<void> _loadChildrenPresenceSignals() async {
@@ -2439,11 +2442,8 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
             title: 'MES ENFANTS',
             onSeeMore: (_filteredChildren.length > 4)
                 ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AllChildrenScreen(),
-                      ),
+                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                      const AllChildrenScreen(),
                     );
                   }
                 : null,

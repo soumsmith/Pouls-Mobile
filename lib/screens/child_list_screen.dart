@@ -1,5 +1,4 @@
 import 'dart:async';
-import '../services/connectivity_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -22,6 +21,7 @@ import '../models/fee.dart';
 import '../models/school_supply.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/database_service.dart';
+import '../services/connectivity_service.dart';
 import '../services/order_service.dart';
 import '../models/order.dart';
 import '../services/auth_service.dart';
@@ -84,8 +84,7 @@ import '../services/ecole_eleve_service.dart';
 import '../services/statistiques_presence_service.dart';
 import '../services/gestion_presence_eleve_service.dart';
 import '../models/gestion_presence_eleve_entry.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../widgets/subtle_retry_button.dart';
 import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import '../widgets/custom_text_field.dart';
@@ -316,7 +315,7 @@ class ChildListScreen extends StatefulWidget {
 }
 
 class _ChildListScreenState extends State<ChildListScreen>
-    with TickerProviderStateMixin, ConnectivityReloadMixin
+    with TickerProviderStateMixin
     implements MainScreenChild {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -486,7 +485,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   @override
   void initState() {
     super.initState();
-    registerConnectivityReload();
+    ConnectivityService().onReconnect(_onReconnect);
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -576,15 +575,8 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   @override
-  void onConnectionRestored() {
-    _didInitialLoad = false;
-    _loadData();
-    _loadNotifications();
-  }
-
-  @override
   void dispose() {
-    unregisterConnectivityReload();
+    ConnectivityService().removeReconnectCallback(_onReconnect);
     _animationController.dispose();
     _accessDateDebutController.dispose();
     _accessDateFinController.dispose();
@@ -596,6 +588,14 @@ class _ChildListScreenState extends State<ChildListScreen>
   String _getOrdinalSuffix(int number) {
     if (number == 1) return 'er';
     return 'ème';
+  }
+
+  void _onReconnect() {
+    if (mounted) {
+      print('🌐 [ChildListScreen] Reconnexion détectée, rafraîchissement des données...');
+      _loadData();
+      _loadNotifications();
+    }
   }
 
   Future<void> _loadSchoolSupplies() async {
@@ -1187,34 +1187,18 @@ class _ChildListScreenState extends State<ChildListScreen>
   // ─── MÉTHODES DE BOTTOM SHEETS DIRECTES ────────────────────────────────────
 
   void _showNotesBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.bar_chart_rounded,
-              imagePath: 'assets/images/icons/mes_notes.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF1976D2),
-              title: 'Mes Notes',
-              description: 'Consultez les notes et évaluations de votre enfant',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildSimpleNotesTab()),
-          ],
-        ),
-      ),
+      title: 'Mes Notes',
+      subtitle: 'Consultez les notes et évaluations de votre enfant',
+      imagePath: 'assets/images/icons/mes_notes.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF1976D2),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(16),
+      content: _buildNotesList(),
     );
   }
 
@@ -1224,12 +1208,18 @@ class _ChildListScreenState extends State<ChildListScreen>
     _isLoadingBulletins = false;
     bool hasAttemptedLoad = false;
 
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
+      title: 'Bulletins',
+      subtitle: 'Accédez aux bulletins trimestriels et annuels',
+      imagePath: 'assets/images/icons/mes_bulletins.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF2E7D32),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: StatefulBuilder(
         builder: (context, setModalState) {
           _bulletinsModalSetState = setModalState;
 
@@ -1242,55 +1232,34 @@ class _ChildListScreenState extends State<ChildListScreen>
             });
           }
 
-          return Container(
-            height: MediaQuery.sizeOf(context).height * 0.8,
-            decoration: BoxDecoration(
-              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                BottomSheetHeader(
-                  icon: Icons.description_rounded,
-                  imagePath: 'assets/images/icons/mes_bulletins.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                  iconColor: const Color(0xFF2E7D32),
-                  title: 'Bulletins',
-                  description: 'Accédez aux bulletins trimestriels et annuels',
-                  onClose: () => Navigator.of(context).pop(),
-                ),
-                // Filtre des années
-                _buildBulletinsFiltersSection(setModalState),
-                // ↓ CLEF DU FIX : utilisation simple de l'état
-                Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      print(
-                        '🔍 DEBUG Builder: _isLoadingBulletins=$_isLoadingBulletins, _bulletins=${_bulletins?.length}',
-                      );
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Filtre des années
+              _buildBulletinsFiltersSection(setModalState),
+              // ↓ CLEF DU FIX : utilisation simple de l'état
+              Builder(
+                builder: (context) {
+                  print(
+                    '🔍 DEBUG Builder: _isLoadingBulletins=$_isLoadingBulletins, _bulletins=${_bulletins?.length}',
+                  );
 
-                      if (_isLoadingBulletins) {
-                        return _buildBulletinsLoadingState();
-                      } else if (_bulletins == null || _bulletins!.isEmpty) {
-                        return _buildBulletinsEmptyState();
-                      } else {
-                        return SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          child: _buildBulletinsList(),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
+                  if (_isLoadingBulletins) {
+                    return _buildBulletinsLoadingState();
+                  } else if (_bulletins == null || _bulletins!.isEmpty) {
+                    return _buildBulletinsEmptyState();
+                  } else {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      child: _buildBulletinsList(),
+                    );
+                  }
+                },
+              ),
+            ],
           );
         },
       ),
@@ -1319,12 +1288,18 @@ class _ChildListScreenState extends State<ChildListScreen>
     _selectedTimetableDay = todayStr;
     _isTimetableSheetOpen = true;
 
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
+      title: 'Emploi du temps',
+      subtitle: 'Consultez l\'emploi du temps et les horaires',
+      imagePath: 'assets/images/icons/emploi_du_temps.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFFF57C00),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: StatefulBuilder(
         builder: (context, setModalState) {
           _timetableModalSetState = setModalState;
 
@@ -1340,31 +1315,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             });
           }
 
-          return Container(
-            height: MediaQuery.sizeOf(context).height * 0.8,
-            decoration: BoxDecoration(
-              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                BottomSheetHeader(
-                  icon: Icons.calendar_today_rounded,
-                  imagePath: 'assets/images/icons/emploi_du_temps.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                  iconColor: const Color(0xFFF57C00),
-                  title: 'Emploi du temps',
-                  description: 'Consultez l\'emploi du temps et les horaires',
-                  onClose: () => Navigator.of(context).pop(),
-                ),
-                Expanded(child: _buildSimpleTimetableTab()),
-              ],
-            ),
-          );
+          return _buildDynamicTimetable();
         },
       ),
     ).whenComplete(() {
@@ -1374,106 +1325,50 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showHomeworkBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.edit_note_rounded,
-              imagePath: 'assets/images/icons/devoirs.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF7B1FA2),
-              title: 'Devoirs',
-              description: 'Suivez les devoirs et exercices à faire',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildHomeworkTab()),
-          ],
-        ),
-      ),
+      title: 'Devoirs',
+      subtitle: 'Suivez les devoirs et exercices à faire',
+      imagePath: 'assets/images/icons/devoirs.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF7B1FA2),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(16),
+      content: _buildHomeworkContent(),
     );
   }
 
   void _showProgressionBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.trending_up_rounded,
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF1976D2),
-              title: 'Progression',
-              description: 'Suivi de la progression',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: _buildComingSoonContent(),
-              ),
-            ),
-          ],
-        ),
-      ),
+      title: 'Progression',
+      subtitle: 'Suivi de la progression',
+      icon: Icons.trending_up_rounded,
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF1976D2),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(16),
+      content: _buildComingSoonContent(),
     );
   }
 
   void _showHomeworkProgramBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.assignment_rounded,
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF2E7D32),
-              title: 'Programme de devoirs',
-              description: 'Planning des devoirs',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: _buildComingSoonContent(),
-              ),
-            ),
-          ],
-        ),
-      ),
+      title: 'Programme de devoirs',
+      subtitle: 'Planning des devoirs',
+      icon: Icons.assignment_rounded,
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF2E7D32),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(16),
+      content: _buildComingSoonContent(),
     );
   }
 
@@ -1489,12 +1384,19 @@ class _ChildListScreenState extends State<ChildListScreen>
         "${_filterStartDate!.day.toString().padLeft(2, '0')}/${_filterStartDate!.month.toString().padLeft(2, '0')}/${_filterStartDate!.year}";
     _filterEndDateController.text =
         "${_filterEndDate!.day.toString().padLeft(2, '0')}/${_filterEndDate!.month.toString().padLeft(2, '0')}/${_filterEndDate!.year}";
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
+      title: 'Présence',
+      subtitle: 'Vérifiez la présence et la conduite',
+      icon: Icons.person_off_rounded,
+      imagePath: 'assets/images/icons/presence_conduite.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF00796B),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: StatefulBuilder(
         builder: (context, setModalState) {
           _presenceModalSetState = setModalState;
           _presenceStatsModalSetState = setModalState;
@@ -1507,42 +1409,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             });
           }
 
-          final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-          final screenHeight = MediaQuery.sizeOf(context).height;
-          final isDarkMode = _themeService.isDarkMode;
-          final double sheetHeight = keyboardHeight > 0
-              ? screenHeight * 0.95
-              : screenHeight * 0.8;
-
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            height: sheetHeight,
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(bottom: keyboardHeight),
-              child: Column(
-                children: [
-                  BottomSheetHeader(
-                    icon: Icons.person_off_rounded,
-                    imagePath: 'assets/images/icons/presence_conduite.png',
-                    imageBorderRadius: AppDimensions.getImageBorderRadius(
-                      context,
-                    ),
-                    iconColor: const Color(0xFF00796B),
-                    title: 'Présence',
-                    description: 'Vérifiez la présence et la conduite',
-                    onClose: () => Navigator.of(context).pop(),
-                  ),
-                  Expanded(child: _buildAbsencesTab()),
-                ],
-              ),
-            ),
-          );
+          return _buildAbsencesTab();
         },
       ),
     ).whenComplete(() {
@@ -1556,12 +1423,22 @@ class _ChildListScreenState extends State<ChildListScreen>
     _isAccessControlBottomSheetOpen = true;
     _accessControlLoaded = false;
 
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
+      title: 'Contrôle d\'accès',
+      subtitle: 'Contrôlez les accès et les pointages',
+      icon: Icons.fingerprint_rounded,
+      imagePath: 'assets/images/icons/controle_acces.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFFC2185B),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      onClose: () {
+        _isAccessControlBottomSheetOpen = false;
+      },
+      content: StatefulBuilder(
         builder: (context, setModalState) {
           _accessControlModalSetState = setModalState;
 
@@ -1573,34 +1450,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             });
           }
 
-          return Container(
-            height: MediaQuery.sizeOf(context).height * 0.8,
-            decoration: BoxDecoration(
-              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                BottomSheetHeader(
-                  icon: Icons.fingerprint_rounded,
-                  imagePath: 'assets/images/icons/controle_acces.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                  iconColor: const Color(0xFFC2185B),
-                  title: 'Contrôle d\'accès',
-                  description: 'Contrôlez les accès et les pointages',
-                  onClose: () {
-                    _isAccessControlBottomSheetOpen = false;
-                    Navigator.of(context).pop();
-                  },
-                ),
-                Expanded(child: _buildSimpleAccessControlTab()),
-              ],
-            ),
-          );
+          return _buildSimpleAccessControlTab();
         },
       ),
     ).whenComplete(() {
@@ -1614,13 +1464,25 @@ class _ChildListScreenState extends State<ChildListScreen>
     final schoolCode = _ecoleCode ?? widget.child.ecoleCode ?? '';
     final matricule = _matricule ?? widget.child.matricule ?? '';
 
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    // L'ancien _ExtraScolaireSheetContent contenait son propre header,
+    // il faudra s'assurer qu'il s'affiche bien ou ne duplique pas le header.
+    // L'utilisateur demande de tout remplacer par ReusableBottomSheet.
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
+      title: 'Services scolaires',
+      subtitle: 'Suivi de ${widget.child.fullName}',
+      icon: Icons.playlist_add_check_rounded,
+      imagePath: 'assets/images/icons/services_scolaires.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF7B1FA2),
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: StatefulBuilder(
         builder: (context, setModalState) {
+          // On passe le content sans son propre header car il est maintenant
+          // géré par le ReusableBottomSheet.
           return _ExtraScolaireSheetContent(
             isDark: isDark,
             schoolCode: schoolCode,
@@ -1636,98 +1498,53 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showSanctionsBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.warning_rounded,
-              imagePath: 'assets/images/icons/sanctions.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFFD32F2F),
-              title: 'Sanctions',
-              description: 'Consultez les sanctions et avertissements',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildSanctionsTab()),
-          ],
-        ),
-      ),
+      title: 'Sanctions',
+      subtitle: 'Consultez les sanctions et avertissements',
+      icon: Icons.warning_rounded,
+      imagePath: 'assets/images/icons/sanctions.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFFD32F2F),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: _buildSanctionsTab(),
     );
   }
 
   void _showMessagesBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.message_rounded,
-              imagePath: 'assets/images/icons/messages.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF0288D1),
-              title: 'Messages',
-              description: 'Lisez les messages et communications',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildSimpleMessagesTab()),
-          ],
-        ),
-      ),
+      title: 'Messages',
+      subtitle: 'Lisez les messages et communications',
+      icon: Icons.message_rounded,
+      imagePath: 'assets/images/icons/messages.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF0288D1),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: _buildSimpleMessagesTab(),
     );
   }
 
   void _showDifficultiesBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.psychology_rounded,
-              imagePath: 'assets/images/icons/performance_scolaire.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF9C27B0),
-              title: 'Difficultés',
-              description: 'Suivez les difficultés et le soutien',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildDifficultiesTab()),
-          ],
-        ),
-      ),
+      title: 'Difficultés',
+      subtitle: 'Suivez les difficultés et le soutien',
+      icon: Icons.psychology_rounded,
+      imagePath: 'assets/images/icons/performance_scolaire.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF9C27B0),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: _buildDifficultiesTab(),
     );
   }
 
@@ -1751,11 +1568,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       });
 
       try {
-        print(
-          '📚 Chargement des fournitures pour le matricule: $_matricule',
+        print('📚 Chargement des fournitures pour le matricule: $_matricule');
+        final suppliesResponse = await _schoolSupplyService.getSchoolSupplies(
+          _matricule!,
         );
-        final suppliesResponse = await _schoolSupplyService
-            .getSchoolSupplies(_matricule!);
 
         modalSetState(() {
           supplies = suppliesResponse.data;
@@ -1884,98 +1700,52 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showAccessLogsBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.security_rounded,
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF9C27B0),
-              title: 'Logs d\'accès',
-              description: 'Consultez les logs d\'accès et sécurité',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildSimpleAccessLogsTab()),
-          ],
-        ),
-      ),
+      title: 'Logs d\'accès',
+      subtitle: 'Consultez les logs d\'accès et sécurité',
+      icon: Icons.security_rounded,
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF9C27B0),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: _buildSimpleAccessLogsTab(),
     );
   }
 
   void _showSuggestionsBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.lightbulb_rounded,
-              imagePath: 'assets/images/icons/suggestions.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFFFFB300),
-              title: 'Suggestions',
-              description: 'Envoyez vos suggestions et feedback',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Expanded(child: _buildComingSoonContent()),
-          ],
-        ),
-      ),
+      title: 'Suggestions',
+      subtitle: 'Envoyez vos suggestions et feedback',
+      icon: Icons.lightbulb_rounded,
+      imagePath: 'assets/images/icons/suggestions.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFFFFB300),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(16),
+      content: _buildComingSoonContent(),
     );
   }
 
   void _showReservationsBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.8,
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.event_seat_rounded,
-              imagePath: 'assets/images/icons/reservation_en_ligne.png',
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              iconColor: const Color(0xFF2E7D32),
-              title: 'Réservations',
-              description: 'Gérez vos réservations et places',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            // Statistiques de présence
-            Expanded(child: _buildSimpleReservationsTab()),
-          ],
-        ),
-      ),
+      title: 'Réservations',
+      subtitle: 'Gérez vos réservations et places',
+      icon: Icons.event_seat_rounded,
+      imagePath: 'assets/images/icons/reservation_en_ligne.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF2E7D32),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: _buildSimpleReservationsTab(),
     );
   }
 
@@ -1995,236 +1765,197 @@ class _ChildListScreenState extends State<ChildListScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            // ✅ Déclencher le chargement des deux types de notifications UNE SEULE FOIS
-            if ((!_notificationsLoaded && !_isLoadingNotifications) ||
-                (!_echeanceLoaded && !_isLoadingEcheance)) {
-              // Afficher le loader après le cycle de build pour éviter l'erreur setState()
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  CustomLoaderOverlay.show(
-                    context,
-                    message: 'Chargement des notifications...',
-                    loaderColor: AppColors.screenOrange,
-                    showBackground: false,
-                  );
-                }
-              });
-
-              final matricule = _matricule ?? widget.child.matricule;
-              if (matricule != null && matricule.isNotEmpty) {
-                // Charger les messages de groupe
-                if (!_notificationsLoaded && !_isLoadingNotifications) {
-                  _isLoadingNotifications = true;
-                  final messagesUrl =
-                      '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/liste-messages-groupe/$matricule?per_page=20&page=1';
-                  print(
-                    'URL requête messages de groupe (affichage notifications): $messagesUrl',
-                  );
-                  GroupMessageService.getGroupMessages(matricule)
-                      .then((notifications) {
-                        if (mounted) {
-                          setModalState(() {
-                            _notifications = notifications;
-                            _isLoadingNotifications = false;
-                            _notificationsLoaded = true;
-                          });
-                          setState(() {
-                            _notifications = notifications;
-                            _isLoadingNotifications = false;
-                            _notificationsLoaded = true;
-                          });
-                          // Cacher le loader si les deux chargements sont terminés
-                          if (_echeanceLoaded) {
-                            CustomLoaderOverlay.hide();
-                          }
-                        }
-                      })
-                      .catchError((e) {
-                        print('❌ Erreur notifications messages: $e');
-                        if (mounted) {
-                          setModalState(() {
-                            _isLoadingNotifications = false;
-                            _notificationsLoaded = true;
-                          });
-                          setState(() {
-                            _isLoadingNotifications = false;
-                            _notificationsLoaded = true;
-                          });
-                          // Cacher le loader si les deux chargements sont terminés
-                          if (_echeanceLoaded) {
-                            CustomLoaderOverlay.hide();
-                          }
-                        }
-                      });
-                }
-
-                // Charger les notifications d'échéance
-                if (!_echeanceLoaded && !_isLoadingEcheance) {
-                  _isLoadingEcheance = true;
-                  EcheanceService.getEcheanceNotification(matricule)
-                      .then((echeanceNotification) {
-                        if (mounted) {
-                          setModalState(() {
-                            _echeanceNotification = echeanceNotification;
-                            _isLoadingEcheance = false;
-                            _echeanceLoaded = true;
-                          });
-                          setState(() {
-                            _echeanceNotification = echeanceNotification;
-                            _isLoadingEcheance = false;
-                            _echeanceLoaded = true;
-                          });
-                          // Cacher le loader si les deux chargements sont terminés
-                          if (_notificationsLoaded) {
-                            CustomLoaderOverlay.hide();
-                          }
-                        }
-                      })
-                      .catchError((e) {
-                        print('❌ Erreur notifications échéance: $e');
-                        if (mounted) {
-                          setModalState(() {
-                            _isLoadingEcheance = false;
-                            _echeanceLoaded = true;
-                          });
-                          setState(() {
-                            _isLoadingEcheance = false;
-                            _echeanceLoaded = true;
-                          });
-                          // Cacher le loader si les deux chargements sont terminés
-                          if (_notificationsLoaded) {
-                            CustomLoaderOverlay.hide();
-                          }
-                        }
-                      });
-                }
-              } else {
-                CustomLoaderOverlay.hide();
-                _isLoadingNotifications = false;
-                _notificationsLoaded = true;
-                _isLoadingEcheance = false;
-                _echeanceLoaded = true;
+      title: 'Notifications',
+      subtitle: (_isLoadingNotifications || _isLoadingEcheance)
+          ? 'Chargement en cours...'
+          : '${totalNotificationsCount} notification${totalNotificationsCount > 1 ? 's' : ''}',
+      icon: Icons.notifications_rounded,
+      imagePath: 'assets/images/icons/notifications.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF1976D2),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: StatefulBuilder(
+        builder: (context, setModalState) {
+          // ✅ Déclencher le chargement des deux types de notifications UNE SEULE FOIS
+          if ((!_notificationsLoaded && !_isLoadingNotifications) ||
+              (!_echeanceLoaded && !_isLoadingEcheance)) {
+            // Afficher le loader après le cycle de build pour éviter l'erreur setState()
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                CustomLoaderOverlay.show(
+                  context,
+                  message: 'Chargement des notifications...',
+                  loaderColor: AppColors.screenOrange,
+                  showBackground: false,
+                );
               }
+            });
+
+            final matricule = _matricule ?? widget.child.matricule;
+            if (matricule != null && matricule.isNotEmpty) {
+              // Charger les messages de groupe
+              if (!_notificationsLoaded && !_isLoadingNotifications) {
+                _isLoadingNotifications = true;
+                final messagesUrl =
+                    '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/liste-messages-groupe/$matricule?per_page=20&page=1';
+                print(
+                  'URL requête messages de groupe (affichage notifications): $messagesUrl',
+                );
+                GroupMessageService.getGroupMessages(matricule)
+                    .then((notifications) {
+                      if (mounted) {
+                        setModalState(() {
+                          _notifications = notifications;
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                        setState(() {
+                          _notifications = notifications;
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                        // Cacher le loader si les deux chargements sont terminés
+                        if (_echeanceLoaded) {
+                          CustomLoaderOverlay.hide();
+                        }
+                      }
+                    })
+                    .catchError((e) {
+                      print('❌ Erreur notifications messages: $e');
+                      if (mounted) {
+                        setModalState(() {
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                        setState(() {
+                          _isLoadingNotifications = false;
+                          _notificationsLoaded = true;
+                        });
+                        // Cacher le loader si les deux chargements sont terminés
+                        if (_echeanceLoaded) {
+                          CustomLoaderOverlay.hide();
+                        }
+                      }
+                    });
+              }
+
+              // Charger les notifications d'échéance
+              if (!_echeanceLoaded && !_isLoadingEcheance) {
+                _isLoadingEcheance = true;
+                EcheanceService.getEcheanceNotification(matricule)
+                    .then((echeanceNotification) {
+                      if (mounted) {
+                        setModalState(() {
+                          _echeanceNotification = echeanceNotification;
+                          _isLoadingEcheance = false;
+                          _echeanceLoaded = true;
+                        });
+                        setState(() {
+                          _echeanceNotification = echeanceNotification;
+                          _isLoadingEcheance = false;
+                          _echeanceLoaded = true;
+                        });
+                        // Cacher le loader si les deux chargements sont terminés
+                        if (_notificationsLoaded) {
+                          CustomLoaderOverlay.hide();
+                        }
+                      }
+                    })
+                    .catchError((e) {
+                      print('❌ Erreur notifications échéance: $e');
+                      if (mounted) {
+                        setModalState(() {
+                          _isLoadingEcheance = false;
+                          _echeanceLoaded = true;
+                        });
+                        setState(() {
+                          _isLoadingEcheance = false;
+                          _echeanceLoaded = true;
+                        });
+                        // Cacher le loader si les deux chargements sont terminés
+                        if (_notificationsLoaded) {
+                          CustomLoaderOverlay.hide();
+                        }
+                      }
+                    });
+              }
+            } else {
+              CustomLoaderOverlay.hide();
+              _isLoadingNotifications = false;
+              _notificationsLoaded = true;
+              _isLoadingEcheance = false;
+              _echeanceLoaded = true;
             }
+          }
 
-            return Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-              ),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[900] : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                boxShadow: AppDimensions.getBottomSheetShadow(context),
-              ),
+          if (_isLoadingNotifications || _isLoadingEcheance) {
+            return Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Header
-                  BottomSheetHeader(
-                    icon: Icons.notifications_rounded,
-                    imagePath: 'assets/images/icons/notifications.png',
-                    imageBorderRadius: AppDimensions.getImageBorderRadius(
-                      context,
+                  const SizedBox(height: 50),
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF1976D2).withOpacity(0.2),
+                          const Color(0xFF42A5F5).withOpacity(0.2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
                     ),
-                    iconColor: const Color(0xFF1976D2),
-                    title: 'Notifications',
-                    description: (_isLoadingNotifications || _isLoadingEcheance)
-                        ? 'Chargement en cours...'
-                        : '${totalNotificationsCount} notification${totalNotificationsCount > 1 ? 's' : ''}',
-                    onClose: () => Navigator.of(context).pop(),
-                    //backgroundColor: const Color(0xFFE3F2FD),
-                    titleColor: const Color(0xFF0D47A1),
-                    descriptionColor: isDark
-                        ? Colors.grey[400]
-                        : Colors.grey[600],
-                    iconSize: 24,
-                    titleFontSize: _textSizeService.getScaledFontSize(14),
-                    descriptionFontSize: _textSizeService.getScaledFontSize(10),
-                    titleFontWeight: FontWeight.w600,
+                    child: const CircularProgressIndicator(
+                      color: Color(0xFF1976D2),
+                      strokeWidth: 3,
+                    ),
                   ),
-
-                  // Content
-                  Expanded(
-                    child: (_isLoadingNotifications || _isLoadingEcheance)
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(
-                                          0xFF1976D2,
-                                        ).withOpacity(0.2),
-                                        const Color(
-                                          0xFF42A5F5,
-                                        ).withOpacity(0.2),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const CircularProgressIndicator(
-                                    color: Color(0xFF1976D2),
-                                    strokeWidth: 3,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Chargement...',
-                                  style: TextStyle(
-                                    fontSize: _textSizeService
-                                        .getScaledFontSize(14),
-                                    color: isDark
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Section Échéances
-                                if (_echeanceNotification != null) ...[
-                                  _buildEcheanceSection(
-                                    _echeanceNotification!,
-                                    isDark,
-                                  ),
-                                  const SizedBox(height: 24),
-                                ],
-
-                                // Section Messages
-                                _buildMessagesSection(isDark, setModalState),
-                              ],
-                            ),
-                          ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chargement...',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                  const SizedBox(height: 50),
                 ],
               ),
             );
-          },
-        );
-      },
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section Échéances
+                    if (_echeanceNotification != null) ...[
+                      _buildEcheanceSection(_echeanceNotification!, isDark),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Section Messages
+                    _buildMessagesSection(isDark, setModalState),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -3249,264 +2980,207 @@ class _ChildListScreenState extends State<ChildListScreen>
           'nom': widget.child.lastName,
           'niveau': widget.child.grade,
         };
-    final isDarkMode = _themeService.isDarkMode;
-    final draggableController = DraggableScrollableController();
 
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => Navigator.of(context).pop(),
-        child: DraggableScrollableSheet(
-          controller: draggableController,
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (_, controller) => GestureDetector(
-            onTap: () {}, // Empêche la fermeture lors d'un clic dans le contenu
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.grey[900] : Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  BottomSheetHeader(
-                    icon: Icons.info_outline,
-                    title: 'Informations complètes',
-                    description:
-                        'Détails complets sur l\'élève et sa scolarité',
-                    iconColor: Colors.blue,
-                    onClose: () => Navigator.of(context).pop(),
-                    draggableController: draggableController,
-                  ),
-
-                  // Contenu complet
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: controller,
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          // QR Code d'identification - affiché en premier et centré
-                          Center(
-                            child: _buildFamilySection(
-                              title: 'QR Code d\'identification',
-                              icon: Icons.qr_code_2_rounded,
-                              iconColor: Colors.purple,
-                              children: [
-                                Center(
-                                  child: Container(
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        QrImageView(
-                                          data: _generateStudentQRData(eleve),
-                                          version: QrVersions.auto,
-                                          size: 150.0,
-                                          backgroundColor: Colors.white,
-                                          foregroundColor: Colors.black,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Matricule: ${eleve['matricule']?.toString() ?? 'N/A'}',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${eleve['prenom']?.toString() ?? ''} ${eleve['nom']?.toString() ?? ''}',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+      title: 'Informations complètes',
+      subtitle: 'Détails complets sur l\'élève et sa scolarité',
+      icon: Icons.info_outline,
+      iconColor: Colors.blue,
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(20),
+      content: Column(
+        children: [
+          // QR Code d'identification - affiché en premier et centré
+          Center(
+            child: _buildFamilySection(
+              title: 'QR Code d\'identification',
+              icon: Icons.qr_code_2_rounded,
+              iconColor: Colors.purple,
+              children: [
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade300),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        QrImageView(
+                          data: _generateStudentQRData(eleve),
+                          version: QrVersions.auto,
+                          size: 150.0,
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Matricule: ${eleve['matricule']?.toString() ?? 'N/A'}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
-
-                          const SizedBox(height: 24),
-
-                          // Informations personnelles
-                          _buildFamilySection(
-                            title: 'Informations personnelles',
-                            icon: Icons.person,
-                            iconColor: Colors.blue,
-                            children: [
-                              _buildFamilyItem(
-                                icon: Icons.badge,
-                                label: 'Matricule',
-                                value: eleve['matricule']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.cake,
-                                label: 'Né(e)',
-                                value: _formatDate(
-                                  eleve['datenaissance']?.toString() ?? 'N/A',
-                                ),
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.wc,
-                                label: 'Sexe',
-                                value: eleve['sexe']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.location_on,
-                                label: 'Lieu',
-                                value: eleve['lieun']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.flag,
-                                label: 'Nationalité',
-                                value:
-                                    eleve['nationalite']?.toString() ?? 'N/A',
-                              ),
-                            ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${eleve['prenom']?.toString() ?? ''} ${eleve['nom']?.toString() ?? ''}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black54,
                           ),
-
-                          const SizedBox(height: 24),
-
-                          // Informations scolaires
-                          _buildFamilySection(
-                            title: 'Informations scolaires',
-                            icon: Icons.school,
-                            iconColor: Colors.orange,
-                            children: [
-                              _buildFamilyItem(
-                                icon: Icons.grade,
-                                label: 'Niveau',
-                                value: eleve['niveau']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.category,
-                                label: 'Filière',
-                                value: eleve['filiere']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.auto_stories,
-                                label: 'Série',
-                                value: eleve['serie']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.refresh,
-                                label: 'Redoublant',
-                                value: eleve['redoublant']?.toString() ?? 'N/A',
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Contact
-                          _buildFamilySection(
-                            title: 'Contact',
-                            icon: Icons.contact_phone,
-                            iconColor: Colors.green,
-                            children: [
-                              _buildFamilyItem(
-                                icon: Icons.home,
-                                label: 'Adresse',
-                                value: eleve['adresse']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.phone,
-                                label: 'Mobile',
-                                value: eleve['mobile']?.toString() ?? 'N/A',
-                                isClickable: true,
-                                onTap: () => _makePhoneCall(
-                                  eleve['mobile']?.toString() ?? '',
-                                ),
-                              ),
-                              if (eleve['mobile2']?.toString().isNotEmpty ==
-                                  true)
-                                _buildFamilyItem(
-                                  icon: Icons.phone_android,
-                                  label: 'Mobile 2',
-                                  value: eleve['mobile2']?.toString() ?? 'N/A',
-                                  isClickable: true,
-                                  onTap: () => _makePhoneCall(
-                                    eleve['mobile2']?.toString() ?? '',
-                                  ),
-                                ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Parents
-                          _buildFamilySection(
-                            title: 'Parents',
-                            icon: Icons.people,
-                            iconColor: Colors.purple,
-                            children: [
-                              _buildFamilyItem(
-                                icon: Icons.person_outline,
-                                label: 'Père',
-                                value: eleve['pere']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.person_outline,
-                                label: 'Mère',
-                                value: eleve['mere']?.toString() ?? 'N/A',
-                              ),
-                              _buildFamilyItem(
-                                icon: Icons.supervisor_account,
-                                label: 'Tuteur',
-                                value: eleve['tuteur']?.toString() ?? 'N/A',
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Bouton pour retirer l'enfant
-                          _buildRemoveChildSection(),
-                          const BottomSpacer(),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ),
+
+          const SizedBox(height: 24),
+
+          // Informations personnelles
+          _buildFamilySection(
+            title: 'Informations personnelles',
+            icon: Icons.person,
+            iconColor: Colors.blue,
+            children: [
+              _buildFamilyItem(
+                icon: Icons.badge,
+                label: 'Matricule',
+                value: eleve['matricule']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.cake,
+                label: 'Né(e)',
+                value: _formatDate(eleve['datenaissance']?.toString() ?? 'N/A'),
+              ),
+              _buildFamilyItem(
+                icon: Icons.wc,
+                label: 'Sexe',
+                value: eleve['sexe']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.location_on,
+                label: 'Lieu',
+                value: eleve['lieun']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.flag,
+                label: 'Nationalité',
+                value: eleve['nationalite']?.toString() ?? 'N/A',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Informations scolaires
+          _buildFamilySection(
+            title: 'Informations scolaires',
+            icon: Icons.school,
+            iconColor: Colors.orange,
+            children: [
+              _buildFamilyItem(
+                icon: Icons.grade,
+                label: 'Niveau',
+                value: eleve['niveau']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.category,
+                label: 'Filière',
+                value: eleve['filiere']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.auto_stories,
+                label: 'Série',
+                value: eleve['serie']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.refresh,
+                label: 'Redoublant',
+                value: eleve['redoublant']?.toString() ?? 'N/A',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Contact
+          _buildFamilySection(
+            title: 'Contact',
+            icon: Icons.contact_phone,
+            iconColor: Colors.green,
+            children: [
+              _buildFamilyItem(
+                icon: Icons.home,
+                label: 'Adresse',
+                value: eleve['adresse']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.phone,
+                label: 'Mobile',
+                value: eleve['mobile']?.toString() ?? 'N/A',
+                isClickable: true,
+                onTap: () => _makePhoneCall(eleve['mobile']?.toString() ?? ''),
+              ),
+              if (eleve['mobile2']?.toString().isNotEmpty == true)
+                _buildFamilyItem(
+                  icon: Icons.phone_android,
+                  label: 'Mobile 2',
+                  value: eleve['mobile2']?.toString() ?? 'N/A',
+                  isClickable: true,
+                  onTap: () =>
+                      _makePhoneCall(eleve['mobile2']?.toString() ?? ''),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Parents
+          _buildFamilySection(
+            title: 'Parents',
+            icon: Icons.people,
+            iconColor: Colors.purple,
+            children: [
+              _buildFamilyItem(
+                icon: Icons.person_outline,
+                label: 'Père',
+                value: eleve['pere']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.person_outline,
+                label: 'Mère',
+                value: eleve['mere']?.toString() ?? 'N/A',
+              ),
+              _buildFamilyItem(
+                icon: Icons.supervisor_account,
+                label: 'Tuteur',
+                value: eleve['tuteur']?.toString() ?? 'N/A',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Bouton pour retirer l'enfant
+          _buildRemoveChildSection(),
+        ],
       ),
     );
   }
@@ -3514,284 +3188,193 @@ class _ChildListScreenState extends State<ChildListScreen>
   // ─── MÉTHODES DE SUPPRESSION D'ENFANT ─────────────────────────────────────
 
   void _showRemoveChildConfirmation({bool fromChildInfos = false}) {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => Container(
-        margin: const EdgeInsets.only(top: 100),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+      title: 'Retirer cet enfant',
+      subtitle: 'Cette action est irréversible',
+      icon: Icons.warning_rounded,
+      iconColor: Colors.red,
+      initialChildSize: 0.5,
+      minChildSize: 0.4,
+      maxChildSize: 0.8,
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+      content: Column(
+        children: [
+          Text(
+            'Êtes-vous sûr de vouloir retirer cet enfant de votre liste ?',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _themeService.isDarkMode ? Colors.white : Colors.grey[800],
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
           ),
-          boxShadow: AppDimensions.getBottomSheetShadow(context),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 48,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: _themeService.isDarkMode
-                            ? Colors.grey[700]
-                            : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.warning_rounded,
-                          color: Colors.red,
-                          size: 36,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Retirer cet enfant',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.red,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Cette action est irréversible',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: _themeService.isDarkMode
-                            ? Colors.grey[400]
-                            : Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+          const SizedBox(height: 24),
+
+          // Child Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _themeService.isDarkMode
+                  ? const Color(0xFF2A2A2A)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _themeService.isDarkMode
+                    ? Colors.grey[800]!
+                    : Colors.grey[200]!,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.orange.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.person_outline_rounded,
+                    color: Colors.orange,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.child.fullName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _themeService.isDarkMode
+                              ? Colors.white
+                              : Colors.black87,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _themeService.isDarkMode
+                              ? Colors.grey[800]
+                              : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          widget.child.grade,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: _themeService.isDarkMode
+                                ? Colors.grey[300]
+                                : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
 
-            // Content
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-              child: Column(
-                children: [
-                  Text(
-                    'Êtes-vous sûr de vouloir retirer cet enfant de votre liste ?',
+          // Warning Banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.withOpacity(0.2), width: 1),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.red[400],
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Toutes les données associées à cet enfant seront définitivement supprimées.',
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: _themeService.isDarkMode
-                          ? Colors.white
-                          : Colors.grey[800],
+                      fontSize: 13,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w500,
                       height: 1.4,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
-
-                  // Child Info Card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: _themeService.isDarkMode
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _themeService.isDarkMode
-                            ? Colors.grey[800]!
-                            : Colors.grey[200]!,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.orange.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.person_outline_rounded,
-                            color: Colors.orange,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.child.fullName,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: _themeService.isDarkMode
-                                      ? Colors.white
-                                      : Colors.black87,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _themeService.isDarkMode
-                                      ? Colors.grey[800]
-                                      : Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  widget.child.grade,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: _themeService.isDarkMode
-                                        ? Colors.grey[300]
-                                        : Colors.grey[700],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Warning Banner
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.red.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: Colors.red[400],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Toutes les données associées à cet enfant seront définitivement supprimées.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.red,
-                              fontWeight: FontWeight.w500,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(height: 24),
 
-            // Actions
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      text: 'Annuler',
-                      backgroundColor: Colors.transparent,
-                      textColor: _themeService.isDarkMode
-                          ? Colors.grey[400]!
-                          : Colors.grey[600]!,
-                      border: BorderSide(
-                        color: _themeService.isDarkMode
-                            ? Colors.grey[600]!
-                            : Colors.grey[400]!,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+          // Actions
+          Row(
+            children: [
+              Expanded(
+                child: CustomButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  text: 'Annuler',
+                  backgroundColor: Colors.transparent,
+                  textColor: _themeService.isDarkMode
+                      ? Colors.grey[400]!
+                      : Colors.grey[600]!,
+                  border: BorderSide(
+                    color: _themeService.isDarkMode
+                        ? Colors.grey[600]!
+                        : Colors.grey[400]!,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: CustomButton(
-                      onPressed: () {
-                        Navigator.of(
-                          context,
-                        ).pop(); // Fermer le bottom sheet de confirmation
-                        if (fromChildInfos) {
-                          Navigator.of(
-                            context,
-                          ).pop(); // Fermer le bottom sheet d'informations
-                        }
-                        _removeChild();
-                      },
-                      text: 'Retirer',
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ],
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-            ),
-            const BottomSpacer(height: 60),
-          ],
-        ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: CustomButton(
+                  onPressed: () {
+                    Navigator.of(
+                      context,
+                    ).pop(); // Fermer le bottom sheet de confirmation
+                    if (fromChildInfos) {
+                      Navigator.of(
+                        context,
+                      ).pop(); // Fermer le bottom sheet d'informations
+                    }
+                    _removeChild();
+                  },
+                  text: 'Retirer',
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -5952,10 +5535,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildAccessDateSelector(),
-          Expanded(child: _buildDynamicAccessControl()),
-        ],
+        children: [_buildAccessDateSelector(), _buildDynamicAccessControl()],
       ),
     );
   }
@@ -6671,7 +6251,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildSimpleAccessLogsTab() {
     final isDarkMode = _themeService.isDarkMode;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -7110,7 +6690,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildSimpleReservationsTab() {
     final isDarkMode = _themeService.isDarkMode;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -7570,7 +7150,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   Widget _buildSimpleMessagesTab() {
     final isDarkMode = _themeService.isDarkMode;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -10071,7 +9651,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildDifficultiesTab() {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -11526,25 +11106,11 @@ class _ChildListScreenState extends State<ChildListScreen>
             ],
           ),
         ),
-        Expanded(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                controller: _absencesScrollController,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                ).copyWith(bottom: 16),
-                child: _buildAbsencesList(),
-              ),
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: ScrollToTopFab(
-                  scrollController: _absencesScrollController,
-                ),
-              ),
-            ],
-          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8,
+          ).copyWith(bottom: 16),
+          child: _buildAbsencesList(),
         ),
       ],
     );
@@ -12455,7 +12021,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildSanctionsTab() {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -13205,17 +12771,6 @@ class _ExtraScolaireSheetContentState
       ),
       child: Column(
         children: [
-          BottomSheetHeader(
-            icon: Icons.playlist_add_check_rounded,
-            imagePath: widget.imagePath,
-            imageBackgroundColor: widget.imageBackgroundColor,
-            imageBorderRadius: widget.imageBorderRadius,
-            iconColor: const Color(0xFF7B1FA2),
-            title: 'Services scolaires',
-            description: 'Suivi de ${widget.childName}',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-
           // Content
           Expanded(
             child: _isLoadingServices

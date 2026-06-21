@@ -3,7 +3,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../models/paiement_historique.dart';
 import '../services/paiement_historique_service.dart';
-import 'bottom_sheets/bottom_sheet_header.dart';
+import 'bottom_sheets/reusable_bottom_sheet.dart';
 
 class PaiementHistoriqueBottomSheet {
   static void show({
@@ -16,13 +16,21 @@ class PaiementHistoriqueBottomSheet {
     double? imageBorderRadius,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _PaiementHistoriqueSheetContent(
+      title: 'Historique des paiements',
+      subtitle: childName,
+      icon: Icons.history_rounded,
+      iconColor: AppColors.screenOrange,
+      imagePath: imagePath,
+      imageBorderRadius: imageBorderRadius,
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      showScrollToTopFab: true,
+      contentPadding: EdgeInsets.zero,
+      content: _PaiementHistoriqueSheetContent(
         childName: childName,
         matricule: matricule,
         ecoleCode: ecoleCode,
@@ -70,24 +78,19 @@ class _PaiementHistoriqueSheetContent extends StatefulWidget {
   });
 
   @override
-  State<_PaiementHistoriqueSheetContent> createState() => _PaiementHistoriqueSheetContentState();
+  State<_PaiementHistoriqueSheetContent> createState() =>
+      _PaiementHistoriqueSheetContentState();
 }
 
-class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueSheetContent> {
+class _PaiementHistoriqueSheetContentState
+    extends State<_PaiementHistoriqueSheetContent> {
   String? _expandedNumeroRecu;
   Future<PaiementHistoriqueResponse>? _historiqueFuture;
-  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   @override
   void initState() {
     super.initState();
     _loadData();
-  }
-
-  @override
-  void dispose() {
-    _draggableController.dispose();
-    super.dispose();
   }
 
   void _loadData() {
@@ -111,194 +114,168 @@ class _PaiementHistoriqueSheetContentState extends State<_PaiementHistoriqueShee
       ecoleCode: widget.ecoleCode,
     );
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => Navigator.of(context).pop(),
-      child: DraggableScrollableSheet(
-        controller: _draggableController,
-        initialChildSize: 0.75,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        builder: (context, scrollController) => GestureDetector(
-          onTap: () {}, // Empêche la fermeture lors d'un clic dans le contenu
-          child: Container(
-            decoration: BoxDecoration(
-          color: widget.isDark ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          children: [
-            BottomSheetHeader(
-              icon: Icons.history_rounded,
-              iconColor: AppColors.screenOrange,
-              imagePath: widget.imagePath,
-              imageBackgroundColor: widget.imageBackgroundColor,
-              imageBorderRadius: widget.imageBorderRadius,
-              title: 'Historique des paiements',
-              description: widget.childName,
-              onClose: () => Navigator.of(context).pop(),
-              draggableController: _draggableController,
-            ),
-            
-            // Contenu
-            Expanded(
-              child: FutureBuilder<PaiementHistoriqueResponse>(
-                future: _historiqueFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.screenOrange),
-                      ),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.error_outline_rounded,
-                                size: 48,
-                                color: Colors.red,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Erreur de chargement',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Builder(
-                              builder: (context) {
-                                final errorString = snapshot.error.toString();
-                                final isNetworkError = errorString.contains('SocketException') || 
-                                                       errorString.contains('ClientException') ||
-                                                       errorString.contains('Failed host lookup') ||
-                                                       errorString.contains('No address associated') ||
-                                                       errorString.contains('Connection refused') ||
-                                                       errorString.contains('Network is unreachable') ||
-                                                       errorString.contains('Software caused connection abort');
-                                final displayError = isNetworkError 
-                                    ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
-                                    : errorString.replaceAll('Exception: ', '');
-                                return Text(
-                                  displayError,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                                  textAlign: TextAlign.center,
-                                );
-                              }
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.screenOrange,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              ),
-                              onPressed: _retry,
-                              icon: const Icon(Icons.refresh_rounded, size: 18),
-                              label: const Text(
-                                'Réessayer',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.data.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: AppColors.screenOrange.withOpacity(0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.receipt_long_rounded,
-                                size: 48,
-                                color: AppColors.screenOrange,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Aucun paiement trouvé',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Cet élève n\'a aucun paiement enregistré pour le moment.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  final paiements = snapshot.data!.data;
-
-                  return ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    itemCount: paiements.length,
-                    itemBuilder: (context, index) {
-                      final paiement = paiements[index];
-                      final isExpanded = _expandedNumeroRecu == paiement.numeroRecu;
-                      return _PaymentCard(
-                        paiement: paiement,
-                        isDark: widget.isDark,
-                        isExpanded: isExpanded,
-                        onTap: () {
-                          setState(() {
-                            if (isExpanded) {
-                              _expandedNumeroRecu = null;
-                            } else {
-                              _expandedNumeroRecu = paiement.numeroRecu;
-                            }
-                          });
-                        },
-                      );
-                    },
-                  );
-                },
+    return FutureBuilder<PaiementHistoriqueResponse>(
+      future: _historiqueFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(32.0),
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.screenOrange,
+                ),
               ),
             ),
-          ],
-        ),
-      ),
-    ),
-  ),
-);
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.error_outline_rounded,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Erreur de chargement',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Builder(
+                    builder: (context) {
+                      final errorString = snapshot.error.toString();
+                      final isNetworkError =
+                          errorString.contains('SocketException') ||
+                          errorString.contains('ClientException') ||
+                          errorString.contains('Failed host lookup') ||
+                          errorString.contains('No address associated') ||
+                          errorString.contains('Connection refused') ||
+                          errorString.contains('Network is unreachable') ||
+                          errorString.contains(
+                            'Software caused connection abort',
+                          );
+                      final displayError = isNetworkError
+                          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+                          : errorString.replaceAll('Exception: ', '');
+                      return Text(
+                        displayError,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.screenOrange,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: _retry,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text(
+                      'Réessayer',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.data.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrange.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long_rounded,
+                      size: 48,
+                      color: AppColors.screenOrange,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Aucun paiement trouvé',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cet élève n\'a aucun paiement enregistré pour le moment.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final paiements = snapshot.data!.data;
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          itemCount: paiements.length,
+          itemBuilder: (context, index) {
+            final paiement = paiements[index];
+            final isExpanded = _expandedNumeroRecu == paiement.numeroRecu;
+            return _PaymentCard(
+              paiement: paiement,
+              isDark: widget.isDark,
+              isExpanded: isExpanded,
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedNumeroRecu = null;
+                  } else {
+                    _expandedNumeroRecu = paiement.numeroRecu;
+                  }
+                });
+              },
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -318,8 +295,12 @@ class _PaymentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF333333) : const Color(0xFFE2E8F0);
-    final detailBgColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8FAFC);
+    final borderColor = isDark
+        ? const Color(0xFF333333)
+        : const Color(0xFFE2E8F0);
+    final detailBgColor = isDark
+        ? const Color(0xFF2A2A2A)
+        : const Color(0xFFF8FAFC);
 
     // Mode icon selection
     IconData modeIcon;
@@ -369,7 +350,9 @@ class _PaymentCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        PaiementHistoriqueBottomSheet._formatCurrency(paiement.montant),
+                        PaiementHistoriqueBottomSheet._formatCurrency(
+                          paiement.montant,
+                        ),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: isDark ? Colors.white : Colors.black,
@@ -381,8 +364,8 @@ class _PaymentCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     // Expand/collapse indicator icon
                     Icon(
-                      isExpanded 
-                          ? Icons.keyboard_arrow_up_rounded 
+                      isExpanded
+                          ? Icons.keyboard_arrow_up_rounded
                           : Icons.keyboard_arrow_down_rounded,
                       color: isDark ? Colors.grey[400] : Colors.grey[600],
                       size: 24,
@@ -411,7 +394,9 @@ class _PaymentCard extends StatelessWidget {
                       'Le ${paiement.formattedDate} à ${paiement.formattedTime}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.grey[400] : const Color(0xFF475569),
+                        color: isDark
+                            ? Colors.grey[400]
+                            : const Color(0xFF475569),
                         fontSize: 12,
                       ),
                     ),
@@ -423,13 +408,18 @@ class _PaymentCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Container(
                     height: 1,
-                    color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9),
+                    color: isDark
+                        ? const Color(0xFF333333)
+                        : const Color(0xFFF1F5F9),
                   ),
                   const SizedBox(height: 12),
 
                   // Receipt number badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.screenOrange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -445,11 +435,12 @@ class _PaymentCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           'Reçu N° ${paiement.numeroRecu}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.screenOrange,
-                            fontSize: 11,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.screenOrange,
+                                fontSize: 11,
+                              ),
                         ),
                       ],
                     ),
@@ -461,7 +452,10 @@ class _PaymentCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: detailBgColor,
                             borderRadius: BorderRadius.circular(10),
@@ -471,7 +465,9 @@ class _PaymentCard extends StatelessWidget {
                               Icon(
                                 modeIcon,
                                 size: 13,
-                                color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : const Color(0xFF64748B),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -480,7 +476,9 @@ class _PaymentCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                                    color: isDark
+                                        ? Colors.grey[300]
+                                        : const Color(0xFF475569),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -493,7 +491,10 @@ class _PaymentCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: detailBgColor,
                             borderRadius: BorderRadius.circular(10),
@@ -503,7 +504,9 @@ class _PaymentCard extends StatelessWidget {
                               Icon(
                                 Icons.school_rounded,
                                 size: 13,
-                                color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : const Color(0xFF64748B),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -512,7 +515,9 @@ class _PaymentCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                                    color: isDark
+                                        ? Colors.grey[300]
+                                        : const Color(0xFF475569),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -529,7 +534,10 @@ class _PaymentCard extends StatelessWidget {
                   // Caissier row
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: detailBgColor,
                       borderRadius: BorderRadius.circular(10),
@@ -539,7 +547,9 @@ class _PaymentCard extends StatelessWidget {
                         Icon(
                           Icons.badge_rounded,
                           size: 13,
-                          color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                          color: isDark
+                              ? Colors.grey[400]
+                              : const Color(0xFF64748B),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -547,7 +557,9 @@ class _PaymentCard extends StatelessWidget {
                             text: TextSpan(
                               style: TextStyle(
                                 fontSize: 11,
-                                color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : const Color(0xFF64748B),
                               ),
                               children: [
                                 const TextSpan(text: 'Enregistré par : '),
@@ -555,7 +567,9 @@ class _PaymentCard extends StatelessWidget {
                                   text: paiement.caissier,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.grey[200] : const Color(0xFF334155),
+                                    color: isDark
+                                        ? Colors.grey[200]
+                                        : const Color(0xFF334155),
                                   ),
                                 ),
                               ],
@@ -572,10 +586,14 @@ class _PaymentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF262626) : const Color(0xFFF8FAFC),
+                        color: isDark
+                            ? const Color(0xFF262626)
+                            : const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isDark ? const Color(0xFF333333) : const Color(0xFFF1F5F9),
+                          color: isDark
+                              ? const Color(0xFF333333)
+                              : const Color(0xFFF1F5F9),
                           width: 1.2,
                         ),
                       ),
@@ -585,19 +603,24 @@ class _PaymentCard extends StatelessWidget {
                           Icon(
                             Icons.spellcheck_rounded,
                             size: 14,
-                            color: isDark ? Colors.grey[500] : const Color(0xFF64748B),
+                            color: isDark
+                                ? Colors.grey[500]
+                                : const Color(0xFF64748B),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               paiement.montantLettres.toUpperCase(),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontStyle: FontStyle.italic,
-                                color: isDark ? Colors.grey[400] : const Color(0xFF475569),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10,
-                                height: 1.4,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: isDark
+                                        ? Colors.grey[400]
+                                        : const Color(0xFF475569),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 10,
+                                    height: 1.4,
+                                  ),
                             ),
                           ),
                         ],

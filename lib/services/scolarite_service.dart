@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import 'package:flutter/material.dart';
 import '../models/scolarite.dart';
 import '../config/app_config.dart';

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../config/app_colors.dart';

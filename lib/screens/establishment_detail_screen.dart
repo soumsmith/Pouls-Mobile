@@ -21,7 +21,7 @@ import 'dart:developer' as developer;
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
 import '../models/blog.dart';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import 'dart:convert';
 import '../config/app_config.dart';
 import '../models/event.dart';

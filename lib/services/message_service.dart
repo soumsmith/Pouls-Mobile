@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../config/app_config.dart';
 import '../models/conversation.dart';
 import '../models/student_message.dart';

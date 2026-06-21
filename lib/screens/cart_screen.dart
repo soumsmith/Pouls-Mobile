@@ -813,7 +813,12 @@ class _CartScreenState extends State<CartScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildOrderWizardBottomSheet(),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: _buildOrderWizardBottomSheet(),
+      ),
     );
   }
 

@@ -13,7 +13,7 @@ import '../widgets/main_screen_wrapper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import 'components/bottom_spacer.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../services/auth_service.dart';
 import '../config/app_config.dart';
 

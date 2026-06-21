@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
-import '../config/app_typography.dart';
-import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../models/cart_item.dart';
 import '../models/order.dart';
 import '../services/order_service.dart';
@@ -12,6 +10,7 @@ import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/filter_row_widget.dart';
+import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/scroll_to_top_fab.dart';
@@ -500,130 +499,10 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   // État vide pour la recherche
-  Widget _buildSearchEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.screenSurfaceThemed(context),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.search_off_rounded,
-              size: 40,
-              color: AppColors.screenTextSecondaryThemed(context),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Aucune commande trouvée',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.screenTextPrimaryThemed(context),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Essayez avec d\'autres mots-clés',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.screenTextSecondaryThemed(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ─── SUMMARY BAR (miroir du checkout bar du CartScreen) ───────────────────
 
   // ─── EMPTY STATE ───────────────────────────────────────────────────────────
- Widget _buildEmptyState() {
-  return Scaffold(
-    body: SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: const BoxDecoration(
-                      color: AppColors.shopBlueSurface,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.receipt_long_outlined,
-                        size: 48, color: AppColors.shopBlue),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Aucune commande',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Vous n\'avez pas encore passé\nde commande',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.screenTextSecondaryThemed(context),
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 28, vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shopBlue.withOpacity(0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        'Commencer vos achats',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
 
   // ─── ORDER CARD ────────────────────────────────────────────────────────────
   Widget _buildOrderCard(Order order, int index) {
@@ -793,7 +672,12 @@ class _OrdersScreenState extends State<OrdersScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _OrderDetailsSheet(order: order),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: _OrderDetailsSheet(order: order),
+      ),
     );
   }
 
@@ -868,134 +752,94 @@ class _OrderDetailsSheetState extends State<_OrderDetailsSheet> {
   Widget build(BuildContext context) {
     final statusInfo = _getStatusInfo(order.status);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.screenCardThemed(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: DraggableScrollableSheet(
-        controller: _draggableController,
-        initialChildSize: 0.92,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) {
-          return Column(
-            children: [
-              // ── Header fixe (miroir du CartScreen bottom sheet) ──
-              BottomSheetHeader(
-                icon: Icons.receipt_long_outlined,
-                iconColor: AppColors.shopBlue,
-                title: 'Détails de la commande',
-                description: '#${order.id.substring(order.id.length - 8)}',
-                onClose: () => Navigator.pop(context),
-                titleFontSize: 16,
-                descriptionFontSize: 12,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                titleColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.screenTextPrimary,
-                descriptionColor: AppColors.screenTextSecondaryThemed(context),
-                draggableController: _draggableController,
+    return ReusableBottomSheet(
+      title: 'Détails de la commande',
+      subtitle: '#${order.id.substring(order.id.length - 8)}',
+      icon: Icons.receipt_long_outlined,
+      iconColor: AppColors.shopBlue,
+      contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Statut + date + paiement
+          _buildInfoCard(context, statusInfo),
+          const SizedBox(height: 24),
+
+          // Articles
+          _sectionLabel(context, 'Articles (${order.totalItems})'),
+          const SizedBox(height: 12),
+          ...order.items.asMap().entries.map(
+                (e) => _buildItemTile(context, e.value, e.key),
               ),
 
-              // ── Contenu scrollable ──
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Statut + date + paiement
-                      _buildInfoCard(context, statusInfo),
-                      const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-                      // Articles
-                      _sectionLabel(context, 'Articles (${order.totalItems})'),
-                      const SizedBox(height: 12),
-                      ...order.items.asMap().entries.map(
-                            (e) => _buildItemTile(context, e.value, e.key),
-                          ),
+          // Récap total
+          _sectionLabel(context, 'Récapitulatif'),
+          const SizedBox(height: 12),
+          _buildTotalCard(context),
 
-                      const SizedBox(height: 24),
-
-                      // Récap total
-                      _sectionLabel(context, 'Récapitulatif'),
-                      const SizedBox(height: 12),
-                      _buildTotalCard(context),
-
-                      const SizedBox(height: 8),
-                    ],
-                  ),
+          const SizedBox(height: 8),
+        ],
+      ),
+      fixedBottomWidget: order.status == OrderStatus.pending
+          ? Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              decoration: BoxDecoration(
+                color: AppColors.screenCardThemed(context),
+                border: Border(
+                  top: BorderSide(color: AppColors.screenDividerThemed(context)),
                 ),
               ),
-
-              // ── Boutons d'action fixés en bas (miroir du CartScreen) ──
-              if (order.status == OrderStatus.pending)
-                Container(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCardThemed(context),
-                    border:
-                        Border(top: BorderSide(color: AppColors.screenDividerThemed(context))),
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: Container(
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.screenSurfaceThemed(context),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                        color: AppColors.screenDividerThemed(context), width: 1.5),
-                                  ),
-                                  child: Center(
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.headset_mic_outlined,
-                                            size: 18,
-                                            color: AppColors.screenTextSecondaryThemed(context)),
-                                        const SizedBox(width: 6),
-                                        Flexible(
-                                          child: Text(
-                                            'Support',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.screenTextSecondaryThemed(context),
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: AppColors.screenSurfaceThemed(context),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: AppColors.screenDividerThemed(context), width: 1.5),
+                          ),
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.headset_mic_outlined,
+                                    size: 18,
+                                    color: AppColors.screenTextSecondaryThemed(context)),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'Support',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.screenTextSecondaryThemed(context),
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _CancelButton(order: order),
-                            ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 20),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _CancelButton(order: order),
+                    ),
+                  ],
                 ),
-            ],
-          );
-        },
-      ),
+              ),
+            )
+          : null,
     );
   }
 

@@ -17,6 +17,7 @@ import '../services/mock_api_service.dart';
 import '../services/remote_api_service.dart';
 import '../services/text_size_service.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'connectivity_banner.dart';
 
 /// Wrapper principal qui contient le BottomNav et gère la navigation
 class MainScreenWrapper extends StatefulWidget {
@@ -316,6 +317,13 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
                       ),
               ),
             ),
+          ),
+          // ── Bannière de connectivité style YouTube ──
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: ConnectivityBanner(),
           ),
         ],
       ),

@@ -10,6 +10,7 @@ import '../widgets/snackbar.dart';
 import '../widgets/subtle_retry_button.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 
 class NotesScreenJson extends StatefulWidget {
   final String matricule;
@@ -363,150 +364,133 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final bool isDark = AppColors.isDarkMode(context);
-            return Container(
-              // On force une hauteur minimale (50% de l'écran) pour qu'il soit plus grand
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height * 0.55,
-              ),
+            return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              decoration: BoxDecoration(
-                color: AppColors.getSurfaceColor(isDark),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min, // La colonne prend la place minimale, mais le Container force la taille
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Petite poignée (handle)
-                      Center(
-                        child: Container(
-                          width: 50,
-                          height: 5,
-                          margin: const EdgeInsets.only(bottom: 24),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(2.5),
+              child: ReusableBottomSheet(
+                title: 'Filtres',
+                icon: Icons.tune,
+                iconColor: AppColors.primary,
+                initialChildSize: 0.55,
+                minChildSize: 0.55,
+                maxChildSize: 0.9,
+                content: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    SearchableDropdown(
+                      label: 'Année scolaire',
+                      value: tempSelectedYear ?? 'Chargement...',
+                      items: _availableYears,
+                      onChanged: (val) {
+                        setSheetState(() {
+                          final year = _schoolYears.firstWhere(
+                            (y) => (y['customLibelle'] ?? y['libelle']) == val,
+                            orElse: () => null,
+                          );
+                          if (year != null) {
+                            tempAnneeId = year['id'].toString();
+                            tempSelectedYear = val;
+                            // Optionnel: Réinitialiser la matière et le trimestre si l'année change
+                            tempSelectedSubject = null;
+                            tempSelectedTrimester = null;
+                          }
+                        });
+                      },
+                      isDarkMode: isDark,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SearchableDropdown(
+                            label: 'Matière',
+                            value: tempSelectedSubject ?? 'Toutes',
+                            items: _availableSubjects,
+                            onChanged: (val) {
+                              setSheetState(() {
+                                tempSelectedSubject = val == 'Toutes' ? null : val;
+                              });
+                            },
+                            isDarkMode: isDark,
                           ),
                         ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(Icons.tune, color: AppColors.primary, size: 28),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Filtres',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.getTextColor(isDark),
-                            ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: SearchableDropdown(
+                            label: 'Trimestre',
+                            value: tempSelectedTrimester ?? 'Tous',
+                            items: _availableTrimesters,
+                            onChanged: (val) {
+                              setSheetState(() {
+                                tempSelectedTrimester = val == 'Tous' ? null : val;
+                              });
+                            },
+                            isDarkMode: isDark,
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+                fixedBottomWidget: Container(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                  decoration: BoxDecoration(
+                    color: AppColors.getSurfaceColor(isDark),
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                       ),
-                      const SizedBox(height: 32),
-                      SearchableDropdown(
-                        label: 'Année scolaire',
-                        value: tempSelectedYear ?? 'Chargement...',
-                        items: _availableYears,
-                        onChanged: (val) {
-                          setSheetState(() {
-                            final year = _schoolYears.firstWhere(
-                              (y) => (y['customLibelle'] ?? y['libelle']) == val,
-                              orElse: () => null,
-                            );
-                            if (year != null) {
-                              tempAnneeId = year['id'].toString();
-                              tempSelectedYear = val;
-                              // Optionnel: Réinitialiser la matière et le trimestre si l'année change
-                              tempSelectedSubject = null;
-                              tempSelectedTrimester = null;
-                            }
-                          });
-                        },
-                        isDarkMode: isDark,
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SearchableDropdown(
-                              label: 'Matière',
-                              value: tempSelectedSubject ?? 'Toutes',
-                              items: _availableSubjects,
-                              onChanged: (val) {
-                                setSheetState(() {
-                                  tempSelectedSubject = val == 'Toutes' ? null : val;
-                                });
-                              },
-                              isDarkMode: isDark,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: SearchableDropdown(
-                              label: 'Trimestre',
-                              value: tempSelectedTrimester ?? 'Tous',
-                              items: _availableTrimesters,
-                              onChanged: (val) {
-                                setSheetState(() {
-                                  tempSelectedTrimester = val == 'Tous' ? null : val;
-                                });
-                              },
-                              isDarkMode: isDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 60), // Grand espace pour pousser le bouton vers le bas
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context); // Ferme le bottom sheet
-                          
-                          // On vérifie si un filtre a changé
-                          bool needApiCall = false;
-                          bool needStateUpdate = false;
-                          
-                          // L'année ou le trimestre nécessitent de recharger l'API
-                          if (_anneeId != tempAnneeId || _selectedTrimester != tempSelectedTrimester) {
-                            needApiCall = true;
-                          }
-                          // N'importe quel changement nécessite de mettre à jour l'état
-                          if (_anneeId != tempAnneeId || 
-                              _selectedYear != tempSelectedYear ||
-                              _selectedSubject != tempSelectedSubject ||
-                              _selectedTrimester != tempSelectedTrimester) {
-                            needStateUpdate = true;
-                          }
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Ferme le bottom sheet
+                        
+                        // On vérifie si un filtre a changé
+                        bool needApiCall = false;
+                        bool needStateUpdate = false;
+                        
+                        // L'année ou le trimestre nécessitent de recharger l'API
+                        if (_anneeId != tempAnneeId || _selectedTrimester != tempSelectedTrimester) {
+                          needApiCall = true;
+                        }
+                        // N'importe quel changement nécessite de mettre à jour l'état
+                        if (_anneeId != tempAnneeId || 
+                            _selectedYear != tempSelectedYear ||
+                            _selectedSubject != tempSelectedSubject ||
+                            _selectedTrimester != tempSelectedTrimester) {
+                          needStateUpdate = true;
+                        }
 
-                          if (needStateUpdate) {
-                            setState(() {
-                              _anneeId = tempAnneeId;
-                              _selectedYear = tempSelectedYear;
-                              _selectedSubject = tempSelectedSubject;
-                              _selectedTrimester = tempSelectedTrimester;
-                              if (needApiCall) _isLoading = true;
-                            });
-                            
-                            // On déclenche l'API seulement maintenant !
-                            if (needApiCall) {
-                              _loadApiData();
-                            }
+                        if (needStateUpdate) {
+                          setState(() {
+                            _anneeId = tempAnneeId;
+                            _selectedYear = tempSelectedYear;
+                            _selectedSubject = tempSelectedSubject;
+                            _selectedTrimester = tempSelectedTrimester;
+                            if (needApiCall) _isLoading = true;
+                          });
+                          
+                          // On déclenche l'API seulement maintenant !
+                          if (needApiCall) {
+                            _loadApiData();
                           }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Text(
+                        elevation: 0,
+                      ),
+                      child: const Center(
+                        child: Text(
                           'Appliquer et fermer',
                           style: TextStyle(
                             color: Colors.white,
@@ -515,7 +499,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

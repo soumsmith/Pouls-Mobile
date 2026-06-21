@@ -6,6 +6,7 @@ import '../../services/kits_service.dart';
 import '../../config/app_dimensions.dart';
 import '../section_header_widget.dart';
 import '../components/bottom_spacer.dart';
+import 'reusable_bottom_sheet.dart';
 
 class ChildKitsBottomSheet extends StatefulWidget {
   final String schoolId;
@@ -64,35 +65,13 @@ class _ChildKitsBottomSheetState extends State<ChildKitsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[900] : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(20),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BottomSheetHeader(
-            icon: Icons.backpack_rounded,
-            iconColor: widget.primaryColor,
-            title: 'Kits Scolaires',
-            description: 'Kits pour ${widget.childName} (${widget.niveau})',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildKitsContent(),
-                  const BottomSpacer(),
-                ],
-              ),
-            ),
-          ),
+          _buildKitsContent(),
+          const BottomSpacer(),
         ],
       ),
     );
@@ -315,22 +294,21 @@ void showChildKitsBottomSheet(
   required String childName,
   Color primaryColor = const Color(0xFF673AB7),
 }) {
-  showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+  ReusableBottomSheet.show(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => Padding(
-      padding: EdgeInsets.only(
-        top: MediaQuery.paddingOf(context).top + 40,
-      ),
-      child: ChildKitsBottomSheet(
-        schoolId: schoolId,
-        niveau: niveau,
-        childName: childName,
-        primaryColor: primaryColor,
-      ),
+    title: 'Kits Scolaires',
+    subtitle: 'Kits pour $childName ($niveau)',
+    icon: Icons.backpack_rounded,
+    iconColor: primaryColor,
+    initialChildSize: 0.8,
+    minChildSize: 0.5,
+    maxChildSize: 0.95,
+    contentPadding: EdgeInsets.zero,
+    content: ChildKitsBottomSheet(
+      schoolId: schoolId,
+      niveau: niveau,
+      childName: childName,
+      primaryColor: primaryColor,
     ),
   );
 }

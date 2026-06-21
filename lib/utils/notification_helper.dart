@@ -240,20 +240,10 @@ class NotificationHelper {
     );
   }
 
-  static DateTime? _lastNoConnectionTime;
-
   static void showNoConnection({String? customMessage}) {
-    final now = DateTime.now();
-    if (_lastNoConnectionTime != null && now.difference(_lastNoConnectionTime!).inSeconds < 5) {
-      return; // Ignore si on a déjà affiché l'erreur très récemment
-    }
-    _lastNoConnectionTime = now;
-    
-    show(
-      message: customMessage ?? 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.',
-      type: NotificationType.noConnection,
-      duration: const Duration(seconds: 5),
-    );
+    // Désactivé : L'application utilise maintenant la bannière globale ConnectivityBanner
+    // en haut de l'écran (style YouTube).
+    // Cette notification snackbar en bas de l'écran faisait doublon.
   }
 
   static void showServerError({String? customMessage, int? statusCode}) {

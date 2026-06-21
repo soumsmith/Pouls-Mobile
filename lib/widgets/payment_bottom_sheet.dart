@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import 'custom_loader.dart';
-import 'bottom_sheets/bottom_sheet_header.dart';
 import 'components/custom_text_input.dart';
 import 'components/custom_button.dart';
+import 'bottom_sheets/reusable_bottom_sheet.dart';
 
 class PaymentBottomSheet extends StatefulWidget {
   final String? childName;
@@ -61,28 +61,33 @@ class PaymentBottomSheet extends StatefulWidget {
     required Future<PaymentResult> Function(String montant, String matricule)
     onPayment,
   }) {
-    return showModalBottomSheet<void>(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    return ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return PaymentBottomSheet(
-          childName: childName,
-          matricule: matricule,
-          debutReservation: debutReservation,
-          finReservation: finReservation,
-          title: title,
-          description: description,
-          icon: icon,
-          imagePath: imagePath,
-          imageBackgroundColor: imageBackgroundColor,
-          imageBorderRadius: imageBorderRadius,
-          montantReservation: montantReservation,
-          loadReservationData: loadReservationData,
-          onPayment: onPayment,
-        );
-      },
+      title: title ?? 'Paiement en ligne',
+      subtitle: description ?? (childName != null ? 'Entrez le montant à payer pour $childName' : 'Entrez le montant à payer'),
+      icon: icon ?? Icons.payment,
+      iconColor: const Color(0xFFFF7A3C),
+      imagePath: imagePath,
+      imageBorderRadius: imageBorderRadius,
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: PaymentBottomSheet(
+        childName: childName,
+        matricule: matricule,
+        debutReservation: debutReservation,
+        finReservation: finReservation,
+        title: title,
+        description: description,
+        icon: icon,
+        imagePath: imagePath,
+        imageBackgroundColor: imageBackgroundColor,
+        imageBorderRadius: imageBorderRadius,
+        montantReservation: montantReservation,
+        loadReservationData: loadReservationData,
+        onPayment: onPayment,
+      ),
     );
   }
 
@@ -280,208 +285,164 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final themeBg = isDark ? Colors.grey[900] : Colors.white;
     final isClosed = _isReservationClosed;
     final isBefore = _isBeforeDebut;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: themeBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 20,
-            offset: Offset(0, -4),
+    if (isFetchingData) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+        child: Center(
+          child: CustomLoader(
+            message: 'Vérification de la période de réservation...',
+            loaderColor: AppColors.screenOrange,
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomSheetHeader(
-            icon: widget.icon ?? Icons.payment,
-            iconColor: const Color(0xFFFF7A3C),
-            imagePath: widget.imagePath,
-            imageBackgroundColor: widget.imageBackgroundColor,
-            imageBorderRadius: widget.imageBorderRadius,
-            title: widget.title ?? 'Paiement en ligne',
-            description: widget.description ?? (widget.childName != null
-                ? 'Entrez le montant à payer pour ${widget.childName}'
-                : 'Entrez le montant à payer'),
-            onClose: () => Navigator.of(context).pop(),
-            titleColor:
-                isDark ? Colors.white : AppColors.screenTextPrimary,
-            descriptionColor:
-                isDark ? Colors.white70 : AppColors.screenTextSecondary,
-            titleFontSize: 18,
-            descriptionFontSize: 13,
-            titleFontWeight: FontWeight.w800,
-          ),
-          
-          if (isFetchingData)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-              child: Center(
-                child: CustomLoader(
-                  message: 'Vérification de la période de réservation...',
-                  loaderColor: AppColors.screenOrange,
+        ),
+      );
+    } else if (isClosed) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isBefore ? Colors.orange.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isBefore ? Icons.hourglass_empty_rounded : Icons.event_busy_rounded,
+                size: 48,
+                color: isBefore ? Colors.orange[400] : Colors.red[400],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              isBefore ? 'Réservation non commencée' : 'Période de réservation terminée',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isBefore 
+                  ? 'La période de réservation pour cette école commencera le ${_formatDate(_debutReservation)}.'
+                  : 'La période de réservation pour cette école s\'est terminée le ${_formatDate(_finReservation)}. Les paiements ne sont plus autorisés.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 32),
+            CustomButton(
+              text: 'Fermer',
+              onPressed: () => Navigator.of(context).pop(),
+              color: isDark ? Colors.white60 : Colors.grey[700]!,
+              isLight: true,
+              height: 48,
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            if (_montantReservation != null && _montantReservation.toString() != '0')
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Color(0xFF4CAF50)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Montant de la réservation : $_montantReservation FCFA',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            )
-          else if (isClosed)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isBefore ? Colors.orange.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isBefore ? Icons.hourglass_empty_rounded : Icons.event_busy_rounded,
-                      size: 48,
-                      color: isBefore ? Colors.orange[400] : Colors.red[400],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    isBefore ? 'Réservation non commencée' : 'Période de réservation terminée',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    isBefore 
-                        ? 'La période de réservation pour cette école commencera le ${_formatDate(_debutReservation)}.'
-                        : 'La période de réservation pour cette école s\'est terminée le ${_formatDate(_finReservation)}. Les paiements ne sont plus autorisés.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: isDark ? Colors.white70 : Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  CustomButton(
-                    text: 'Fermer',
-                    onPressed: () => Navigator.of(context).pop(),
-                    color: isDark ? Colors.white60 : Colors.grey[700]!,
-                    isLight: true,
-                    height: 48,
-                  ),
-                  SizedBox(
-                    height: MediaQuery.of(context).viewInsets.bottom,
-                  ),
-                ],
+            CustomTextInput(
+              label: 'Matricule de l\'élève',
+              hint: 'Ex: 2024001',
+              icon: Icons.person_outline,
+              controller: matriculeController,
+              keyboardType: TextInputType.text,
+              readOnly: widget.matricule != null,
+            ),
+            const SizedBox(height: 20),
+            CustomTextInput(
+              label: 'Montant à payer (FCFA)',
+              hint: 'Ex: 10000',
+              icon: Icons.attach_money,
+              controller: montantController,
+              keyboardType: TextInputType.text,
+            ),
+            const SizedBox(height: 24),
+            CustomButton(
+              text: 'Procéder au paiement',
+              color: AppColors.screenOrange,
+              icon: Icons.credit_card_rounded,
+              onPressed: _effectuerPaiement,
+              isLoading: isLoading,
+              height: 50,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.screenOrange.withOpacity(0.1)
+                    : AppColors.screenOrangeLight.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.screenOrange
+                      .withOpacity(isDark ? 0.3 : 0.2),
+                ),
               ),
-            )
-          else
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  const SizedBox(height: 8),
-                  if (_montantReservation != null && _montantReservation.toString() != '0')
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline, color: Color(0xFF4CAF50)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Montant de la réservation : $_montantReservation FCFA',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF4CAF50),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  CustomTextInput(
-                    label: 'Matricule de l\'élève',
-                    hint: 'Ex: 2024001',
-                    icon: Icons.person_outline,
-                    controller: matriculeController,
-                    keyboardType: TextInputType.text,
-                    readOnly: widget.matricule != null,
-                  ),
-                  const SizedBox(height: 20),
-                  CustomTextInput(
-                    label: 'Montant à payer (FCFA)',
-                    hint: 'Ex: 10000',
-                    icon: Icons.attach_money,
-                    controller: montantController,
-                    keyboardType: TextInputType.text,
-                  ),
-                  const SizedBox(height: 24),
-                  CustomButton(
-                    text: 'Procéder au paiement',
+                  Icon(
+                    Icons.info_outline,
                     color: AppColors.screenOrange,
-                    icon: Icons.credit_card_rounded,
-                    onPressed: _effectuerPaiement,
-                    isLoading: isLoading,
-                    height: 50,
+                    size: 20,
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.screenOrange.withOpacity(0.1)
-                          : AppColors.screenOrangeLight.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.screenOrange
-                            .withOpacity(isDark ? 0.3 : 0.2),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Le paiement sera traité via notre partenaire WicPay',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.screenOrange,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppColors.screenOrange,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Le paiement sera traité via notre partenaire WicPay',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.screenOrange,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: MediaQuery.of(context).viewInsets.bottom + 16,
                   ),
                 ],
               ),
             ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    }
   }
 }

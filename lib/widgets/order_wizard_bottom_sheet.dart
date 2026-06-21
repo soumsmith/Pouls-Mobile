@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
-import 'bottom_sheets/bottom_sheet_header.dart';
+import 'bottom_sheets/reusable_bottom_sheet.dart';
 import '../models/cart_item.dart';
 import '../models/lieu_livraison.dart';
-import '../models/user.dart';
 import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../services/cart_service.dart';
@@ -49,7 +47,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   int _currentStep = 0;
   late PageController _pageController;
   late AnimationController _progressController;
-  late Animation<double> _progressAnimation;
 
   // Controllers
   final _nomController = TextEditingController();
@@ -67,7 +64,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   double _prixLivraison = 2000;
   LieuLivraison? _selectedLieu;
   bool _isSubmitting = false;
-  bool _hasKeyboard = false;
 
   // Steps
   final List<String> _stepTitles = [
@@ -92,13 +88,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _progressAnimation = Tween<double>(
-      begin: 0.0,
-      end: 0.25,
-    ).animate(CurvedAnimation(
-      parent: _progressController,
-      curve: Curves.easeInOut,
-    ));
 
     _initializeData();
   }
@@ -290,38 +279,23 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      height: screenHeight * 0.95,
-      decoration: BoxDecoration(
-        color: AppColors.screenCardThemed(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return ReusableBottomSheet(
+      title: 'Finaliser la commande',
+      subtitle: 'Étape ${_currentStep + 1} sur 4 : ${_stepTitles[_currentStep]}',
+      icon: _stepIcons[_currentStep],
+      iconColor: AppColors.shopBlue,
+      initialChildSize: 0.95,
+      maxChildSize: 0.95,
+      contentPadding: EdgeInsets.zero,
+      content: Column(
         children: [
-          // Header with progress
-          _buildHeader(),
-          
-          // Progress indicator
           _buildProgressIndicator(),
-          
-          // Content
-          Flexible(
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: _buildCurrentStep(),
-            ),
-          ),
-          
-          // Bottom navigation
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8 + keyboardHeight),
-            child: _buildNavigationButtons(),
-          ),
+          _buildCurrentStep(),
         ],
+      ),
+      fixedBottomWidget: Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 12),
+        child: _buildNavigationButtons(),
       ),
     );
   }
@@ -339,22 +313,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
       default:
         return const SizedBox.shrink();
     }
-  }
-
-  Widget _buildHeader() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return BottomSheetHeader(
-      icon: _stepIcons[_currentStep],
-      iconColor: AppColors.shopBlue,
-      title: 'Finaliser la commande',
-      description: 'Étape ${_currentStep + 1} sur 4 : ${_stepTitles[_currentStep]}',
-      onClose: () => Navigator.pop(context),
-      titleFontSize: 16,
-      descriptionFontSize: 12,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
-      descriptionColor: AppColors.screenTextSecondaryThemed(context),
-    );
   }
 
   Widget _buildProgressIndicator() {

@@ -16,6 +16,7 @@ import '../services/api_service.dart';
 import '../services/mock_api_service.dart';
 import '../services/remote_api_service.dart';
 import '../services/text_size_service.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 /// Wrapper principal qui contient le BottomNav et gère la navigation
 class MainScreenWrapper extends StatefulWidget {
@@ -59,6 +60,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   Widget? _currentChildDetailScreen;
   Widget? _currentEstablishmentDetailScreen;
   final List<Widget> _extraScreenStack = [];
+  final GlobalKey bottomNavKey = GlobalKey();
 
   @override
   void initState() {
@@ -273,8 +275,9 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
+    return ShowCaseWidget(
+      builder: (context) => Scaffold(
+        body: Stack(
         children: [
           if (widget.child != null && widget.child is MainScreenChild)
             widget.child!
@@ -296,21 +299,26 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
             right: 0,
             child: SafeArea(
               top: false,
-              child: _getCurrentScreen().runtimeType.toString().contains('VideoFeedScreen')
-                  ? Theme(
-                      data: Theme.of(context).copyWith(brightness: Brightness.dark),
-                      child: BottomNav(
+              child: Showcase(
+                key: bottomNavKey,
+                description: 'Utilisez ce menu pour naviguer dans l\'application.',
+                child: _getCurrentScreen().runtimeType.toString().contains('VideoFeedScreen')
+                    ? Theme(
+                        data: Theme.of(context).copyWith(brightness: Brightness.dark),
+                        child: BottomNav(
+                          currentIndex: _currentIndex,
+                          onTap: _onTabTapped,
+                        ),
+                      )
+                    : BottomNav(
                         currentIndex: _currentIndex,
                         onTap: _onTabTapped,
                       ),
-                    )
-                  : BottomNav(
-                      currentIndex: _currentIndex,
-                      onTap: _onTabTapped,
-                    ),
+              ),
             ),
           ),
         ],
+      ),
       ),
     );
   }

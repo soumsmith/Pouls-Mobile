@@ -47,6 +47,7 @@ import '../services/access_control_service.dart';
 import '../models/access_control.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/bottom_sheets/child_kits_bottom_sheet.dart';
+import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
@@ -1731,155 +1732,126 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showSuppliesBottomSheet() {
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    bool isLoading = true;
+    List<SchoolSupply> supplies = [];
+    bool didLoad = false;
+
+    Future<void> loadSupplies(StateSetter modalSetState) async {
+      if (_matricule == null) {
+        modalSetState(() {
+          isLoading = false;
+          supplies = [];
+        });
+        return;
+      }
+
+      modalSetState(() {
+        isLoading = true;
+        supplies = [];
+      });
+
+      try {
+        print(
+          '📚 Chargement des fournitures pour le matricule: $_matricule',
+        );
+        final suppliesResponse = await _schoolSupplyService
+            .getSchoolSupplies(_matricule!);
+
+        modalSetState(() {
+          supplies = suppliesResponse.data;
+          isLoading = false;
+        });
+
+        print('✅ Fournitures chargées: ${supplies.length} items');
+      } catch (e) {
+        print('❌ Erreur lors du chargement des fournitures: $e');
+        modalSetState(() {
+          isLoading = false;
+          supplies = [];
+        });
+      }
+    }
+
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        bool isLoading = true;
-        List<SchoolSupply> supplies = [];
-        bool didLoad = false;
-
-        Future<void> loadSupplies(StateSetter modalSetState) async {
-          if (_matricule == null) {
-            modalSetState(() {
-              isLoading = false;
-              supplies = [];
-            });
-            return;
-          }
-
-          modalSetState(() {
-            isLoading = true;
-            supplies = [];
-          });
-
-          try {
-            print(
-              '📚 Chargement des fournitures pour le matricule: $_matricule',
-            );
-            final suppliesResponse = await _schoolSupplyService
-                .getSchoolSupplies(_matricule!);
-
-            modalSetState(() {
-              supplies = suppliesResponse.data;
-              isLoading = false;
-            });
-
-            print('✅ Fournitures chargées: ${supplies.length} items');
-          } catch (e) {
-            print('❌ Erreur lors du chargement des fournitures: $e');
-            modalSetState(() {
-              isLoading = false;
-              supplies = [];
+      title: 'Fournitures',
+      subtitle: 'Gérez les fournitures scolaires',
+      imagePath: 'assets/images/icons/fournitures.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      iconColor: const Color(0xFF795548),
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(16),
+      content: StatefulBuilder(
+        builder: (context, modalSetState) {
+          if (!didLoad) {
+            didLoad = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              loadSupplies(modalSetState);
             });
           }
-        }
 
-        return StatefulBuilder(
-          builder: (context, modalSetState) {
-            if (!didLoad) {
-              didLoad = true;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                loadSupplies(modalSetState);
-              });
-            }
-
-            return Container(
-              height: MediaQuery.sizeOf(context).height * 0.8,
-              decoration: BoxDecoration(
-                color: _themeService.isDarkMode
-                    ? Colors.grey[900]
-                    : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
+          if (isLoading) {
+            return const Center(
+              child: CustomLoader(
+                message: 'Chargement des fournitures...',
+                loaderColor: AppColors.screenOrange,
+                showBackground: false,
               ),
-              child: Column(
-                children: [
-                  BottomSheetHeader(
-                    icon: Icons.inventory_2_rounded,
-                    imagePath: 'assets/images/icons/fournitures.png',
-                    imageBorderRadius: AppDimensions.getImageBorderRadius(
-                      context,
+            );
+          }
+
+          if (supplies.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 48,
+                      color: Colors.grey[400],
                     ),
-                    iconColor: const Color(0xFF795548),
-                    title: 'Fournitures',
-                    description: 'Gérez les fournitures scolaires',
-                    onClose: () => Navigator.of(context).pop(),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Builder(
-                        builder: (context) {
-                          if (isLoading) {
-                            return const Center(
-                              child: CustomLoader(
-                                message: 'Chargement des fournitures...',
-                                loaderColor: AppColors.screenOrange,
-                                showBackground: false,
-                              ),
-                            );
-                          }
-
-                          if (supplies.isEmpty) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(32),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.inventory_2_outlined,
-                                      size: 48,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Aucune fourniture trouvée',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: _themeService.isDarkMode
-                                            ? Colors.white70
-                                            : Colors.grey[600],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Les fournitures scolaires seront affichées ici une fois disponibles.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: _themeService.isDarkMode
-                                            ? Colors.white54
-                                            : Colors.grey[500],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-
-                          return ListView.builder(
-                            itemCount: supplies.length,
-                            itemBuilder: (context, index) {
-                              return _buildSupplyItemFromApi(supplies[index]);
-                            },
-                          );
-                        },
+                    const SizedBox(height: 16),
+                    Text(
+                      'Aucune fourniture trouvée',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _themeService.isDarkMode
+                            ? Colors.white70
+                            : Colors.grey[600],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Les fournitures scolaires seront affichées ici une fois disponibles.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _themeService.isDarkMode
+                            ? Colors.white54
+                            : Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
-          },
-        );
-      },
+          }
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: supplies.length,
+            itemBuilder: (context, index) {
+              return _buildSupplyItemFromApi(supplies[index]);
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -1889,39 +1861,21 @@ class _ChildListScreenState extends State<ChildListScreen>
     _isOrdersSearching = false;
     _ordersSearchController.clear();
     _ordersFuture = _loadOrdersFuture();
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
+      title: 'Commandes',
+      subtitle: 'Suivez vos commandes et achats',
+      imagePath: 'assets/images/icons/mes_commandes.png',
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      contentPadding: EdgeInsets.zero,
+      initialChildSize: 0.95,
+      minChildSize: 0.95,
+      maxChildSize: 0.95,
+      content: StatefulBuilder(
         builder: (context, setModalState) {
           _ordersModalSetState = setModalState;
-          return Container(
-            height: MediaQuery.sizeOf(context).height * 0.8,
-            decoration: BoxDecoration(
-              color: _themeService.isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                BottomSheetHeader(
-                  icon: Icons.shopping_cart_rounded,
-                  imagePath: 'assets/images/icons/mes_commandes.png',
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                  iconColor: const Color(0xFF00ACC1),
-                  title: 'Commandes',
-                  description: 'Suivez vos commandes et achats',
-                  onClose: () => Navigator.of(context).pop(),
-                ),
-                Expanded(child: _buildOrdersTab(setModalState)),
-              ],
-            ),
-          );
+          return _buildOrdersTab(setModalState);
         },
       ),
     ).whenComplete(() {
@@ -10831,12 +10785,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 hintText: 'Rechercher une commande...',
               ),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: content,
-              ),
-            ),
+            Padding(padding: const EdgeInsets.all(16), child: content),
           ],
         );
       },

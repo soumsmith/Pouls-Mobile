@@ -12,6 +12,7 @@ import '../widgets/back_button_widget.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/order_wizard_bottom_sheet.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/custom_button.dart';
@@ -58,6 +59,14 @@ class _CartScreenState extends State<CartScreen>
     );
     _loadCart();
     _loadLieuxLivraison();
+    
+    // ─── NOTIFICATIONS : Demande de permissions ──────────────────────────────────
+    // Il est crucial de demander l'autorisation à l'utilisateur avant de pouvoir 
+    // afficher des notifications (requis depuis Android 13 et iOS 10+).
+    // Cette méthode est appelée lors de l'initialisation de l'écran du panier
+    // pour s'assurer que les permissions sont accordées avant qu'une commande
+    // ne soit passée.
+    NotificationService().requestPermissions();
   }
 
   @override
@@ -821,6 +830,18 @@ class _CartScreenState extends State<CartScreen>
       cartService: _cartService,
       onSuccess: (message) {
         print('DEBUG: CartScreen onSuccess appelé - redirection vers la boutique');
+        
+        // ─── NOTIFICATIONS : Affichage de la confirmation ───────────────────────
+        // Déclenche une notification locale pour informer l'utilisateur du succès 
+        // de sa commande. L'identifiant (id) est généré via le timestamp actuel 
+        // pour s'assurer que chaque notification est unique et ne s'écrase pas.
+        // Cela améliore considérablement l'expérience utilisateur (UX).
+        NotificationService().showNotification(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: 'Commande validée ! 🎉',
+          body: 'Votre commande a été passée avec succès. Merci pour votre achat.',
+        );
+
         _loadCart();
         // Rediriger vers la boutique (index 1 dans MainScreenWrapper)
         Future.delayed(const Duration(milliseconds: 300), () {

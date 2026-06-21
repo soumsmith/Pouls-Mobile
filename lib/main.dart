@@ -10,6 +10,7 @@ import 'services/theme_service.dart';
 import 'services/database_service.dart';
 import 'services/auth_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/notification_service.dart';
 import 'utils/notification_helper.dart';
 
 // NavigatorKey global pour accéder au contexte depuis n'importe quel écran
@@ -28,6 +29,10 @@ void main() async {
     // Charger la session sauvegardée
     await AuthService.instance.loadSavedSession();
     print('✅ Service d\'authentification initialisé');
+
+    // Initialiser les notifications locales
+    await NotificationService().init();
+    print('✅ Service de notifications initialisé');
   } catch (e) {
     print('⚠️ Erreur lors de l\'initialisation des services: $e');
     // Continuer même si l'initialisation échoue

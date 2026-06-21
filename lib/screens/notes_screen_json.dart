@@ -54,13 +54,16 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   Timer? _autoPlayTimer;
   int _currentPage = 0;
 
-  // Variable pour l'état d'extension du filtre
-  bool _isFilterExpanded = false;
 
   // Liste des années scolaires fetched depuis l'API
   List<dynamic> _schoolYears = [];
   List<String> _availableYears = [];
   bool _isLoadingYears = false;
+
+  // Cache pour conserver les informations de l'élève même si un filtre ne retourne rien
+  String _cachedNom = '';
+  String _cachedPrenoms = '';
+  String? _cachedPhotoUrl;
 
   @override
   void initState() {
@@ -192,6 +195,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           _bulletinData = apiData;
           _selectedSubject = null;
           _isLoading = false;
+
+          // Mettre à jour le cache si les données sont présentes
+          if (apiData['nom'] != null && apiData['nom'].toString().isNotEmpty) {
+             _cachedNom = apiData['nom'];
+          }
+          if (apiData['prenoms'] != null && apiData['prenoms'].toString().isNotEmpty) {
+             _cachedPrenoms = apiData['prenoms'];
+          }
+          final newPhoto = apiData['photo']?.toString() ?? apiData['photoEleve']?.toString();
+          if (newPhoto != null && newPhoto.isNotEmpty) {
+             _cachedPhotoUrl = newPhoto;
+          }
         });
         _fadeController.forward(from: 0);
 
@@ -300,7 +315,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   List<dynamic> _getFilteredMatieres() {
-    if (_bulletinData == null) return [];
+    if (_bulletinData == null || _bulletinData!['details'] == null) return [];
     List<dynamic> matieres = List.from(
       _bulletinData!['details'] as List<dynamic>,
     );
@@ -313,7 +328,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   List<String> get _availableSubjects {
-    if (_bulletinData == null) return ['Toutes'];
+    if (_bulletinData == null || _bulletinData!['details'] == null) return ['Toutes'];
     final matieres = _bulletinData!['details'] as List<dynamic>;
     return ['Toutes', ...matieres.map((m) => m['matiereLibelle'] as String)];
   }
@@ -333,6 +348,184 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     _loadApiData();
   }
 
+  void _showFiltersBottomSheet() {
+    // Variables temporaires pour retenir les choix avant de les valider
+    String? tempSelectedYear = _selectedYear;
+    String? tempAnneeId = _anneeId;
+    String? tempSelectedSubject = _selectedSubject;
+    String? tempSelectedTrimester = _selectedTrimester;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final bool isDark = AppColors.isDarkMode(context);
+            return Container(
+              // On force une hauteur minimale (50% de l'écran) pour qu'il soit plus grand
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height * 0.55,
+              ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.getSurfaceColor(isDark),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // La colonne prend la place minimale, mais le Container force la taille
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Petite poignée (handle)
+                      Center(
+                        child: Container(
+                          width: 50,
+                          height: 5,
+                          margin: const EdgeInsets.only(bottom: 24),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2.5),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.tune, color: AppColors.primary, size: 28),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Filtres',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.getTextColor(isDark),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      SearchableDropdown(
+                        label: 'Année scolaire',
+                        value: tempSelectedYear ?? 'Chargement...',
+                        items: _availableYears,
+                        onChanged: (val) {
+                          setSheetState(() {
+                            final year = _schoolYears.firstWhere(
+                              (y) => (y['customLibelle'] ?? y['libelle']) == val,
+                              orElse: () => null,
+                            );
+                            if (year != null) {
+                              tempAnneeId = year['id'].toString();
+                              tempSelectedYear = val;
+                              // Optionnel: Réinitialiser la matière et le trimestre si l'année change
+                              tempSelectedSubject = null;
+                              tempSelectedTrimester = null;
+                            }
+                          });
+                        },
+                        isDarkMode: isDark,
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SearchableDropdown(
+                              label: 'Matière',
+                              value: tempSelectedSubject ?? 'Toutes',
+                              items: _availableSubjects,
+                              onChanged: (val) {
+                                setSheetState(() {
+                                  tempSelectedSubject = val == 'Toutes' ? null : val;
+                                });
+                              },
+                              isDarkMode: isDark,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: SearchableDropdown(
+                              label: 'Trimestre',
+                              value: tempSelectedTrimester ?? 'Tous',
+                              items: _availableTrimesters,
+                              onChanged: (val) {
+                                setSheetState(() {
+                                  tempSelectedTrimester = val == 'Tous' ? null : val;
+                                });
+                              },
+                              isDarkMode: isDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 60), // Grand espace pour pousser le bouton vers le bas
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Ferme le bottom sheet
+                          
+                          // On vérifie si un filtre a changé
+                          bool needApiCall = false;
+                          bool needStateUpdate = false;
+                          
+                          // L'année ou le trimestre nécessitent de recharger l'API
+                          if (_anneeId != tempAnneeId || _selectedTrimester != tempSelectedTrimester) {
+                            needApiCall = true;
+                          }
+                          // N'importe quel changement nécessite de mettre à jour l'état
+                          if (_anneeId != tempAnneeId || 
+                              _selectedYear != tempSelectedYear ||
+                              _selectedSubject != tempSelectedSubject ||
+                              _selectedTrimester != tempSelectedTrimester) {
+                            needStateUpdate = true;
+                          }
+
+                          if (needStateUpdate) {
+                            setState(() {
+                              _anneeId = tempAnneeId;
+                              _selectedYear = tempSelectedYear;
+                              _selectedSubject = tempSelectedSubject;
+                              _selectedTrimester = tempSelectedTrimester;
+                              if (needApiCall) _isLoading = true;
+                            });
+                            
+                            // On déclenche l'API seulement maintenant !
+                            if (needApiCall) {
+                              _loadApiData();
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Appliquer et fermer',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // ─── BUILD ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -350,6 +543,33 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               floating: false,
               elevation: 0,
               actions: [
+                GestureDetector(
+                  onTap: _showFiltersBottomSheet,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.screenCardThemed(context),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.screenShadowThemed(context),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.tune,
+                      color: Theme.of(context).primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                ),
                 GestureDetector(
                   onTap: () {
                     setState(() => _isLoading = true);
@@ -484,8 +704,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildFiltersSection(),
-                const SizedBox(height: 16),
                 _buildEmptyState(),
               ],
             ),
@@ -512,8 +730,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildFiltersSection(),
-                    const SizedBox(height: 16),
                     if (matieres.isNotEmpty)
                       _buildNotesSection(matieres)
                     else
@@ -624,7 +840,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     if (_bulletinData == null) return const SizedBox.shrink();
 
     return Container(
-      height: 265, // Increased height to prevent overflow with new card
+      height: 220, // Reduced height for slide cards
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         children: [
@@ -672,15 +888,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   Widget _buildStudentInfoPage() {
-    final nom = _bulletinData!['nom'] ?? '';
-    final prenoms = _bulletinData!['prenoms'] ?? '';
-    final matricule = _bulletinData!['matricule'] ?? '';
-    final anneeLibelle = _bulletinData!['anneeLibelle'] ?? '';
-    final moyGeneral = _bulletinData!['moyGeneral'] ?? 0.0;
-    final libellePeriode = _bulletinData!['libellePeriode'] ?? '';
+    // Utiliser les données du bulletin, sinon utiliser le cache, sinon utiliser les valeurs passées au widget
+    final nom = (_bulletinData != null && _bulletinData!['nom'] != null) ? _bulletinData!['nom'] : _cachedNom;
+    final prenoms = (_bulletinData != null && _bulletinData!['prenoms'] != null) ? _bulletinData!['prenoms'] : _cachedPrenoms;
+    final matricule = (_bulletinData != null && _bulletinData!['matricule'] != null) ? _bulletinData!['matricule'] : widget.matricule;
+    final anneeLibelle = (_bulletinData != null && _bulletinData!['anneeLibelle'] != null) ? _bulletinData!['anneeLibelle'] : (_selectedYear ?? widget.anneeLibelle);
+    final photoUrl = (_bulletinData != null) ? (_bulletinData!['photo']?.toString() ?? _bulletinData!['photoEleve']?.toString()) ?? _cachedPhotoUrl : _cachedPhotoUrl;
+    
+    final moyGeneral = _bulletinData?['moyGeneral'] ?? 0.0;
+    final libellePeriode = _bulletinData?['libellePeriode'] ?? '';
     final periodesMoyenne =
-        _bulletinData!['periodesMoyenne'] as List<dynamic>? ?? [];
-    final moyenneAnnuelleProjettee = _bulletinData!['moyenneAnnuelleProjettee'];
+        _bulletinData?['periodesMoyenne'] as List<dynamic>? ?? [];
+    final moyenneAnnuelleProjettee = _bulletinData?['moyenneAnnuelleProjettee'];
 
     // Regrouper toutes les moyennes et les trier
     List<Map<String, dynamic>> allPeriods = [];
@@ -763,14 +982,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Carte d'informations de l'élève
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
                 begin: Alignment.topLeft,
@@ -793,64 +1007,109 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.screenOrange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: AppColors.screenOrange,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '$prenoms $nom',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                    if (photoUrl != null && photoUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          photoUrl,
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.badge, color: Colors.white, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Matricule: $matricule',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withOpacity(0.9),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$prenoms $nom',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          // const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 16,
+                            runSpacing: 8,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.badge, color: Colors.white, size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Matricule: $matricule',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.calendar_today, color: Colors.white, size: 14),
+                                  // const SizedBox(width: 6),
+                                  Text(
+                                    anneeLibelle,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, color: Colors.white, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      anneeLibelle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 // Séparateur
                 Container(height: 1, color: Colors.white.withOpacity(0.3)),
                 const SizedBox(height: 16),
@@ -861,9 +1120,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1303,195 +1559,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     );
   }
 
-  // ─── FILTERS SECTION ──────────────────────────────────────────────────────
-  Widget _buildFiltersSection() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isFilterExpanded = !_isFilterExpanded;
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 0),
-        decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
-          borderRadius: BorderRadius.circular(20),
-          // boxShadow: const [
-          //   BoxShadow(
-          //     color: AppColors.screenShadow,
-          //     blurRadius: 12,
-          //     offset: Offset(0, 4),
-          //   ),
-          // ],
-        ),
-        child: Column(
-          children: [
-            // Header avec design amélioré
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.screenOrange.withOpacity(0.1),
-                    AppColors.screenOrange.withOpacity(0.05),
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Icône animée avec fond circulaire
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.screenOrange,
-                          AppColors.screenOrangeDark,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.screenOrange.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _isFilterExpanded ? Icons.filter_list : Icons.tune,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Texte avec style amélioré
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Filtres',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.screenOrange,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _isFilterExpanded
-                              ? 'Réduire'
-                              : 'Étendre pour filtrer',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.screenTextSecondaryThemed(context),
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Icône flèche animée
-                  AnimatedRotation(
-                    turns: _isFilterExpanded ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.screenOrange.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: AppColors.screenOrange,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Contenu du filtre avec animation
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              height: _isFilterExpanded ? null : 0,
-              child: _isFilterExpanded
-                  ? Container(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Divider(
-                            color: AppColors.screenDividerThemed(context),
-                            height: 1,
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Année scolaire
-                          SearchableDropdown(
-                            label: 'Année scolaire',
-                            value: _selectedYear ?? 'Chargement...',
-                            items: _availableYears,
-                            onChanged: _onYearChanged,
-                            isDarkMode: AppColors.isDarkMode(context),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Matière + Trimestre
-                          Row(
-                            children: [
-                              Expanded(
-                                child: SearchableDropdown(
-                                  label: 'Matière',
-                                  value: _selectedSubject ?? 'Toutes',
-                                  items: _availableSubjects,
-                                  onChanged: _onSubjectChanged,
-                                  isDarkMode: AppColors.isDarkMode(context),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: SearchableDropdown(
-                                  label: 'Trimestre',
-                                  value: _selectedTrimester ?? 'Tous',
-                                  items: _availableTrimesters,
-                                  onChanged: _onTrimesterChanged,
-                                  isDarkMode: AppColors.isDarkMode(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    )
-                  : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ─── NOTES SECTION ────────────────────────────────────────────────────────
   Widget _buildNotesSection(List<dynamic> matieres) {

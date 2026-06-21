@@ -36,6 +36,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
   bool _pushNotifications = true;
   bool _emailNotifications = false;
   bool _smsNotifications = false;
+  bool _showHomeTutorial = false;
   final ScrollController _scrollController = ScrollController();
 
   late AnimationController _fadeController;
@@ -53,6 +54,16 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
         CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _fadeController.forward();
     _loadAppVersion();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _showHomeTutorial = !(prefs.getBool('hasSeenHomeTutorial') ?? false);
+      });
+    }
   }
 
   Future<void> _loadAppVersion() async {
@@ -181,6 +192,15 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 icon: Icons.text_fields_outlined,
                                 color: AppColors.settingsGrey,
                                 onTap: _showTextSizeSettings,
+                              ),
+                              _SettingsItem(
+                                title: 'Tutoriel d\'accueil',
+                                subtitle: 'Afficher le guide de démarrage',
+                                icon: Icons.school_outlined,
+                                color: AppColors.screenOrange,
+                                isToggle: true,
+                                toggleValue: _showHomeTutorial,
+                                onTap: _toggleHomeTutorial,
                               ),
                             ],
                           ),
@@ -614,6 +634,18 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
         ),
       ],
     );
+  }
+
+  Future<void> _toggleHomeTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final newValue = !_showHomeTutorial;
+    // Si _showHomeTutorial est true, hasSeenHomeTutorial doit être false
+    await prefs.setBool('hasSeenHomeTutorial', !newValue);
+    if (mounted) {
+      setState(() {
+        _showHomeTutorial = newValue;
+      });
+    }
   }
 }
 

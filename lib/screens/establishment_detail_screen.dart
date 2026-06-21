@@ -1094,6 +1094,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     return CustomSliverAppBar(
       title: 'Détails de l\'établissement',
       isDark: isDark,
+      isSliver: true,
       actions: [
         AppBarAction(
           icon: Icons.rate_review_outlined,

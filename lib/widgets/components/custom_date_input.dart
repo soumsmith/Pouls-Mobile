@@ -96,6 +96,12 @@ class DateInputFormatter extends TextInputFormatter {
       if (parts[1].length == 2 && int.tryParse(parts[1]) != null) {
         if (int.parse(parts[1]) > 12) parts[1] = '12';
       }
+      if (parts[2].length == 4 && int.tryParse(parts[2]) != null) {
+        int currentYear = DateTime.now().year;
+        if (int.parse(parts[2]) > currentYear) {
+          parts[2] = currentYear.toString();
+        }
+      }
       text = parts.join('/');
     }
 

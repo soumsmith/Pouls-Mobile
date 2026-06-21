@@ -21,6 +21,7 @@ class CustomSliverAppBar extends StatelessWidget {
   final TextStyle? titleTextStyle;
   final Widget? flexibleSpace;
   final bool stretch;
+  final bool isSliver; // Permet de choisir entre SliverAppBar et AppBar normal
 
   const CustomSliverAppBar({
     super.key,
@@ -39,11 +40,40 @@ class CustomSliverAppBar extends StatelessWidget {
     this.titleTextStyle,
     this.flexibleSpace,
     this.stretch = false,
+    this.isSliver = true, // Par défaut, se comporte comme un SliverAppBar
   });
 
   @override
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
+
+    final titleWidget = title.isEmpty ? null : Text(
+      title,
+      style: titleTextStyle ??
+          TextStyle(
+            fontSize: textSizeService.getScaledFontSize(18),
+            fontWeight: FontWeight.w700,
+            color: AppColors.screenTextPrimaryThemed(context),
+            letterSpacing: -0.5,
+          ),
+    );
+
+    final resolvedLeading = leading ?? (automaticallyImplyLeading ? _buildDefaultLeading(context) : null);
+    final resolvedBgColor = backgroundColor ?? AppColors.screenSurfaceThemed(context);
+    final resolvedSurfaceColor = surfaceTintColor ?? Colors.transparent;
+
+    if (!isSliver) {
+      return AppBar(
+        elevation: elevation ?? 0,
+        surfaceTintColor: resolvedSurfaceColor,
+        backgroundColor: resolvedBgColor,
+        leading: resolvedLeading,
+        title: titleWidget,
+        actions: actions,
+        flexibleSpace: flexibleSpace,
+        centerTitle: false,
+      );
+    }
 
     return SliverAppBar(
       expandedHeight: expandedHeight,
@@ -51,19 +81,10 @@ class CustomSliverAppBar extends StatelessWidget {
       pinned: pinned,
       stretch: stretch,
       elevation: elevation ?? 0,
-      surfaceTintColor: surfaceTintColor ?? Colors.transparent,
-      backgroundColor: backgroundColor ?? AppColors.screenSurfaceThemed(context),
-      leading: leading ?? (automaticallyImplyLeading ? _buildDefaultLeading(context) : null),
-      title: title.isEmpty ? null : Text(
-        title,
-        style: titleTextStyle ??
-            TextStyle(
-              fontSize: textSizeService.getScaledFontSize(18),
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimaryThemed(context),
-              letterSpacing: -0.5,
-            ),
-      ),
+      surfaceTintColor: resolvedSurfaceColor,
+      backgroundColor: resolvedBgColor,
+      leading: resolvedLeading,
+      title: titleWidget,
       actions: actions,
       flexibleSpace: flexibleSpace,
     );

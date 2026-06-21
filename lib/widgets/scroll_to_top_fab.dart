@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'components/bottom_spacer.dart';
 import '../config/app_dimensions.dart';
 
@@ -7,6 +8,7 @@ class ScrollToTopFab extends StatefulWidget {
   final double showOffset;
   final double bottomSpacerHeight;
   final bool isScrollToTop;
+  final bool useGlassEffect;
 
   const ScrollToTopFab({
     Key? key,
@@ -14,6 +16,7 @@ class ScrollToTopFab extends StatefulWidget {
     this.showOffset = 200.0,
     this.bottomSpacerHeight = 40.0,
     this.isScrollToTop = true,
+    this.useGlassEffect = false,
   }) : super(key: key);
 
   @override
@@ -78,6 +81,33 @@ class _ScrollToTopFabState extends State<ScrollToTopFab> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
+    Widget fab = FloatingActionButton(
+      mini: true,
+      elevation: 0,
+      highlightElevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      disabledElevation: 0,
+      onPressed: _performAction,
+      backgroundColor: widget.useGlassEffect
+          ? (isDarkMode ? Colors.grey[800]!.withOpacity(0.5) : Colors.white.withOpacity(0.6))
+          : (isDarkMode ? Colors.grey[800] : Colors.white),
+      foregroundColor: Theme.of(context).primaryColor,
+      shape: const CircleBorder(
+        side: BorderSide.none,
+      ),
+      child: Icon(widget.isScrollToTop ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded),
+    );
+
+    if (widget.useGlassEffect) {
+      fab = ClipOval(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: fab,
+        ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -88,18 +118,11 @@ class _ScrollToTopFabState extends State<ScrollToTopFab> {
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              boxShadow: AppDimensions.getBottomSheetShadow(context),
+              boxShadow: widget.useGlassEffect 
+                  ? null 
+                  : AppDimensions.getBottomSheetShadow(context),
             ),
-            child: FloatingActionButton(
-              mini: true,
-              elevation: 0,
-              highlightElevation: 0,
-              onPressed: _performAction,
-              backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
-              foregroundColor: Theme.of(context).primaryColor,
-              shape: const CircleBorder(),
-              child: Icon(widget.isScrollToTop ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded),
-            ),
+            child: fab,
           ),
         ),
         BottomSpacer(height: widget.bottomSpacerHeight),

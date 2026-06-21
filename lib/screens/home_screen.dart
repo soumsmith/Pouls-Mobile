@@ -32,10 +32,13 @@ import '../services/recommendation_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/search_bar_widget.dart';
+import '../widgets/conditional_showcase.dart';
 import '../config/app_colors.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
 import 'shop_screen.dart';
@@ -241,6 +244,33 @@ class _AnimatedEmptyChildrenMessageState
 }
 
 class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
+  final GlobalKey _one = GlobalKey();
+  final GlobalKey _two = GlobalKey();
+  final GlobalKey _three = GlobalKey();
+  final GlobalKey _four = GlobalKey();
+  final GlobalKey _five = GlobalKey();
+  bool _hasCheckedTutorial = false;
+
+  Future<void> _checkAndStartTutorial(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenTutorial = prefs.getBool('hasSeenHomeTutorial') ?? false;
+    if (!hasSeenTutorial) {
+      await prefs.setBool('hasSeenHomeTutorial', true);
+      final bottomNavKey = MainScreenWrapper.maybeOf(context)?.bottomNavKey;
+      final keys = [_one, _two, _three, _five, _four];
+      if (bottomNavKey != null) keys.add(bottomNavKey);
+      ShowCaseWidget.of(context).startShowCase(keys);
+    }
+  }
+
+  void forceReplayTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenHomeTutorial', false);
+    setState(() {
+      _hasCheckedTutorial = false;
+    });
+  }
+
   List<Child> _children = [];
   List<Child> _filteredChildren = [];
   bool _isLoading = true;
@@ -937,146 +967,6 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
     }
   }
 
-  // Construire la section Coulisses de l'Excellence
-  // Widget _buildCoulisseExcellenceSection() {
-  //   if (!_hasCoulisseExcellenceData) {
-  //     return const SizedBox.shrink();
-  //   }
-
-  //   return Container(
-  //     height: 120,
-  //     padding: const EdgeInsets.symmetric(horizontal: 16),
-  //     child: ListView.builder(
-  //       scrollDirection: Axis.horizontal,
-  //       itemCount: _coulisseVideos.length,
-  //       itemBuilder: (context, index) {
-  //         final video = _coulisseVideos[index];
-  //         return _buildCoulisseVideoCard(video, index);
-  //       },
-  //     ),
-  //   );
-  // }
-
-  // Construire une carte de vidéo pour le carrousel
-  // Widget _buildCoulisseVideoCard(CoulisseExcellence video, int index) {
-  //   return GestureDetector(
-  //     onTap: () {
-  //       Navigator.of(context).push(
-  //         MaterialPageRoute(
-  //           builder: (context) => CoulisseVideoFeedScreen(
-  //             videos: _coulisseVideos,
-  //             initialIndex: index,
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //     child: Container(
-  //       width: 120,
-  //       margin: const EdgeInsets.only(right: 12),
-  //       child: ClipRRect(
-  //         borderRadius: BorderRadius.circular(16),
-  //         child: Stack(
-  //           children: [
-  //             // Image miniature de la vidéo YouTube
-  //             FadeInImage.assetNetwork(
-  //               width: 300,
-  //               height: 120,
-  //               fit: BoxFit.cover,
-  //               placeholder: 'assets/images/video-placeholder.jpg',
-  //               image:
-  //                   'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg',
-  //               imageErrorBuilder: (context, error, stackTrace) {
-  //                 return Container(
-  //                   width: 300,
-  //                   height: 120,
-  //                   color: Colors.grey[300],
-  //                   child: const Icon(
-  //                     Icons.movie,
-  //                     color: Colors.grey,
-  //                     size: 48,
-  //                   ),
-  //                 );
-  //               },
-  //             ),
-
-  //             // Overlay sombre pour améliorer la lisibilité
-  //             Container(
-  //               width: 300,
-  //               height: 120,
-  //               decoration: BoxDecoration(
-  //                 gradient: LinearGradient(
-  //                   begin: Alignment.topCenter,
-  //                   end: Alignment.bottomCenter,
-  //                   colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-  //                 ),
-  //               ),
-  //             ),
-
-  //             // Icône de lecture centrale
-  //             Positioned(
-  //               top: 0,
-  //               left: 0,
-  //               right: 0,
-  //               bottom: 0,
-  //               child: Center(
-  //                 child: Container(
-  //                   width: 50,
-  //                   height: 50,
-  //                   decoration: BoxDecoration(
-  //                     color: Colors.black.withOpacity(0.6),
-  //                     shape: BoxShape.circle,
-  //                     border: Border.all(
-  //                       color: Colors.white.withOpacity(0.8),
-  //                       width: 2,
-  //                     ),
-  //                   ),
-  //                   child: const Icon(
-  //                     Icons.play_arrow,
-  //                     color: Colors.white,
-  //                     size: 28,
-  //                   ),
-  //                 ),
-  //               ),
-  //             ),
-
-  //             // Informations en bas
-  //             Positioned(
-  //               bottom: 8,
-  //               left: 8,
-  //               right: 8,
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Text(
-  //                     video.titre,
-  //                     style: const TextStyle(
-  //                       color: Colors.white,
-  //                       fontSize: 13,
-  //                       fontWeight: FontWeight.bold,
-  //                     ),
-  //                     maxLines: 2,
-  //                     overflow: TextOverflow.ellipsis,
-  //                   ),
-  //                   const SizedBox(height: 2),
-  //                   Text(
-  //                     '${video.fullName} · ${video.classe}',
-  //                     style: const TextStyle(
-  //                       color: Colors.white70,
-  //                       fontSize: 11,
-  //                     ),
-  //                     maxLines: 1,
-  //                     overflow: TextOverflow.ellipsis,
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
   // Construire la section Événements et Faits Scolaires
   Widget _buildEventsSection() {
     final isTablet =
@@ -1115,13 +1005,17 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire une carte d'événement
   Widget _buildEventCard(Event event, int index) {
     final uiData = event.toUiMap();
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
 
     String? typeBilleterie;
     Color? tagColor;
-    if (uiData['typebilleterie'] != null && (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini') {
+    if (uiData['typebilleterie'] != null &&
+        (uiData['typebilleterie'] as String).toLowerCase() != 'non_defini') {
       typeBilleterie = (uiData['typebilleterie'] as String).toUpperCase();
-      tagColor = typeBilleterie.toLowerCase() == 'gratuit' ? Colors.green : Colors.orange;
+      tagColor = typeBilleterie.toLowerCase() == 'gratuit'
+          ? Colors.green
+          : Colors.orange;
     }
 
     return Padding(
@@ -1157,7 +1051,8 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+"
   Widget _buildSeeMoreEventsCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final double cardWidth = _getCardWidth(context, 16.0);
     final double imageRatio = isTablet ? 0.62 : 0.8;
     final double imageHeight = cardWidth * imageRatio;
@@ -1235,7 +1130,8 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire une carte de blog
   Widget _buildBlogCard(Blog blog, int index) {
     final uiData = blog.toUiMap();
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
 
     return Padding(
       padding: const EdgeInsets.only(right: 16),
@@ -1269,7 +1165,8 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+" pour les blogs
   Widget _buildSeeMoreBlogsCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final double cardWidth = _getCardWidth(context, 16.0);
     final double imageRatio = isTablet ? 0.62 : 0.8;
     final double imageHeight = cardWidth * imageRatio;
@@ -1495,7 +1392,8 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+" pour les vidéos
   Widget _buildSeeMoreVideosCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final double cardWidth = _getCardWidth(context, 16.0);
     final double imageRatio = isTablet ? 0.62 : 0.9;
     final double imageHeight = cardWidth * imageRatio;
@@ -1573,7 +1471,8 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   // Construire la carte "Voir+" pour la visite guidée
   Widget _buildSeeMoreVisiteGuideeCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
     final double cardWidth = _getCardWidth(context, 16.0);
     final double imageRatio = isTablet ? 0.62 : 0.8;
     final double imageHeight = cardWidth * imageRatio;
@@ -1727,6 +1626,13 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
       );
     }
 
+    if (!_hasCheckedTutorial) {
+      _hasCheckedTutorial = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAndStartTutorial(context);
+      });
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
@@ -1824,38 +1730,46 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
               ),
               const SizedBox(width: 8),
               // Bouton notifications
-              _darkIconButton(
-                icon: Icons.notifications_outlined,
-                onTap: _showNotificationsMenu,
-                showBadge: _unreadNotificationsCount > 0,
-                badgeCount: _unreadNotificationsCount,
+              ConditionalShowcase(
+                showcaseKey: _four,
+                description: 'Consultez les dernières alertes ici.',
+                child: _darkIconButton(
+                  icon: Icons.notifications_outlined,
+                  onTap: _showNotificationsMenu,
+                  showBadge: _unreadNotificationsCount > 0,
+                  badgeCount: _unreadNotificationsCount,
+                ),
               ),
               const SizedBox(width: 8),
               // User avatar
-              GestureDetector(
-                onTap: () {
-                  MainScreenWrapper.of(
-                    context,
-                  ).navigateToExtraScreen(const ProfileScreen());
-                },
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [_kOrange, _kOrangeDeep],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              ConditionalShowcase(
+                showcaseKey: _one,
+                description: 'Accédez à votre profil et paramètres depuis ici.',
+                child: GestureDetector(
+                  onTap: () {
+                    MainScreenWrapper.of(
+                      context,
+                    ).navigateToExtraScreen(const ProfileScreen());
+                  },
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [_kOrange, _kOrangeDeep],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      _getUserInitials(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: _textSizeService.getScaledFontSize(13),
+                    child: Center(
+                      child: Text(
+                        _getUserInitials(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: _textSizeService.getScaledFontSize(13),
+                        ),
                       ),
                     ),
                   ),
@@ -2513,68 +2427,74 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
         AuthService.instance.getCurrentUser()?.userLevel ?? 'free';
     final isPremium = userLevel == 'premium' || userLevel == 'vip';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        SectionRow(
-          title: 'MES ENFANTS',
-          onSeeMore: (isPremium && _filteredChildren.length > 4)
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AllChildrenScreen(),
-                    ),
-                  );
-                }
-              : null,
-          seeMoreText: 'Voir plus',
-          seeMoreBackgroundColor: const Color.fromARGB(
-            255,
-            255,
-            255,
-            255,
-          ).withOpacity(0.15),
-          seeMoreTextColor: const Color.fromARGB(255, 255, 255, 255),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: AppDimensions.getChildImageSize(context) + 48,
-          child: Row(
-            children: [
-              // ── Liste scrollable des enfants ou message vide ──
-              Expanded(
-                child: (isPremium || (_filteredChildren.isEmpty && !_isLoading))
-                    ? const _AnimatedEmptyChildrenMessage()
-                    : ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.fromLTRB(20, 0, 4, 0),
-                        children: _filteredChildren
-                            .asMap()
-                            .entries
-                            .map((e) => _buildChildAvatar(e.value, e.key))
-                            .toList(),
+    return ConditionalShowcase(
+      showcaseKey: _two,
+      description:
+          'Sélectionnez un enfant pour consulter ses informations spécifiques.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          SectionRow(
+            title: 'MES ENFANTS',
+            onSeeMore: (_filteredChildren.length > 4)
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AllChildrenScreen(),
                       ),
-              ),
-              // ── Séparateur vertical ──
-              // Container(
-              //   width: 1,
-              //   height: 52,
-              //   margin: const EdgeInsets.symmetric(horizontal: 4),
-              //   color: _kDarkBorder,
-              // ),
-              // // ── Bouton Nouveau toujours visible ──
-              Padding(
-                padding: const EdgeInsets.only(right: 7),
-                child: _buildAddChildButton(),
-              ),
-            ],
+                    );
+                  }
+                : null,
+            seeMoreText: 'Voir plus',
+            seeMoreBackgroundColor: const Color.fromARGB(
+              255,
+              255,
+              255,
+              255,
+            ).withOpacity(0.15),
+            seeMoreTextColor: const Color.fromARGB(255, 255, 255, 255),
           ),
-        ),
-        if (!isPremium) _buildChildrenCarouselIndicators(),
-        const SizedBox(height: 16),
-      ],
+          const SizedBox(height: 8),
+          SizedBox(
+            height: AppDimensions.getChildImageSize(context) + 48,
+            child: Row(
+              children: [
+                // ── Liste scrollable des enfants ou message vide ──
+                Expanded(
+                  child:
+                      (isPremium || (_filteredChildren.isEmpty && !_isLoading))
+                      ? const _AnimatedEmptyChildrenMessage()
+                      : ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.fromLTRB(20, 0, 4, 0),
+                          children: _filteredChildren
+                              .asMap()
+                              .entries
+                              .map((e) => _buildChildAvatar(e.value, e.key))
+                              .toList(),
+                        ),
+                ),
+                // ── Séparateur vertical ──
+                // Container(
+                //   width: 1,
+                //   height: 52,
+                //   margin: const EdgeInsets.symmetric(horizontal: 4),
+                //   color: _kDarkBorder,
+                // ),
+                // // ── Bouton Nouveau toujours visible ──
+                Padding(
+                  padding: const EdgeInsets.only(right: 7),
+                  child: _buildAddChildButton(),
+                ),
+              ],
+            ),
+          ),
+          if (!isPremium) _buildChildrenCarouselIndicators(),
+          if (_filteredChildren.isEmpty) const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 
@@ -2691,18 +2611,78 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
   }
 
   Widget _buildAddChildButton() {
-    return PrivilegeGuard(
-      requiredLevel: 'free',
-      showLockOverlay: false,
-      fallback: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
-          );
-        },
-        child: Opacity(
-          opacity: 0.5, // Effet grisé
+    return ConditionalShowcase(
+      showcaseKey: _five,
+      description: 'Ajoutez un nouvel enfant en cliquant ici.',
+      child: PrivilegeGuard(
+        requiredLevel: 'free',
+        showLockOverlay: false,
+        fallback: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SubscriptionScreen(),
+              ),
+            );
+          },
+          child: Opacity(
+            opacity: 0.5, // Effet grisé
+            child: SizedBox(
+              width: AppDimensions.getChildImageSize(context) + 16,
+              child: Column(
+                children: [
+                  Container(
+                    width: AppDimensions.getChildImageSize(context),
+                    height: AppDimensions.getChildImageSize(context),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _kDarkBorder, width: 2),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          Icons.add,
+                          color: const Color.fromARGB(
+                            255,
+                            226,
+                            226,
+                            240,
+                          ).withOpacity(0.3),
+                          size: AppDimensions.getChildImageSize(context) * 0.33,
+                        ),
+                        const Icon(
+                          Icons.lock_rounded,
+                          color: Colors.amber,
+                          size: 26,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    'Nouveau',
+                    style: TextStyle(
+                      color: _kTextSecondary,
+                      fontSize: AppDimensions.getChildNameTextSize(context),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        child: GestureDetector(
+          onTap: () async {
+            final result = await Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
+            // Le résultat n'est plus nécessaire car la redirection est gérée dans AddChildScreen
+          },
           child: SizedBox(
             width: AppDimensions.getChildImageSize(context) + 16,
             child: Column(
@@ -2711,29 +2691,18 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
                   width: AppDimensions.getChildImageSize(context),
                   height: AppDimensions.getChildImageSize(context),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(color: _kDarkBorder, width: 2),
+                    border: Border.all(
+                      color: _kDarkBorder,
+                      width: 2,
+                      style: BorderStyle
+                          .solid, // dashed not directly supported; use a package for dashed
+                    ),
                   ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.add,
-                        color: const Color.fromARGB(
-                          255,
-                          226,
-                          226,
-                          240,
-                        ).withOpacity(0.3),
-                        size: AppDimensions.getChildImageSize(context) * 0.33,
-                      ),
-                      const Icon(
-                        Icons.lock_rounded,
-                        color: Colors.amber,
-                        size: 26,
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.add,
+                    color: const Color.fromARGB(255, 226, 226, 240),
+                    size: AppDimensions.getChildImageSize(context) * 0.33,
                   ),
                 ),
                 SizedBox(height: 5),
@@ -2748,49 +2717,6 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-      child: GestureDetector(
-        onTap: () async {
-          final result = await Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
-          // Le résultat n'est plus nécessaire car la redirection est gérée dans AddChildScreen
-        },
-        child: SizedBox(
-          width: AppDimensions.getChildImageSize(context) + 16,
-          child: Column(
-            children: [
-              Container(
-                width: AppDimensions.getChildImageSize(context),
-                height: AppDimensions.getChildImageSize(context),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _kDarkBorder,
-                    width: 2,
-                    style: BorderStyle
-                        .solid, // dashed not directly supported; use a package for dashed
-                  ),
-                ),
-                child: Icon(
-                  Icons.add,
-                  color: const Color.fromARGB(255, 226, 226, 240),
-                  size: AppDimensions.getChildImageSize(context) * 0.33,
-                ),
-              ),
-              SizedBox(height: 5),
-              Text(
-                'Nouveau',
-                style: TextStyle(
-                  color: _kTextSecondary,
-                  fontSize: AppDimensions.getChildNameTextSize(context),
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
           ),
         ),
       ),
@@ -2841,6 +2767,7 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
                   child: ScrollToTopFab(
                     scrollController: _scrollController,
                     bottomSpacerHeight: 115.0,
+                    useGlassEffect: true,
                   ),
                 ),
               ),
@@ -2859,195 +2786,205 @@ class _HomeScreenState extends State<HomeScreen> with ConnectivityReloadMixin {
     return [
       SectionRow(title: 'ACTIONS RAPIDES'),
       const SizedBox(height: 16),
-      SizedBox(
-        height: AppDimensions.getSquareCardHeightSize(context) + 20,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(
-            horizontal:
-                AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
-          ),
-          children: [
-            _buildCard(
-              index: 0,
-              cardKey: 'inscription',
-              title: 'Inscription \n en ligne',
-              imagePath: 'assets/images/icons/inscription_en_ligne.png',
-              color: AppColors.cardLightGrey,
-              backgroundColor: const Color(0xFFF8FCFF),
-              textColor: const Color(0xFF333333),
-              actionText: '',
-              allowLineBreak: true,
-              enableInnerBorder: false,
-              enableOuterBorder: false,
-              innerBorderColor: const Color(0xFF93C5FD),
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              width: AppDimensions.getSquareCardWidthSize(context),
-              height: AppDimensions.getSquareCardHeightSize(context),
-              centerTitle: true,
-              //isLocked: !isPremium,
-              onTap: () => InscriptionBottomSheet.show(
-                context,
-                imagePath: 'assets/images/icons/inscription_en_ligne.png',
-                imageBackgroundColor: const Color(0xFFF8FCFF),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              ),
+      ConditionalShowcase(
+        showcaseKey: _three,
+        description: 'Accédez en un clic aux bulletins, absences et retards.',
+        child: SizedBox(
+          height: AppDimensions.getSquareCardHeightSize(context) + 20,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(
+              horizontal:
+                  AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
             ),
-            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-            _buildCard(
-              index: 1,
-              cardKey: 'integration',
-              title: 'Demande\nintégration',
-              imagePath: 'assets/images/icons/demande_integration.png',
-              color: AppColors.cardLightGrey,
-              backgroundColor: const Color(0xFFF7FEFC),
-              textColor: const Color(0xFF333333),
-              actionText: '',
-              enableInnerBorder: false,
-              enableOuterBorder: false,
-              allowLineBreak: true,
-              innerBorderColor: const Color(0xFF6EE7B7),
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              width: AppDimensions.getSquareCardWidthSize(context),
-              height: AppDimensions.getSquareCardHeightSize(context),
-              centerTitle: true,
-              //isLocked: !isPremium,
-              onTap: () => showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => IntegrationBottomSheet(
-                  imagePath: 'assets/images/icons/demande_integration.png',
-                  imageBackgroundColor: const Color(0xFFF7FEFC),
+            children: [
+              _buildCard(
+                index: 0,
+                cardKey: 'inscription',
+                title: 'Inscription \n en ligne',
+                imagePath: 'assets/images/icons/inscription_en_ligne.png',
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFF8FCFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                allowLineBreak: true,
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                innerBorderColor: const Color(0xFF93C5FD),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                //isLocked: !isPremium,
+                onTap: () => InscriptionBottomSheet.show(
+                  context,
+                  imagePath: 'assets/images/icons/inscription_en_ligne.png',
+                  imageBackgroundColor: const Color(0xFFF8FCFF),
                   imageBorderRadius: AppDimensions.getImageBorderRadius(
                     context,
                   ),
                 ),
               ),
-            ),
-            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-            _buildCard(
-              index: 2,
-              cardKey: 'consulter_demande',
-              title: 'Consulter\ndemande',
-              imagePath: 'assets/images/icons/consulter_demande.png',
-              color: AppColors.cardLightGrey,
-              backgroundColor: const Color(0xFFFFFEF7),
-              textColor: const Color(0xFF333333),
-              actionText: '',
-              enableInnerBorder: false,
-              enableOuterBorder: false,
-              allowLineBreak: true,
-              innerBorderColor: const Color(0xFFFCD34D),
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              width: AppDimensions.getSquareCardWidthSize(context),
-              height: AppDimensions.getSquareCardHeightSize(context),
-              centerTitle: true,
-              //isLocked: !isPremium,
-              onTap: () => IntegrationRequestBottomSheet.show(
-                context,
+              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+              _buildCard(
+                index: 1,
+                cardKey: 'integration',
+                title: 'Demande\nintégration',
+                imagePath: 'assets/images/icons/demande_integration.png',
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFF7FEFC),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFF6EE7B7),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                //isLocked: !isPremium,
+                onTap: () => showModalBottomSheet(
+                  constraints: const BoxConstraints(maxWidth: double.infinity),
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => IntegrationBottomSheet(
+                    imagePath: 'assets/images/icons/demande_integration.png',
+                    imageBackgroundColor: const Color(0xFFF7FEFC),
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(
+                      context,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+              _buildCard(
+                index: 2,
+                cardKey: 'consulter_demande',
+                title: 'Consulter\ndemande',
                 imagePath: 'assets/images/icons/consulter_demande.png',
-                imageBackgroundColor: const Color(0xFFFFFEF7),
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFFFFEF7),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFFFCD34D),
                 imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                //isLocked: !isPremium,
+                onTap: () => IntegrationRequestBottomSheet.show(
+                  context,
+                  imagePath: 'assets/images/icons/consulter_demande.png',
+                  imageBackgroundColor: const Color(0xFFFFFEF7),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                ),
               ),
-            ),
-            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-            _buildCard(
-              index: 3,
-              cardKey: 'parrainage',
-              title: 'Parrainer\nutilisateur',
-              imagePath: 'assets/images/icons/parrainer_utilisateur.png',
-              color: AppColors.cardLightGrey,
-              backgroundColor: const Color(0xFFFCFAFF),
-              textColor: const Color(0xFF333333),
-              actionText: '',
-              enableInnerBorder: false,
-              allowLineBreak: true,
-              enableOuterBorder: false,
-              innerBorderColor: const Color(0xFFC4B5FD),
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              width: AppDimensions.getSquareCardWidthSize(context),
-              height: AppDimensions.getSquareCardHeightSize(context),
-              centerTitle: true,
-              //isLocked: !isPremium,
-              onTap: () => showSponsorshipBottomSheet(
-                context,
+              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+              _buildCard(
+                index: 3,
+                cardKey: 'parrainage',
+                title: 'Parrainer\nutilisateur',
                 imagePath: 'assets/images/icons/parrainer_utilisateur.png',
-                imageBackgroundColor: const Color(0xFFFCFAFF),
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFFCFAFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: false,
+                allowLineBreak: true,
+                enableOuterBorder: false,
+                innerBorderColor: const Color(0xFFC4B5FD),
                 imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                //isLocked: !isPremium,
+                onTap: () => showSponsorshipBottomSheet(
+                  context,
+                  imagePath: 'assets/images/icons/parrainer_utilisateur.png',
+                  imageBackgroundColor: const Color(0xFFFCFAFF),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
+                  ),
+                ),
               ),
-            ),
-            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-            _buildCard(
-              index: 4,
-              cardKey: 'panier',
-              title: 'Mon\npanier',
-              imagePath: 'assets/images/icons/mon_panier.png',
-              color: AppColors.cardLightGrey,
-              backgroundColor: const Color(0xFFFCFAFF),
-              textColor: const Color(0xFF333333),
-              actionText: '',
-              enableInnerBorder: false,
-              enableOuterBorder: false,
-              allowLineBreak: true,
-              innerBorderColor: const Color(0xFFFB923C),
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              width: AppDimensions.getSquareCardWidthSize(context),
-              height: AppDimensions.getSquareCardHeightSize(context),
-              centerTitle: true,
-              onTap: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const CartScreen()));
-              },
-            ),
-            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-            _buildCard(
-              index: 5,
-              cardKey: 'commandes',
-              title: 'Mes\ncommandes',
-              imagePath: 'assets/images/icons/mes_commandes.png',
-              color: AppColors.cardLightGrey,
-              backgroundColor: const Color(0xFFFCFAFF),
-              textColor: const Color(0xFF333333),
-              actionText: '',
-              enableInnerBorder: false,
-              enableOuterBorder: false,
-              allowLineBreak: true,
-              innerBorderColor: const Color(0xFF34D399),
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              width: AppDimensions.getSquareCardWidthSize(context),
-              height: AppDimensions.getSquareCardHeightSize(context),
-              centerTitle: true,
-              onTap: () {
-                MainScreenWrapper.of(
-                  context,
-                ).navigateToExtraScreen(const OrdersScreen());
-              },
-            ),
-            SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-            _buildCard(
-              index: 6,
-              cardKey: 'recommendation',
-              title: 'Proposer\nune école',
-              imagePath: 'assets/images/icons/recommander_une_ecole.png',
-              color: AppColors.cardLightGrey,
-              backgroundColor: const Color(0xFFFCFAFF),
-              textColor: const Color(0xFF333333),
-              actionText: '',
-              enableInnerBorder: false,
-              enableOuterBorder: false,
-              allowLineBreak: true,
-              innerBorderColor: const Color(0xFFFDBA74),
-              imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-              width: AppDimensions.getSquareCardWidthSize(context),
-              height: AppDimensions.getSquareCardHeightSize(context),
-              centerTitle: true,
-              //isLocked: isPremium,
-              onTap: _showRecommendationBottomSheet,
-            ),
-          ],
+              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+              _buildCard(
+                index: 4,
+                cardKey: 'panier',
+                title: 'Mon\npanier',
+                imagePath: 'assets/images/icons/mon_panier.png',
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFFCFAFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFFFB923C),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const CartScreen()));
+                },
+              ),
+              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+              _buildCard(
+                index: 5,
+                cardKey: 'commandes',
+                title: 'Mes\ncommandes',
+                imagePath: 'assets/images/icons/mes_commandes.png',
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFFCFAFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFF34D399),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                onTap: () {
+                  MainScreenWrapper.of(
+                    context,
+                  ).navigateToExtraScreen(const OrdersScreen());
+                },
+              ),
+              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+              _buildCard(
+                index: 6,
+                cardKey: 'recommendation',
+                title: 'Proposer\nune école',
+                imagePath: 'assets/images/icons/recommander_une_ecole.png',
+                color: AppColors.cardLightGrey,
+                backgroundColor: const Color(0xFFFCFAFF),
+                textColor: const Color(0xFF333333),
+                actionText: '',
+                enableInnerBorder: false,
+                enableOuterBorder: false,
+                allowLineBreak: true,
+                innerBorderColor: const Color(0xFFFDBA74),
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                width: AppDimensions.getSquareCardWidthSize(context),
+                height: AppDimensions.getSquareCardHeightSize(context),
+                centerTitle: true,
+                //isLocked: isPremium,
+                onTap: _showRecommendationBottomSheet,
+              ),
+            ],
+          ),
         ),
       ),
 

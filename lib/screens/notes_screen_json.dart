@@ -214,11 +214,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         // Démarrer l'auto-play du carrousel
         _startAutoPlay();
 
-        // Notification de succès
-        final matieres = apiData['details'] as List<dynamic>? ?? [];
-        _showSuccess(
-          'Notes chargées : ${matieres.length} matière${matieres.length > 1 ? 's' : ''}',
-        );
+        // Notification de succès supprimée à la demande de l'utilisateur
       } else {
         setState(() {
           _bulletinData = null;

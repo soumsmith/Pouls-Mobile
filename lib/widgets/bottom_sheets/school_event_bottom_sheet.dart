@@ -5,24 +5,45 @@ import 'package:parents_responsable/models/event.dart'; // Import du modèle
 import 'package:parents_responsable/screens/event_detail_screen.dart'; // Import de l'écran de détail
 import 'package:parents_responsable/services/event_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
-import 'package:parents_responsable/widgets/bottom_sheets/bottom_sheet_header.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
+import 'reusable_bottom_sheet.dart';
 
 class SchoolEventBottomSheet extends StatefulWidget {
   final String schoolCode;
   final String schoolName;
-  final String? imagePath;
-  final Color? imageBackgroundColor;
-  final double? imageBorderRadius;
-
   const SchoolEventBottomSheet({
     super.key,
     required this.schoolCode,
     required this.schoolName,
-    this.imagePath,
-    this.imageBackgroundColor,
-    this.imageBorderRadius,
   });
+
+  static Future<void> show({
+    required BuildContext context,
+    required String schoolCode,
+    required String schoolName,
+    String? imagePath,
+    Color? imageBackgroundColor,
+    double? imageBorderRadius,
+  }) {
+    return ReusableBottomSheet.show<void>(
+      context: context,
+      title: 'Événements scolaires',
+      subtitle: 'Calendrier des activités',
+      icon: Icons.event_rounded,
+      iconColor: const Color(0xFF8B5CF6),
+      imagePath: imagePath,
+      iconBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(0),
+      content: SchoolEventBottomSheet(
+        schoolCode: schoolCode,
+        schoolName: schoolName,
+      ),
+    );
+  }
 
   @override
   State<SchoolEventBottomSheet> createState() => _SchoolEventBottomSheetState();
@@ -116,37 +137,10 @@ class _SchoolEventBottomSheetState extends State<SchoolEventBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const themeColor = Color(0xFF8B5CF6);
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomSheetHeader(
-            icon: Icons.event_rounded,
-            imagePath: widget.imagePath,
-            imageBackgroundColor: widget.imageBackgroundColor,
-            imageBorderRadius: widget.imageBorderRadius,
-            iconColor: themeColor,
-            title: 'Événements scolaires',
-            description: 'Calendrier des activités',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-              child: _buildEventsList(isDark),
-            ),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      child: _buildEventsList(isDark),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
 import 'visite_guidee_video_feed_screen.dart';
@@ -31,10 +32,12 @@ class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   });
 
   @override
-  State<VisiteGuideeVideoFeedScreen> createState() => _VisiteGuideeVideoFeedScreenState();
+  State<VisiteGuideeVideoFeedScreen> createState() =>
+      _VisiteGuideeVideoFeedScreenState();
 }
 
-class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScreen> {
+class _VisiteGuideeVideoFeedScreenState
+    extends State<VisiteGuideeVideoFeedScreen> {
   late PageController _pageController;
   int _currentIndex = 0;
   List<YoutubePlayerController?> _youtubeControllers = [];
@@ -54,7 +57,10 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
   void dispose() {
     _pageController.dispose();
     for (var controller in _youtubeControllers) {
-      controller?.dispose();
+      if (controller != null) {
+        controller.pause();
+        controller.dispose();
+      }
     }
     super.dispose();
   }
@@ -66,7 +72,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       final videoId = video.youtubeVideoId;
       print('Traitement vidéo: ${video.typeVideo} - VideoID: $videoId');
       if (videoId.isNotEmpty) {
-        final isInitialVideo = widget.videos.indexOf(video) == widget.initialIndex;
+        final isInitialVideo =
+            widget.videos.indexOf(video) == widget.initialIndex;
         final controller = YoutubePlayerController(
           initialVideoId: videoId,
           flags: YoutubePlayerFlags(
@@ -108,14 +115,14 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
         videoId: videoId,
         type: 'like',
       );
-      
+
       final comments = await InteractionApiService.listInteractions(
         videoId: videoId,
         type: 'comment',
       );
-      
+
       final hasLiked = likes.any((like) => like.userId == userId);
-      
+
       if (mounted) {
         setState(() {
           if (hasLiked) {
@@ -128,7 +135,9 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
         });
       }
     } catch (e) {
-      print('⚠️ Erreur lors de la récupération des interactions pour la vidéo $videoId: $e');
+      print(
+        '⚠️ Erreur lors de la récupération des interactions pour la vidéo $videoId: $e',
+      );
     }
   }
 
@@ -150,14 +159,26 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
     }
 
     if (widget.videos.isNotEmpty && index < widget.videos.length) {
-      final videoId = widget.videos[index].id ?? widget.videos[index].typeVideo.hashCode;
+      final videoId =
+          widget.videos[index].id ?? widget.videos[index].typeVideo.hashCode;
       _fetchVideoInteractions(videoId);
     }
   }
 
   // Naviguer vers le détail de l'école
   Future<void> _navigateToEcole(String code) async {
+    print('🏫 ═══════════════════════════════════════════');
+    print('🏫 BOUTON ÉCOLE CLIQUÉ');
+    print('🏫 ═══════════════════════════════════════════');
+    print('🏫 Code école reçu: "$code"');
+    print('🏫 Index courant: $_currentIndex');
+    if (widget.videos.isNotEmpty && _currentIndex < widget.videos.length) {
+      final video = widget.videos[_currentIndex];
+      print('🏫 Vidéo courante - id: ${video.id}, code: "${video.code}", etablissement: "${video.etablissement}", title: "${video.title}"');
+    }
+
     if (code.isEmpty) {
+      print('🏫 ❌ Code école VIDE ! Navigation annulée.');
       CartSnackBar.showOverlay(
         context,
         productName: '',
@@ -174,28 +195,32 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
     }
 
     try {
-      // Charger les détails de l'école via l'API de détail
-      final ecoleDetail = await EcoleApiService.getEcoleDetail(code);
+      print('🏫 📡 Appel API getEcoleParametres("$code")...');
+      // Charger les détails de l'école via l'API des paramètres
+      final ecoleData = await EcoleApiService.getEcoleParametres(code);
+      print('🏫 ✅ API OK - nom: "${ecoleData.nom}", ville: "${ecoleData.ville}", statut: "${ecoleData.statut}"');
 
       // Créer un objet Ecole minimal avec les données récupérées
       final ecole = Ecole(
-        pays: ecoleDetail.data.pays,
-        ville: ecoleDetail.data.ville,
-        adresse: ecoleDetail.data.adresse,
-        parametreNom: ecoleDetail.data.nom,
-        logo: ecoleDetail.data.logo ?? '',
-        telephone: ecoleDetail.data.telephone,
+        pays: ecoleData.pays,
+        ville: ecoleData.ville,
+        adresse: ecoleData.adresse,
+        parametreNom: ecoleData.nom,
+        logo: ecoleData.logo ?? '',
+        telephone: ecoleData.telephone,
         parametreCode: code,
-        statut: ecoleDetail.data.statut,
+        statut: ecoleData.statut,
         filiereNom: [],
-        imagefond: ecoleDetail.image,
-        paramecole: null,
+        imagefond: ecoleData.imagefond,
+        paramecole: code,
       );
 
       if (mounted) {
+        print('🏫 🚀 Navigation vers EstablishmentDetailScreen...');
         MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
       }
     } catch (e) {
+      print('🏫 ❌ ERREUR: $e');
       if (mounted) {
         CartSnackBar.showOverlay(
           context,
@@ -211,16 +236,17 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
   // Afficher les options de partage
   void _shareVideo() {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
-    
+
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    final String videoUrl = 'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
-    
+    final String videoUrl =
+        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -230,7 +256,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
         itemTitle: video.displayTitle,
-        shareText: '🎬 Découvrez cette visite guidée : ${video.displayTitle}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
+        shareText:
+            '🎬 Découvrez cette visite guidée : ${video.displayTitle}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
       ),
     );
   }
@@ -238,52 +265,54 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
   // Afficher les commentaires
   void _showComments() {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
-    
+
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => _CommentsSheet(videoId: video.id ?? video.typeVideo.hashCode),
+      title: 'Commentaires',
+      subtitle: 'Échangez sur cette vidéo',
+      icon: Icons.comment_rounded,
+      iconColor: const Color(0xFF0288D1),
+      wrapWithScrollView: false,
+      contentPadding: EdgeInsets.zero,
+      content: _CommentsSheet(videoId: video.id ?? video.typeVideo.hashCode),
     );
   }
 
   // Afficher la notation
   void _showRating() {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
-    
+
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => _RatingSheet(video: video),
+      title: 'Noter la vidéo',
+      icon: Icons.star_rounded,
+      iconColor: Colors.orange,
+      wrapWithScrollView: false,
+      contentPadding: EdgeInsets.zero,
+      content: _RatingSheet(video: video),
     );
   }
 
   Future<void> _toggleLike() async {
     if (widget.videos.isEmpty) return;
-    
+
     final video = widget.videos[_currentIndex];
     final videoId = video.id ?? video.typeVideo.hashCode;
-    
+
     final userId = InteractionApiService.getCurrentUserId();
     if (userId == null) {
       CartSnackBar.showOverlay(
@@ -351,7 +380,10 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
             ),
           ),
           leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black87),
+            icon: Icon(
+              Icons.arrow_back,
+              color: isDarkMode ? Colors.white : Colors.black87,
+            ),
             onPressed: () {
               if (MainScreenWrapper.maybeOf(context) != null) {
                 MainScreenWrapper.of(context).goBackToPreviousTab();
@@ -415,10 +447,7 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
               ),
               child: Text(
                 '${_currentIndex + 1}/${widget.videos.length}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
           ),
@@ -430,13 +459,15 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
             child: Column(
               children: [
                 _ActionButton(
-                  icon: (_youtubeControllers.isNotEmpty &&
+                  icon:
+                      (_youtubeControllers.isNotEmpty &&
                           _currentIndex < _youtubeControllers.length &&
                           _youtubeControllers[_currentIndex] != null &&
                           _youtubeControllers[_currentIndex]!.value.isPlaying)
                       ? Icons.pause
                       : Icons.play_arrow,
-                  label: (_youtubeControllers.isNotEmpty &&
+                  label:
+                      (_youtubeControllers.isNotEmpty &&
                           _currentIndex < _youtubeControllers.length &&
                           _youtubeControllers[_currentIndex] != null &&
                           _youtubeControllers[_currentIndex]!.value.isPlaying)
@@ -466,10 +497,26 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
-                  icon: widget.videos.isNotEmpty && _likedVideoIds.contains(widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode)
+                  icon:
+                      widget.videos.isNotEmpty &&
+                          _likedVideoIds.contains(
+                            widget.videos[_currentIndex].id ??
+                                widget.videos[_currentIndex].typeVideo.hashCode,
+                          )
                       ? Icons.favorite
                       : Icons.favorite_border,
-                  label: widget.videos.isNotEmpty && _videoLikesCount.containsKey(widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode) && _videoLikesCount[widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode]! > 0
+                  label:
+                      widget.videos.isNotEmpty &&
+                          _videoLikesCount.containsKey(
+                            widget.videos[_currentIndex].id ??
+                                widget.videos[_currentIndex].typeVideo.hashCode,
+                          ) &&
+                          _videoLikesCount[widget.videos[_currentIndex].id ??
+                                  widget
+                                      .videos[_currentIndex]
+                                      .typeVideo
+                                      .hashCode]! >
+                              0
                       ? '${_videoLikesCount[widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode]}'
                       : 'J\'aime',
                   onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
@@ -483,7 +530,16 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                 const SizedBox(height: 16),
                 _ActionButton(
                   icon: Icons.comment,
-                  label: widget.videos.isNotEmpty && _videoCommentsCount.containsKey(widget.videos[_currentIndex].typeVideo.hashCode) && _videoCommentsCount[widget.videos[_currentIndex].typeVideo.hashCode]! > 0
+                  label:
+                      widget.videos.isNotEmpty &&
+                          _videoCommentsCount.containsKey(
+                            widget.videos[_currentIndex].typeVideo.hashCode,
+                          ) &&
+                          _videoCommentsCount[widget
+                                  .videos[_currentIndex]
+                                  .typeVideo
+                                  .hashCode]! >
+                              0
                       ? '${_videoCommentsCount[widget.videos[_currentIndex].typeVideo.hashCode]}'
                       : 'Commenter',
                   onTap: _showComments,
@@ -510,7 +566,8 @@ class _VisiteGuideeVideoFeedScreenState extends State<VisiteGuideeVideoFeedScree
                 slivers: [
                   CustomSliverAppBar(
                     title: '',
-                    isDark: true, // Toujours style sombre au-dessus du lecteur pour un contraste premium suprême
+                    isDark:
+                        true, // Toujours style sombre au-dessus du lecteur pour un contraste premium suprême
                     backgroundColor: Colors.transparent,
                     surfaceTintColor: Colors.transparent,
                     elevation: 0,
@@ -554,7 +611,8 @@ class _VideoPage extends StatefulWidget {
   State<_VideoPage> createState() => _VideoPageState();
 }
 
-class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMixin {
+class _VideoPageState extends State<_VideoPage>
+    with SingleTickerProviderStateMixin {
   bool _showPlayPauseOverlay = false;
   bool _overlayIsPlayIcon = false;
   late AnimationController _overlayAnimationController;
@@ -644,7 +702,8 @@ class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMi
               child: AnimatedBuilder(
                 animation: _overlayAnimationController,
                 builder: (context, child) {
-                  final scale = 1.0 + (1.0 - _overlayAnimationController.value) * 0.5;
+                  final scale =
+                      1.0 + (1.0 - _overlayAnimationController.value) * 0.5;
                   final opacity = 1.0 - _overlayAnimationController.value;
                   return Opacity(
                     opacity: opacity,
@@ -679,38 +738,76 @@ class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMi
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                colors: [
-                  Colors.black87,
-                  Colors.transparent,
-                ],
+                colors: [Colors.black87, Colors.transparent],
               ),
             ),
             padding: const EdgeInsets.only(
               left: 16,
               right: 88, // Space for right-side vertical action buttons
-              bottom: 100, // Increased bottom padding to avoid bottom navigation bar overlap
+              bottom:
+                  130, // Increased bottom padding to avoid bottom navigation bar overlap
               top: 60,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                // School/Etablissement Logo & Name Row
+                Row(
+                  children: [
+                    _SchoolLogo(
+                      code: widget.video.code,
+                      fallbackName: widget.video.etablissement,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.video.etablissement,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black45,
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Text(
                   widget.video.displayTitle,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black45,
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   widget.video.displayDescription,
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 14,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -718,6 +815,96 @@ class _VideoPageState extends State<_VideoPage> with SingleTickerProviderStateMi
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SchoolLogo extends StatefulWidget {
+  final String code;
+  final String fallbackName;
+
+  const _SchoolLogo({required this.code, required this.fallbackName});
+
+  @override
+  State<_SchoolLogo> createState() => _SchoolLogoState();
+}
+
+class _SchoolLogoState extends State<_SchoolLogo> {
+  late Future<EcoleDetail> _ecoleDetailFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.code.isNotEmpty) {
+      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
+    } else {
+      _ecoleDetailFuture = Future.error('Code école vide');
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SchoolLogo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.code != widget.code) {
+      if (widget.code.isNotEmpty) {
+        _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
+      } else {
+        _ecoleDetailFuture = Future.error('Code école vide');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<EcoleDetail>(
+      future: _ecoleDetailFuture,
+      builder: (context, snapshot) {
+        String? logoUrl;
+        if (snapshot.hasData) {
+          logoUrl = snapshot.data?.data.logo;
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white30, width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.white24,
+            backgroundImage:
+                logoUrl != null &&
+                    logoUrl.isNotEmpty &&
+                    (logoUrl.startsWith('http://') ||
+                        logoUrl.startsWith('https://'))
+                ? NetworkImage(logoUrl)
+                : null,
+            child:
+                logoUrl == null ||
+                    logoUrl.isEmpty ||
+                    (!logoUrl.startsWith('http://') &&
+                        !logoUrl.startsWith('https://'))
+                ? Text(
+                    widget.fallbackName.isNotEmpty
+                        ? widget.fallbackName[0].toUpperCase()
+                        : 'E',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  )
+                : null,
+          ),
+        );
+      },
     );
   }
 }
@@ -748,11 +935,7 @@ class _ActionButton extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white24, width: 1),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 4),
           Text(
@@ -870,133 +1053,110 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final dividerColor = isDarkMode ? Colors.white24 : Colors.black12;
     final inputBorderColor = isDarkMode ? Colors.white24 : Colors.black12;
 
-    return Container(
-      height: MediaQuery.sizeOf(context).height * 0.7,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          BottomSheetHeader(
-            icon: Icons.comment_rounded,
-            iconColor: const Color(0xFF0288D1),
-            title: 'Commentaires',
-            description: 'Échangez sur cette vidéo',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-          Expanded(
-            child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: isDarkMode ? Colors.white : Theme.of(context).primaryColor,
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _comments.length,
-                    itemBuilder: (context, index) {
-                      final comment = _comments[index];
-                      return _CommentItem(
-                        comment: comment,
-                        currentUserId: _currentUserId,
-                        onDelete: () => _deleteComment(comment.id),
-                        onEdit: (newContent) =>
-                            _editComment(comment.id, newContent),
-                      );
-                    },
+    return Column(
+      children: [
+        Expanded(
+          child: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: isDarkMode
+                        ? Colors.white
+                        : Theme.of(context).primaryColor,
                   ),
-          ),
-          Container(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 10,
-              bottom: MediaQuery.of(context).viewInsets.bottom +
-                  (MediaQuery.of(context).viewInsets.bottom > 0
-                      ? 16
-                      : (MediaQuery.of(context).padding.bottom > 0
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = _comments[index];
+                    return _CommentItem(
+                      comment: comment,
+                      currentUserId: _currentUserId,
+                      onDelete: () => _deleteComment(comment.id),
+                      onEdit: (newContent) =>
+                          _editComment(comment.id, newContent),
+                    );
+                  },
+                ),
+        ),
+        Container(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 10,
+            bottom:
+                MediaQuery.of(context).viewInsets.bottom +
+                (MediaQuery.of(context).viewInsets.bottom > 0
+                    ? 16
+                    : (MediaQuery.of(context).padding.bottom > 0
                           ? MediaQuery.of(context).padding.bottom + 12
                           : 24)),
-            ),
-            decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: dividerColor,
-                  width: 0.5,
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            border: Border(top: BorderSide(color: dividerColor, width: 0.5)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    maxHeight: 120,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? const Color(0xFF2C2C2C)
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: inputBorderColor, width: 0.5),
+                  ),
+                  child: TextField(
+                    controller: _commentController,
+                    maxLines: null,
+                    textInputAction: TextInputAction.newline,
+                    style: TextStyle(fontSize: 14, color: textColor),
+                    decoration: InputDecoration(
+                      hintText: 'Ajouter un commentaire...',
+                      hintStyle: TextStyle(fontSize: 14, color: subtextColor),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minHeight: 44,
-                      maxHeight: 120,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? const Color(0xFF2C2C2C) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: inputBorderColor,
-                        width: 0.5,
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _addComment,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0288D1),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0288D1).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
-                    ),
-                    child: TextField(
-                      controller: _commentController,
-                      maxLines: null,
-                      textInputAction: TextInputAction.newline,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: textColor,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Ajouter un commentaire...',
-                        hintStyle: TextStyle(
-                          fontSize: 14,
-                          color: subtextColor,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _addComment,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0288D1),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0288D1).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1099,21 +1259,14 @@ class _CommentItem extends StatelessWidget {
                     ),
                     Text(
                       _formatTimestamp(comment.createdAt),
-                      style: TextStyle(
-                        color: timeColor,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: timeColor, fontSize: 12),
                     ),
                   ],
                 ),
               ),
               if (isCurrentUser) ...[
                 PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: timeColor,
-                    size: 20,
-                  ),
+                  icon: Icon(Icons.more_vert, color: timeColor, size: 20),
                   color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                   elevation: 8,
                   shape: RoundedRectangleBorder(
@@ -1151,7 +1304,11 @@ class _CommentItem extends StatelessWidget {
                       value: 'delete',
                       child: Row(
                         children: [
-                          const Icon(Icons.delete, color: Colors.redAccent, size: 16),
+                          const Icon(
+                            Icons.delete,
+                            color: Colors.redAccent,
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Supprimer',
@@ -1199,7 +1356,7 @@ class _CommentItem extends StatelessWidget {
   void _showEditDialog(BuildContext context) {
     final isDarkMode = ThemeService().isDarkMode;
     final controller = TextEditingController(text: comment.content ?? '');
-    
+
     final dialogBgColor = isDarkMode ? Colors.black : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black87;
     final hintColor = isDarkMode ? Colors.white54 : Colors.black38;
@@ -1226,7 +1383,9 @@ class _CommentItem extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Annuler',
-              style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white70 : Colors.black54,
+              ),
             ),
           ),
           TextButton(
@@ -1268,7 +1427,9 @@ class _CommentItem extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Annuler',
-              style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white70 : Colors.black54,
+              ),
             ),
           ),
           TextButton(
@@ -1304,198 +1465,166 @@ class _RatingSheetState extends State<_RatingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Text(
-                  'Noter la vidéo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          
-          const Divider(color: Colors.white24),
-          
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Video info
-                Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.white24,
-                      ),
-                      child: const Icon(Icons.play_circle, color: Colors.white, size: 30),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.video.displayTitle,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Visite guidée',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Current rating stats
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white10,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Column(
-                        children: [
-                          Text(
-                            _averageRating.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
-                            children: List.generate(5, (index) {
-                              return Icon(
-                                index < _averageRating.floor() ? Icons.star : Icons.star_border,
-                                color: Colors.amber,
-                                size: 16,
-                              );
-                            }),
-                          ),
-                          Text(
-                            '$_totalRatings évaluations',
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // User rating
-                if (!_hasRated) ...[
-                  const Text(
-                    'Votre note :',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (index) {
-                      return IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _currentRating = index + 1;
-                          });
-                        },
-                        icon: Icon(
-                          index < _currentRating ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
-                          size: 40,
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  CustomButton(
-                    text: 'Envoyer la note',
-                    color: Colors.green,
-                    onPressed: _currentRating > 0 ? _submitRating : null,
-                    height: 48,
-                  ),
-                ] else ...[
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Video info
+              Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white24,
                     ),
-                    child: const Row(
+                    child: const Icon(
+                      Icons.play_circle,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.check_circle, color: Colors.green),
-                        SizedBox(width: 12),
                         Text(
-                          'Merci pour votre évaluation !',
-                          style: TextStyle(color: Colors.green),
+                          widget.video.displayTitle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Visite guidée',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Current rating stats
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          _averageRating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Row(
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < _averageRating.floor()
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: Colors.amber,
+                              size: 16,
+                            );
+                          }),
+                        ),
+                        Text(
+                          '$_totalRatings évaluations',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // User rating
+              if (!_hasRated) ...[
+                const Text(
+                  'Votre note :',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _currentRating = index + 1;
+                        });
+                      },
+                      icon: Icon(
+                        index < _currentRating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 40,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                CustomButton(
+                  text: 'Envoyer la note',
+                  color: Colors.green,
+                  onPressed: _currentRating > 0 ? _submitRating : null,
+                  height: 48,
+                ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green),
+                      SizedBox(width: 12),
+                      Text(
+                        'Merci pour votre évaluation !',
+                        style: TextStyle(color: Colors.green),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
-          
-          const SizedBox(height: 16),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -1504,7 +1633,9 @@ class _RatingSheetState extends State<_RatingSheet> {
       _hasRated = true;
       // Mettre à jour les statistiques (simulation)
       _totalRatings++;
-      _averageRating = ((_averageRating * (_totalRatings - 1)) + _currentRating) / _totalRatings;
+      _averageRating =
+          ((_averageRating * (_totalRatings - 1)) + _currentRating) /
+          _totalRatings;
     });
 
     // Simuler l'envoi au serveur

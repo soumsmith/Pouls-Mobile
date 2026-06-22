@@ -1,24 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../services/http_service.dart';
-import 'bottom_sheet_header.dart';
 import '../custom_loader.dart';
 import '../components/bottom_spacer.dart';
+import 'reusable_bottom_sheet.dart';
 
 class MyReservationsBottomSheet extends StatefulWidget {
   final String childName;
   final String matricule;
-  final String? imagePath;
-  final Color? imageBackgroundColor;
-  final double? imageBorderRadius;
-
   const MyReservationsBottomSheet({
     Key? key,
     required this.childName,
     required this.matricule,
-    this.imagePath,
-    this.imageBackgroundColor,
-    this.imageBorderRadius,
   }) : super(key: key);
 
   static Future<void> show({
@@ -29,17 +22,22 @@ class MyReservationsBottomSheet extends StatefulWidget {
     Color? imageBackgroundColor,
     double? imageBorderRadius,
   }) {
-    return showModalBottomSheet<void>(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    return ReusableBottomSheet.show<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => MyReservationsBottomSheet(
+      title: 'Mes réservations',
+      subtitle: 'Réservations pour $childName',
+      icon: Icons.list_alt_rounded,
+      iconColor: const Color(0xFF4CAF50),
+      imagePath: imagePath,
+      iconBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(0),
+      content: MyReservationsBottomSheet(
         childName: childName,
         matricule: matricule,
-        imagePath: imagePath,
-        imageBackgroundColor: imageBackgroundColor,
-        imageBorderRadius: imageBorderRadius,
       ),
     );
   }
@@ -115,43 +113,8 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final themeBg = isDark ? Colors.grey[900] : Colors.white;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: themeBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 20,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomSheetHeader(
-            icon: Icons.list_alt_rounded,
-            iconColor: const Color(0xFF4CAF50),
-            imagePath: widget.imagePath,
-            imageBackgroundColor: widget.imageBackgroundColor,
-            imageBorderRadius: widget.imageBorderRadius,
-            title: 'Mes réservations',
-            description: 'Réservations pour ${widget.childName}',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-          
-          Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
-            ),
-            child: _buildContent(isDark),
-          ),
-        ],
-      ),
-    );
+    return _buildContent(isDark);
   }
 
   Widget _buildContent(bool isDark) {
@@ -251,10 +214,11 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
       );
     }
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // En-tête résumé
           Container(
@@ -330,8 +294,6 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
             ..._reservations.map((reservation) => _buildReservationCard(reservation, isDark)).toList(),
           ],
           
-          const BottomSpacer(),
-          SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
         ],
       ),
     );

@@ -297,8 +297,11 @@ class _AllVisiteGuideeVideosScreenState
     final visiteVideos = _filteredVideos
         .map(
           (v) => VisiteGuideeVideo(
+            id: v.id,
             typeVideo: v.typevideo,
             youtubeUrl: v.youtubeUrl,
+            title: v.title,
+            description: v.description,
             code: v.code,
             etablissement: v.etablissement,
           ),

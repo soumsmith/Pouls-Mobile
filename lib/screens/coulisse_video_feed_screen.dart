@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
 import '../models/coulisse_excellence.dart';
@@ -57,7 +58,10 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   void dispose() {
     _pageController.dispose();
     for (var controller in _youtubeControllers) {
-      controller?.dispose();
+      if (controller != null) {
+        controller.pause();
+        controller.dispose();
+      }
     }
     super.dispose();
   }
@@ -172,22 +176,22 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     }
 
     try {
-      // Charger les détails de l'école via l'API de détail
-      final ecoleDetail = await EcoleApiService.getEcoleDetail(code);
+      // Charger les détails de l'école via l'API des paramètres
+      final ecoleData = await EcoleApiService.getEcoleParametres(code);
 
       // Créer un objet Ecole minimal avec les données récupérées
       final ecole = Ecole(
-        pays: ecoleDetail.data.pays,
-        ville: ecoleDetail.data.ville,
-        adresse: ecoleDetail.data.adresse,
-        parametreNom: ecoleDetail.data.nom,
-        logo: ecoleDetail.data.logo ?? '',
-        telephone: ecoleDetail.data.telephone,
+        pays: ecoleData.pays,
+        ville: ecoleData.ville,
+        adresse: ecoleData.adresse,
+        parametreNom: ecoleData.nom,
+        logo: ecoleData.logo ?? '',
+        telephone: ecoleData.telephone,
         parametreCode: code,
-        statut: ecoleDetail.data.statut,
+        statut: ecoleData.statut,
         filiereNom: [],
-        imagefond: ecoleDetail.image,
-        paramecole: null,
+        imagefond: ecoleData.imagefond,
+        paramecole: code,
       );
 
       if (mounted) {
@@ -246,14 +250,15 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => _CommentsSheet(videoId: video.id),
+      title: 'Commentaires',
+      subtitle: 'Échangez sur cette vidéo',
+      icon: Icons.comment_rounded,
+      iconColor: const Color(0xFF0288D1),
+      wrapWithScrollView: false,
+      contentPadding: EdgeInsets.zero,
+      content: _CommentsSheet(videoId: video.id),
     );
   }
 
@@ -268,15 +273,14 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => _RatingSheet(video: video),
+      title: 'Noter la vidéo',
+      icon: Icons.star_rounded,
+      iconColor: Colors.orange,
+      wrapWithScrollView: false,
+      contentPadding: EdgeInsets.zero,
+      content: _RatingSheet(video: video),
     );
   }
 
@@ -406,6 +410,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
           PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
+            allowImplicitScrolling: true,
             onPageChanged: _onPageChanged,
             itemCount: widget.videos.length,
             itemBuilder: (context, index) {
@@ -586,14 +591,14 @@ class _SchoolLogoState extends State<_SchoolLogo> {
   @override
   void initState() {
     super.initState();
-    _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code);
+    _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
   }
 
   @override
   void didUpdateWidget(covariant _SchoolLogo oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.code != widget.code) {
-      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code);
+      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
     }
   }
 
@@ -1096,129 +1101,113 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final inputBgColor = isDarkMode ? Colors.black87 : Colors.grey[100];
     final inputBorderColor = isDarkMode ? Colors.white24 : Colors.black12;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // Header
-          BottomSheetHeader(
-            icon: Icons.comment_rounded,
-            iconColor: const Color(0xFF0288D1),
-            title: 'Commentaires',
-            description: 'Échangez sur cette vidéo',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-
-          // Comments list
-          Expanded(
-            child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: isDarkMode
-                          ? Colors.white
-                          : Theme.of(context).primaryColor,
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _comments.length,
-                    itemBuilder: (context, index) {
-                      final comment = _comments[index];
-                      return _CommentItem(
-                        comment: comment,
-                        currentUserId: _currentUserId,
-                        onDelete: () => _deleteComment(comment.id),
-                        onEdit: (newContent) =>
-                            _editComment(comment.id, newContent),
-                      );
-                    },
+    return Column(
+      children: [
+        // Comments list
+        Expanded(
+          child: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: isDarkMode
+                        ? Colors.white
+                        : Theme.of(context).primaryColor,
                   ),
-          ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = _comments[index];
+                    return _CommentItem(
+                      comment: comment,
+                      currentUserId: _currentUserId,
+                      onDelete: () => _deleteComment(comment.id),
+                      onEdit: (newContent) =>
+                          _editComment(comment.id, newContent),
+                    );
+                  },
+                ),
+        ),
 
-          // Comment input (exactly like message input zone in messages_screen.dart)
-          Container(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 10,
-              bottom:
-                  MediaQuery.of(context).viewInsets.bottom +
-                  (MediaQuery.of(context).viewInsets.bottom > 0
-                      ? 16
-                      : (MediaQuery.of(context).padding.bottom > 0
-                            ? MediaQuery.of(context).padding.bottom + 12
-                            : 24)),
-            ),
-            decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-              border: Border(top: BorderSide(color: dividerColor, width: 0.5)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minHeight: 44,
-                      maxHeight: 120,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? const Color(0xFF2C2C2C)
-                          : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: inputBorderColor, width: 0.5),
-                    ),
-                    child: TextField(
-                      controller: _commentController,
-                      maxLines: null,
-                      textInputAction: TextInputAction.newline,
-                      style: TextStyle(fontSize: 14, color: textColor),
-                      decoration: InputDecoration(
-                        hintText: 'Ajouter un commentaire...',
-                        hintStyle: TextStyle(fontSize: 14, color: subtextColor),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+        // Comment input (exactly like message input zone in messages_screen.dart)
+        Container(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 10,
+            bottom:
+                MediaQuery.of(context).viewInsets.bottom +
+                (MediaQuery.of(context).viewInsets.bottom > 0
+                    ? 16
+                    : (MediaQuery.of(context).padding.bottom > 0
+                          ? MediaQuery.of(context).padding.bottom + 12
+                          : 24)),
+          ),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            border: Border(top: BorderSide(color: dividerColor, width: 0.5)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    maxHeight: 120,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? const Color(0xFF2C2C2C)
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: inputBorderColor, width: 0.5),
+                  ),
+                  child: TextField(
+                    controller: _commentController,
+                    maxLines: null,
+                    textInputAction: TextInputAction.newline,
+                    style: TextStyle(fontSize: 14, color: textColor),
+                    decoration: InputDecoration(
+                      hintText: 'Ajouter un commentaire...',
+                      hintStyle: TextStyle(fontSize: 14, color: subtextColor),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _addComment,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0288D1),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0288D1).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _addComment,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0288D1),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0288D1).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 20,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1605,81 +1594,67 @@ class _RatingSheetState extends State<_RatingSheet> {
     final cardBgColor = isDarkMode ? Colors.white10 : Colors.grey[100];
     final playIconColor = isDarkMode ? Colors.white : Colors.black87;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          BottomSheetHeader(
-            icon: Icons.star_rounded,
-            iconColor: Colors.amber,
-            title: 'Noter la vidéo',
-            description: 'Donnez votre avis sur cette vidéo',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Video info
-                Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: iconBgColor,
-                      ),
-                      child: Icon(
-                        Icons.play_circle,
-                        color: playIconColor,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.video.titre,
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.video.fullName,
-                            style: TextStyle(color: subtextColor, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                if (_isLoading)
-                  const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else ...[
-                  // Current rating stats
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Video info
+              Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: iconBgColor,
+                    ),
+                    child: Icon(
+                      Icons.play_circle,
+                      color: playIconColor,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.video.titre,
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.video.fullName,
+                          style: TextStyle(color: subtextColor, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                // Current rating stats
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
                     color: cardBgColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1778,15 +1753,14 @@ class _RatingSheetState extends State<_RatingSheet> {
                     ),
                   ),
                 ],
-                ],
               ],
-            ),
+            ],
           ),
+        ),
 
-          const SizedBox(height: 8),
-          const BottomSpacer(),
-        ],
-      ),
+        const SizedBox(height: 8),
+        const BottomSpacer(),
+      ],
     );
   }
 
@@ -1819,7 +1793,7 @@ class _RatingSheetState extends State<_RatingSheet> {
           backgroundColor: Colors.green,
           icon: Icons.check_circle_outline,
         );
-        
+
         setState(() {
           _hasRated = true;
           // Mettre à jour les statistiques

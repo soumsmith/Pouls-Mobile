@@ -1,8 +1,8 @@
 class CoulisseExcellence {
   final int id;
   final String nom;
-  final String prenoms;
-  final String classe;
+  final String? prenoms;
+  final String? classe;
   final String titre;
   final String description;
   final String etablissement;
@@ -13,8 +13,8 @@ class CoulisseExcellence {
   CoulisseExcellence({
     required this.id,
     required this.nom,
-    required this.prenoms,
-    required this.classe,
+    this.prenoms,
+    this.classe,
     required this.titre,
     required this.description,
     required this.etablissement,
@@ -27,14 +27,14 @@ class CoulisseExcellence {
     return CoulisseExcellence(
       id: json['id'] as int,
       nom: json['nom'] as String,
-      prenoms: json['prenoms'] as String,
-      classe: json['classe'] as String,
-      titre: json['titre'] as String,
+      prenoms: json['prenoms'] as String?,
+      classe: json['classe'] as String?,
+      titre: json['titre'] as String? ?? '',
       description: json['description'] as String,
       etablissement: json['etablissement'] as String,
       nompays: json['nompays'] as String?,
       videoYoutube: json['video_youtube'] as String,
-      code: json['code'] as String? ?? '',
+      code: json['codeecole']?.toString() ?? json['code']?.toString() ?? json['ecole']?.toString() ?? '',
     );
   }
 
@@ -53,7 +53,12 @@ class CoulisseExcellence {
     };
   }
 
-  String get fullName => '$prenoms $nom';
+  String get fullName {
+    final List<String> parts = [];
+    if (prenoms != null && prenoms!.isNotEmpty) parts.add(prenoms!);
+    parts.add(nom);
+    return parts.join(' ').trim();
+  }
   
   String get youtubeVideoId {
     final url = Uri.parse(videoYoutube);

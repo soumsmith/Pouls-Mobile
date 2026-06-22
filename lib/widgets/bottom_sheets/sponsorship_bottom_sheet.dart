@@ -9,7 +9,7 @@ import '../custom_loader.dart';
 import '../snackbar.dart';
 import '../share_button.dart';
 import '../components/bottom_spacer.dart';
-import 'bottom_sheet_header.dart';
+import 'reusable_bottom_sheet.dart';
 import '../../services/parrainage_service.dart';
 import '../../services/auth_service.dart';
 import '../../config/app_colors.dart';
@@ -18,15 +18,8 @@ import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
 
 class SponsorshipBottomSheet extends StatefulWidget {
-  final String? imagePath;
-  final Color? imageBackgroundColor;
-  final double? imageBorderRadius;
-
   const SponsorshipBottomSheet({
     super.key,
-    this.imagePath,
-    this.imageBackgroundColor,
-    this.imageBorderRadius,
   });
 
   @override
@@ -57,45 +50,12 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
       _parentTelephoneController.text = currentUser!.phone;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141414) : Colors.white,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.getLargeCardBorderRadius(context)),
-        ),
-        boxShadow: AppDimensions.getCustomShadow(
-          context: context,
-          alpha: isDark ? 0.5 : 0.22,
-          blurRadius: 32,
-          offset: 12,
-        ),
-      ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 10, 20, MediaQuery.of(context).viewInsets.bottom + 20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          BottomSheetHeader(
-            icon: Icons.card_giftcard_rounded,
-            imagePath: widget.imagePath,
-            imageBackgroundColor: widget.imageBackgroundColor,
-            imageBorderRadius: widget.imageBorderRadius,
-            iconColor: const Color(0xFFFF7A3C),
-            title: 'Parrainer',
-            description: 'Invitez vos amis',
-            onClose: () => Navigator.of(context).pop(),
-            titleColor: isDark ? Colors.white : const Color(0xFF1A1A1A),
-            descriptionColor: const Color(0xFF8A8A8A),
-            titleFontSize: _textSizeService.getScaledFontSize(18),
-            descriptionFontSize: _textSizeService.getScaledFontSize(13),
-            //titleFontWeight: FontWeight.w700,
-            iconSize: 18,
-          ),
-
-          // Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
                 // Section Vos informations
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -240,11 +200,6 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                 ),
 
                 const SizedBox(height: 20),
-              ],
-            ),
-          ),
-
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
         ],
       ),
     );
@@ -252,47 +207,20 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
 
   // ── Parrainage Code Bottom Sheet ────────────────────────────────────────────
   void _showParrainageCodeModal(String codeParrainage) {
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      useSafeArea: true,
-      builder: (BuildContext context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141414) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: AppDimensions.getCustomShadow(
-              context: context,
-              alpha: isDark ? 0.5 : 0.22,
-              blurRadius: 32,
-              offset: 12,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              BottomSheetHeader(
-                icon: Icons.card_giftcard_rounded,
-                iconColor: const Color(0xFF10B981),
-                title: 'Parrainage réussi !',
-                description: 'Votre code a été généré avec succès',
-                onClose: () => Navigator.of(context).pop(),
-                titleColor: isDark ? Colors.white : const Color(0xFF1F2937),
-                descriptionColor: isDark
-                    ? Colors.white70
-                    : const Color(0xFF6B7280),
-                titleFontSize: _textSizeService.getScaledFontSize(18),
-                iconSize: 22,
-              ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                child: Column(
-                  children: [
+      title: 'Parrainage réussi !',
+      subtitle: 'Votre code a été généré avec succès',
+      icon: Icons.card_giftcard_rounded,
+      iconColor: const Color(0xFF10B981),
+      initialChildSize: 0.55,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
                     // Code de parrainage
                     Container(
                       width: double.infinity,
@@ -351,13 +279,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                       ),
                     ),
                     const BottomSpacer(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -473,16 +396,19 @@ void showSponsorshipBottomSheet(
   Color? imageBackgroundColor,
   double? imageBorderRadius,
 }) {
-  showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+  ReusableBottomSheet.show(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withOpacity(0.40),
-    builder: (_) => SponsorshipBottomSheet(
-      imagePath: imagePath,
-      imageBackgroundColor: imageBackgroundColor,
-      imageBorderRadius: imageBorderRadius,
-    ),
+    title: 'Parrainer',
+    subtitle: 'Invitez vos amis',
+    icon: Icons.card_giftcard_rounded,
+    iconColor: const Color(0xFFFF7A3C),
+    imagePath: imagePath,
+    iconBackgroundColor: imageBackgroundColor,
+    imageBorderRadius: imageBorderRadius,
+    initialChildSize: 0.5,
+    minChildSize: 0.4,
+    maxChildSize: 0.9,
+    contentPadding: const EdgeInsets.all(0),
+    content: const SponsorshipBottomSheet(),
   );
 }

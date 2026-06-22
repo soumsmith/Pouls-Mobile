@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../custom_loader.dart';
 import '../bottom_fade_gradient.dart';
-import '../bottom_sheets/bottom_sheet_header.dart';
+import 'reusable_bottom_sheet.dart';
 import '../components/bottom_spacer.dart';
 import '../../models/student_scolarite.dart';
 import '../../services/theme_service.dart';
@@ -19,8 +19,6 @@ class ScolariteBottomSheet extends StatefulWidget {
   final VoidCallback? onClose;
   final String? title;
   final String? description;
-  final bool isModal;
-
   const ScolariteBottomSheet({
     Key? key,
     required this.childName,
@@ -32,7 +30,6 @@ class ScolariteBottomSheet extends StatefulWidget {
     this.onClose,
     this.title,
     this.description,
-    this.isModal = false,
   }) : super(key: key);
 
   @override
@@ -45,106 +42,7 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    if (widget.isModal) {
-      return Container(
-        decoration: BoxDecoration(
-          color: isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        // child: Column(
-        //   mainAxisSize: MainAxisSize.max,
-        //   children: [
-        //     BottomSheetHeader(
-        //       icon: Icons.analytics_outlined,
-        //       title: widget.title ?? 'Scolarité',
-        //       description: widget.description ?? 'Détails de la scolarité de ${widget.childName}',
-        //       iconColor: Colors.amber,
-        //       backgroundColor: Colors.amber.withOpacity(0.15),
-        //       onClose: widget.onClose ?? () => Navigator.of(context).pop(),
-        //     ),
-        //     Expanded(
-        //       child: SingleChildScrollView(
-        //         padding: const EdgeInsets.all(20),
-        //         child: _buildContent(),
-        //       ),
-        //     ),
-        //   ],
-        // ),
-      );
-    } else {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.analytics_outlined,
-                    color: Colors.amber,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title ?? 'Scolarité',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: isDarkMode ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.description ?? 'Détails de la scolarité de ${widget.childName}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: _buildContent(),
-          ),
-        ],
-      );
-    }
+    return _buildContent();
   }
 
   Widget _buildContent() {
@@ -640,36 +538,26 @@ void showScolariteBottomSheet(
   String? title,
   String? description,
 }) {
-  showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+  ReusableBottomSheet.show(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (_, controller) => Container(
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: ScolariteBottomSheet(
-          childName: childName,
-          childMatricule: childMatricule,
-          scolariteEntries: scolariteEntries,
-          isLoading: isLoading,
-          errorMessage: errorMessage,
-          onRefresh: onRefresh,
-          onClose: onClose,
-          title: title,
-          description: description,
-          isModal: true,
-        ),
-      ),
+    title: title ?? 'Scolarité',
+    subtitle: description ?? 'Détails de la scolarité de $childName',
+    icon: Icons.analytics_outlined,
+    iconColor: Colors.amber,
+    initialChildSize: 0.7,
+    minChildSize: 0.5,
+    maxChildSize: 0.95,
+    contentPadding: const EdgeInsets.all(20),
+    content: ScolariteBottomSheet(
+      childName: childName,
+      childMatricule: childMatricule,
+      scolariteEntries: scolariteEntries,
+      isLoading: isLoading,
+      errorMessage: errorMessage,
+      onRefresh: onRefresh,
+      onClose: onClose,
+      title: title,
+      description: description,
     ),
   );
 }

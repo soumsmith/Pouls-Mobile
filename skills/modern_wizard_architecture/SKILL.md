@@ -185,3 +185,77 @@ class _MyDynamicWizardState extends State<MyDynamicWizard> {
 - **Ajout/Suppression d'étapes "Live"** : Si l'utilisateur clique sur un switch "J'ai besoin de l'option X" à l'étape 1, le `setState` va recalculer `_orderedStepIds`, rajoutant magiquement la page "Options" au `PageView`. Les boutons Précédent/Suivant s'adapteront tout seuls.
 - **Réutilisable** : Cette logique peut être extraite ou recréée facilement pour n'importe quel formulaire long (panier e-commerce, création de profil, onboarding complexe).
 - **Adaptatif** : Parce qu'il utilise `CustomScrollView` et `SliverFillRemaining`, chaque étape peut avoir sa propre hauteur scrollable (en wrapant le contenu de l'étape dans un `SingleChildScrollView` avec un grand padding en bas pour ne pas cacher le contenu derrière les boutons flottants).
+
+## 4. Variante : Wizard dans un BottomSheet
+
+Souvent, on place des Wizards dans des "Bottom Sheets" réutilisables. Dans l'architecture de `ReusableBottomSheet`, si on encapsule un Wizard, le contenu est scrollable. Pour garder les boutons "Suivant/Précédent" fixes en bas et ne pas les faire scroller avec le formulaire, il faut :
+
+1. Désactiver le défilement global de la modale avec `wrapWithScrollView: false`.
+2. Encapsuler la section centrale du Wizard dans un `Expanded(child: SingleChildScrollView(...))`.
+3. Placer l'indicateur de progression au-dessus de `Expanded` et les boutons de navigation en dessous.
+
+```dart
+// Appel du bottom sheet
+ReusableBottomSheet.show(
+  context: context,
+  title: 'Mon Wizard Modal',
+  wrapWithScrollView: false, // 1. IMPORTANT : On gère le scroll en interne
+  content: MyWizardContent(),
+);
+
+// Composant interne du Wizard
+class MyWizardContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // A. Éléments fixes en haut
+        _buildProgressIndicator(),
+        const SizedBox(height: 20),
+
+        // B. Contenu scrollable qui prend l'espace disponible
+        Expanded(
+          child: SingleChildScrollView(
+            child: _buildCurrentStep(),
+          ),
+        ),
+
+        // C. Éléments fixes en bas
+        _buildNavigationButtons(),
+        const BottomSpacer(),
+      ],
+    );
+  }
+}
+```
+Ce modèle garantit que les boutons restent visibles indépendamment de la taille de l'écran ou de l'étape affichée.
+
+### 4.1 Répartir l'indicateur de progression sur Tablette
+
+Si votre indicateur de progression comporte beaucoup d'étapes (ex: 6 étapes) et qu'il est enveloppé dans un `SingleChildScrollView` horizontal pour les petits écrans (téléphones), les étapes risquent d'apparaître groupées au centre sur une tablette.
+Pour forcer les étapes à occuper toute la largeur disponible sur les grands écrans tout en permettant le défilement sur les petits, utilisez un `LayoutBuilder` combiné à une `ConstrainedBox` imposant une `minWidth` égale à `constraints.maxWidth` :
+
+```dart
+Widget _buildProgressIndicator() {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          // 1. Force la Row à être au moins aussi large que l'écran
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          child: Row(
+            // 2. Répartit uniformément l'espace supplémentaire
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(totalSteps, (index) {
+              return _buildStepIcon(index);
+            }),
+          ),
+        ),
+      );
+    },
+  );
+}
+```
+Cette astuce est redoutablement efficace pour assurer un rendu "responsive" propre entre mobile et tablette sans logique complexe.

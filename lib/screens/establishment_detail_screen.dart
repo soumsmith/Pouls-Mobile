@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
@@ -516,7 +517,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Future<void> _loadEcoleDetail() async {
     try {
       final detail = await EcoleApiService.getEcoleDetail(
-        widget.ecole.parametreCode,
+        widget.ecole.parametreCode ?? '',
+        showNotification: false,
       );
       setState(() => _ecoleDetail = detail);
     } catch (e) {
@@ -2996,9 +2998,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         right: 16,
       ), // Espacement horizontal cohérent
       child: SeeMoreCard(
-        cardColor: isDarkMode
-            ? Colors.black
-            : Colors.white,
+        cardColor: isDarkMode ? Colors.black : Colors.white,
         borderColor: const Color(0xFF3F51B5),
         iconColor: Colors.white,
         textColor: const Color(0xFF3F51B5),
@@ -3138,7 +3138,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   Map<String, dynamic> _createSchoolDataFromVideo(CoulisseExcellence video) {
     // Classe optionnelle : afficher seulement si la classe est disponible et selon une logique
     final shouldShowClass =
-        video.classe.isNotEmpty &&
+        video.classe != null &&
+        video.classe!.isNotEmpty &&
         (video.id % 2) ==
             0; // 1 chance sur 2 d'afficher la classe si disponible
     final shouldShowLocation =
@@ -3209,9 +3210,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         right: 16,
       ), // Espacement horizontal cohérent
       child: SeeMoreCard(
-        cardColor: isDarkMode
-            ? Colors.black
-            : Colors.white,
+        cardColor: isDarkMode ? Colors.black : Colors.white,
         borderColor: const Color(0xFF10B981),
         iconColor: Colors.white,
         textColor: const Color(0xFF10B981),
@@ -3352,9 +3351,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
@@ -3362,58 +3359,27 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           child: ValueListenableBuilder<int>(
             valueListenable: _avisNotifier,
             builder: (context, _, __) {
-              return Container(
-                height: MediaQuery.sizeOf(context).height * 0.95,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1A1A1A)
-                      : AppColors.screenCard,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
-                  ),
-                  boxShadow: AppDimensions.getCustomShadow(
-                    context: context,
-                    alpha: 0.12,
-                    blurRadius: 24,
-                    offset: -6,
-                  ),
+              return ReusableBottomSheet(
+                title: def.label,
+                subtitle: def.subtitle,
+                icon: def.icon,
+                imagePath: def.imagePath,
+                iconColor: def.color,
+                iconBackgroundColor: def.color,
+                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+                initialChildSize: 0.95,
+                minChildSize: 0.5,
+                maxChildSize: 0.95,
+                contentPadding: EdgeInsets.fromLTRB(
+                  20,
+                  20,
+                  20,
+                  actionType == 'voir_les_avis'
+                      ? 0
+                      : 20 + MediaQuery.of(context).viewInsets.bottom,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    BottomSheetHeader(
-                      icon: def.icon,
-                      imagePath: def.imagePath,
-                      imageBackgroundColor: def.color,
-                      imageBorderRadius: AppDimensions.getImageBorderRadius(
-                        context,
-                      ),
-                      iconColor: def.color,
-                      title: def.label,
-                      description: def.subtitle,
-                      onClose: () => Navigator.of(context).pop(),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: EdgeInsets.fromLTRB(
-                          20,
-                          20,
-                          20,
-                          actionType == 'voir_les_avis'
-                              ? 0
-                              : 20 + MediaQuery.of(context).viewInsets.bottom,
-                        ),
-                        child: _buildActionContent(
-                          actionType,
-                          def.color,
-                          setSheetState,
-                        ),
-                      ),
-                    ),
-                    if (actionType == 'voir_les_avis')
-                      Padding(
+                fixedBottomWidget: actionType == 'voir_les_avis'
+                    ? Padding(
                         padding: EdgeInsets.fromLTRB(
                           20,
                           10,
@@ -3421,8 +3387,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                           20 + MediaQuery.of(context).viewInsets.bottom,
                         ),
                         child: _buildComposeAvisBar(),
-                      ),
-                  ],
+                      )
+                    : null,
+                content: _buildActionContent(
+                  actionType,
+                  def.color,
+                  setSheetState,
                 ),
               );
             },
@@ -7135,88 +7105,58 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   void _showServicesComplementairesBottomSheet() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
-      builder: (context) => _buildServicesComplementairesBottomSheet(),
-    );
-  }
-
-  Widget _buildServicesComplementairesBottomSheet() {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.8,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.screenSurfaceThemed(context),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      title: 'Services complémentaires',
+      subtitle: 'Options et services additionnels',
+      icon: Icons.miscellaneous_services_rounded,
+      iconColor: Colors.purple,
+      imagePath: 'assets/images/icons/services_complementaires.png',
+      iconBackgroundColor: Colors.purple,
+      imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+      initialChildSize: 0.5,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+      content: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          BottomSheetHeader(
-            icon: Icons.miscellaneous_services_rounded,
-            imagePath: 'assets/images/icons/services_complementaires.png',
-            imageBackgroundColor: Colors.purple,
-            imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-            iconColor: Colors.purple,
-            title: 'Services complémentaires',
-            description: 'Options et services additionnels',
-            onClose: () => Navigator.of(context).pop(),
+          const SizedBox(height: 60),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.purple.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.construction_rounded,
+              size: 48,
+              color: Colors.purple,
+            ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 60),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.construction_rounded,
-                      size: 48,
-                      color: Colors.purple,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Bientôt disponible',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      'Les services complémentaires pour cet établissement seront bientôt accessibles.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: AppColors.screenTextSecondaryThemed(context),
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 60),
-                ],
+          const SizedBox(height: 24),
+          Text(
+            'Bientôt disponible',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.screenTextPrimaryThemed(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'Les services complémentaires pour cet établissement seront bientôt accessibles.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.screenTextSecondaryThemed(context),
+                height: 1.5,
               ),
             ),
           ),
+          const SizedBox(height: 60),
         ],
       ),
     );
@@ -7667,6 +7607,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           FutureBuilder<EcoleDetail>(
             future: EcoleApiService.getEcoleDetail(
               widget.ecole.parametreCode ?? '',
+              showNotification: false,
             ),
             builder: (_, snap) {
               if (!snap.hasData) return const SizedBox.shrink();
@@ -7903,7 +7844,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ── Detailed info from API (logo, infos académiques, infra, rubriques) ─────
   Widget _buildDetailedInfoSection() {
     return FutureBuilder<EcoleDetail>(
-      future: EcoleApiService.getEcoleDetail(widget.ecole.parametreCode ?? ''),
+      future: EcoleApiService.getEcoleDetail(widget.ecole.parametreCode ?? '', showNotification: false),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -8575,6 +8516,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         FutureBuilder<EcoleDetail>(
                           future: EcoleApiService.getEcoleDetail(
                             widget.ecole.parametreCode ?? '',
+                            showNotification: false,
                           ),
                           builder: (_, snap) {
                             if (!snap.hasData) return const SizedBox.shrink();

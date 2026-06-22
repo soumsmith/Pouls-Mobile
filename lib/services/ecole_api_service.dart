@@ -149,7 +149,7 @@ class EcoleApiService {
   static final Map<String, EcoleDetail> _detailCache = {};
 
   /// Récupère les détails d'une école spécifique
-  static Future<EcoleDetail> getEcoleDetail(String parametreCode) async {
+  static Future<EcoleDetail> getEcoleDetail(String parametreCode, {bool showNotification = true}) async {
     if (_detailCache.containsKey(parametreCode)) {
       print('📥 [CACHE] Détails de l\'école récupérés depuis le cache pour: $parametreCode');
       return _detailCache[parametreCode]!;
@@ -198,7 +198,7 @@ class EcoleApiService {
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      ApiExceptionHandler.handle(e, context: 'la récupération des détails de l\'école');
+      ApiExceptionHandler.handle(e, context: 'la récupération des détails de l\'école', showNotification: showNotification);
       throw Exception(
         'Erreur lors de la récupération des détails de l\'école: $e',
       );

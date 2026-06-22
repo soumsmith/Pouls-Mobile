@@ -112,7 +112,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
     if (query.isEmpty) return list;
     return list.where((video) {
       final titleMatch = video.titre.toLowerCase().contains(query.toLowerCase());
-      final classMatch = video.classe != null && video.classe.toLowerCase().contains(query.toLowerCase());
+      final classMatch = video.classe != null && video.classe!.toLowerCase().contains(query.toLowerCase());
       return titleMatch || classMatch;
     }).toList();
   }
@@ -352,7 +352,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
       index: _filteredVideos.indexOf(video),
       cardKey: video.id.toString(),
       title: video.titre,
-      subtitle: video.classe.isNotEmpty ? video.classe : null,
+      subtitle: (video.classe != null && video.classe!.isNotEmpty) ? video.classe : null,
       imagePath: video.videoYoutube.isNotEmpty 
           ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
           : null,

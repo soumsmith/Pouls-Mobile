@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
-import 'bottom_sheet_header.dart';
+import 'reusable_bottom_sheet.dart';
 
 class PaymentChoiceBottomSheet extends StatelessWidget {
   final VoidCallback onOnlinePayment;
@@ -17,17 +17,21 @@ class PaymentChoiceBottomSheet extends StatelessWidget {
     required VoidCallback onOnlinePayment,
     required VoidCallback onCashPayment,
   }) {
-    return showModalBottomSheet<void>(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    return ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return PaymentChoiceBottomSheet(
-          onOnlinePayment: onOnlinePayment,
-          onCashPayment: onCashPayment,
-        );
-      },
+      title: 'Mode de paiement',
+      subtitle: 'Choisissez comment vous souhaitez payer votre inscription',
+      icon: Icons.account_balance_wallet,
+      iconColor: AppColors.shopBlue,
+      iconBackgroundColor: AppColors.shopBlue.withOpacity(0.1),
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      contentPadding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      content: PaymentChoiceBottomSheet(
+        onOnlinePayment: onOnlinePayment,
+        onCashPayment: onCashPayment,
+      ),
     );
   }
 
@@ -106,66 +110,30 @@ class PaymentChoiceBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final themeBg = isDark ? const Color(0xFF141414) : Colors.white;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: themeBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.screenShadow,
-            blurRadius: 20,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            BottomSheetHeader(
-              icon: Icons.account_balance_wallet,
-              iconColor: AppColors.shopBlue,
-              title: 'Mode de paiement',
-              description: 'Choisissez comment vous souhaitez payer votre inscription',
-              onClose: () => Navigator.of(context).pop(),
-              titleColor: isDark ? Colors.white : AppColors.screenTextPrimary,
-              descriptionColor: isDark ? Colors.white70 : AppColors.screenTextSecondary,
-              titleFontSize: 18,
-              descriptionFontSize: 13,
-              titleFontWeight: FontWeight.w800,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-              child: Column(
-                children: [
-                  _buildChoiceCard(
-                    context,
-                    title: 'Paiement en ligne',
-                    description: 'Payer par Mobile Money (Wave, Orange, MTN...) ou carte bancaire.',
-                    icon: Icons.phone_iphone_rounded,
-                    onTap: onOnlinePayment,
-                    color: const Color(0xFFFF7A3C),
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildChoiceCard(
-                    context,
-                    title: 'Paiement à la caisse',
-                    description: 'Payer physiquement à la caisse de l\'établissement scolaire.',
-                    icon: Icons.storefront_rounded,
-                    onTap: onCashPayment,
-                    color: AppColors.shopBlue,
-                    isDark: isDark,
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildChoiceCard(
+          context,
+          title: 'Paiement en ligne',
+          description: 'Payer par Mobile Money (Wave, Orange, MTN...) ou carte bancaire.',
+          icon: Icons.phone_iphone_rounded,
+          onTap: onOnlinePayment,
+          color: const Color(0xFFFF7A3C),
+          isDark: isDark,
         ),
-      ),
+        const SizedBox(height: 16),
+        _buildChoiceCard(
+          context,
+          title: 'Paiement à la caisse',
+          description: 'Payer physiquement à la caisse de l\'établissement scolaire.',
+          icon: Icons.storefront_rounded,
+          onTap: onCashPayment,
+          color: AppColors.shopBlue,
+          isDark: isDark,
+        ),
+      ],
     );
   }
 }

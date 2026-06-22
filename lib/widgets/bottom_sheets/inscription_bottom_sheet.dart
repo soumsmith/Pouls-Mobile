@@ -8,13 +8,13 @@ import '../../config/app_config.dart';
 import '../../services/pouls_scolaire_api_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
-import '../../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
 import '../../widgets/snackbar.dart';
 import '../../config/app_colors.dart';
 import '../../screens/inscription_screen.dart' as inscription;
+import 'reusable_bottom_sheet.dart';
 
 class InscriptionBottomSheet extends StatefulWidget {
   final String? imagePath;
@@ -34,12 +34,20 @@ class InscriptionBottomSheet extends StatefulWidget {
     Color? imageBackgroundColor,
     double? imageBorderRadius,
   }) {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(maxWidth: double.infinity),
-      builder: (_) => InscriptionBottomSheet(
+      title: 'Nouvelle Inscription',
+      subtitle: 'Sélectionnez une école et entrez le matricule',
+      icon: Icons.school,
+      iconColor: const Color(0xFF4CAF50),
+      imagePath: imagePath,
+      iconBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      contentPadding: const EdgeInsets.all(20),
+      content: InscriptionBottomSheet(
         imagePath: imagePath,
         imageBackgroundColor: imageBackgroundColor,
         imageBorderRadius: imageBorderRadius,
@@ -51,12 +59,10 @@ class InscriptionBottomSheet extends StatefulWidget {
   State<InscriptionBottomSheet> createState() => _InscriptionBottomSheetState();
 }
 
-class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
-    with WidgetsBindingObserver {
+class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
-  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   // État
   List<Ecole> _ecoles = [];
@@ -67,54 +73,16 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
   bool _isLoadingInscription = false;
   final TextEditingController _matriculeController = TextEditingController();
 
-  // Gestion du clavier
-  double _sheetSize = 0.6;
-  bool _hasKeyboard = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _loadEcoles();
   }
 
   @override
-  void deactivate() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
-    _draggableController.dispose();
-    WidgetsBinding.instance.removeObserver(this);
     _matriculeController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    if (!mounted) return;
-    try {
-      final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-      final newHasKeyboard = keyboardHeight > 0;
-      
-      if (newHasKeyboard != _hasKeyboard) {
-        setState(() {
-          _hasKeyboard = newHasKeyboard;
-          _sheetSize = newHasKeyboard ? 0.85 : 0.6;
-        });
-        if (_draggableController.isAttached) {
-          _draggableController.animateTo(
-            newHasKeyboard ? 0.85 : 0.6,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      }
-    } catch (_) {
-      // Safely ignore deactivation metric updates
-    }
   }
 
   // Chargement des écoles
@@ -272,187 +240,128 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return DraggableScrollableSheet(
-      controller: _draggableController,
-      initialChildSize: _sheetSize,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      snap: true,
-      snapSizes: const [0.4, 0.6, 0.85, 0.95],
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.bottomSheetBg(context),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // Header
-              BottomSheetHeader(
-                icon: Icons.school,
-                imagePath: widget.imagePath,
-                imageBackgroundColor: widget.imageBackgroundColor,
-                imageBorderRadius: widget.imageBorderRadius,
-                iconColor: const Color(0xFF4CAF50),
-                title: 'Nouvelle Inscription',
-                description: 'Sélectionnez une école et entrez le matricule',
-                titleColor: isDark ? Colors.white : _kTextPrimary,
-                descriptionColor: isDark ? Colors.white70 : _kTextSecondary,
-                onClose: () => Navigator.of(context).pop(),
-                titleFontSize: _textSizeService.getScaledFontSize(18),
-                descriptionFontSize: _textSizeService.getScaledFontSize(13),
-                draggableController: _draggableController,
-              ),
-
-              // Formulaire
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Sélection de l'école
-                      if (_isLoadingEcoles)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark ? _kDarkCard : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    isDark ? Colors.white : _kTextPrimary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Chargement des écoles...',
-                                style: TextStyle(
-                                  fontSize: _textSizeService.getScaledFontSize(14),
-                                  color: isDark ? Colors.white70 : _kTextSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else if (_ecoles.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0F0),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.withOpacity(0.2)),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                color: Colors.red[400],
-                                size: 18,
-                              ),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Text(
-                                  'Aucune école disponible',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: _kTextPrimary,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: _loadEcoles,
-                                child: const Text(
-                                  'Réessayer',
-                                  style: TextStyle(color: Color(0xFFFF7A3C)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        CustomSelectInput(
-                          label: 'École',
-                          value: _selectedEcoleName ?? '',
-                          items: _ecoles.map((e) => e.ecoleclibelle).toList(),
-                          onChanged: (value) {
-                            final ecole = _ecoles.firstWhere(
-                              (e) => e.ecoleclibelle == value,
-                              orElse: () => _ecoles.first,
-                            );
-                            setState(() {
-                              _selectedEcoleCode = ecole.ecolecode;
-                              _selectedEcoleName = ecole.ecoleclibelle;
-                              _selectedParamEcole =
-                                  ecole.paramecole?.isNotEmpty == true
-                                  ? ecole.paramecole
-                                  : ecole.ecolecode;
-                            });
-                          },
-                          isDarkMode: isDark,
-                          required: true,
-                        ),
-                      const SizedBox(height: 24),
-
-                      // Champ matricule
-                      CustomTextInput(
-                        label: 'Matricule de l\'élève',
-                        hint: 'Ex: 2024001',
-                        icon: Icons.person_outline,
-                        controller: _matriculeController,
-                        keyboardType: TextInputType.text,
-                        required: true,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Bouton d'inscription
-                      CustomButton(
-                        text: _isLoadingInscription
-                            ? 'Inscription en cours...'
-                            : 'Commencer l\'inscription',
-                        onPressed: _startInscription,
-                        color: AppColors.success,
-                        icon: Icons.app_registration,
-                        isLoading: _isLoadingInscription,
-                        isLight: true,
-                        height: 56,
-                        fontSize: 16,
-                      ),
-                      const SizedBox(height: 0),
-                    ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Sélection de l'école
+        if (_isLoadingEcoles)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? Colors.white : const Color(0xFF1A1A2A),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Text(
+                  'Chargement des écoles...',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    color: isDark ? Colors.white70 : const Color(0xFF8A8A9E),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (_ecoles.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF0F0),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.red[400],
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Aucune école disponible',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF1A1A2A),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loadEcoles,
+                  child: const Text(
+                    'Réessayer',
+                    style: TextStyle(color: Color(0xFFFF7A3C)),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          CustomSelectInput(
+            label: 'École',
+            value: _selectedEcoleName ?? '',
+            items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+            onChanged: (value) {
+              final ecole = _ecoles.firstWhere(
+                (e) => e.ecoleclibelle == value,
+                orElse: () => _ecoles.first,
+              );
+              setState(() {
+                _selectedEcoleCode = ecole.ecolecode;
+                _selectedEcoleName = ecole.ecoleclibelle;
+                _selectedParamEcole =
+                    ecole.paramecole?.isNotEmpty == true
+                    ? ecole.paramecole
+                    : ecole.ecolecode;
+              });
+            },
+            isDarkMode: isDark,
+            required: true,
           ),
-        );
-      },
+        const SizedBox(height: 24),
+
+        // Champ matricule
+        CustomTextInput(
+          label: 'Matricule de l\'élève',
+          hint: 'Ex: 2024001',
+          icon: Icons.person_outline,
+          controller: _matriculeController,
+          keyboardType: TextInputType.text,
+          required: true,
+        ),
+        const SizedBox(height: 32),
+
+        // Bouton d'inscription
+        CustomButton(
+          text: _isLoadingInscription
+              ? 'Inscription en cours...'
+              : 'Commencer l\'inscription',
+          onPressed: _startInscription,
+          color: AppColors.success,
+          icon: Icons.app_registration,
+          isLoading: _isLoadingInscription,
+          isLight: true,
+          height: 56,
+          fontSize: 16,
+        ),
+      ],
     );
   }
 }
-
-// Constantes de design
-const _kSheetCard = Color(0xFFFFFFFF);
-const _kDarkCard = Color(0xFF1E1E2A);
-const _kTextPrimary = Color(0xFF1A1A2A);
-const _kTextSecondary = Color(0xFF8A8A9E);

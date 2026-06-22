@@ -6,7 +6,7 @@ import 'package:parents_responsable/models/ecole.dart';
 import 'package:parents_responsable/services/integration_service.dart';
 import 'package:parents_responsable/services/pouls_scolaire_api_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
-import 'package:parents_responsable/widgets/bottom_sheets/bottom_sheet_header.dart';
+import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/components/custom_date_input.dart';
 import 'package:parents_responsable/widgets/components/custom_select_input.dart';
 import 'package:parents_responsable/widgets/components/custom_button.dart';
@@ -14,6 +14,8 @@ import 'package:parents_responsable/widgets/components/custom_text_input.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/snackbar.dart';
+
+import '../components/bottom_spacer.dart';
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -31,164 +33,26 @@ void showIntegrationBottomSheet({
   Color? imageBackgroundColor,
   double? imageBorderRadius,
 }) {
-  showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+  ReusableBottomSheet.show(
     context: context,
-    isScrollControlled: true, // OBLIGATOIRE pour que le padding clavier fonctionne
-    useSafeArea: true,        // Évite le chevauchement avec la barre système
-    backgroundColor: Colors.transparent,
-    builder: (_) => IntegrationBottomSheet(
+    title: 'Intégrer',
+    subtitle: 'Nous rejoindre',
+    icon: Icons.person_add_alt_1_rounded,
+    iconColor: const Color(0xFF3B82F6),
+    imagePath: imagePath,
+    iconBackgroundColor: imageBackgroundColor,
+    imageBorderRadius: imageBorderRadius,
+    initialChildSize: 0.85,
+    minChildSize: 0.5,
+    maxChildSize: 0.9,
+    wrapWithScrollView: false,
+    content: IntegrationFormContent(
       ecole: ecole,
       scaffoldMessengerKey: scaffoldMessengerKey,
       onSuccess: onSuccess,
       onError: onError,
-      imagePath: imagePath,
-      imageBackgroundColor: imageBackgroundColor,
-      imageBorderRadius: imageBorderRadius,
     ),
   );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  IntegrationBottomSheet — Widget stateful externalisé
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class IntegrationBottomSheet extends StatefulWidget {
-  final Ecole? ecole;
-  final GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
-  final void Function(String demandeUid)? onSuccess;
-  final void Function(String error)? onError;
-  final String? imagePath;
-  final Color? imageBackgroundColor;
-  final double? imageBorderRadius;
-
-  const IntegrationBottomSheet({
-    super.key,
-    this.ecole,
-    this.scaffoldMessengerKey,
-    this.onSuccess,
-    this.onError,
-    this.imagePath,
-    this.imageBackgroundColor,
-    this.imageBorderRadius,
-  });
-
-  @override
-  State<IntegrationBottomSheet> createState() => _IntegrationBottomSheetState();
-}
-
-class _IntegrationBottomSheetState extends State<IntegrationBottomSheet>
-    with WidgetsBindingObserver {
-  double _sheetSize = 0.85;
-  bool _hasKeyboard = false;
-  final DraggableScrollableController _draggableController = DraggableScrollableController();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void deactivate() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.deactivate();
-  }
-
-  @override
-  void dispose() {
-    _draggableController.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    if (!mounted) return;
-    try {
-      final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-      final newHasKeyboard = keyboardHeight > 0;
-      
-      if (newHasKeyboard != _hasKeyboard) {
-        setState(() {
-          _hasKeyboard = newHasKeyboard;
-          _sheetSize = newHasKeyboard ? 0.95 : 0.85;
-        });
-        if (_draggableController.isAttached) {
-          _draggableController.animateTo(
-            newHasKeyboard ? 0.95 : 0.85,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      }
-    } catch (_) {
-      // Safely ignore deactivation metric updates
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSizeService = TextSizeService();
-
-    return DraggableScrollableSheet(
-      controller: _draggableController,
-      initialChildSize: _sheetSize,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      snap: true,
-      snapSizes: const [0.5, 0.75, 0.85, 0.95],
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A1A1A) : AppColors.screenCard,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 24,
-                offset: const Offset(0, -6),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              BottomSheetHeader(
-                icon: Icons.person_add_alt_1_rounded,
-                imagePath: widget.imagePath,
-                imageBackgroundColor: widget.imageBackgroundColor,
-                imageBorderRadius: widget.imageBorderRadius,
-                iconColor: const Color(0xFF3B82F6),
-                title: 'Intégrer',
-                description: 'Nous rejoindre',
-                onClose: () => Navigator.of(context).pop(),
-                titleColor:
-                    isDark ? Colors.white : AppColors.screenTextPrimary,
-                descriptionColor: AppColors.screenTextSecondary,
-                titleFontSize: textSizeService.getScaledFontSize(18),
-                iconSize: 22,
-                draggableController: _draggableController,
-              ),
-              Expanded(
-                child: IntegrationFormContent(
-                  scrollController: scrollController,
-                  ecole: widget.ecole,
-                  scaffoldMessengerKey: widget.scaffoldMessengerKey,
-                  onSuccess: widget.onSuccess,
-                  onError: widget.onError,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -200,7 +64,6 @@ class IntegrationFormContent extends StatefulWidget {
   final GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
   final void Function(String demandeUid)? onSuccess;
   final void Function(String error)? onError;
-  final ScrollController? scrollController;
 
   const IntegrationFormContent({
     super.key,
@@ -208,7 +71,6 @@ class IntegrationFormContent extends StatefulWidget {
     this.scaffoldMessengerKey,
     this.onSuccess,
     this.onError,
-    this.scrollController,
   });
 
   @override
@@ -457,13 +319,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       if (_validateCurrentStep()) {
         setState(() => _currentStep++);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (widget.scrollController != null && widget.scrollController!.hasClients) {
-            widget.scrollController!.animateTo(
-              0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          }
+          // No scroll controller anymore, ReusableBottomSheet handles scroll
         });
       }
     } else {
@@ -475,13 +331,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (widget.scrollController != null && widget.scrollController!.hasClients) {
-          widget.scrollController!.animateTo(
-            0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
+        // No scroll controller anymore, ReusableBottomSheet handles scroll
       });
     }
   }
@@ -855,28 +705,25 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Progress indicator ────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: _buildProgressIndicator(),
-        ),
+        _buildProgressIndicator(),
         const SizedBox(height: 20),
 
         // ── Contenu de l'étape ────────────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
-            controller: widget.scrollController,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: _buildCurrentStep(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildCurrentStep(),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
 
-        const SizedBox(height: 16),
-
         // ── Navigation buttons ────────────────────────────────────────────
-        Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8),
-          child: _buildNavigationButtons(),
-        ),
+        _buildNavigationButtons(),
+        const BottomSpacer(),
       ],
     );
   }
@@ -904,10 +751,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             ),
           ),
           const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: List.generate(_totalSteps, (index) {
                 final isCompleted = index < _currentStep;
                 final isCurrent = index == _currentStep;
@@ -989,12 +840,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
                   ),
                 );
               }),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
+            ), // end Row
+          ), // end ConstrainedBox
+        ); // end SingleChildScrollView
+      },
+    ), // end LayoutBuilder
+    const SizedBox(height: 8),
+  ],
+),
+);
   }
 
   // ── Current step content ───────────────────────────────────────────────────
@@ -1061,10 +915,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       icon: Icons.school_rounded,
       children: [
         _buildEcoleField(),
-        if (_ecoleErrorMessage != null) ...[
-          const SizedBox(height: 12),
-          _buildErrorBanner(_ecoleErrorMessage!),
-        ],
       ],
     );
   }
@@ -1076,7 +926,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     if (_ecoles.isEmpty) {
       return Column(
         children: [
-          _buildEmptyEcoleField(),
+          _buildEmptyEcoleField(errorMessage: _ecoleErrorMessage),
           if (_ecoleErrorMessage != null) ...[
             const SizedBox(height: 10),
             _buildRetryButton(),
@@ -1146,7 +996,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
   }
 
-  Widget _buildEmptyEcoleField() {
+  Widget _buildEmptyEcoleField({String? errorMessage}) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1158,10 +1008,10 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         children: [
           Icon(Icons.error_outline, color: Colors.red[400], size: 18),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Aucun établissement disponible',
-              style: TextStyle(
+              errorMessage ?? 'Aucun établissement disponible',
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.screenTextPrimary,
               ),

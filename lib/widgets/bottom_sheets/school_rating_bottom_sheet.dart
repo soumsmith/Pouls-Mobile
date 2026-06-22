@@ -4,6 +4,7 @@ import '../../models/ecole.dart';
 import '../../services/text_size_service.dart';
 import '../../widgets/searchable_dropdown.dart';
 import 'rating_bottom_sheet.dart';
+import 'reusable_bottom_sheet.dart';
 
 /// Bottom sheet de notation avec sélection d'école pour la liste des écoles
 class SchoolRatingBottomSheet extends StatefulWidget {
@@ -40,10 +41,16 @@ class SchoolRatingBottomSheet extends StatefulWidget {
       constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => SchoolRatingBottomSheet(
-        ecoles: ecoles,
-        onRatingSubmitted: onRatingSubmitted,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SchoolRatingBottomSheet(
+          ecoles: ecoles,
+          onRatingSubmitted: onRatingSubmitted,
+        ),
       ),
     );
   }
@@ -74,149 +81,75 @@ class _SchoolRatingBottomSheetState extends State<SchoolRatingBottomSheet> {
       );
     }
 
-    return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-          ),
-        ),
+    return ReusableBottomSheet(
+      title: 'Donner un avis',
+      subtitle: 'Sélectionnez une école',
+      icon: Icons.school,
+      iconColor: AppColors.screenBlue,
+      contentPadding: const EdgeInsets.all(0),
+      initialChildSize: 0.55,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      content: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.screenBlue,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.school,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Donner un avis',
-                          style: TextStyle(
-                            fontSize: _textSizeService.getScaledFontSize(18),
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'Sélectionnez une école',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
+            Text(
+              'Choisissez l\'école que vous souhaitez noter',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(16),
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : AppColors.screenTextPrimary,
               ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Sélectionnez une école dans la liste ci-dessous pour laisser votre avis et commentaire.',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(14),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white70
+                    : AppColors.screenTextSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
 
-            // Contenu de sélection
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Choisissez l\'école que vous souhaitez noter',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(16),
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.screenTextPrimary,
-                    ),
+            // Dropdown de sélection d'école
+            _buildSchoolDropdown(),
+
+            const SizedBox(height: 32),
+
+            // Bouton de continuation
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedEcole != null ? _proceedToRating : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.screenBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sélectionnez une école dans la liste ci-dessous pour laisser votre avis et commentaire.',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(14),
-                      color: AppColors.screenTextSecondary,
-                    ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Continuer vers la notation',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 20),
-
-                  // Dropdown de sélection d'école
-                  _buildSchoolDropdown(),
-
-                  const SizedBox(height: 24),
-
-                  // Bouton de continuation
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _selectedEcole != null
-                          ? _proceedToRating
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.screenBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Continuer vers la notation',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(16),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildSchoolDropdown() {

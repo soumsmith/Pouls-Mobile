@@ -671,12 +671,18 @@ class _HomeScreenState extends State<HomeScreen> {
     // Convertir toutes les vidéos en VisiteGuideeVideo
     final visiteVideos = _visiteGuideeVideos
         .map(
-          (v) => VisiteGuideeVideo(
-            typeVideo: v.typevideo,
-            youtubeUrl: v.youtubeUrl,
-            code: v.code,
-            etablissement: v.etablissement,
-          ),
+          (v) {
+            print('🔄 Mapping Video→VisiteGuideeVideo - id: ${v.id}, code: "${v.code}", etablissement: "${v.etablissement}"');
+            return VisiteGuideeVideo(
+              id: v.id,
+              typeVideo: v.typevideo,
+              youtubeUrl: v.youtubeUrl,
+              title: v.title,
+              description: v.description,
+              code: v.code,
+              etablissement: v.etablissement,
+            );
+          },
         )
         .toList();
 
@@ -1331,7 +1337,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic> _createSchoolDataFromVideo(CoulisseExcellence video) {
     // Classe optionnelle : afficher seulement si la classe est disponible et selon une logique
     final shouldShowClass =
-        video.classe.isNotEmpty &&
+        video.classe != null &&
+        video.classe!.isNotEmpty &&
         (video.id % 2) ==
             0; // 1 chance sur 2 d'afficher la classe si disponible
     final shouldShowLocation =
@@ -2442,9 +2449,9 @@ class _HomeScreenState extends State<HomeScreen> {
             title: 'MES ENFANTS',
             onSeeMore: (_filteredChildren.length > 4)
                 ? () {
-                    MainScreenWrapper.of(context).navigateToExtraScreen(
-                      const AllChildrenScreen(),
-                    );
+                    MainScreenWrapper.of(
+                      context,
+                    ).navigateToExtraScreen(const AllChildrenScreen());
                   }
                 : null,
             seeMoreText: 'Voir plus',
@@ -2844,17 +2851,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 //isLocked: !isPremium,
-                onTap: () => showModalBottomSheet(
-                  constraints: const BoxConstraints(maxWidth: double.infinity),
+                onTap: () => showIntegrationBottomSheet(
                   context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => IntegrationBottomSheet(
-                    imagePath: 'assets/images/icons/demande_integration.png',
-                    imageBackgroundColor: const Color(0xFFF7FEFC),
-                    imageBorderRadius: AppDimensions.getImageBorderRadius(
-                      context,
-                    ),
+                  imagePath: 'assets/images/icons/demande_integration.png',
+                  imageBackgroundColor: const Color(0xFFF7FEFC),
+                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                    context,
                   ),
                 ),
               ),

@@ -20,6 +20,7 @@ class ReusableBottomSheet extends StatelessWidget {
   final EdgeInsetsGeometry contentPadding;
   final bool showScrollToTopFab;
   final Widget? fixedBottomWidget;
+  final bool wrapWithScrollView;
 
   const ReusableBottomSheet({
     super.key,
@@ -39,6 +40,7 @@ class ReusableBottomSheet extends StatelessWidget {
     this.contentPadding = const EdgeInsets.all(16),
     this.showScrollToTopFab = false,
     this.fixedBottomWidget,
+    this.wrapWithScrollView = true,
   });
 
   /// Méthode statique utilitaire pour afficher facilement le BottomSheet
@@ -61,6 +63,7 @@ class ReusableBottomSheet extends StatelessWidget {
     EdgeInsetsGeometry contentPadding = const EdgeInsets.all(16),
     bool showScrollToTopFab = false,
     Widget? fixedBottomWidget,
+    bool wrapWithScrollView = true,
   }) {
     return showModalBottomSheet<T>(
       context: context,
@@ -68,6 +71,7 @@ class ReusableBottomSheet extends StatelessWidget {
           true, // Permet au bottom sheet de prendre plus de place et gérer le clavier
       backgroundColor: Colors.transparent,
       isDismissible: isDismissible,
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (context) => Padding(
         // padding bottom pour éviter que le clavier ne cache le contenu
         padding: EdgeInsets.only(
@@ -90,6 +94,7 @@ class ReusableBottomSheet extends StatelessWidget {
           contentPadding: contentPadding,
           showScrollToTopFab: showScrollToTopFab,
           fixedBottomWidget: fixedBottomWidget,
+          wrapWithScrollView: wrapWithScrollView,
         ),
       ),
     );
@@ -134,20 +139,25 @@ class ReusableBottomSheet extends StatelessWidget {
               Expanded(
                 child: Stack(
                   children: [
-                    SingleChildScrollView(
-                      controller: scrollController,
-                      physics: const BouncingScrollPhysics(),
-                      padding: contentPadding,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          content, // Le contenu dynamique passé en paramètre
-                          const BottomSpacer(),
-                        ],
-                      ),
-                    ),
-                    if (showScrollToTopFab)
+                    wrapWithScrollView
+                        ? SingleChildScrollView(
+                            controller: scrollController,
+                            physics: const BouncingScrollPhysics(),
+                            padding: contentPadding,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                content, // Le contenu dynamique passé en paramètre
+                                const BottomSpacer(),
+                              ],
+                            ),
+                          )
+                        : Padding(
+                            padding: contentPadding,
+                            child: content,
+                          ),
+                    if (showScrollToTopFab && wrapWithScrollView)
                       Positioned(
                         right: 16,
                         bottom: 0,

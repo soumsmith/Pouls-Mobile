@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import '../custom_loader.dart';
-import 'bottom_sheet_header.dart';
 import '../../services/theme_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/kits_service.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_dimensions.dart';
 import '../section_header_widget.dart';
-import '../components/bottom_spacer.dart';
 import '../../models/niveau.dart';
+import 'reusable_bottom_sheet.dart';
 
 class KitsBottomSheet extends StatefulWidget {
   final String schoolId;
   final String schoolName;
   final List<Niveau> niveaux;
-  final DraggableScrollableController? draggableController;
-  final ScrollController? scrollController;
   final Color primaryColor;
 
   const KitsBottomSheet({
@@ -23,8 +20,6 @@ class KitsBottomSheet extends StatefulWidget {
     required this.schoolId,
     required this.schoolName,
     required this.niveaux,
-    this.draggableController,
-    this.scrollController,
     this.primaryColor = const Color(0xFF8B5CF6), // Violet par défaut
   }) : super(key: key);
 
@@ -82,54 +77,14 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[900] : Colors.white,
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomSheetHeader(
-            icon: Icons.backpack_rounded,
-            iconColor: widget.primaryColor,
-            title: 'Kits d\'articles',
-            description: 'Consultez les fournitures pour ${widget.schoolName}',
-            titleColor: isDarkMode ? Colors.white : Colors.black87,
-            descriptionColor: isDarkMode ? Colors.grey[300] : Colors.grey[600],
-            onClose: () => Navigator.of(context).pop(),
-            iconSize: 22,
-            titleFontSize: 18,
-            descriptionFontSize: 14,
-            titleFontWeight: FontWeight.w700,
-            draggableController: widget.draggableController,
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: widget.scrollController,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildNiveauxSelection(),
-                  const SizedBox(height: 24),
-                  _buildKitsContent(),
-                  const BottomSpacer(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildNiveauxSelection(),
+        const SizedBox(height: 24),
+        _buildKitsContent(),
+      ],
     );
   }
 
@@ -455,17 +410,20 @@ void showKitsBottomSheet(
   required List<Niveau> niveaux,
   Color primaryColor = const Color(0xFF8B5CF6),
 }) {
-  showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+  ReusableBottomSheet.show(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => KitsBottomSheet(
+    title: 'Kits d\'articles',
+    subtitle: 'Consultez les fournitures pour $schoolName',
+    icon: Icons.backpack_rounded,
+    iconColor: primaryColor,
+    initialChildSize: 0.6,
+    minChildSize: 0.4,
+    maxChildSize: 0.95,
+    contentPadding: const EdgeInsets.all(20),
+    content: KitsBottomSheet(
       schoolId: schoolId,
       schoolName: schoolName,
       niveaux: niveaux,
-      draggableController: DraggableScrollableController(),
       primaryColor: primaryColor,
     ),
   );

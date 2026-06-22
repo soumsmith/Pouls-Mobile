@@ -4,6 +4,7 @@ import 'package:parents_responsable/utils/app_http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../config/app_colors.dart';
+import '../components/bottom_spacer.dart';
 import 'bottom_sheet_header.dart';
 import '../../config/app_config.dart';
 import '../../models/ecole.dart';
@@ -15,6 +16,7 @@ import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
 import '../../widgets/snackbar.dart';
 import 'integration_result_dialog.dart';
+import 'reusable_bottom_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Widget principal (bottom sheet)
@@ -58,12 +60,21 @@ class IntegrationRequestBottomSheet extends StatefulWidget {
     Color? imageBackgroundColor,
     double? imageBorderRadius,
   }) {
-    showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+    ReusableBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => IntegrationRequestBottomSheet(
+      title: 'Consultation demande',
+      subtitle: 'Vérifier le statut d\'intégration scolaire',
+      icon: Icons.school_rounded,
+      iconColor: const Color(0xFF1565C0),
+      imagePath: imagePath,
+      iconBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      wrapWithScrollView: false,
+      contentPadding: const EdgeInsets.all(0),
+      content: IntegrationRequestBottomSheet(
         matricule: matricule,
         childFullName: childFullName,
         imagePath: imagePath,
@@ -198,67 +209,24 @@ class _IntegrationRequestBottomSheetState
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141414) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── En-tête du bottom sheet ──────────────────────────────────────
-          BottomSheetHeader(
-            icon: Icons.school_rounded,
-            imagePath: widget.imagePath,
-            imageBackgroundColor: widget.imageBackgroundColor,
-            imageBorderRadius: widget.imageBorderRadius,
-            iconColor: const Color(0xFF1565C0),
-            title: 'Consultation demande',
-            description: 'Vérifier le statut d\'intégration scolaire',
-            onClose: () => Navigator.of(context).pop(),
-            titleColor: const Color(0xFF0D47A1),
-            descriptionColor: isDark ? Colors.grey[400] : Colors.grey[600],
-            backgroundColor: Colors.transparent,
-            iconSize: 22,
-            titleFontSize: _textSizeService.getScaledFontSize(18),
-            descriptionFontSize: _textSizeService.getScaledFontSize(13),
-            //padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          ),
-
-          // ── Corps ────────────────────────────────────────────────────────
-          Flexible(
-            child: _IntegrationRequestForm(
-              ecoles: _ecoles,
-              isLoadingEcoles: _isLoadingEcoles,
-              isLoadingRequest: _isLoadingRequest,
-              selectedEcoleName: _selectedEcoleName,
-              selectedEcoleId: _selectedEcoleId,
-              matricule: widget.matricule,
-              childFullName: widget.childFullName,
-              isDarkMode: isDark,
-              textSizeService: _textSizeService,
-              onEcoleChanged: (ecoleId, ecoleName) {
-                setState(() {
-                  _selectedEcoleId = ecoleId;
-                  _selectedEcoleName = ecoleName;
-                });
-              },
-              onRetryEcoles: _loadEcoles,
-              onConsultWithMatricule: (matricule) => _consultRequest(matricule),
-            ),
-          ),
-        ],
-      ),
+    return _IntegrationRequestForm(
+      ecoles: _ecoles,
+      isLoadingEcoles: _isLoadingEcoles,
+      isLoadingRequest: _isLoadingRequest,
+      selectedEcoleName: _selectedEcoleName,
+      selectedEcoleId: _selectedEcoleId,
+      matricule: widget.matricule,
+      childFullName: widget.childFullName,
+      isDarkMode: isDark,
+      textSizeService: _textSizeService,
+      onEcoleChanged: (ecoleId, ecoleName) {
+        setState(() {
+          _selectedEcoleId = ecoleId;
+          _selectedEcoleName = ecoleName;
+        });
+      },
+      onRetryEcoles: _loadEcoles,
+      onConsultWithMatricule: (matricule) => _consultRequest(matricule),
     );
   }
 }
@@ -347,28 +315,24 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ── Indicateur de progression ─────────────────────────────────────
         _buildProgressIndicator(),
 
         // ── Corps du formulaire ───────────────────────────────────────────
-        Flexible(
+        Expanded(
           child: SingleChildScrollView(
-            reverse:
-                true, // Permet de voir les champs en bas quand le clavier apparaît
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: EdgeInsets.only(
-              left: 20,
-              top: 20,
-              right: 20,
-              bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: _buildCurrentStep(),
             ),
-            child: _buildCurrentStep(),
           ),
         ),
 
         // ── Barre de navigation inférieure ────────────────────────────────
         _buildBottomNavigation(),
+        const BottomSpacer(),
       ],
     );
   }

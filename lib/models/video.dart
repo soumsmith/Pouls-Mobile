@@ -1,5 +1,6 @@
 // models/video.dart
 class Video {
+  final int? id;
   final String typevideo;
   final String youtubeUrl;
   final String title;
@@ -9,6 +10,7 @@ class Video {
   final String etablissement;
 
   const Video({
+    this.id,
     required this.typevideo,
     required this.youtubeUrl,
     required this.title,
@@ -20,6 +22,7 @@ class Video {
 
   factory Video.fromJson(Map<String, dynamic> json) {
     return Video(
+      id: json['id'] as int?,
       typevideo: json['typevideo'] ?? '',
       youtubeUrl: json['youtube_url'] ?? '',
       title: json['title'] ?? '',
@@ -48,6 +51,7 @@ class Video {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'typevideo': typevideo,
       'youtube_url': youtubeUrl,
       'title': title,

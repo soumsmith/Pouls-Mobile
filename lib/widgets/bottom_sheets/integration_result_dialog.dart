@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_colors.dart';
 import '../../services/text_size_service.dart';
+import 'reusable_bottom_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Widget dialog de résultat de demande d'intégration
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Dialog affichant le résultat d'une consultation de demande d'intégration.
+/// Bottom sheet affichant le résultat d'une consultation de demande d'intégration.
 ///
 /// **Utilisation simple :**
 /// ```dart
@@ -31,14 +32,22 @@ class IntegrationResultDialog extends StatelessWidget {
 
   // ── Méthode statique d'affichage ──────────────────────────────────────────
 
-  /// Ouvre le dialog depuis n'importe quel écran ou widget.
+  /// Ouvre le bottom sheet depuis n'importe quel écran ou widget.
   static Future<void> show(
     BuildContext context, {
     required Map<String, dynamic> data,
   }) {
-    return showDialog(
+    return ReusableBottomSheet.show<void>(
       context: context,
-      builder: (_) => IntegrationResultDialog(data: data),
+      title: 'Résultat de la demande',
+      subtitle: data['message']?.toString() ?? 'Détails de la consultation',
+      icon: Icons.search_rounded,
+      iconColor: const Color(0xFF1565C0),
+      initialChildSize: 0.5,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      contentPadding: const EdgeInsets.all(20),
+      content: IntegrationResultDialog(data: data),
     );
   }
 
@@ -47,102 +56,33 @@ class IntegrationResultDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
 
-    return AlertDialog(
-      backgroundColor: Colors.transparent,
-      contentPadding: EdgeInsets.zero,
-      content: Container(
-        decoration: BoxDecoration(
-          color: AppColors.screenCard,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.screenShadow,
-              blurRadius: 16,
-              offset: Offset(0, 4),
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ResultItem(
+          label: 'Statut',
+          value: data['statut']?.toString() ?? 'Non spécifié',
+          textSizeService: textSizeService,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── En-tête ────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.search_rounded,
-                      color: Color(0xFF1565C0),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Résultat de la demande',
-                    style: TextStyle(
-                      fontSize: textSizeService.getScaledFontSize(17),
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimary,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Séparateur décoratif ───────────────────────────────────────
-            Center(
-              child: Container(
-                width: 36,
-                height: 3,
-                margin: const EdgeInsets.only(top: 14, bottom: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.screenDivider,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            // ── Corps ──────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ResultItem(
-                    label: 'Statut',
-                    value: data['statut']?.toString() ?? 'Non spécifié',
-                    textSizeService: textSizeService,
-                  ),
-                  const SizedBox(height: 12),
-                  _ResultItem(
-                    label: 'Message',
-                    value: data['message']?.toString() ?? 'Aucun message',
-                    textSizeService: textSizeService,
-                  ),
-                  if (data['date'] != null) ...[
-                    const SizedBox(height: 12),
-                    _ResultItem(
-                      label: 'Date',
-                      value: data['date'].toString(),
-                      textSizeService: textSizeService,
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  _CloseButton(textSizeService: textSizeService),
-                ],
-              ),
-            ),
-          ],
+        const SizedBox(height: 12),
+        _ResultItem(
+          label: 'Message',
+          value: data['message']?.toString() ?? 'Aucun message',
+          textSizeService: textSizeService,
         ),
-      ),
+        if (data['date'] != null) ...[
+          const SizedBox(height: 12),
+          _ResultItem(
+            label: 'Date',
+            value: data['date'].toString(),
+            textSizeService: textSizeService,
+          ),
+        ],
+        const SizedBox(height: 24),
+        _CloseButton(textSizeService: textSizeService),
+        const SizedBox(height: 20),
+      ],
     );
   }
 }

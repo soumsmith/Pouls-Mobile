@@ -28,7 +28,11 @@ class VideoService {
           return item['typevideo'] == type;
         }).toList();
 
-        return filteredVideos.map((json) => Video.fromJson(json)).toList();
+        return filteredVideos.map((json) {
+          final video = Video.fromJson(json);
+          print('📹 Video chargée - id: ${video.id}, code: "${video.code}", etablissement: "${video.etablissement}", title: "${video.title}"');
+          return video;
+        }).toList();
       } else {
         throw Exception('Failed to load videos');
       }

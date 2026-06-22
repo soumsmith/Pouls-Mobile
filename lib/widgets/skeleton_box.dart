@@ -67,11 +67,28 @@ class _SkeletonBoxState extends State<SkeletonBox> with SingleTickerProviderStat
             borderRadius: BorderRadius.circular(widget.borderRadius),
           ),
           child: widget.child ?? Center(
-            child: LoadingAnimationWidget.staggeredDotsWave(
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? Colors.white24 
-                  : Colors.black26,
-              size: 24,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LoadingAnimationWidget.staggeredDotsWave(
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.white24 
+                      : Colors.black26,
+                  size: 24,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Chargement...',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[600]
+                        : Colors.grey[400],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class SkeletonBox extends StatefulWidget {
   final double? width;
@@ -65,7 +66,14 @@ class _SkeletonBoxState extends State<SkeletonBox> with SingleTickerProviderStat
             color: _colorAnimation.value,
             borderRadius: BorderRadius.circular(widget.borderRadius),
           ),
-          child: widget.child,
+          child: widget.child ?? Center(
+            child: LoadingAnimationWidget.staggeredDotsWave(
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.white24 
+                  : Colors.black26,
+              size: 24,
+            ),
+          ),
         );
       },
     );

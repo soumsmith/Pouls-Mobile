@@ -2792,18 +2792,6 @@ class _SliderSkeleton extends StatelessWidget {
     return SkeletonBox(
       height: AppDimensions.getCarouselHeight(context),
       borderRadius: AppDimensions.getHeroCardBorderRadius(context),
-      child: Center(
-        child: Text(
-          'Chargement en cours...',
-          style: TextStyle(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.grey[600]
-                : Colors.grey[400],
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -2832,20 +2820,7 @@ class _EstablishmentGridSkeleton extends StatelessWidget {
           mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
         ),
         delegate: SliverChildBuilderDelegate((context, index) {
-          return SkeletonBox(
-            child: Center(
-              child: Text(
-                'Chargement...',
-                style: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[600]
-                      : Colors.grey[400],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          );
+          return const SkeletonBox();
         }, childCount: itemCount),
       ),
     );

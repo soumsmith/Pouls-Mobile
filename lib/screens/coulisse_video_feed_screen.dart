@@ -1654,10 +1654,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                 // Current rating stats
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  color: Colors.transparent,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1727,11 +1724,14 @@ class _RatingSheetState extends State<_RatingSheet> {
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: CustomButton(
-                      text: 'Envoyer la note',
-                      color: Colors.green,
-                      onPressed: _currentRating > 0 ? _submitRating : null,
-                      height: 48,
+                    child: Center(
+                      child: CustomButton(
+                        text: 'Envoyer la note',
+                        color: Colors.green,
+                        onPressed: _currentRating > 0 ? _submitRating : null,
+                        height: 48,
+                        width: 300,
+                      ),
                     ),
                   ),
                 ] else ...[

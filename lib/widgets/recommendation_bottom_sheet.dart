@@ -709,6 +709,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
                 onPressed: _previousStep,
                 color: isDark ? Colors.white60 : Colors.grey[700]!,
                 isLight: true,
+                hasBorder: false,
                 icon: Icons.arrow_back_ios_new,
                 width: 120,
                 height: 40,

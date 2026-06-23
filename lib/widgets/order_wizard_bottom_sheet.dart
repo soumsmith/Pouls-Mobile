@@ -452,7 +452,6 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                 decoration: BoxDecoration(
                   color: AppColors.screenSurfaceThemed(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.screenDividerThemed(context)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

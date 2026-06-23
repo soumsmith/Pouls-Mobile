@@ -2764,15 +2764,24 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           SectionRow(
             title: 'VISITES GUIDÉES',
             onSeeMore: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VisiteGuideeVideoFeedScreen(
+              if (MainScreenWrapper.maybeOf(context) != null) {
+                MainScreenWrapper.of(context).navigateToExtraScreen(
+                  VisiteGuideeVideoFeedScreen(
                     videos: _visiteGuideeVideos,
                     initialIndex: 0,
                   ),
-                ),
-              );
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VisiteGuideeVideoFeedScreen(
+                      videos: _visiteGuideeVideos,
+                      initialIndex: 0,
+                    ),
+                  ),
+                );
+              }
             },
           ),
           const SizedBox(height: 16),
@@ -2786,15 +2795,24 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           SectionRow(
             title: 'COULISSES DE L\'EXCELLENCE',
             onSeeMore: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CoulisseVideoFeedScreen(
+              if (MainScreenWrapper.maybeOf(context) != null) {
+                MainScreenWrapper.of(context).navigateToExtraScreen(
+                  CoulisseVideoFeedScreen(
                     videos: _coulisseExcellenceVideos,
                     initialIndex: 0,
                   ),
-                ),
-              );
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CoulisseVideoFeedScreen(
+                      videos: _coulisseExcellenceVideos,
+                      initialIndex: 0,
+                    ),
+                  ),
+                );
+              }
             },
           ),
           const SizedBox(height: 10),
@@ -2971,14 +2989,23 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     if (videoIndex != -1) {
       // Naviguer vers l'écran de lecture vidéo
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => VisiteGuideeVideoFeedScreen(
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).navigateToExtraScreen(
+          VisiteGuideeVideoFeedScreen(
             videos: _visiteGuideeVideos,
             initialIndex: videoIndex,
           ),
-        ),
-      );
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VisiteGuideeVideoFeedScreen(
+              videos: _visiteGuideeVideos,
+              initialIndex: videoIndex,
+            ),
+          ),
+        );
+      }
     } else {
       // Afficher un message si la vidéo n'est pas trouvée
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3015,14 +3042,23 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // Gérer l'action pour voir plus de visites guidées
   void _handleSeeMoreVisites() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VisiteGuideeVideoFeedScreen(
+    if (MainScreenWrapper.maybeOf(context) != null) {
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        VisiteGuideeVideoFeedScreen(
           videos: _visiteGuideeVideos,
           initialIndex: 0,
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VisiteGuideeVideoFeedScreen(
+            videos: _visiteGuideeVideos,
+            initialIndex: 0,
+          ),
+        ),
+      );
+    }
   }
 
   // Construire la section des Coulisses de l'Excellence
@@ -3183,14 +3219,23 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     if (videoIndex != -1) {
       // Naviguer vers l'écran de lecture vidéo
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => CoulisseVideoFeedScreen(
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).navigateToExtraScreen(
+          CoulisseVideoFeedScreen(
             videos: _coulisseExcellenceVideos,
             initialIndex: videoIndex,
           ),
-        ),
-      );
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CoulisseVideoFeedScreen(
+              videos: _coulisseExcellenceVideos,
+              initialIndex: videoIndex,
+            ),
+          ),
+        );
+      }
     } else {
       // Afficher un message si la vidéo n'est pas trouvée
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3227,14 +3272,23 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // Gérer l'action pour voir plus de vidéos
   void _handleSeeMoreVideos() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CoulisseVideoFeedScreen(
+    if (MainScreenWrapper.maybeOf(context) != null) {
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        CoulisseVideoFeedScreen(
           videos: _coulisseExcellenceVideos,
           initialIndex: 0,
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CoulisseVideoFeedScreen(
+            videos: _coulisseExcellenceVideos,
+            initialIndex: 0,
+          ),
+        ),
+      );
+    }
   }
 
   String _getSchoolLocation() {
@@ -3283,13 +3337,19 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
     // 1.1 CAS SPÉCIAL : ACTUALITÉS (Navigation directe)
     if (actionType == 'communication') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              AllBlogsScreen(schoolCode: widget.ecole.parametreCode),
-        ),
-      );
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).navigateToExtraScreen(
+          AllBlogsScreen(schoolCode: widget.ecole.parametreCode),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                AllBlogsScreen(schoolCode: widget.ecole.parametreCode),
+          ),
+        );
+      }
       return;
     }
 
@@ -3298,9 +3358,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       final ecoleCode = widget.ecole.parametreCode ?? 'gainhs';
       final ecoleNom = widget.ecole.parametreNom ?? 'Établissement';
 
-      MainScreenWrapper.of(context).navigateToExtraScreen(
-        GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
-      );
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).navigateToExtraScreen(
+          GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
+          ),
+        );
+      }
       return;
     }
 
@@ -4111,6 +4180,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   void _navigateToBlogDetail(Map<String, dynamic> blog) {
+    // Fermer le bottom sheet d'abord
+    Navigator.of(context).pop();
+
     final Blog blogObject = Blog(
       slug: blog['id'] as String? ?? blog['slug'] as String? ?? '',
       codeecole: widget.ecole.parametreCode ?? '',
@@ -4125,11 +4197,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       auteur: blog['auteur'] as String?,
     );
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => BlogDetailScreen(blog: blogObject),
-      ),
-    );
+    if (MainScreenWrapper.maybeOf(context) != null) {
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        BlogDetailScreen(key: UniqueKey(), blog: blogObject),
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => BlogDetailScreen(key: UniqueKey(), blog: blogObject),
+        ),
+      );
+    }
   }
 
   // ── Levels tab ─────────────────────────────────────────────────────────────

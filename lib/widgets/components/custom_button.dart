@@ -9,6 +9,7 @@ class CustomButton extends StatelessWidget {
   final IconData? icon;
   final bool iconOnRight;
   final bool isLoading;
+  final bool hasBorder;
   final double? borderRadius;
   final double? height;
   final double? fontSize;
@@ -23,6 +24,7 @@ class CustomButton extends StatelessWidget {
     this.icon,
     this.iconOnRight = false,
     this.isLoading = false,
+    this.hasBorder = true,
     this.borderRadius,
     this.height,
     this.fontSize,
@@ -89,7 +91,7 @@ class CustomButton extends StatelessWidget {
             color: bg,
             borderRadius: BorderRadius.circular(borderRadius ?? 14),
             boxShadow: shadow,
-            border: isEnabled && isLight
+            border: isEnabled && isLight && hasBorder
                 ? Border.all(color: color.withOpacity(0.2), width: 1.0)
                 : null,
           ),

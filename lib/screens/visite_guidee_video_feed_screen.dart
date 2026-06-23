@@ -280,6 +280,8 @@ class _VisiteGuideeVideoFeedScreenState
       icon: Icons.comment_rounded,
       iconColor: const Color(0xFF0288D1),
       wrapWithScrollView: false,
+      initialChildSize: 0.75,
+      maxChildSize: 0.9,
       contentPadding: EdgeInsets.zero,
       content: _CommentsSheet(videoId: video.id ?? video.typeVideo.hashCode),
     );
@@ -302,6 +304,8 @@ class _VisiteGuideeVideoFeedScreenState
       icon: Icons.star_rounded,
       iconColor: Colors.orange,
       wrapWithScrollView: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.85,
       contentPadding: EdgeInsets.zero,
       content: _RatingSheet(video: video),
     );
@@ -1084,13 +1088,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             left: 16,
             right: 16,
             top: 10,
-            bottom:
-                MediaQuery.of(context).viewInsets.bottom +
-                (MediaQuery.of(context).viewInsets.bottom > 0
-                    ? 16
-                    : (MediaQuery.of(context).padding.bottom > 0
-                          ? MediaQuery.of(context).padding.bottom + 12
-                          : 24)),
+            bottom: MediaQuery.of(context).padding.bottom > 0
+                ? MediaQuery.of(context).padding.bottom + 12
+                : 24,
           ),
           decoration: BoxDecoration(
             color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,

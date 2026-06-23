@@ -747,7 +747,13 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                       child: _BlogCard(
                         blog: blog,
                         onTap: () {
-                          MainScreenWrapper.of(context).navigateToExtraScreen(BlogDetailScreen(blog: blog));
+                          if (MainScreenWrapper.maybeOf(context) != null) {
+                            MainScreenWrapper.of(context).navigateToExtraScreen(BlogDetailScreen(blog: blog));
+                          } else {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => BlogDetailScreen(blog: blog)),
+                            );
+                          }
                         },
                       ),
                     ),

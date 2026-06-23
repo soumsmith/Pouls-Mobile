@@ -856,6 +856,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
               onPressed: () => setState(() => _currentStep--),
               color: isDark ? Colors.white60 : Colors.grey[700]!,
               isLight: true,
+              hasBorder: false,
               icon: Icons.arrow_back_ios_new,
               width: 120,
               height: 40,

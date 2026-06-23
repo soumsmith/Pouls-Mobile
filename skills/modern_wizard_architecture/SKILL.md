@@ -259,3 +259,47 @@ Widget _buildProgressIndicator() {
 }
 ```
 Cette astuce est redoutablement efficace pour assurer un rendu "responsive" propre entre mobile et tablette sans logique complexe.
+
+## 5. Bonnes Pratiques de Rendu et de Design
+
+### 5.1 Style des Boutons de Navigation
+
+Pour offrir un design épuré et moderne dans tous les wizards de l'application, le bouton "Précédent" doit être discret (sans fond ni bordure), tandis que le bouton "Suivant" (ou "Terminer") doit ressortir. 
+Utilisez le `CustomButton` avec les propriétés `isLight` et `hasBorder` à `false` pour le bouton "Précédent" :
+
+```dart
+// Bouton Précédent (sans contour)
+CustomButton(
+  text: 'Précédent',
+  onPressed: _previousStep,
+  color: isDark ? Colors.white60 : Colors.grey[700]!,
+  isLight: true,
+  hasBorder: false, // <-- Enlève la bordure
+  icon: Icons.arrow_back_ios_new,
+  width: 120,
+  height: 40,
+  fontSize: 12,
+),
+
+// Bouton Suivant (Couleur pleine)
+CustomButton(
+  text: 'Suivant',
+  onPressed: canNext ? _nextStep : null,
+  color: AppColors.integrationBlue,
+  icon: Icons.arrow_forward_rounded,
+  iconOnRight: true,
+  width: 120,
+  height: 40,
+  fontSize: 12,
+),
+```
+
+### 5.2 Éviter les erreurs `child.hasSize is not true`
+
+Dans un `PageView` englobé dans un `SliverFillRemaining`, l'espace alloué aux enfants est fini (tight constraints). Cependant, une erreur fréquente consiste à utiliser un composant `Expanded` à l'intérieur d'un `SingleChildScrollView`. 
+Le `SingleChildScrollView` donne à ses enfants une hauteur (ou largeur) infinie. Placer un `Expanded` à l'intérieur déclenchera une erreur au moment du calcul de layout (`needsLayout is not true` ou `child.hasSize: is not true`).
+
+**Règle d'or :**
+- Si une étape contient une portion qui DOIT défiler verticalement tout en contenant un conteneur qui s'étend, englobez toute l'étape dans un `Padding` régulier, et mettez le `SingleChildScrollView` *à l'intérieur* de l'`Expanded`.
+- **Interdit** : `PageView` > `SingleChildScrollView` > `Column` > `Expanded`.
+- **Recommandé** : `PageView` > `Padding` > `Column` > `Expanded` > `SingleChildScrollView`.

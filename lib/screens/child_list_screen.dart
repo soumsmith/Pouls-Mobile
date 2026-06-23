@@ -8872,178 +8872,58 @@ class _ChildListScreenState extends State<ChildListScreen>
           'Année scolaire';
     }
 
-    return GestureDetector(
-      onTap: () {
-        setModalState(() {
-          _isBulletinsFilterExpanded = !_isBulletinsFilterExpanded;
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
-        ),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.screenOrange.withOpacity(0.1),
-                    AppColors.screenOrange.withOpacity(0.05),
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.screenCardThemed(context),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppDimensions.getSettingsCardShadow(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today_rounded,
+                size: 16,
+                color: AppColors.screenTextPrimaryThemed(
+                  context,
                 ),
-                borderRadius: _isBulletinsFilterExpanded
-                    ? const BorderRadius.vertical(top: Radius.circular(20))
-                    : BorderRadius.circular(20),
               ),
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.screenOrange,
-                          AppColors.screenOrangeDark,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.screenOrange.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _isBulletinsFilterExpanded
-                          ? Icons.filter_list
-                          : Icons.tune,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+              const SizedBox(width: 8),
+              Text(
+                'Année Scolaire',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.screenTextPrimaryThemed(
+                    context,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Filtres",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.screenOrange,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _isBulletinsFilterExpanded
-                              ? 'Réduire'
-                              : 'Étendre pour filtrer par année',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.screenTextSecondaryThemed(context),
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AnimatedRotation(
-                    turns: _isBulletinsFilterExpanded ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.screenOrange.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: AppColors.screenOrange,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_isLoadingBulletinsYears)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          else
+            SearchableDropdown(
+              label: "Sélectionner l'année",
+              value: currentYearLabel,
+              items: _bulletinsAvailableYears,
+              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+              onChanged: (val) => _onBulletinYearChanged(val, setModalState),
             ),
-            // Expanded Content
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: _isBulletinsFilterExpanded
-                  ? Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 16,
-                                color: AppColors.screenTextPrimaryThemed(
-                                  context,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Année Scolaire',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.screenTextPrimaryThemed(
-                                    context,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          if (_isLoadingBulletinsYears)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            )
-                          else
-                            SearchableDropdown(
-                              label: "Sélectionner l'année",
-                              value: currentYearLabel,
-                              items: _bulletinsAvailableYears,
-                              isDarkMode:
-                                  Theme.of(context).brightness ==
-                                  Brightness.dark,
-                              onChanged: (val) =>
-                                  _onBulletinYearChanged(val, setModalState),
-                            ),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

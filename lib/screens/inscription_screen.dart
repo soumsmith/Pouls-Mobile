@@ -13,6 +13,8 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/bottom_sheets/payment_choice_bottom_sheet.dart';
 import '../widgets/snackbar.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/scroll_to_top_fab.dart';
+import '../config/app_dimensions.dart';
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
@@ -67,6 +69,21 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   late PageController _pageController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  final ScrollController _mainScrollController = ScrollController();
+  final Map<String, ScrollController> _stepControllers = {};
+
+  ScrollController _getControllerForStep(String stepId) {
+    if (!_stepControllers.containsKey(stepId)) {
+      _stepControllers[stepId] = ScrollController();
+    }
+    return _stepControllers[stepId]!;
+  }
+
+  ScrollController get _currentScrollController {
+    if (_orderedStepIds.isEmpty) return _mainScrollController;
+    final currentStepId = _orderedStepIds[_currentPageIndex];
+    return _getControllerForStep(currentStepId);
+  }
 
   // ── Paramètres de l'école ───────────────────────────────────────────────────
   bool _servicesEnabled = true;
@@ -459,6 +476,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     _fadeController.dispose();
     _serviceSearchController.dispose();
     _zoneSearchController.dispose();
+    _mainScrollController.dispose();
+    for (var controller in _stepControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -873,9 +894,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     return CustomSliverAppBar(
       title: 'Inscription – ${widget.child.firstName}',
       isDark: isDark,
-      onBackTap: _currentPageIndex == 0
-          ? () => Navigator.of(context).pop()
-          : _prevStep,
+      onBackTap: () => Navigator.of(context).pop(),
       // actions: [
       //   Container(
       //     margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -1228,6 +1247,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SingleChildScrollView(
+        key: const ValueKey('step1'),
+        controller: _getControllerForStep(_kStepScolarite),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1298,15 +1319,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? Colors.black38
-                                : AppColors.screenShadow,
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        boxShadow: AppDimensions.getSettingsCardShadow(context),
                         border: _reservation!.status
                             ? Border.all(
                                 color:
@@ -1385,13 +1398,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.shopBlue.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
+                                boxShadow: AppDimensions.getSettingsCardShadow(context),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1430,6 +1437,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     if (_loadingServices)
       return _buildLoadingState('Chargement des services...');
     return SingleChildScrollView(
+      controller: _getControllerForStep(_kStepServices),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1547,6 +1555,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildStep4() {
     if (_loadingZones) return _buildLoadingState('Chargement des zones...');
     return SingleChildScrollView(
+      controller: _getControllerForStep(_kStepZones),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1640,6 +1649,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     ),
                   )
                 : SingleChildScrollView(
+                    controller: _getControllerForStep(_kStepEcheancier),
                     child: Column(
                       children: [
                         if (_echeancesService.any(
@@ -1721,6 +1731,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   Widget _buildRecap() {
     return SingleChildScrollView(
+      controller: _getControllerForStep(_kStepRecap),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1862,13 +1873,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shopBlue.withOpacity(0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
             child: Row(
               children: [
@@ -1939,13 +1944,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     decoration: BoxDecoration(
       color: cardColor,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: isDark ? Colors.black38 : AppColors.screenShadow,
-          blurRadius: 6,
-          offset: const Offset(0, 2),
-        ),
-      ],
+      boxShadow: AppDimensions.getSettingsCardShadow(context),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2027,6 +2026,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               onPressed: _prevStep,
               color: isDark ? Colors.white60 : Colors.grey[700]!,
               isLight: true,
+              hasBorder: false,
               icon: Icons.arrow_back_ios_new,
               width: 120,
               height: 40,
@@ -2135,15 +2135,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     decoration: BoxDecoration(
                       color: cardColor,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark
-                              ? Colors.black38
-                              : AppColors.screenShadow,
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      boxShadow: AppDimensions.getSettingsCardShadow(context),
                     ),
                     child: Column(
                       children: [
@@ -2978,9 +2970,15 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
     return Scaffold(
       backgroundColor: screenBgColor,
+      floatingActionButton: ScrollToTopFab(
+        key: ValueKey(_currentPageIndex),
+        scrollController: _currentScrollController,
+        bottomSpacerHeight: 140,
+      ),
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _mainScrollController,
             slivers: [
               _buildCustomAppBar(context),
               SliverToBoxAdapter(child: _buildAppBarSubtitle()),

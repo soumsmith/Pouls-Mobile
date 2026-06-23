@@ -172,7 +172,15 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
         paramecole: null,
       );
       if (!mounted) return;
-      MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EstablishmentDetailScreen(ecole: ecole),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       _showSnack('Erreur: $e', _C.rose);
@@ -499,9 +507,17 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
               ),
               GestureDetector(
                 onTap: () {
-                  MainScreenWrapper.of(context).navigateToExtraScreen(
-                    AllBlogsScreen(schoolCode: widget.blog.codeecole),
-                  );
+                  if (MainScreenWrapper.maybeOf(context) != null) {
+                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                      AllBlogsScreen(schoolCode: widget.blog.codeecole),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => AllBlogsScreen(schoolCode: widget.blog.codeecole),
+                      ),
+                    );
+                  }
                 },
                 child: const Text(
                   'Voir plus',

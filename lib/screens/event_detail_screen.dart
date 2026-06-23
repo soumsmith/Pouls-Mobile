@@ -793,9 +793,17 @@ class _EventDetailScreenState extends State<EventDetailScreen>
               ),
               GestureDetector(
                 onTap: () {
-                  MainScreenWrapper.of(context).navigateToExtraScreen(
-                    AllEventsScreen(schoolCode: widget.event.codeecole),
-                  );
+                  if (MainScreenWrapper.maybeOf(context) != null) {
+                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                      AllEventsScreen(schoolCode: widget.event.codeecole),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => AllEventsScreen(schoolCode: widget.event.codeecole),
+                      ),
+                    );
+                  }
                 },
                 child: const Text(
                   'Voir plus',
@@ -931,7 +939,15 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
         paramecole: null,
       );
       if (!mounted) return;
-      MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EstablishmentDetailScreen(ecole: ecole),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

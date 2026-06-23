@@ -32,7 +32,8 @@ class PaiementService {
     int montant,
   ) async {
     try {
-      final urlStr = '$baseUrl/scolarite/paiement-en-ligne/$matricule?montant=$montant';
+      final urlStr =
+          '$baseUrl/scolarite/paiement-en-ligne/$matricule?montant=$montant';
       print('================= PAIEMENT =================');
       print('💳 REQUÊTE PAIEMENT - URL: $urlStr');
       print('💳 REQUÊTE PAIEMENT - METHODE: POST');
@@ -70,6 +71,60 @@ class PaiementService {
     }
   }
 
+  Future<PaiementResponse> initierPaiementReservation(
+    String matricule,
+    int montant,
+    String ecole,
+  ) async {
+    try {
+      final urlStr = '$baseUrl/reservation/eleve/$matricule';
+      print('================= PAIEMENT RESERVATION =================');
+      print('💳 REQUÊTE PAIEMENT - URL: $urlStr');
+      print('💳 REQUÊTE PAIEMENT - METHODE: POST');
+
+      final body = {
+        "montant": montant,
+        "ecole": ecole,
+        "methode_paiement": "PEL",
+        "engagement": 1,
+      };
+
+      print('💳 REQUÊTE PAIEMENT - BODY: ${json.encode(body)}');
+
+      final response = await http.post(
+        Uri.parse(urlStr),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode(body),
+      );
+
+      print('💳 API Reservation - Status: ${response.statusCode}');
+      print('💳 API Reservation - Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final paiementResponse = PaiementResponse.fromJson(responseData);
+
+        print('✅ Paiement reservation initié: ${paiementResponse.success}');
+        print('🔗 URL de paiement: ${paiementResponse.url}');
+
+        return paiementResponse;
+      } else {
+        print(
+          '❌ Erreur API Reservation: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Erreur lors de l\'initialisation de la réservation: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('❌ Exception lors de l\'initialisation de la réservation: $e');
+      throw Exception('Impossible d\'initialiser la réservation: $e');
+    }
+  }
+
   Future<PaiementResponse> initierPaiementAbonnement(
     String phone,
     String offerId,
@@ -77,7 +132,8 @@ class PaiementService {
   ) async {
     try {
       // TODO: Ajustez l'URL ci-dessous avec le bon endpoint pour le paiement d'abonnement
-      final urlStr = '$baseUrl/parent/abonnement/paiement-en-ligne/$phone?montant=$montant&offre=$offerId';
+      final urlStr =
+          '$baseUrl/parent/abonnement/paiement-en-ligne/$phone?montant=$montant&offre=$offerId';
       print('================= PAIEMENT ABONNEMENT =================');
       print('💳 REQUÊTE PAIEMENT - URL: $urlStr');
       print('💳 REQUÊTE PAIEMENT - METHODE: POST');

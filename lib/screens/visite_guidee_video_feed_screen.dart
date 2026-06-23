@@ -1465,6 +1465,12 @@ class _RatingSheetState extends State<_RatingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = ThemeService().isDarkMode;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final subtextColor = isDarkMode ? Colors.white70 : Colors.black54;
+    final iconBgColor = isDarkMode ? Colors.white24 : Colors.grey[200];
+    final playIconColor = isDarkMode ? Colors.white : Colors.black87;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1480,11 +1486,11 @@ class _RatingSheetState extends State<_RatingSheet> {
                     height: 60,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      color: Colors.white24,
+                      color: iconBgColor,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.play_circle,
-                      color: Colors.white,
+                      color: playIconColor,
                       size: 30,
                     ),
                   ),
@@ -1495,8 +1501,8 @@ class _RatingSheetState extends State<_RatingSheet> {
                       children: [
                         Text(
                           widget.video.displayTitle,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -1506,8 +1512,8 @@ class _RatingSheetState extends State<_RatingSheet> {
                         const SizedBox(height: 4),
                         Text(
                           'Visite guidée',
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: subtextColor,
                             fontSize: 12,
                           ),
                         ),
@@ -1530,8 +1536,8 @@ class _RatingSheetState extends State<_RatingSheet> {
                       children: [
                         Text(
                           _averageRating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1549,8 +1555,8 @@ class _RatingSheetState extends State<_RatingSheet> {
                         ),
                         Text(
                           '$_totalRatings évaluations',
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: subtextColor,
                             fontSize: 12,
                           ),
                         ),
@@ -1564,10 +1570,10 @@ class _RatingSheetState extends State<_RatingSheet> {
 
               // User rating
               if (!_hasRated) ...[
-                const Text(
+                Text(
                   'Votre note :',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),

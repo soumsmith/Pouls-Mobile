@@ -64,7 +64,11 @@ class PaymentBottomSheet extends StatefulWidget {
     return ReusableBottomSheet.show(
       context: context,
       title: title ?? 'Paiement en ligne',
-      subtitle: description ?? (childName != null ? 'Entrez le montant à payer pour $childName' : 'Entrez le montant à payer'),
+      subtitle:
+          description ??
+          (childName != null
+              ? 'Entrez le montant à payer pour $childName'
+              : 'Entrez le montant à payer'),
       icon: icon ?? Icons.payment,
       iconColor: const Color(0xFFFF7A3C),
       imagePath: imagePath,
@@ -116,7 +120,7 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
   final TextEditingController matriculeController = TextEditingController();
   bool isLoading = false;
   bool isFetchingData = false;
-  
+
   String? _debutReservation;
   String? _finReservation;
   dynamic _montantReservation;
@@ -124,22 +128,22 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
   @override
   void initState() {
     super.initState();
-    
+
     _debutReservation = widget.debutReservation;
     _finReservation = widget.finReservation;
     _montantReservation = widget.montantReservation;
-    
+
     if (widget.matricule != null) {
       matriculeController.text = widget.matricule!;
     }
-    
+
     _updateMontantController();
-    
+
     if (widget.loadReservationData != null) {
       _loadData();
     }
   }
-  
+
   void _updateMontantController() {
     if (_montantReservation != null && _montantReservation.toString() != '0') {
       montantController.text = _montantReservation.toString();
@@ -154,9 +158,12 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
       final data = await widget.loadReservationData!();
       if (data != null && mounted) {
         setState(() {
-          if (data['debutReservation'] != null) _debutReservation = data['debutReservation'];
-          if (data['finReservation'] != null) _finReservation = data['finReservation'];
-          if (data['montantReservation'] != null) _montantReservation = data['montantReservation'];
+          if (data['debutReservation'] != null)
+            _debutReservation = data['debutReservation'];
+          if (data['finReservation'] != null)
+            _finReservation = data['finReservation'];
+          if (data['montantReservation'] != null)
+            _montantReservation = data['montantReservation'];
           _updateMontantController();
         });
       }
@@ -179,6 +186,8 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
   }
 
   Future<void> _effectuerPaiement() async {
+    FocusScope.of(context).unfocus();
+
     if (montantController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -294,7 +303,8 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
         child: Center(
           child: CustomLoader(
             message: 'Vérification de la période de réservation...',
-            loaderColor: AppColors.screenOrange,
+            loaderColor: AppColors.white,
+            showBackground: true,
           ),
         ),
       );
@@ -306,18 +316,24 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: isBefore ? Colors.orange.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                color: isBefore
+                    ? Colors.orange.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isBefore ? Icons.hourglass_empty_rounded : Icons.event_busy_rounded,
+                isBefore
+                    ? Icons.hourglass_empty_rounded
+                    : Icons.event_busy_rounded,
                 size: 48,
                 color: isBefore ? Colors.orange[400] : Colors.red[400],
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              isBefore ? 'Réservation non commencée' : 'Période de réservation terminée',
+              isBefore
+                  ? 'Réservation non commencée'
+                  : 'Période de réservation terminée',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
@@ -327,7 +343,7 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
             ),
             const SizedBox(height: 16),
             Text(
-              isBefore 
+              isBefore
                   ? 'La période de réservation pour cette école commencera le ${_formatDate(_debutReservation)}.'
                   : 'La période de réservation pour cette école s\'est terminée le ${_formatDate(_finReservation)}. Les paiements ne sont plus autorisés.',
               textAlign: TextAlign.center,
@@ -355,14 +371,17 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            if (_montantReservation != null && _montantReservation.toString() != '0')
+            if (_montantReservation != null &&
+                _montantReservation.toString() != '0')
               Container(
                 margin: const EdgeInsets.only(bottom: 20),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF4CAF50).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.3)),
+                  border: Border.all(
+                    color: const Color(0xFF4CAF50).withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -398,43 +417,32 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
               keyboardType: TextInputType.text,
             ),
             const SizedBox(height: 24),
-            CustomButton(
-              text: 'Procéder au paiement',
-              color: AppColors.screenOrange,
-              icon: Icons.credit_card_rounded,
-              onPressed: _effectuerPaiement,
-              isLoading: isLoading,
-              height: 50,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.screenOrange.withOpacity(0.1)
-                    : AppColors.screenOrangeLight.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.screenOrange
-                      .withOpacity(isDark ? 0.3 : 0.2),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: CustomButton(
+                  text: 'Procéder au paiement',
+                  color: AppColors.screenOrange,
+                  icon: Icons.credit_card_rounded,
+                  onPressed: _effectuerPaiement,
+                  isLoading: isLoading,
+                  height: 50,
                 ),
               ),
+            ),
+            const SizedBox(height: 24),
+            Center(
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: AppColors.screenOrange,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Le paiement sera traité via notre partenaire WicPay',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.screenOrange,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  Icon(Icons.lock_outline, color: Colors.grey[500], size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Le paiement sera traité via notre partenaire WicPay',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

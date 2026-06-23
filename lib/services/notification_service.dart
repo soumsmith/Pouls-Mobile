@@ -68,14 +68,15 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'order_channel',
       'Commandes',
       channelDescription: 'Notifications relatives aux commandes passées.',
       importance: Importance.max,
       priority: Priority.high,
       ticker: 'ticker',
-      color: Color(0xFFE65100), 
+      color: const Color(0xFFE65100),
+      styleInformation: BigTextStyleInformation(body),
     );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
@@ -84,7 +85,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const NotificationDetails platformDetails = NotificationDetails(
+    final NotificationDetails platformDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );

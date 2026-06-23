@@ -5,6 +5,7 @@ import 'package:parents_responsable/config/app_colors.dart';
 import '../models/child.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/payment_verification_dialog.dart';
 import '../widgets/selectable_item_card.dart';
 import '../widgets/search_bar_widget.dart';
 import '../services/ecole_eleve_service.dart';
@@ -15,6 +16,7 @@ import '../widgets/snackbar.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../config/app_dimensions.dart';
+import '../services/notification_service.dart';
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
@@ -2385,6 +2387,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   }
 
   Future<void> _effectuerPaiementEnLigne() async {
+    FocusScope.of(context).unfocus();
+    
     final totalAmount = _totalScolarite + _totalServices + _totalTransport;
 
     try {
@@ -2402,7 +2406,17 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           final uri = Uri.parse(paymentUrl);
           try {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
-            _showPaymentVerificationLoader(_uid_eleve);
+            
+            final selectedServiceNames = <String>[];
+            if (_totalScolarite > 0) selectedServiceNames.add('Scolarité');
+            selectedServiceNames.addAll(_services.where((s) => s.selectionnee).map((s) => s.service ?? ''));
+            final hasTransService = _services.where((s) => s.selectionnee).any((s) => s.service == 'TRANS');
+            if (_selectedZone != null && hasTransService && _totalTransport > 0) {
+              selectedServiceNames.add('Transport');
+            }
+            final servicesText = selectedServiceNames.join(', ');
+            
+            _showPaymentVerificationLoader(_uid_eleve, totalAmount, servicesText);
           } catch (e) {
             _showError('Impossible d\'ouvrir la page de paiement.');
           }
@@ -2418,57 +2432,24 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     }
   }
 
-  void _showPaymentVerificationLoader(String uidEleve) {
+  void _showPaymentVerificationLoader(String uidEleve, int totalAmount, String servicesText) {
     if (uidEleve.isEmpty) return;
 
     Timer? timer;
     bool isChecking = false;
 
-    showDialog(
+    PaymentVerificationDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return PopScope(
-          canPop: false,
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF141414) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CustomLoader(
-                    message: 'Attente de la confirmation du paiement...',
-                    loaderColor: const Color(0xFFFF7A3C),
-                    showBackground: false,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Veuillez finaliser le paiement sur la page sécurisée. L\'application vérifie actuellement le statut de votre transaction.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: textSecondaryColor,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      childName: widget.child.firstName,
+      montant: totalAmount,
+      establishment: widget.child.establishment,
+      serviceType: 'inscription',
     ).then((_) {
       timer?.cancel(); // Sécurité pour s'assurer que le timer est bien tué
     });
 
     int attempts = 0;
-    const int maxAttempts = 48; // 48 * 5s = 240s (4 minutes)
+    const int maxAttempts = 2; // POUR TEST: 2 * 5s = 10s (remettre à 48 plus tard)
 
     // Lancement du polling toutes les 5 secondes
     timer = Timer.periodic(const Duration(seconds: 5), (t) async {
@@ -2480,7 +2461,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         if (mounted) {
           Navigator.of(context).pop(); // Fermer uniquement le loader
           _showError(
-            'L\'opération a échoué suite à une longue attente de paiement. Veuillez vérifier et réessayer.',
+            'Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
+          );
+          
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Validation d\'inscription en attente',
+            body: 'Le délai de vérification du paiement d\'inscription de $totalAmount FCFA pour l\'élève ${widget.child.firstName} à l\'école ${widget.child.establishment} est dépassé. Si votre compte n\'a pas été débité, n\'hésitez pas à réessayer le paiement. Sinon, la mise à jour se fera automatiquement.',
+            payload: 'paiement_timeout',
           );
         }
         return;
@@ -2500,6 +2488,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           _showSuccess(
             'Paiement validé et inscription de ${widget.child.firstName} enregistrée avec succès !',
           );
+          
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Inscription validée',
+            body: 'L\'inscription en ligne de $totalAmount FCFA pour ${widget.child.firstName} a été enregistrée avec succès. Services: $servicesText',
+            payload: 'inscription_success',
+          );
+
           // 3. Quitter l'écran d'inscription
           Navigator.of(context).pop();
         }

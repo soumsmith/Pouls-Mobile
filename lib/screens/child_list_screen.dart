@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:parents_responsable/widgets/payment_verification_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:parents_responsable/screens/inscription_screen.dart'
     as inscription;
@@ -58,6 +60,7 @@ import '../models/student_scolarite.dart';
 import '../widgets/bottom_sheets/enhanced_scolarite_bottom_sheet.dart';
 import '../widgets/bottom_sheets/my_reservations_bottom_sheet.dart';
 import '../widgets/components/custom_date_input.dart';
+import '../services/notification_service.dart';
 import 'my_tickets_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/custom_sliver_app_bar.dart';
@@ -592,7 +595,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   void _onReconnect() {
     if (mounted) {
-      print('🌐 [ChildListScreen] Reconnexion détectée, rafraîchissement des données...');
+      print(
+        '🌐 [ChildListScreen] Reconnexion détectée, rafraîchissement des données...',
+      );
       _loadData();
       _loadNotifications();
     }
@@ -4674,6 +4679,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           dummySetState,
           dummySetLoading,
           dummySetLoadingFalse,
+          'la réservation',
         );
 
         return const PaymentResult.online();
@@ -4703,6 +4709,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           dummySetState,
           dummySetLoading,
           dummySetLoadingFalse,
+          'la scolarité',
         );
 
         return const PaymentResult.online();
@@ -4758,8 +4765,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     String montantStr,
     StateSetter setState,
     VoidCallback setLoading,
-    VoidCallback setLoadingFalse,
-  ) async {
+    VoidCallback setLoadingFalse, [
+    String serviceType = 'scolarité',
+  ]) async {
     if (montantStr.isEmpty) {
       CartSnackBar.showOverlay(
         context,
@@ -4799,7 +4807,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       context,
       message: 'Traitement du paiement...',
       loaderColor: AppColors.screenOrange,
-      showBackground: false,
+      showBackground: true,
     );
 
     try {
@@ -4807,10 +4815,19 @@ class _ChildListScreenState extends State<ChildListScreen>
         '💳 Initialisation du paiement: $montant FCFA pour matricule $_matricule',
       );
 
-      final paiementResponse = await _paiementService.initierPaiementEnLigne(
-        _matricule!,
-        montant,
-      );
+      PaiementResponse paiementResponse;
+      if (serviceType == 'la réservation') {
+        paiementResponse = await _paiementService.initierPaiementReservation(
+          _matricule!,
+          montant,
+          _ecoleCode ?? widget.child.ecoleCode ?? widget.child.paramEcole ?? '',
+        );
+      } else {
+        paiementResponse = await _paiementService.initierPaiementEnLigne(
+          _matricule!,
+          montant,
+        );
+      }
 
       if (paiementResponse.success && paiementResponse.url.isNotEmpty) {
         Navigator.of(context).pop(); // Fermer le bottomsheet
@@ -4823,7 +4840,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           // Afficher la modale de vérification (polling)
           final uidToCheck =
               _eleveDetail?['uid']?.toString() ?? _matricule ?? '';
-          _showPaymentVerificationLoader(uidToCheck);
+          _showPaymentVerificationLoader(uidToCheck, montant, serviceType);
         } else {
           CartSnackBar.showOverlay(
             context,
@@ -4852,58 +4869,30 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  void _showPaymentVerificationLoader(String uidEleve) {
+  void _showPaymentVerificationLoader(
+    String uidEleve,
+    int montant,
+    String serviceType,
+  ) {
     if (uidEleve.isEmpty) return;
 
     Timer? timer;
     bool isChecking = false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    showDialog(
+    PaymentVerificationDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return PopScope(
-          canPop: false,
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF141414) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CustomLoader(
-                    message: 'Attente de la confirmation du paiement...',
-                    loaderColor: const Color(0xFFFF7A3C),
-                    showBackground: false,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Veuillez finaliser le paiement sur la page sécurisée. L\'application vérifie actuellement le statut de votre transaction.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      childName: widget.child.firstName,
+      montant: montant,
+      establishment: widget.child.establishment,
+      serviceType: serviceType,
     ).then((_) {
       timer?.cancel(); // Sécurité pour s'assurer que le timer est bien tué
     });
 
     int attempts = 0;
-    const int maxAttempts = 120; // 120 * 2s = 240s (4 minutes)
+    const int maxAttempts =
+        5; // POUR TEST: 5 * 2s = 10s (remettre à 120 plus tard)
 
     // Lancement du polling toutes les 2 secondes
     timer = Timer.periodic(const Duration(seconds: 2), (t) async {
@@ -4914,13 +4903,33 @@ class _ChildListScreenState extends State<ChildListScreen>
         t.cancel();
         if (mounted) {
           Navigator.of(context).pop(); // Fermer la modale
+          String notifTitle = 'Validation en attente';
+          String notifBody = '';
+
+          if (serviceType == 'la réservation') {
+            notifTitle = 'Validation de réservation en attente';
+            notifBody =
+                "Le délai de vérification du paiement en ligne de $montant FCFA pour la réservation de l'élève ${widget.child.firstName} à l'école ${widget.child.establishment} est dépassé. Si votre compte n'a pas été débité, n'hésitez pas à réessayer le paiement.";
+          } else {
+            notifTitle = 'Validation de scolarité en attente';
+            notifBody =
+                "Le délai de vérification du paiement en ligne de $montant FCFA pour la scolarité de l'élève ${widget.child.firstName} à l'école ${widget.child.establishment} est dépassé. Si votre compte n'a pas été débité, n'hésitez pas à réessayer le paiement.";
+          }
+
           CartSnackBar.showOverlay(
             context,
-            productName: 'Délai dépassé',
+            productName: 'Vérification en attente',
             message:
-                'L\'opération a échoué suite à une longue attente. Veuillez vérifier et réessayer.',
+                'Le délai de vérification de paiement en ligne est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
+          );
+
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: notifTitle,
+            body: notifBody,
+            payload: 'paiement_timeout',
           );
         }
         return;
@@ -4935,7 +4944,6 @@ class _ChildListScreenState extends State<ChildListScreen>
           t.cancel();
           // Fermer le loader
           Navigator.of(context).pop();
-          // Afficher le succès
           CartSnackBar.showOverlay(
             context,
             productName: 'Paiement validé',
@@ -4944,6 +4952,14 @@ class _ChildListScreenState extends State<ChildListScreen>
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           );
+
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Paiement en ligne validé',
+            body:
+                'Un paiement de $montant FCFA pour $serviceType de ${widget.child.firstName} a été enregistré avec succès.',
+            payload: 'paiement_success',
+          );
         }
       } catch (e) {
         // En cas d'erreur de vérification, on laisse tourner
@@ -4951,6 +4967,33 @@ class _ChildListScreenState extends State<ChildListScreen>
         isChecking = false;
       }
     });
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF7A3C).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: const Color(0xFFFF7A3C)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : const Color(0xFF2D3748),
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildSummaryCardsGrid() {
@@ -8888,9 +8931,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               Icon(
                 Icons.calendar_today_rounded,
                 size: 16,
-                color: AppColors.screenTextPrimaryThemed(
-                  context,
-                ),
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
               const SizedBox(width: 8),
               Text(
@@ -8898,9 +8939,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.screenTextPrimaryThemed(
-                    context,
-                  ),
+                  color: AppColors.screenTextPrimaryThemed(context),
                 ),
               ),
             ],
@@ -8910,9 +8949,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
           else

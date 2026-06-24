@@ -304,8 +304,8 @@ class _VisiteGuideeVideoFeedScreenState
       icon: Icons.star_rounded,
       iconColor: Colors.orange,
       wrapWithScrollView: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.85,
+      initialChildSize: 0.75,
+      maxChildSize: 0.9,
       contentPadding: EdgeInsets.zero,
       content: _RatingSheet(video: video),
     );

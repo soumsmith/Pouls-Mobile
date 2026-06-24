@@ -1304,6 +1304,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       contentPadding: EdgeInsets.zero,
+      showScrollToTopFab: true,
       content: StatefulBuilder(
         builder: (context, setModalState) {
           _timetableModalSetState = setModalState;
@@ -1401,6 +1402,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       contentPadding: EdgeInsets.zero,
+      showScrollToTopFab: true,
       content: StatefulBuilder(
         builder: (context, setModalState) {
           _presenceModalSetState = setModalState;
@@ -1693,6 +1695,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       initialChildSize: 0.95,
       minChildSize: 0.95,
       maxChildSize: 0.95,
+      showScrollToTopFab: true,
       content: StatefulBuilder(
         builder: (context, setModalState) {
           _ordersModalSetState = setModalState;
@@ -1784,6 +1787,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       contentPadding: EdgeInsets.zero,
+      showScrollToTopFab: true,
       content: StatefulBuilder(
         builder: (context, setModalState) {
           // ✅ Déclencher le chargement des deux types de notifications UNE SEULE FOIS

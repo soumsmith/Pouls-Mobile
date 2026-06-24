@@ -22,6 +22,16 @@ const _kOrangeGradient = LinearGradient(
 const _kShopGreen = Color(0xFF4CAF50);
 const _kShopGreenLight = Color(0xFF81C784);
 
+// ─── Couleurs spécifiques pour Astuces & Conseils ────────────────────────────
+const _kTipsBlue = Color(0xFF5B8DEF);
+const _kTipsBlueLight = Color(0xFF7DA8F5);
+
+const _kTipsBlueGradient = LinearGradient(
+  colors: [_kTipsBlueLight, _kTipsBlue],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
 const _kShopGreenGradient = LinearGradient(
   colors: [_kShopGreenLight, _kShopGreen],
   begin: Alignment.topLeft,
@@ -55,6 +65,11 @@ const _navItems = [
     icon: Icons.business_outlined,
     activeIcon: Icons.business_rounded,
     label: 'Établissements',
+  ),
+  _NavItem(
+    icon: Icons.lightbulb_outlined,
+    activeIcon: Icons.lightbulb_rounded,
+    label: 'Astuces',
   ),
   _NavItem(
     icon: Icons.grid_view_outlined,
@@ -171,7 +186,10 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: AppColors.bottomNavBg(context),
         borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
-        border: Border.all(color: AppColors.bottomNavBorder(context), width: 0.8),
+        border: Border.all(
+          color: AppColors.bottomNavBorder(context),
+          width: 0.8,
+        ),
         /*boxShadow: [
           BoxShadow(
             color: AppColors.bottomNavShadow1(context),
@@ -192,22 +210,47 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: List.generate(
-              _navItems.length,
-              (i) => Expanded(
-                child: _NavItemWidget(
-                  item: _navItems[i],
-                  isSelected: widget.currentIndex == i,
-                  bounceAnim: _bounceAnims[i],
-                  showBadge: i == 1, // Boutique = index 1
-                  badgeCount: i == 1 ? _cartItemCount : 0,
-                  onTap: () => _handleTap(i),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              const minItemWidth = 76.0;
+              final totalMinWidth = minItemWidth * _navItems.length;
+              final needsScroll = totalMinWidth > availableWidth;
+
+              final items = List.generate(
+                _navItems.length,
+                (i) => SizedBox(
+                  width: needsScroll ? minItemWidth : null,
+                  child: _NavItemWidget(
+                    item: _navItems[i],
+                    isSelected: widget.currentIndex == i,
+                    bounceAnim: _bounceAnims[i],
+                    showBadge: i == 1, // Boutique = index 1
+                    badgeCount: i == 1 ? _cartItemCount : 0,
+                    onTap: () => _handleTap(i),
+                  ),
                 ),
-              ),
-            ),
+              );
+
+              if (needsScroll) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: items,
+                  ),
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: items
+                    .map((item) => Expanded(child: item.child!))
+                    .toList(),
+              );
+            },
           ),
         ),
       ),
@@ -236,7 +279,11 @@ class _NavItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unselectedColor = AppColors.bottomNavUnselected(context);
-    final activeColor = item.label == 'Boutique' ? _kShopGreen : _kOrange;
+    final activeColor = item.label == 'Boutique'
+        ? _kShopGreen
+        : item.label == 'Astuces'
+        ? _kTipsBlue
+        : _kOrange;
 
     return GestureDetector(
       onTap: onTap,
@@ -297,6 +344,8 @@ class _NavItemWidget extends StatelessWidget {
                 gradient: isSelected
                     ? (item.label == 'Boutique'
                           ? _kShopGreenGradient
+                          : item.label == 'Astuces'
+                          ? _kTipsBlueGradient
                           : _kOrangeGradient)
                     : null,
                 borderRadius: BorderRadius.circular(2),

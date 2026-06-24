@@ -8,6 +8,7 @@ import '../screens/establishment_screen.dart';
 import '../screens/child_list_screen.dart';
 import '../screens/establishment_detail_screen.dart';
 import '../screens/shop_screen.dart';
+import '../screens/tips_advice_screen.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../config/app_config.dart';
@@ -238,7 +239,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   }
 
   void _onTabTapped(int index) {
-    if (index == 3) {
+    if (index == 4) {
       showMenuBottomSheet(context);
     } else {
       setState(() {
@@ -269,6 +270,8 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
         return const LibraryScreen();
       case 2:
         return const EstablishmentScreen();
+      case 3:
+        return const TipsAdviceScreen();
       default:
         return const HomeScreen();
     }

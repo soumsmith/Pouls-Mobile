@@ -160,7 +160,7 @@ class ReusableBottomSheet extends StatelessWidget {
                     if (showScrollToTopFab && wrapWithScrollView)
                       Positioned(
                         right: 16,
-                        bottom: 0,
+                        bottom: 24,
                         child: ScrollToTopFab(
                           scrollController: scrollController,
                           useGlassEffect: useGlassEffect,

@@ -17,6 +17,8 @@ class CustomTextField extends StatelessWidget {
   final Color? focusBorderColor;
   final bool readOnly;
   final VoidCallback? onTap;
+  final bool obscureText;
+  final Widget? suffixIcon;
 
   const CustomTextField({
     Key? key,
@@ -33,6 +35,8 @@ class CustomTextField extends StatelessWidget {
     this.focusBorderColor,
     this.readOnly = false,
     this.onTap,
+    this.obscureText = false,
+    this.suffixIcon,
   }) : super(key: key);
 
   @override
@@ -69,6 +73,7 @@ class CustomTextField extends StatelessWidget {
           inputFormatters: inputFormatters,
           readOnly: readOnly,
           onTap: onTap,
+          obscureText: obscureText,
           style: TextStyle(
             fontSize: 14, 
             color: textColor, 
@@ -85,6 +90,7 @@ class CustomTextField extends StatelessWidget {
               color: hasError ? Colors.red : Colors.grey, 
               size: 18,
             ),
+            suffixIcon: suffixIcon,
             filled: true,
             fillColor: textFillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

@@ -16,6 +16,8 @@ class CustomTextInput extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final bool readOnly;
   final int maxLines;
+  final bool obscureText;
+  final Widget? suffixIcon;
 
   const CustomTextInput({
     Key? key,
@@ -31,6 +33,8 @@ class CustomTextInput extends StatelessWidget {
     this.inputFormatters,
     this.readOnly = false,
     this.maxLines = 1,
+    this.obscureText = false,
+    this.suffixIcon,
   }) : super(key: key);
 
   @override
@@ -48,6 +52,8 @@ class CustomTextInput extends StatelessWidget {
       inputFormatters: inputFormatters,
       readOnly: readOnly,
       maxLines: maxLines,
+      obscureText: obscureText,
+      suffixIcon: suffixIcon,
     );
   }
 }

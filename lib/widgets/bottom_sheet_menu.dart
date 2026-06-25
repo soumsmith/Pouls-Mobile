@@ -170,7 +170,6 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         ).navigateToExtraScreen(const MessagesScreen());
       },
     ),
-    /*
     _MenuItem(
       title: 'Passer Premium',
       subtitle: 'Découvrez nos offres exclusives',
@@ -184,7 +183,6 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         );
       },
     ),
-    */
     _MenuItem(
       title: 'Mes Tickets',
       subtitle: 'Voir vos tickets achetés',

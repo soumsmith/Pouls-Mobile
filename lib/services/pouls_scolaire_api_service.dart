@@ -101,7 +101,7 @@ class PoulsScolaireApiService {
   /// Endpoint: GET /connecte/ecole
   Future<List<Ecole>> getAllEcoles() async {
     try {
-      final uri = Uri.parse('$_baseUrl/connecte/ecole');
+      final uri = Uri.parse('${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/list');
       print('');
       print('═══════════════════════════════════════════════════════════');
       print('🏫 CHARGEMENT DES ÉCOLES');
@@ -121,7 +121,8 @@ class PoulsScolaireApiService {
 
       if (response.statusCode == 200) {
         try {
-          final List<dynamic> data = json.decode(response.body);
+          final Map<String, dynamic> responseBody = json.decode(response.body);
+          final List<dynamic> data = responseBody['data'] ?? [];
           print('✅ ${data.length} école(s) trouvée(s)');
 
           if (data.isEmpty) {
@@ -131,7 +132,7 @@ class PoulsScolaireApiService {
             for (int i = 0; i < (data.length > 3 ? 3 : data.length); i++) {
               final ecoleJson = data[i] as Map<String, dynamic>;
               print(
-                '   ${i + 1}. ${ecoleJson['ecoleclibelle'] ?? 'N/A'} (ID: ${ecoleJson['ecoleid'] ?? 'N/A'})',
+                '   ${i + 1}. ${ecoleJson['parametre_nom'] ?? ecoleJson['ecoleclibelle'] ?? 'N/A'} (Code: ${ecoleJson['parametre_code'] ?? 'N/A'})',
               );
             }
           }
@@ -306,69 +307,10 @@ class PoulsScolaireApiService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         print('✅ Réponse reçue: ${data.length} élèves récupérés');
-        print('');
-
-        // Chercher spécifiquement le matricule 25125794Q
-        bool foundTargetMatricule = false;
-        for (final eleveData in data) {
-          final eleveJson = eleveData as Map<String, dynamic>;
-          final matricule = eleveJson['matriculeEleve']?.toString() ?? '';
-          if (matricule == '25125794Q' ||
-              matricule.toUpperCase() == '25125794Q') {
-            foundTargetMatricule = true;
-            print('🎯 ÉLÈVE TROUVÉ - Matricule: 25125794Q');
-            print('   📋 Tous les champs retournés par l\'API:');
-            eleveJson.forEach((key, value) {
-              print('      - $key: $value');
-            });
-            print('   🔍 Vérification des champs de classe:');
-            print('      - classeid: ${eleveJson['classeid']}');
-            print('      - classe: ${eleveJson['classe']}');
-            print('      - brancheid: ${eleveJson['brancheid']}');
-            print('      - brancheLibelle: ${eleveJson['brancheLibelle']}');
-            print('   🖼️ Vérification du champ photo:');
-            print('      - cheminphoto: ${eleveJson['cheminphoto']}');
-            print('      - urlPhoto: ${eleveJson['urlPhoto']}');
-            break;
-          }
-        }
-
-        if (!foundTargetMatricule) {
-          print('⚠️ Matricule 25125794Q non trouvé dans la liste des élèves');
-        }
-
-        // Logger les classeid des premiers élèves pour débogage
-        if (data.isNotEmpty) {
-          print('📋 Exemples de classeid des élèves:');
-          for (int i = 0; i < (data.length > 3 ? 3 : data.length); i++) {
-            final eleveJson = data[i] as Map<String, dynamic>;
-            print(
-              '   - Élève ${i + 1}: matricule=${eleveJson['matriculeEleve']}, classeid=${eleveJson['classeid']}, brancheid=${eleveJson['brancheid']}',
-            );
-          }
-        }
-
         final eleves = data
             .map((json) => Eleve.fromJson(json as Map<String, dynamic>))
             .toList();
-
-        // Vérifier l'élève avec le matricule 25125794Q après parsing
-        try {
-          final targetEleve = eleves.firstWhere(
-            (e) =>
-                e.matriculeEleve == '25125794Q' ||
-                e.matriculeEleve.toUpperCase() == '25125794Q',
-          );
-          print(
-            '🎯 ÉLÈVE APRÈS PARSING - Matricule: ${targetEleve.matriculeEleve}',
-          );
-          print('   - classeid final utilisé: ${targetEleve.classeid}');
-          print('   - classe final utilisé: ${targetEleve.classe}');
-        } catch (e) {
-          // Élève non trouvé après parsing, déjà loggé avant
-        }
-
-        print('');
+            
         print('═══════════════════════════════════════════════════════════');
         print('✅ FIN CHARGEMENT DES ÉLÈVES');
         print('═══════════════════════════════════════════════════════════');

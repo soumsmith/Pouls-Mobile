@@ -2,63 +2,55 @@ import 'package:flutter/material.dart';
 import '../models/subscription_offer.dart';
 import '../models/user.dart';
 import 'auth_service.dart';
+import '../config/app_config.dart';
+
+import 'dart:convert';
+import 'package:parents_responsable/utils/app_http.dart' as http;
 
 class SubscriptionService {
   static final SubscriptionService instance = SubscriptionService._internal();
   factory SubscriptionService() => instance;
   SubscriptionService._internal();
 
-  // Mock data pour les offres d'abonnement
-  final List<SubscriptionOffer> _mockOffers = [
-    SubscriptionOffer(
-      id: 'sub_free',
-      title: 'Basique',
-      description: 'Pour découvrir l\'application',
-      price: 0,
-      duration: 'A vie',
-      level: 'free',
-      features: [
-        'Accès au tableau de bord',
-        'Visualisation des notes (limitée)',
-        'Notifications de base',
-      ],
-    ),
-    SubscriptionOffer(
-      id: 'sub_premium',
-      title: 'Premium',
-      description: 'L\'expérience complète pour les parents exigeants',
-      price: 4900,
-      duration: '1 mois',
-      level: 'premium',
-      isPopular: true,
-      features: [
-        'Accès au tableau de bord',
-        'Visualisation détaillée des notes et statistiques',
-        'Toutes les notifications en temps réel',
-        'Suivi de la cantine et du transport',
-        'Messagerie directe avec les professeurs',
-      ],
-    ),
-    SubscriptionOffer(
-      id: 'sub_vip',
-      title: 'VIP',
-      description: 'Pour plusieurs enfants et un suivi exclusif',
-      price: 12900,
-      duration: '1 an',
-      level: 'vip',
-      features: [
-        'Toutes les fonctionnalités Premium',
-        "Jusqu'à 5 enfants inclus",
-        'Support prioritaire 24/7',
-        'Accès anticipé aux nouvelles fonctionnalités',
-      ],
-    ),
-  ];
-
   Future<List<SubscriptionOffer>> getOffers() async {
-    // Simuler un appel réseau
-    await Future.delayed(const Duration(seconds: 1));
-    return _mockOffers;
+    try {
+      final user = AuthService.instance.getCurrentUser();
+      // On utilise l'ID de l'utilisateur connecté ou 19421 par défaut (selon la consigne)
+      final userId = user?.id ?? '19421';
+
+      final url = Uri.parse(
+        '${AppConfig.VIE_ECOLES_API_BASE_URL}/espace-parent/subscriptions/$userId',
+      );
+
+      print('================= RÉCUPÉRATION DES OFFRES =================');
+      print('🌐 API GET - URL: $url');
+
+      final response = await http.get(url);
+
+      print('🌐 API GET - Status: ${response.statusCode}');
+      print('🌐 API GET - Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> plansJson = data['plans'] ?? [];
+        final List<dynamic> modulesJson = data['accessible_modules'] ?? [];
+
+        final List<String> modules = modulesJson
+            .map((e) => e.toString())
+            .toList();
+
+        print('✅ ${plansJson.length} offres récupérées !');
+        return plansJson
+            .map((plan) => SubscriptionOffer.fromJson(plan, modules))
+            .toList();
+      } else {
+        print('❌ Erreur API: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Erreur lors de la récupération des offres: $e');
+      return [];
+    }
   }
 
   /// Vérifie si l'utilisateur courant a un certain niveau ou privilège
@@ -69,10 +61,14 @@ class SubscriptionService {
     // Définir une hiérarchie simple: vip > premium > free
     int getLevelRank(String level) {
       switch (level.toLowerCase()) {
-        case 'vip': return 3;
-        case 'premium': return 2;
-        case 'free': return 1;
-        default: return 0;
+        case 'vip':
+          return 3;
+        case 'premium':
+          return 2;
+        case 'free':
+          return 1;
+        default:
+          return 0;
       }
     }
 

@@ -125,18 +125,27 @@ class PaiementService {
     }
   }
 
-  Future<PaiementResponse> initierPaiementAbonnement(
-    String phone,
-    String offerId,
-    int montant,
-  ) async {
+  Future<PaiementResponse> initierPaiementAbonnement({
+    required int subscriptionPlanId,
+    required String userId,
+    required int amountPaid,
+    required List<String> eleveIds,
+  }) async {
     try {
-      // TODO: Ajustez l'URL ci-dessous avec le bon endpoint pour le paiement d'abonnement
-      final urlStr =
-          '$baseUrl/parent/abonnement/paiement-en-ligne/$phone?montant=$montant&offre=$offerId';
+      final urlStr = '${AppConfig.VIE_ECOLES_API_BASE_URL}/espace-parent/souscrire/offre';
       print('================= PAIEMENT ABONNEMENT =================');
       print('💳 REQUÊTE PAIEMENT - URL: $urlStr');
       print('💳 REQUÊTE PAIEMENT - METHODE: POST');
+
+      final bodyData = {
+        "subscription_plan_id": subscriptionPlanId,
+        "user_id": int.tryParse(userId) ?? 19421,
+        "payment_method": "PEL",
+        "amount_paid": amountPaid,
+        "eleve_ids": eleveIds,
+      };
+      
+      print('💳 PAYLOAD: $bodyData');
 
       final response = await http.post(
         Uri.parse(urlStr),
@@ -144,6 +153,7 @@ class PaiementService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        body: json.encode(bodyData),
       );
 
       print('💳 API Paiement - Status: ${response.statusCode}');
@@ -168,6 +178,30 @@ class PaiementService {
     } catch (e) {
       print('❌ Exception lors de l\'initialisation du paiement: $e');
       throw Exception('Impossible d\'initialiser le paiement: $e');
+    }
+  }
+
+  Future<bool> checkSubscriptionPaymentStatus(String userId) async {
+    // TODO: Ajuster l'URL avec l'endpoint exact fourni par le backend pour vérifier le paiement de l'abonnement
+    final urlStr = '\${AppConfig.VIE_ECOLES_API_BASE_URL}/espace-parent/verifier-paiement-abonnement/$userId';
+    
+    try {
+      final response = await http.get(Uri.parse(urlStr), headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      });
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        // On suppose que l'API renvoie statuspaiement = 1 pour un succès, comme l'autre API
+        if (data['data'] != null && data['data']['statuspaiement'] == 1) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('❌ Erreur vérification paiement abonnement: $e');
+      return false;
     }
   }
 

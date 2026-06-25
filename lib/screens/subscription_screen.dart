@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../models/subscription_offer.dart';
 import '../services/subscription_service.dart';
 import '../services/paiement_service.dart';
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
+import '../services/notification_service.dart';
+import '../widgets/payment_verification_dialog.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_button.dart';
@@ -30,6 +34,80 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     setState(() {
       _offers = offers;
       _isLoading = false;
+    });
+  }
+
+  void _showPaymentVerificationLoader(String userId, SubscriptionOffer offer) {
+    if (userId.isEmpty) return;
+
+    Timer? timer;
+    bool isChecking = false;
+
+    PaymentVerificationDialog.show(
+      context: context,
+      childName: 'votre compte',
+      montant: offer.price.toInt(),
+      establishment: 'la plateforme',
+      serviceType: 'abonnement',
+    ).then((_) {
+      timer?.cancel();
+    });
+
+    int attempts = 0;
+    const int maxAttempts = 10; // 50 secondes de polling
+
+    timer = Timer.periodic(const Duration(seconds: 5), (t) async {
+      if (isChecking || !mounted) return;
+
+      attempts++;
+      if (attempts >= maxAttempts) {
+        t.cancel();
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Vérification d\'abonnement en attente',
+            body: 'Le délai de vérification de l\'abonnement \${offer.title} est dépassé. Si votre compte a été débité, votre abonnement s\'activera automatiquement.',
+            payload: 'abonnement_timeout',
+          );
+        }
+        return;
+      }
+
+      isChecking = true;
+
+      try {
+        final success = await PaiementService().checkSubscriptionPaymentStatus(userId);
+        if (success && mounted) {
+          t.cancel();
+          Navigator.of(context).pop();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Paiement validé ! Abonnement \${offer.title} activé avec succès.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Abonnement validé',
+            body: 'Votre abonnement \${offer.title} a été activé avec succès !',
+            payload: 'abonnement_success',
+          );
+        }
+      } catch (e) {
+        // Ignorer les erreurs
+      } finally {
+        isChecking = false;
+      }
     });
   }
 
@@ -62,12 +140,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     try {
       final user = AuthService.instance.getCurrentUser();
-      final phone = user?.phone ?? '';
+      final userId = user?.id ?? '19421';
+
+      // Récupérer la liste des enfants (élèves) du parent pour l'abonnement
+      final children = await DatabaseService.instance.getChildrenByParent(userId);
+      final eleveIds = children.map((c) => c.id).toList();
 
       final paiementResponse = await PaiementService().initierPaiementAbonnement(
-        phone,
-        offer.id,
-        offer.price.toInt(),
+        subscriptionPlanId: int.tryParse(offer.id) ?? 1,
+        userId: userId,
+        amountPaid: offer.price.toInt(),
+        eleveIds: eleveIds,
       );
 
       if (!mounted) return;
@@ -76,15 +159,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       if (paiementResponse.success && paiementResponse.url.isNotEmpty) {
         final launched = await PaiementService().lancerUrlPaiement(paiementResponse.url);
         if (launched) {
-          // TODO: Implémenter le polling pour vérifier le statut du paiement,
-          // de la même manière que pour l'inscription.
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Veuillez finaliser votre paiement sur la page sécurisée.'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 4),
-            ),
-          );
+          // Lancer le polling pour vérifier le statut du paiement
+          _showPaymentVerificationLoader(userId, offer);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Impossible d\'ouvrir la page de paiement.'), backgroundColor: Colors.red),
@@ -204,27 +280,30 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '${offer.price.toInt()} FCFA',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: textColor,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '${offer.price.toInt()} FCFA',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: textColor,
+                        ),
                       ),
-                    ),
-                    Text(
-                      ' / ${offer.duration}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: subtitleColor,
+                      Text(
+                        ' / ${offer.duration}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: subtitleColor,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const Divider(),

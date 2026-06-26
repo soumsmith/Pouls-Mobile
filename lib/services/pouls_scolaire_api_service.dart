@@ -254,7 +254,7 @@ class PoulsScolaireApiService {
         try {
           final Map<String, dynamic> data = json.decode(response.body);
           print(
-            '✅ Année scolaire ouverte récupérée: ${data['libelleAnneeOuverteCentrale'] ?? 'N/A'}',
+            '✅ Année scolaire ouverte récupérée: ${data['anneeOuverteCentraleId'] ?? 'N/A'}',
           );
           return AnneeScolaire.fromJson(data);
         } catch (e) {
@@ -269,11 +269,17 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       if (e is Exception) {
-        ApiExceptionHandler.handle(e, context: 'la récupération de l\'année scolaire');
+        ApiExceptionHandler.handle(
+          e,
+          context: 'la récupération de l\'année scolaire',
+        );
         rethrow;
       }
       _logApiError('getAnneeScolaireOuverte', e);
-      ApiExceptionHandler.handle(e, context: 'la récupération de l\'année scolaire');
+      ApiExceptionHandler.handle(
+        e,
+        context: 'la récupération de l\'année scolaire',
+      );
       throw Exception(
         'Erreur lors de la récupération de l\'année scolaire: $e',
       );
@@ -310,7 +316,7 @@ class PoulsScolaireApiService {
         final eleves = data
             .map((json) => Eleve.fromJson(json as Map<String, dynamic>))
             .toList();
-            
+
         print('═══════════════════════════════════════════════════════════');
         print('✅ FIN CHARGEMENT DES ÉLÈVES');
         print('═══════════════════════════════════════════════════════════');
@@ -886,7 +892,10 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       print('❌ Erreur lors de la récupération des notes de l\'élève: $e');
-      ApiExceptionHandler.handle(e, context: 'la récupération des notes de l\'élève');
+      ApiExceptionHandler.handle(
+        e,
+        context: 'la récupération des notes de l\'élève',
+      );
       print('═══════════════════════════════════════════════════════════');
       print('');
       throw Exception(
@@ -933,7 +942,10 @@ class PoulsScolaireApiService {
         elevesParClasse: elevesParClasse,
       );
     } catch (e) {
-      ApiExceptionHandler.handle(e, context: 'le chargement des données scolaires');
+      ApiExceptionHandler.handle(
+        e,
+        context: 'le chargement des données scolaires',
+      );
       throw Exception('Erreur lors du chargement des données: $e');
     }
   }
@@ -1113,7 +1125,10 @@ class PoulsScolaireApiService {
       }
     } catch (e) {
       _logApiError('getStudentClassInfo', e);
-      ApiExceptionHandler.handle(e, context: 'la récupération des informations classe/école');
+      ApiExceptionHandler.handle(
+        e,
+        context: 'la récupération des informations classe/école',
+      );
       throw Exception(
         'Erreur lors de la récupération des informations classe/école: $e',
       );

@@ -248,9 +248,12 @@ class _AddChildScreenState extends State<AddChildScreen>
           errorStr.contains('pas de connexion internet') ||
           errorStr.contains('failed host lookup') ||
           errorStr.contains('no address associated');
-      
+
       if (!isNetworkError && mounted) {
-        _showSnackbar('Erreur : ${e.toString().replaceAll('Exception: ', '')}', isError: true);
+        _showSnackbar(
+          'Erreur : ${e.toString().replaceAll('Exception: ', '')}',
+          isError: true,
+        );
       }
     }
   }
@@ -329,17 +332,24 @@ class _AddChildScreenState extends State<AddChildScreen>
   Future<void> _handleAddChild() async {
     print('🔘 BUTTON CLICKED: _handleAddChild called');
     print('🔘 DEBUG: _isLoading = $_isLoading');
-    print('🔘 DEBUG: _foundEleve = ${_foundEleve?.prenomEleve} ${_foundEleve?.nomEleve}');
+    print(
+      '🔘 DEBUG: _foundEleve = ${_foundEleve?.prenomEleve} ${_foundEleve?.nomEleve}',
+    );
     print('🔘 DEBUG: _foundEcole = ${_foundEcole?.ecoleclibelle}');
-    
+
     if (_foundEleve == null || _foundEcole == null) {
       print('❌ DEBUG: _foundEleve or _foundEcole is null');
-      _showSnackbar('Erreur: informations élève ou école manquantes', isError: true);
+      _showSnackbar(
+        'Erreur: informations élève ou école manquantes',
+        isError: true,
+      );
       return;
     }
     final eleve = _foundEleve!;
     final ecole = _foundEcole!;
-    print('✅ DEBUG: Starting add child process for ${eleve.prenomEleve} ${eleve.nomEleve}');
+    print(
+      '✅ DEBUG: Starting add child process for ${eleve.prenomEleve} ${eleve.nomEleve}',
+    );
     setState(() => _isLoading = true);
     try {
       User? currentUser = AuthService.instance.getCurrentUser();
@@ -362,25 +372,29 @@ class _AddChildScreenState extends State<AddChildScreen>
       final parentId = currentUser.id;
       if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty)
         throw Exception('Informations élève incomplètes');
-      
+
       final childId = eleve.inscriptionsidEleve.toString();
       print('🔍 Vérification si l\'élève existe déjà...');
       print('👶 Child ID: $childId');
       print('👤 Parent ID: $parentId');
-      
+
       // Vérifier si l'élève existe déjà dans la base de données locale
-      final existingChild = await DatabaseService.instance.getChildById(childId);
+      final existingChild = await DatabaseService.instance.getChildById(
+        childId,
+      );
       if (existingChild != null && existingChild.parentId == parentId) {
-        print('❌ Élève déjà ajouté: ${existingChild.firstName} ${existingChild.lastName}');
+        print(
+          '❌ Élève déjà ajouté: ${existingChild.firstName} ${existingChild.lastName}',
+        );
         setState(() => _isLoading = false);
         if (mounted) {
           _showSnackbar('Cet élève est déjà ajouté', isError: true);
         }
         return;
       }
-      
+
       print('✅ Élève non trouvé, procédons à l\'ajout...');
-      
+
       final newChild = Child(
         id: childId,
         firstName: eleve.prenomEleve,
@@ -395,7 +409,7 @@ class _AddChildScreenState extends State<AddChildScreen>
             ? ecole.paramecole
             : ecole.ecolecode,
       );
-      
+
       print('💾 Sauvegarde locale de l\'élève...');
       await DatabaseService.instance.saveChild(
         newChild,
@@ -413,18 +427,17 @@ class _AddChildScreenState extends State<AddChildScreen>
         parentId,
         eleve.matriculeEleve,
       );
-      
+
       print('✅ Élève ajouté localement avec succès');
       setState(() => _isLoading = false);
       if (mounted) {
         // La notification de succès sera affichée par MainScreenWrapper
-        
+
         // Forcer la navigation vers la home screen et remplacer toute la pile
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => const MainScreenWrapper(
-              showChildAddedSuccess: true,
-            ),
+            builder: (context) =>
+                const MainScreenWrapper(showChildAddedSuccess: true),
           ),
           (route) => false, // Supprimer tous les écrans précédents
         );
@@ -446,7 +459,9 @@ class _AddChildScreenState extends State<AddChildScreen>
       backgroundColor: isError ? Colors.red[400] : AppColors.success,
       duration: const Duration(seconds: 3),
       minHeight: 80, // Hauteur personnalisée pour une meilleure présentation
-      icon: isError ? Icons.error_outline : Icons.check_circle_outline, // Icône selon le type
+      icon: isError
+          ? Icons.error_outline
+          : Icons.check_circle_outline, // Icône selon le type
     );
   }
 
@@ -605,8 +620,8 @@ class _AddChildScreenState extends State<AddChildScreen>
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? Theme.of(context).scaffoldBackgroundColor 
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Theme.of(context).scaffoldBackgroundColor
             : Colors.white, // Fond blanc en mode clair
         body: FadeTransition(
           opacity: _fadeAnimation,
@@ -757,7 +772,9 @@ class _AddChildScreenState extends State<AddChildScreen>
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(16),
                     fontWeight: FontWeight.w800,
-                    color: Theme.of(context).textTheme.headlineSmall?.color ?? Colors.black,
+                    color:
+                        Theme.of(context).textTheme.headlineSmall?.color ??
+                        Colors.black,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -767,7 +784,9 @@ class _AddChildScreenState extends State<AddChildScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(12),
-                    color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+                    color:
+                        Theme.of(context).textTheme.bodyMedium?.color ??
+                        Colors.black,
                     height: 1.3,
                   ),
                 ),
@@ -1039,7 +1058,9 @@ class _AddChildScreenState extends State<AddChildScreen>
             autofocus: false,
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.screenTextPrimary,
+              color:
+                  Theme.of(context).textTheme.bodyLarge?.color ??
+                  AppColors.screenTextPrimary,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
@@ -1054,8 +1075,8 @@ class _AddChildScreenState extends State<AddChildScreen>
                 size: 18,
               ),
               filled: true,
-              fillColor: Theme.of(context).brightness == Brightness.dark 
-                  ? Theme.of(context).cardColor 
+              fillColor: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).cardColor
                   : Colors.white, // Fond blanc en mode clair
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
@@ -1277,10 +1298,12 @@ class _AddChildScreenState extends State<AddChildScreen>
           width: double.infinity,
           height: 54,
           child: ElevatedButton(
-            onPressed: _isLoading ? null : () {
-              print('🔘 ELEVATED BUTTON PRESSED!');
-              _handleAddChild();
-            },
+            onPressed: _isLoading
+                ? null
+                : () {
+                    print('🔘 ELEVATED BUTTON PRESSED!');
+                    _handleAddChild();
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.success,
               foregroundColor: Colors.white,
@@ -1301,7 +1324,11 @@ class _AddChildScreenState extends State<AddChildScreen>
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.person_add_rounded, color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.person_add_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Ajouter cet élève à mon compte',

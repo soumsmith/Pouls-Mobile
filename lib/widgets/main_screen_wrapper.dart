@@ -19,6 +19,7 @@ import '../services/remote_api_service.dart';
 import '../services/text_size_service.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'connectivity_banner.dart';
+import '../services/module_access_service.dart';
 
 /// Wrapper principal qui contient le BottomNav et gère la navigation
 class MainScreenWrapper extends StatefulWidget {
@@ -72,6 +73,7 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
     final user = AuthService.instance.getCurrentUser();
     _currentUserId = user?.id;
     _setupNotificationListener();
+    ModuleAccessService().fetchModules();
     
     // Afficher le message de succès si un enfant vient d'être ajouté
     if (widget.showChildAddedSuccess) {

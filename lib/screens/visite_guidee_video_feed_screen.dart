@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parents_responsable/services/astuce_conseil_service.dart';
+import 'package:parents_responsable/services/auth_service.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
@@ -83,6 +85,8 @@ class _VisiteGuideeVideoFeedScreenState
             forceHD: false,
             loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
             hideControls: true, // Masquer les contrôles natifs
+            hideThumbnail:
+                true, // Empêche l'affichage de l'image de couverture en pause
           ),
         );
         // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
@@ -106,7 +110,40 @@ class _VisiteGuideeVideoFeedScreenState
     });
   }
 
-  Future<void> _fetchVideoInteractions(int videoId) async {
+  Future<void> _fetchVideoInteractions(VisiteGuideeVideo video) async {
+    final videoId = video.id ?? video.typeVideo.hashCode;
+    final astuceIdentifier = video.slug ?? video.id?.toString() ?? '';
+    
+    if (video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
+      try {
+        final astuceService = AstuceConseilService();
+        final likes = await astuceService.getLikes(astuceIdentifier);
+        final comments = await astuceService.getComments(astuceIdentifier);
+
+        final user = AuthService.instance.getCurrentUser();
+        final hasLiked =
+            user != null &&
+            likes.any((like) => like['userid']?.toString() == user.id);
+
+        if (mounted) {
+          setState(() {
+            if (hasLiked) {
+              _likedVideoIds.add(videoId);
+            } else {
+              _likedVideoIds.remove(videoId);
+            }
+            _videoCommentsCount[videoId] = comments.length;
+            _videoLikesCount[videoId] = likes.length;
+          });
+        }
+      } catch (e) {
+        print(
+          '⚠️ Erreur lors de la récupération des interactions astuce pour la vidéo $videoId: $e',
+        );
+      }
+      return;
+    }
+
     final userId = InteractionApiService.getCurrentUserId();
     if (userId == null) return;
 
@@ -159,9 +196,7 @@ class _VisiteGuideeVideoFeedScreenState
     }
 
     if (widget.videos.isNotEmpty && index < widget.videos.length) {
-      final videoId =
-          widget.videos[index].id ?? widget.videos[index].typeVideo.hashCode;
-      _fetchVideoInteractions(videoId);
+      _fetchVideoInteractions(widget.videos[index]);
     }
   }
 
@@ -174,7 +209,9 @@ class _VisiteGuideeVideoFeedScreenState
     print('🏫 Index courant: $_currentIndex');
     if (widget.videos.isNotEmpty && _currentIndex < widget.videos.length) {
       final video = widget.videos[_currentIndex];
-      print('🏫 Vidéo courante - id: ${video.id}, code: "${video.code}", etablissement: "${video.etablissement}", title: "${video.title}"');
+      print(
+        '🏫 Vidéo courante - id: ${video.id}, code: "${video.code}", etablissement: "${video.etablissement}", title: "${video.title}"',
+      );
     }
 
     if (code.isEmpty) {
@@ -198,7 +235,9 @@ class _VisiteGuideeVideoFeedScreenState
       print('🏫 📡 Appel API getEcoleParametres("$code")...');
       // Charger les détails de l'école via l'API des paramètres
       final ecoleData = await EcoleApiService.getEcoleParametres(code);
-      print('🏫 ✅ API OK - nom: "${ecoleData.nom}", ville: "${ecoleData.ville}", statut: "${ecoleData.statut}"');
+      print(
+        '🏫 ✅ API OK - nom: "${ecoleData.nom}", ville: "${ecoleData.ville}", statut: "${ecoleData.statut}"',
+      );
 
       // Créer un objet Ecole minimal avec les données récupérées
       final ecole = Ecole(
@@ -244,6 +283,18 @@ class _VisiteGuideeVideoFeedScreenState
       _youtubeControllers[_currentIndex]!.pause();
     }
 
+    final astuceIdentifier = video.slug ?? video.id?.toString() ?? '';
+    if (video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
+      final user = AuthService.instance.getCurrentUser();
+      if (user != null) {
+        AstuceConseilService().recordShare(
+          astuceIdentifier,
+          nom: user.fullName,
+          userId: int.tryParse(user.id) ?? 0,
+        );
+      }
+    }
+
     final String videoUrl =
         'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
 
@@ -283,7 +334,7 @@ class _VisiteGuideeVideoFeedScreenState
       initialChildSize: 0.75,
       maxChildSize: 0.9,
       contentPadding: EdgeInsets.zero,
-      content: _CommentsSheet(videoId: video.id ?? video.typeVideo.hashCode),
+      content: _CommentsSheet(video: video),
     );
   }
 
@@ -340,13 +391,26 @@ class _VisiteGuideeVideoFeedScreenState
       }
     });
 
-    // API Call
     final type = _likedVideoIds.contains(videoId) ? 'like' : 'dislike';
-    final success = await InteractionApiService.toggleLike(
-      videoId: videoId,
-      userId: userId,
-      type: type,
-    );
+    bool success = false;
+
+    final astuceIdentifier = video.slug ?? video.id?.toString() ?? '';
+    if (video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
+      final user = AuthService.instance.getCurrentUser();
+      if (user != null) {
+        success = await AstuceConseilService().likeArticle(
+          astuceIdentifier,
+          nom: user.fullName,
+          userId: int.tryParse(user.id) ?? 0,
+        );
+      }
+    } else {
+      success = await InteractionApiService.toggleLike(
+        videoId: videoId,
+        userId: userId,
+        type: type,
+      );
+    }
 
     if (!success) {
       // Revert if API failed
@@ -439,22 +503,7 @@ class _VisiteGuideeVideoFeedScreenState
             },
           ),
 
-          // Indicateur de page
-          Positioned(
-            bottom: 100,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${_currentIndex + 1}/${widget.videos.length}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ),
+          // Indicateur de page supprimé
 
           // Boutons d'action latéraux
           Positioned(
@@ -462,35 +511,6 @@ class _VisiteGuideeVideoFeedScreenState
             bottom: 160,
             child: Column(
               children: [
-                _ActionButton(
-                  icon:
-                      (_youtubeControllers.isNotEmpty &&
-                          _currentIndex < _youtubeControllers.length &&
-                          _youtubeControllers[_currentIndex] != null &&
-                          _youtubeControllers[_currentIndex]!.value.isPlaying)
-                      ? Icons.pause
-                      : Icons.play_arrow,
-                  label:
-                      (_youtubeControllers.isNotEmpty &&
-                          _currentIndex < _youtubeControllers.length &&
-                          _youtubeControllers[_currentIndex] != null &&
-                          _youtubeControllers[_currentIndex]!.value.isPlaying)
-                      ? 'Pause'
-                      : 'Lecture',
-                  onTap: () {
-                    if (_youtubeControllers.isNotEmpty &&
-                        _currentIndex < _youtubeControllers.length &&
-                        _youtubeControllers[_currentIndex] != null) {
-                      final controller = _youtubeControllers[_currentIndex]!;
-                      if (controller.value.isPlaying) {
-                        controller.pause();
-                      } else {
-                        controller.play();
-                      }
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
                 _ActionButton(
                   icon: Icons.school,
                   label: 'École',
@@ -619,6 +639,7 @@ class _VideoPageState extends State<_VideoPage>
     with SingleTickerProviderStateMixin {
   bool _showPlayPauseOverlay = false;
   bool _overlayIsPlayIcon = false;
+  bool _isDescriptionExpanded = false;
   late AnimationController _overlayAnimationController;
 
   @override
@@ -634,6 +655,81 @@ class _VideoPageState extends State<_VideoPage>
   void dispose() {
     _overlayAnimationController.dispose();
     super.dispose();
+  }
+
+  void _showDescriptionModal() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            width: double.infinity,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.8), // Noir transparent
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white24, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(color: Colors.white24),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        widget.video.displayDescription,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _handleTap() {
@@ -747,9 +843,9 @@ class _VideoPageState extends State<_VideoPage>
             ),
             padding: const EdgeInsets.only(
               left: 16,
-              right: 88, // Space for right-side vertical action buttons
+              right: 88, // Espace pour ne pas chevaucher les boutons d'action
               bottom:
-                  130, // Increased bottom padding to avoid bottom navigation bar overlap
+                  170, // Increased bottom padding to avoid progress bar overlap
               top: 60,
             ),
             child: Column(
@@ -786,38 +882,151 @@ class _VideoPageState extends State<_VideoPage>
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  widget.video.displayTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black45,
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
+                GestureDetector(
+                  onTap: _showDescriptionModal,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.video.displayTitle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black45,
+                                blurRadius: 4,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.video.displayDescription,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Voir plus',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.video.displayDescription,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
         ),
+        // Barre de progression et contrôles (style YouTube)
+        if (widget.youtubeController != null)
+          Positioned(
+            bottom: 115, // Sous la description
+            left: 0,
+            right: 0,
+            child: ValueListenableBuilder<YoutubePlayerValue>(
+              valueListenable: widget.youtubeController!,
+              builder: (context, value, child) {
+                final duration = value.metaData.duration.inMilliseconds;
+                final position = value.position.inMilliseconds;
+                double progress = 0.0;
+                if (duration > 0 && position > 0) {
+                  progress = position / duration;
+                }
+
+                String formatDuration(int millis) {
+                  final seconds = (millis / 1000).truncate();
+                  final minutes = (seconds / 60).truncate();
+                  final remainingSeconds = seconds % 60;
+                  return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
+                }
+
+                return Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        value.isPlaying ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        if (value.isPlaying) {
+                          widget.youtubeController!.pause();
+                        } else {
+                          widget.youtubeController!.play();
+                        }
+                      },
+                    ),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 14,
+                          ),
+                          activeTrackColor: Colors.red,
+                          inactiveTrackColor: Colors.white38,
+                          thumbColor: Colors.red,
+                          trackShape: const RectangularSliderTrackShape(),
+                        ),
+                        child: Slider(
+                          value: progress.isNaN
+                              ? 0.0
+                              : progress.clamp(0.0, 1.0),
+                          onChanged: (newValue) {
+                            if (duration > 0) {
+                              widget.youtubeController!.seekTo(
+                                Duration(
+                                  milliseconds: (newValue * duration).round(),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '${formatDuration(position)} / ${formatDuration(duration)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -840,7 +1049,10 @@ class _SchoolLogoState extends State<_SchoolLogo> {
   void initState() {
     super.initState();
     if (widget.code.isNotEmpty) {
-      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
+      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(
+        widget.code,
+        showNotification: false,
+      );
     } else {
       _ecoleDetailFuture = Future.error('Code école vide');
     }
@@ -851,7 +1063,10 @@ class _SchoolLogoState extends State<_SchoolLogo> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.code != widget.code) {
       if (widget.code.isNotEmpty) {
-        _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
+        _ecoleDetailFuture = EcoleApiService.getEcoleDetail(
+          widget.code,
+          showNotification: false,
+        );
       } else {
         _ecoleDetailFuture = Future.error('Code école vide');
       }
@@ -958,9 +1173,9 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _CommentsSheet extends StatefulWidget {
-  final int videoId;
+  final VisiteGuideeVideo video;
 
-  const _CommentsSheet({required this.videoId});
+  const _CommentsSheet({required this.video});
 
   @override
   State<_CommentsSheet> createState() => _CommentsSheetState();
@@ -995,10 +1210,34 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       _isLoading = true;
     });
 
-    final comments = await InteractionApiService.listInteractions(
-      videoId: widget.videoId,
-      type: 'comment',
-    );
+    List<Interaction> comments = [];
+    final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
+
+    if (widget.video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
+      final apiComments = await AstuceConseilService().getComments(
+        astuceIdentifier,
+      );
+      comments = apiComments
+          .map(
+            (c) => Interaction(
+              id: c['id'] as int? ?? 0,
+              videoId: widget.video.id ?? widget.video.typeVideo.hashCode,
+              userId: _currentUserId!,
+              type: 'comment',
+              content: c['contenu']?.toString() ?? '',
+              createdAt: c['created_at'] != null
+                  ? DateTime.tryParse(c['created_at']) ?? DateTime.now()
+                  : DateTime.now(),
+              userName: c['nom']?.toString() ?? 'Utilisateur',
+            ),
+          )
+          .toList();
+    } else {
+      comments = await InteractionApiService.listInteractions(
+        videoId: widget.video.id ?? widget.video.typeVideo.hashCode,
+        type: 'comment',
+      );
+    }
 
     setState(() {
       _comments = comments;
@@ -1020,16 +1259,43 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     }
 
     try {
-      final newComment = await InteractionApiService.createInteraction(
-        videoId: widget.videoId,
-        userId: _currentUserId!,
-        type: 'comment',
-        content: _commentController.text.trim(),
-      );
+      Interaction? newComment;
+      final user = AuthService.instance.getCurrentUser();
+      final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
+
+      if (widget.video.typeVideo == 'astuce' &&
+          astuceIdentifier.isNotEmpty &&
+          user != null) {
+        final content = _commentController.text.trim();
+        final success = await AstuceConseilService().addComment(
+          astuceIdentifier,
+          nom: user.fullName,
+          userId: int.tryParse(user.id) ?? 0,
+          contenu: content,
+        );
+        if (success) {
+          newComment = Interaction(
+            id: DateTime.now().millisecondsSinceEpoch,
+            videoId: widget.video.id ?? widget.video.typeVideo.hashCode,
+            userId: _currentUserId!,
+            type: 'comment',
+            content: content,
+            createdAt: DateTime.now(),
+            userName: user.fullName,
+          );
+        }
+      } else {
+        newComment = await InteractionApiService.createInteraction(
+          videoId: widget.video.id ?? widget.video.typeVideo.hashCode,
+          userId: _currentUserId!,
+          type: 'comment',
+          content: _commentController.text.trim(),
+        );
+      }
 
       if (newComment != null) {
         setState(() {
-          _comments.insert(0, newComment);
+          _comments.insert(0, newComment!);
           _commentController.clear();
         });
       } else {
@@ -1460,8 +1726,70 @@ class _RatingSheet extends StatefulWidget {
 class _RatingSheetState extends State<_RatingSheet> {
   int _currentRating = 0;
   bool _hasRated = false;
-  double _averageRating = 4.2;
-  int _totalRatings = 127;
+  double _averageRating = 0.0;
+  int _totalRatings = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRatings();
+  }
+
+  Future<void> _loadRatings() async {
+    final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
+    final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
+    
+    // Si c'est une vidéo astuce, il n'y a pas d'API spécifique pour récupérer les notes
+    // dans l'ancienne logique. S'il n'y a pas de notation pour les astuces, 
+    // on gère juste le fallback pour l'instant.
+    if (widget.video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Valeurs par défaut pour les astuces si non supporté
+        });
+      }
+      return;
+    }
+
+    try {
+      final ratings = await InteractionApiService.listInteractions(
+        videoId: videoId,
+        type: 'rating',
+      );
+
+      final user = AuthService.instance.getCurrentUser();
+      final currentUserId = user != null ? int.tryParse(user.id) ?? 0 : 0;
+      
+      bool hasRated = false;
+      int sumRatings = 0;
+      int count = 0;
+
+      for (var r in ratings) {
+        if (r.userId == currentUserId) hasRated = true;
+        final val = int.tryParse(r.content ?? '') ?? 0;
+        if (val > 0 && val <= 5) {
+          sumRatings += val;
+          count++;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _totalRatings = count;
+          _averageRating = count > 0 ? sumRatings / count : 0.0;
+          _hasRated = hasRated;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur _loadRatings: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1512,10 +1840,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                         const SizedBox(height: 4),
                         Text(
                           'Visite guidée',
-                          style: TextStyle(
-                            color: subtextColor,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: subtextColor, fontSize: 12),
                         ),
                       ],
                     ),
@@ -1526,7 +1851,10 @@ class _RatingSheetState extends State<_RatingSheet> {
               const SizedBox(height: 24),
 
               // Current rating stats
-              Container(
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                Container(
                 padding: const EdgeInsets.all(16),
                 color: Colors.transparent,
                 child: Row(
@@ -1555,10 +1883,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                         ),
                         Text(
                           '$_totalRatings évaluations',
-                          style: TextStyle(
-                            color: subtextColor,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: subtextColor, fontSize: 12),
                         ),
                       ],
                     ),
@@ -1637,15 +1962,36 @@ class _RatingSheetState extends State<_RatingSheet> {
   Future<void> _submitRating() async {
     setState(() {
       _hasRated = true;
-      // Mettre à jour les statistiques (simulation)
+      // Mettre à jour les statistiques (simulation de l'UI en attendant que l'API réponde)
       _totalRatings++;
       _averageRating =
           ((_averageRating * (_totalRatings - 1)) + _currentRating) /
           _totalRatings;
     });
 
-    // Simuler l'envoi au serveur
-    await Future.delayed(const Duration(seconds: 1));
+    final user = AuthService.instance.getCurrentUser();
+    final userId = user != null ? int.tryParse(user.id) ?? 0 : 0;
+
+    if (userId > 0) {
+      try {
+        final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
+        if (widget.video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
+           // Si astuce, utiliser l'API d'astuce si disponible (pour les ratings, il n'y a pas d'API spécifique mentionnée,
+           // mais par précaution, utilisons l'API d'interactions globale ou on ignore)
+        }
+        
+        final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
+        
+        await InteractionApiService.createInteraction(
+          videoId: videoId,
+          userId: userId,
+          type: 'rating',
+          content: _currentRating.toString(),
+        );
+      } catch (e) {
+        print('❌ Erreur lors de l\'envoi de la note: $e');
+      }
+    }
 
     if (mounted) {
       Future.delayed(const Duration(seconds: 2), () {

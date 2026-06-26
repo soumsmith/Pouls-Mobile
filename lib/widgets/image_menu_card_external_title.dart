@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart';
 import '../config/app_dimensions.dart';
+import '../widgets/module_guard.dart';
+import '../services/module_access_service.dart';
 
 class ImageMenuCardExternalTitle extends StatelessWidget {
   final int index;
@@ -46,6 +48,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final double outerBorderWidth;
   final double doubleBorderGap;
   final bool showPlayIcon;
+  final String moduleIdentifiant;
 
   const ImageMenuCardExternalTitle({
     super.key,
@@ -91,6 +94,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.outerBorderWidth = 1.5,
     this.doubleBorderGap = 3.0,
     this.showPlayIcon = false, // Par défaut, ne pas afficher l'icône de play
+    this.moduleIdentifiant = '',
   });
 
   @override
@@ -109,7 +113,14 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
         child: Transform.translate(
           offset: Offset(20 * (1 - v), 0),
           child: GestureDetector(
-            onTap: onTap,
+            onTap: () {
+              if (moduleIdentifiant.isNotEmpty &&
+                  !ModuleAccessService().isModuleAccessible(moduleIdentifiant)) {
+                ModuleGuard.showLockedDialog(context);
+              } else if (onTap != null) {
+                onTap!();
+              }
+            },
             child: SizedBox(
               height: height,
               child: height == null
@@ -405,7 +416,12 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
 
     return SizedBox(
       width: width ?? double.infinity,
-      child: card,
+      child: moduleIdentifiant.isNotEmpty
+          ? ModuleGuard(
+              moduleIdentifiant: moduleIdentifiant,
+              child: card,
+            )
+          : card,
     );
   }
 

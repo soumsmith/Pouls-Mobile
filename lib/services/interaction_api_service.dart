@@ -26,9 +26,8 @@ class InteractionApiService {
         '💬 Création d\'une interaction: video=$videoId, user=$userId, type=$type',
       );
 
-      final endpoint = '/vie-ecoles/interactions/store';
+      final endpoint = '/videos/interaction/$videoId';
       final body = {
-        'video_id': videoId,
         'user_id': userId,
         'type': type,
         if (content != null) 'content': content,
@@ -45,14 +44,15 @@ class InteractionApiService {
       print('💬 Réponse de l\'API: $response');
 
       // Gérer différents formats de réponse
-      if (response['status'] == 'success' && response['data'] != null) {
+      if (response['data'] != null) {
         final interaction = Interaction.fromJson(
           response['data'] as Map<String, dynamic>,
         );
         print('✅ Interaction créée avec succès: ${interaction.id}');
         return interaction;
-      } else if (response['success'] == true ||
-          response['message'] == 'Interaction saved successfully') {
+      } else if (response['status'] == 'success' || 
+                 response['success'] == true ||
+                 response['message'] == 'Interaction saved successfully') {
         // Si l'API retourne un message de succès mais pas de data, on retourne null
         // et on recharge la liste des commentaires
         print('✅ Interaction créée avec succès (message de confirmation)');
@@ -79,14 +79,15 @@ class InteractionApiService {
     try {
       print('💬 Récupération des interactions: video=$videoId, type=$type');
 
+      final endpoint = '/videos/interactions/$videoId?type=$type';
+
       final response = await HttpService.get(
-        '/vie-ecoles/interactions/list?video_id=$videoId&type=$type',
+        endpoint,
         showNotification: false,
       );
 
       print('💬 Réponse de l\'API: $response');
 
-      // La réponse est paginée avec un champ "data"
       if (response['data'] != null) {
         final data = response['data'] as List<dynamic>;
         final interactions = data
@@ -203,15 +204,13 @@ class InteractionApiService {
     required String type, // "like" ou "dislike"
   }) async {
     try {
-      print('👍 Enregistrement interaction: video=$videoId, user=$userId, type=$type');
-      print('🌐 URL: ${HttpService.baseUrl}/vie-ecoles/interactions/like');
+      print('👍 Enregistrement interaction: video=$videoId, user=$userId');
+      print('🌐 URL: ${HttpService.baseUrl}/videos/like/$videoId');
 
       final response = await HttpService.post(
-        '/vie-ecoles/interactions/like',
+        '/videos/like/$videoId',
         body: {
-          'video_id': videoId,
           'user_id': userId,
-          'type': type,
         },
       );
 

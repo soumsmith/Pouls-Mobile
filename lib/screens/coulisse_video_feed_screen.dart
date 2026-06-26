@@ -85,6 +85,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
             hideControls:
                 true, // Masquer les contrôles natifs (et le titre/logo de la chaîne en haut)
+            hideThumbnail: true, // Empêche l'affichage de l'image de couverture en pause
           ),
         );
         // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
@@ -426,22 +427,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             },
           ),
 
-          // Indicateur de page
-          Positioned(
-            bottom: 100,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${_currentIndex + 1}/${widget.videos.length}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ),
+          // Indicateur de page supprimé
 
           // Boutons d'action latéraux
           Positioned(
@@ -449,35 +435,6 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             bottom: 160,
             child: Column(
               children: [
-                _ActionButton(
-                  icon:
-                      (_youtubeControllers.isNotEmpty &&
-                          _currentIndex < _youtubeControllers.length &&
-                          _youtubeControllers[_currentIndex] != null &&
-                          _youtubeControllers[_currentIndex]!.value.isPlaying)
-                      ? Icons.pause
-                      : Icons.play_arrow,
-                  label:
-                      (_youtubeControllers.isNotEmpty &&
-                          _currentIndex < _youtubeControllers.length &&
-                          _youtubeControllers[_currentIndex] != null &&
-                          _youtubeControllers[_currentIndex]!.value.isPlaying)
-                      ? 'Pause'
-                      : 'Lecture',
-                  onTap: () {
-                    if (_youtubeControllers.isNotEmpty &&
-                        _currentIndex < _youtubeControllers.length &&
-                        _youtubeControllers[_currentIndex] != null) {
-                      final controller = _youtubeControllers[_currentIndex]!;
-                      if (controller.value.isPlaying) {
-                        controller.pause();
-                      } else {
-                        controller.play();
-                      }
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
                 _ActionButton(
                   icon: Icons.school,
                   label: 'École',
@@ -595,14 +552,20 @@ class _SchoolLogoState extends State<_SchoolLogo> {
   @override
   void initState() {
     super.initState();
-    _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
+    _ecoleDetailFuture = EcoleApiService.getEcoleDetail(
+      widget.code,
+      showNotification: false,
+    );
   }
 
   @override
   void didUpdateWidget(covariant _SchoolLogo oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.code != widget.code) {
-      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(widget.code, showNotification: false);
+      _ecoleDetailFuture = EcoleApiService.getEcoleDetail(
+        widget.code,
+        showNotification: false,
+      );
     }
   }
 
@@ -695,6 +658,81 @@ class _VideoPageState extends State<_VideoPage>
   void dispose() {
     _overlayAnimationController.dispose();
     super.dispose();
+  }
+
+  void _showDescriptionModal() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            width: double.infinity,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.8), // Noir transparent
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white24, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(color: Colors.white24),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        widget.video.description ?? '',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _handleTap() {
@@ -810,7 +848,7 @@ class _VideoPageState extends State<_VideoPage>
               left: 16,
               right: 88, // Space for right-side vertical action buttons
               bottom:
-                  130, // Increased bottom padding to avoid bottom navigation bar overlap
+                  170, // Increased bottom padding to avoid progress bar overlap
               top: 60,
             ),
             child: Column(
@@ -847,109 +885,147 @@ class _VideoPageState extends State<_VideoPage>
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  widget.video.titre,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black45,
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
+                GestureDetector(
+                  onTap: _showDescriptionModal,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.video.titre,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black45,
+                                blurRadius: 4,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${widget.video.fullName} · ${widget.video.classe}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Voir plus',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Barre de progression et contrôles (style YouTube)
+        if (widget.youtubeController != null)
+          Positioned(
+            bottom: 115, // Sous la description
+            left: 0,
+            right: 0,
+            child: ValueListenableBuilder<YoutubePlayerValue>(
+              valueListenable: widget.youtubeController!,
+              builder: (context, value, child) {
+                final duration = value.metaData.duration.inMilliseconds;
+                final position = value.position.inMilliseconds;
+                double progress = 0.0;
+                if (duration > 0 && position > 0) {
+                  progress = position / duration;
+                }
+
+                String formatDuration(int millis) {
+                  final seconds = (millis / 1000).truncate();
+                  final minutes = (seconds / 60).truncate();
+                  final remainingSeconds = seconds % 60;
+                  return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
+                }
+
+                return Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        value.isPlaying ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 28,
                       ),
-                    ],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${widget.video.fullName} · ${widget.video.classe}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _ExpandableDescription(text: widget.video.description),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ExpandableDescription extends StatefulWidget {
-  final String text;
-
-  const _ExpandableDescription({required this.text});
-
-  @override
-  State<_ExpandableDescription> createState() => _ExpandableDescriptionState();
-}
-
-class _ExpandableDescriptionState extends State<_ExpandableDescription> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.text.isEmpty) return const SizedBox.shrink();
-
-    final isLong = widget.text.length > 80;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          alignment: Alignment.topLeft,
-          child: Text(
-            widget.text,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12.5,
-              height: 1.4,
-              shadows: [
-                Shadow(
-                  color: Colors.black45,
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
-            maxLines: _isExpanded ? null : 2,
-            overflow: _isExpanded ? TextOverflow.clip : TextOverflow.ellipsis,
-          ),
-        ),
-        if (isLong)
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                _isExpanded ? "Moins" : "... plus",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12.5,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black45,
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        if (value.isPlaying) {
+                          widget.youtubeController!.pause();
+                        } else {
+                          widget.youtubeController!.play();
+                        }
+                      },
+                    ),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 14,
+                          ),
+                          activeTrackColor: Colors.red,
+                          inactiveTrackColor: Colors.white38,
+                          thumbColor: Colors.red,
+                          trackShape: const RectangularSliderTrackShape(),
+                        ),
+                        child: Slider(
+                          value: progress.isNaN ? 0.0 : progress.clamp(0.0, 1.0),
+                          onChanged: (newValue) {
+                            if (duration > 0) {
+                              widget.youtubeController!.seekTo(
+                                Duration(
+                                  milliseconds: (newValue * duration).round(),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '${formatDuration(position)} / ${formatDuration(duration)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
-                ),
-              ),
+                );
+              },
             ),
           ),
       ],

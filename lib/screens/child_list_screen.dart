@@ -11,7 +11,8 @@ import 'package:parents_responsable/widgets/main_screen_wrapper.dart';
 import '../services/student_scolarite_service.dart';
 import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
 import 'all_events_screen.dart';
-import '../widgets/image_menu_card_external_title.dart';
+import 'package:parents_responsable/widgets/image_menu_card_external_title.dart';
+import '../widgets/module_guard.dart';
 import '../widgets/school_life_item_card.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_button.dart';
@@ -3685,6 +3686,27 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  String _getModuleIdentifiant(String key) {
+    switch (key) {
+      case 'notes': return 'notes-moyennes';
+      case 'bulletins': return 'notes-moyennes';
+      case 'timetable': return 'emplois-temps';
+      case 'attendance': return 'presence-classe';
+      case 'sanctions': return 'sanctions';
+      case 'homework': return 'Devoir-faire-maison-cours-exercices';
+      case 'difficulties': return 'performances';
+      case 'homework_program': return 'Devoir-faire-maison-cours-exercices';
+      case 'progression': return 'progression-cours';
+      case 'supplies': return 'fournitures-scolaires';
+      case 'kits_scolaires': return 'kit-scolaire';
+      case 'communication': return 'messagerie';
+      case 'events': return 'evenements';
+      case 'services_extras': return 'services-extrascolaire';
+      case 'access_control': return 'presence-classe';
+      default: return '';
+    }
+  }
+
   // ─── CARD BUILDER (wrapper ImageMenuCardExternalTitle) ─────────────────────
   Widget _buildCard({
     required int index,
@@ -3696,6 +3718,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     required Color textColor,
     required String actionText,
     required VoidCallback onTap,
+    required String moduleIdentifiant, // Nouvel argument
     bool enableInnerBorder = false,
     bool enableOuterBorder = false,
     Color? innerBorderColor,
@@ -3707,7 +3730,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     bool allowLineBreak = false,
   }) {
     final isDark = _themeService.isDarkMode;
-    return ImageMenuCardExternalTitle(
+    final card = ImageMenuCardExternalTitle(
       index: index,
       cardKey: cardKey,
       title: title,
@@ -3729,7 +3752,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       innerBorderColor: innerBorderColor,
       centerTitle: centerTitle,
       allowLineBreak: allowLineBreak,
+      moduleIdentifiant: moduleIdentifiant,
     );
+
+    return card;
   }
 
   // ─── Helper : Rangée horizontale scrollable de ImageMenuCard ──────────────
@@ -3791,6 +3817,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       allowLineBreak: true,
+                      moduleIdentifiant: 'reservation-place',
                       onTap: _showReservationPaiementBottomSheet,
                     ),
                     _buildCard(
@@ -3812,6 +3839,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       allowLineBreak: true,
+                      moduleIdentifiant: 'reservation-place', // Pas de clé API spécifique, on utilise reservation-place
                       onTap: () {
                         MyReservationsBottomSheet.show(
                           context: context,
@@ -3844,6 +3872,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
+                      moduleIdentifiant: 'paiement-en-ligne-de-la-scolarite',
                       onTap: _showScolaritePaiementBottomSheet,
                     ),
                     _buildCard(
@@ -3870,6 +3899,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
+                      moduleIdentifiant: 'recu-paiement',
                       onTap: _showHistoriquePaiementsBottomSheet,
                     ),
                     _buildCard(
@@ -3891,6 +3921,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
+                      moduleIdentifiant: 'inscription-reinscription',
                       onTap: () {
                         final updatedChild =
                             _ecoleCode != null && _ecoleCode!.isNotEmpty
@@ -3929,6 +3960,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
+                      moduleIdentifiant: 'frais-scolaires',
                       onTap: () async {
                         if (_scolariteEntries.isEmpty && !_isLoadingScolarite) {
                           await _loadScolariteData();
@@ -3975,6 +4007,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       width: AppDimensions.getSquareCardWidthSize(context),
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
+                      moduleIdentifiant: 'demande-intégration',
                       onTap: () => IntegrationRequestBottomSheet.show(
                         context,
                         matricule: widget.child.matricule,
@@ -4032,6 +4065,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               iconData: Icons.fingerprint_rounded,
               color: const Color(0xFFC2185B),
               actionText: 'Voir accès',
+              moduleIdentifiant: _getModuleIdentifiant('access_control'),
               onTap: () {
                 _showAccessControlBottomSheet();
                 if (!_accessControlLoaded && !_isLoadingAccessControl) {
@@ -4047,6 +4081,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               iconData: Icons.playlist_add_check_rounded,
               color: const Color(0xFF7B1FA2),
               actionText: 'Suivre',
+              moduleIdentifiant: _getModuleIdentifiant('services_extras'),
               onTap: () {
                 _showExtraScolaireBottomSheet();
               },
@@ -4059,6 +4094,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               iconData: Icons.event_rounded,
               color: const Color(0xFF3F51B5),
               actionText: 'Voir events',
+              moduleIdentifiant: _getModuleIdentifiant('events'),
               onTap: () {
                 final schoolCode = _ecoleCode ?? widget.child.ecoleCode;
                 if (schoolCode != null && schoolCode.isNotEmpty) {
@@ -4335,7 +4371,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                 _showBulletinsBottomSheet();
               }
             }
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -4348,7 +4383,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     separatorBuilder: (_, __) => const SizedBox(width: 16),
                     itemBuilder: (context, index) {
                       final item = group1Items[index];
-                      return ImageMenuCardExternalTitle(
+                      final card = ImageMenuCardExternalTitle(
                         index: index,
                         cardKey: item['key'] as String,
                         overtitle: item['overtitle'] as String,
@@ -4369,8 +4404,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                         color: item['color'] as Color,
                         actionText: item['actionText'] as String?,
+                        moduleIdentifiant: _getModuleIdentifiant(item['key'] as String),
                         onTap: () => handleGroup1Tap(item),
                       );
+                      
+                      return card;
                     },
                   ),
                 ),
@@ -4385,6 +4423,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       iconData: null,
                       color: const Color(0xFFF57C00),
                       actionText: 'Voir emploi',
+                      moduleIdentifiant: _getModuleIdentifiant('timetable'),
                       onTap: () {
                         _showTimetableBottomSheet();
                       },
@@ -4397,6 +4436,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       iconData: null,
                       color: const Color(0xFF00796B),
                       actionText: 'Voir présence',
+                      moduleIdentifiant: _getModuleIdentifiant('attendance'),
                       onTap: () {
                         _showAttendanceBottomSheet();
                       },
@@ -4409,6 +4449,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                       iconData: Icons.warning_rounded,
                       color: const Color(0xFFD32F2F),
                       actionText: 'Voir sanctions',
+                      moduleIdentifiant: _getModuleIdentifiant('sanctions'),
                       onTap: () {
                         _showSanctionsBottomSheet();
                       },
@@ -4445,6 +4486,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               iconData: Icons.message_rounded,
               color: const Color(0xFF0288D1),
               actionText: 'Voir messages',
+              moduleIdentifiant: _getModuleIdentifiant('communication'),
               onTap: () async {
                 if (_studentMessages.isEmpty && !_isLoadingMessages) {
                   await _loadMessagesData();
@@ -4477,6 +4519,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               iconData: Icons.notifications_active_rounded,
               color: const Color(0xFFE53935),
               actionText: 'Voir notifications',
+              moduleIdentifiant: _getModuleIdentifiant('notifications'),
               onTap: () {
                 if (mounted) {
                   _showNotificationsBottomSheet();
@@ -4520,6 +4563,7 @@ class _ChildListScreenState extends State<ChildListScreen>
               iconData: Icons.inventory_2_rounded,
               color: const Color(0xFF795548),
               actionText: 'Voir liste',
+              moduleIdentifiant: _getModuleIdentifiant('supplies'),
               onTap: () => _showSuppliesBottomSheet(),
             ),
             EstablishmentAction(
@@ -4533,6 +4577,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 0xFF673AB7,
               ), // Violet color matching kits_bottom_sheet
               actionText: 'Voir kits',
+              moduleIdentifiant: _getModuleIdentifiant('kits_scolaires'),
               onTap: () {
                 if (_ecoleCode == null) return;
                 showChildKitsBottomSheet(

@@ -21,6 +21,14 @@ class Interaction {
     this.userAvatar,
   });
 
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is double) return value.toInt();
+    return 0;
+  }
+
   factory Interaction.fromJson(Map<String, dynamic> json) {
     // Extraire les informations utilisateur depuis l'objet user imbriqué
     String? userName;
@@ -34,9 +42,9 @@ class Interaction {
     }
 
     return Interaction(
-      id: json['id'] ?? 0,
-      videoId: json['video_id'] ?? 0,
-      userId: json['user_id'] ?? 0,
+      id: _parseInt(json['id']),
+      videoId: _parseInt(json['video_id']),
+      userId: _parseInt(json['user_id']),
       type: json['type'] ?? '',
       content: json['content'],
       createdAt: json['created_at'] != null

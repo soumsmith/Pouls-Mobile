@@ -3,6 +3,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
 import 'image_menu_card_external_title.dart';
+import '../widgets/module_guard.dart';
 
 // Modèle pour définir une action d'établissement
 class EstablishmentAction {
@@ -12,6 +13,7 @@ class EstablishmentAction {
   final String? overtitle;
   final String? imagePath;
   final IconData? iconData;
+  final String moduleIdentifiant;
   final Color color;
   final String actionText;
   final VoidCallback onTap;
@@ -23,6 +25,7 @@ class EstablishmentAction {
     this.overtitle,
     this.imagePath,
     this.iconData,
+    this.moduleIdentifiant = '',
     required this.color,
     required this.actionText,
     required this.onTap,
@@ -70,7 +73,7 @@ class EstablishmentActionSection extends StatelessWidget {
     final effectiveWidth = cardWidth ?? 80;
     
     if (useExternalTitle) {
-      return Row(
+      final card = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           ImageMenuCardExternalTitle(
@@ -92,13 +95,16 @@ class EstablishmentActionSection extends StatelessWidget {
             textColor: isDark ? Colors.white : Colors.black,
             allowLineBreak: true,
             centerTitle: true,
+            moduleIdentifiant: action.moduleIdentifiant,
             onTap: action.onTap,
           ),
           SizedBox(width: AppDimensions.getPaymentBannerCardSpacing(context)),
         ],
       );
+
+      return card;
     } else {
-      return Padding(
+      final card2 = Padding(
         padding: EdgeInsets.only(right: AppDimensions.getPaymentBannerCardSpacing(context)),
         child: ImageMenuCardExternalTitle(
           index: index,
@@ -118,9 +124,12 @@ class EstablishmentActionSection extends StatelessWidget {
           backgroundColor: action.color.withOpacity(0.1),
           allowLineBreak: true,
           centerTitle: true,
+          moduleIdentifiant: action.moduleIdentifiant,
           onTap: action.onTap,
         ),
       );
+      
+      return card2;
     }
   }
 }

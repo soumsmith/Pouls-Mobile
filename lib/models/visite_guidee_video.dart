@@ -6,6 +6,7 @@ class VisiteGuideeVideo {
   final String? description;
   final String code;
   final String etablissement;
+  final String? slug;
 
   VisiteGuideeVideo({
     this.id,
@@ -15,6 +16,7 @@ class VisiteGuideeVideo {
     this.description,
     this.code = '',
     this.etablissement = '',
+    this.slug,
   });
 
   factory VisiteGuideeVideo.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class VisiteGuideeVideo {
       description: json['description'] as String?,
       code: json['codeecole']?.toString() ?? json['code']?.toString() ?? json['ecole']?.toString() ?? '',
       etablissement: json['nomecole']?.toString() ?? json['etablissement']?.toString() ?? '',
+      slug: json['slug'] as String?,
     );
   }
 
@@ -38,6 +41,7 @@ class VisiteGuideeVideo {
       'description': description,
       'code': code,
       'etablissement': etablissement,
+      'slug': slug,
     };
   }
 
@@ -49,6 +53,7 @@ class VisiteGuideeVideo {
     String? description,
     String? code,
     String? etablissement,
+    String? slug,
   }) {
     return VisiteGuideeVideo(
       id: id ?? this.id,
@@ -58,6 +63,7 @@ class VisiteGuideeVideo {
       description: description ?? this.description,
       code: code ?? this.code,
       etablissement: etablissement ?? this.etablissement,
+      slug: slug ?? this.slug,
     );
   }
 

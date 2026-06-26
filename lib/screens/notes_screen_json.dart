@@ -1041,6 +1041,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         children: [
                           Text(
                             '$prenoms $nom',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,

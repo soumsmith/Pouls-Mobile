@@ -2643,6 +2643,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         actionText: 'Voir',
         onTap: () => _showKitsBottomSheetAction(),
       ),
+      EstablishmentAction(
+        key: 'vitrine_ecole',
+        title: 'Vitrine école',
+        subtitle: 'Découvrir',
+        imagePath: 'assets/images/icons/informations_ecole.png',
+        color: const Color(0xFF10B981),
+        actionText: 'Voir',
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vitrine école bientôt disponible'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      ),
     ];
 
     // Section Vie école (opérationnel)
@@ -2661,7 +2677,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       ),
       EstablishmentAction(
         key: 'communication',
-        title: 'Notre actualités',
+        title: 'Nos actualités',
         subtitle: 'Annonces',
         imagePath: 'assets/images/icons/actualites.png',
         color: _kActions['communication']!.color,
@@ -3366,7 +3382,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
+            builder: (context) =>
+                GalleryScreen(ecoleCode: ecoleCode, ecoleNom: ecoleNom),
           ),
         );
       }
@@ -4204,7 +4221,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
     } else {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => BlogDetailScreen(key: UniqueKey(), blog: blogObject),
+          builder: (context) =>
+              BlogDetailScreen(key: UniqueKey(), blog: blogObject),
         ),
       );
     }
@@ -7922,7 +7940,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   // ── Detailed info from API (logo, infos académiques, infra, rubriques) ─────
   Widget _buildDetailedInfoSection() {
     return FutureBuilder<EcoleDetail>(
-      future: EcoleApiService.getEcoleDetail(widget.ecole.parametreCode ?? '', showNotification: false),
+      future: EcoleApiService.getEcoleDetail(
+        widget.ecole.parametreCode ?? '',
+        showNotification: false,
+      ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(

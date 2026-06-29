@@ -72,6 +72,10 @@ import '../models/blog.dart';
 import 'all_blogs_screen.dart';
 import 'blog_detail_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../services/astuce_conseil_service.dart';
+import '../models/astuce_conseil.dart';
+import 'tips_advice_screen.dart';
+import 'tips_advice_detail_screen.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -367,6 +371,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _visiteGuideeVideosError == null &&
       _filteredVisiteGuideeVideos.isNotEmpty;
 
+  // Variables pour Astuces et Conseils
+  List<AstuceConseil> _astuces = [];
+  List<AstuceConseil> _filteredAstuces = [];
+  bool _astucesLoading = true;
+  String? _astucesError;
+
+  bool get _hasAstucesData =>
+      !_astucesLoading && _astucesError == null && _filteredAstuces.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -381,6 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadEvents(); // Charger les événements
     _loadBlogs(); // Charger les blogs/actualités
     _loadVisiteGuideeVideos(); // Ajouter cette ligne
+    _loadAstuces(); // Charger les astuces/conseils
     _startPresenceAutoScrollIfNeeded();
   }
 
@@ -392,6 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadEvents(),
       _loadVisiteGuideeVideos(), // Ajouter cette ligne
       _loadBlogs(),
+      _loadAstuces(),
     ]);
     await _loadChildrenNotifications();
     await _loadChildrenPresenceSignals();
@@ -976,6 +991,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Charger les astuces/conseils depuis l'API
+  Future<void> _loadAstuces() async {
+    if (mounted) {
+      setState(() {
+        _astucesLoading = true;
+        _astucesError = null;
+      });
+    }
+    try {
+      final response = await AstuceConseilService().getAstucesConseils();
+      if (mounted) {
+        setState(() {
+          _astuces = response.data;
+          _filteredAstuces = List.from(response.data);
+          _astucesLoading = false;
+          _astucesError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _astucesLoading = false;
+          _astucesError = e.toString();
+        });
+      }
+    }
+  }
+
   // Construire la section Événements et Faits Scolaires
   Widget _buildEventsSection() {
     final isTablet =
@@ -1211,6 +1254,133 @@ class _HomeScreenState extends State<HomeScreen> {
   // Gérer l'action "Voir+" pour les blogs
   void _handleSeeMoreBlogs() {
     MainScreenWrapper.of(context).navigateToExtraScreen(const AllBlogsScreen());
+  }
+
+  // Construire la section Astuces et Conseils
+  Widget _buildAstucesSection() {
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final limit = isTablet ? 6 : 5;
+
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0);
+    final double containerHeight = imageHeight + textHeight;
+
+    return Container(
+      height: containerHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _filteredAstuces.length > limit
+            ? limit + 1
+            : _filteredAstuces.length + 1,
+        itemBuilder: (context, index) {
+          if (index < _filteredAstuces.length && index < limit) {
+            return _buildAstuceCard(_filteredAstuces[index], index);
+          } else if (index == limit ||
+              (index == _filteredAstuces.length &&
+                  _filteredAstuces.length <= limit)) {
+            return _buildSeeMoreAstucesCard();
+          } else {
+            return const SizedBox.shrink();
+          }
+        },
+      ),
+    );
+  }
+
+  // Construire une carte d'astuce
+  Widget _buildAstuceCard(AstuceConseil astuce, int index) {
+    final uiData = astuce.toUiMap();
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: 'astuce_${astuce.slug}',
+        title: astuce.title,
+        subtitle: 'Astuces & Conseils',
+        actionText: uiData['date'] as String,
+        actionTextColor: uiData['color'] as Color,
+        color: uiData['color'] as Color,
+        imagePath: uiData['image'] as String?,
+        iconData: Icons.lightbulb_outline,
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        titleFontSize: isTablet ? 16.0 : 14.0,
+        subtitleFontSize: 11.0,
+        height: null,
+        imageHeight: _getCardWidth(context, 16.0) * (isTablet ? 0.62 : 0.8),
+        width: _getCardWidth(context, 16.0),
+        allowLineBreak: true,
+        centerTitle: false,
+        showPlayIcon: astuce.youtubeUrl != null && astuce.youtubeUrl!.isNotEmpty,
+        onTap: () {
+          _handleAstuceAction(astuce);
+        },
+      ),
+    );
+  }
+
+  // Construire la carte "Voir+" pour les astuces
+  Widget _buildSeeMoreAstucesCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.8;
+    final double imageHeight = cardWidth * imageRatio;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SeeMoreCard(
+          cardColor: isDarkMode ? AppColors.grey800 : Colors.white,
+          borderColor: const Color(0xFFF59E0B),
+          iconColor: Colors.white,
+          textColor: const Color(0xFFF59E0B),
+          subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+          title: 'Voir+',
+          subtitle: 'd\'astuces',
+          onTap: _handleSeeMoreAstuces,
+          icon: Icons.add,
+          width: cardWidth,
+          height: imageHeight * 1.15,
+        ),
+      ),
+    );
+  }
+
+  // Gérer l'action sur une astuce
+  void _handleAstuceAction(AstuceConseil astuce) {
+    if (astuce.youtubeUrl != null && astuce.youtubeUrl!.isNotEmpty) {
+      final video = VisiteGuideeVideo(
+        id: astuce.id,
+        typeVideo: 'astuce',
+        youtubeUrl: astuce.youtubeUrl!,
+        title: astuce.title,
+        description: astuce.content,
+        code: astuce.codeecole,
+        slug: astuce.slug,
+      );
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        VisiteGuideeVideoFeedScreen(videos: [video]),
+      );
+    } else {
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        TipsAdviceDetailScreen(astuce: astuce),
+      );
+    }
+  }
+
+  // Gérer l'action "Voir+" pour les astuces
+  void _handleSeeMoreAstuces() {
+    MainScreenWrapper.of(context).navigateToExtraScreen(const TipsAdviceScreen());
   }
 
   // Gérer l'action "Voir+" pour les vidéos
@@ -2805,34 +2975,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   AppDimensions.getPaymentBannerCardSpacing(context) * 0.9,
             ),
             children: [
-              _buildCard(
-                index: 0,
-                cardKey: 'inscription',
-                title: 'Inscription \n en ligne',
-                imagePath: 'assets/images/icons/inscription_en_ligne.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFF8FCFF),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                allowLineBreak: true,
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                innerBorderColor: const Color(0xFF93C5FD),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                //isLocked: !isPremium,
-                onTap: () => InscriptionBottomSheet.show(
-                  context,
-                  imagePath: 'assets/images/icons/inscription_en_ligne.png',
-                  imageBackgroundColor: const Color(0xFFF8FCFF),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                ),
-              ),
-              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
+              // _buildCard(
+              //   index: 0,
+              //   cardKey: 'inscription',
+              //   title: 'Inscription \n en ligne',
+              //   imagePath: 'assets/images/icons/inscription_en_ligne.png',
+              //   color: AppColors.cardLightGrey,
+              //   backgroundColor: const Color(0xFFF8FCFF),
+              //   textColor: const Color(0xFF333333),
+              //   actionText: '',
+              //   allowLineBreak: true,
+              //   enableInnerBorder: false,
+              //   enableOuterBorder: false,
+              //   innerBorderColor: const Color(0xFF93C5FD),
+              //   imageBorderRadius: AppDimensions.getImageBorderRadius(context),
+              //   width: AppDimensions.getSquareCardWidthSize(context),
+              //   height: AppDimensions.getSquareCardHeightSize(context),
+              //   centerTitle: true,
+              //   //isLocked: !isPremium,
+              //   onTap: () => InscriptionBottomSheet.show(
+              //     context,
+              //     imagePath: 'assets/images/icons/inscription_en_ligne.png',
+              //     imageBackgroundColor: const Color(0xFFF8FCFF),
+              //     imageBorderRadius: AppDimensions.getImageBorderRadius(
+              //       context,
+              //     ),
+              //   ),
+              // ),
+              // SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
               _buildCard(
                 index: 1,
                 cardKey: 'integration',
@@ -2989,6 +3159,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+
+      // Section Astuces et Conseils
+      if (_hasAstucesData) ...[
+        SectionRow(
+          title: 'ASTUCES ET CONSEILS',
+          onSeeMore: () {
+            MainScreenWrapper.of(
+              context,
+            ).navigateToExtraScreen(const TipsAdviceScreen());
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildAstucesSection(),
+      ],
 
       // Section Coulisses de l'Excellence
       if (_hasCoulisseExcellenceData) ...[

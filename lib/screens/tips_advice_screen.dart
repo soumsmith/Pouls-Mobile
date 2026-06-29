@@ -360,7 +360,9 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                 cardKey: astuce.id.toString(),
                 title: astuce.title,
                 subtitle: astuce.content.replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ').trim(),
-                imagePath: (astuce.image != null && astuce.image!.isNotEmpty) ? astuce.image : null,
+                imagePath: astuce.youtubeVideoId.isNotEmpty 
+                    ? 'https://img.youtube.com/vi/${astuce.youtubeVideoId}/mqdefault.jpg' 
+                    : ((astuce.image != null && astuce.image!.isNotEmpty) ? astuce.image : null),
                 iconData: Icons.lightbulb_outline,
                 color: Colors.orange,
                 isDark: Theme.of(context).brightness == Brightness.dark,

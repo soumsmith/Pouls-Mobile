@@ -75,6 +75,23 @@ class AstuceConseil {
     };
   }
 
+  String get youtubeVideoId {
+    if (youtubeUrl == null || youtubeUrl!.isEmpty) return '';
+    final url = Uri.parse(youtubeUrl!);
+    if (url.host.contains('youtube.com')) {
+      if (url.pathSegments.contains('embed')) {
+        final embedIndex = url.pathSegments.indexOf('embed');
+        if (embedIndex + 1 < url.pathSegments.length) {
+          return url.pathSegments[embedIndex + 1];
+        }
+      }
+      return url.queryParameters['v'] ?? '';
+    } else if (url.host.contains('youtu.be')) {
+      return url.pathSegments.isNotEmpty ? url.pathSegments.last : '';
+    }
+    return '';
+  }
+
   /// Convertit l'astuce en format compatible avec l'UI générique (similaire à Blog)
   Map<String, dynamic> toUiMap() {
     String date = _formatDate(publishedAt);
@@ -90,7 +107,9 @@ class AstuceConseil {
       'establishment': codeecole,
       'type': 'Conseil',
       'color': color,
-      'image': image,
+      'image': youtubeVideoId.isNotEmpty 
+          ? 'https://img.youtube.com/vi/$youtubeVideoId/mqdefault.jpg' 
+          : image,
       'icon': icon,
       'content': content,
       'auteur': 'Administration', // Pas d'auteur dans l'API par défaut

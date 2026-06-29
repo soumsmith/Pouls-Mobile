@@ -1241,6 +1241,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
+            moduleIdentifiant: 'demande-intégration',
             onTap: () => _showActionBottomSheet(
               'integration',
               _kActions['integration']!,
@@ -1287,6 +1288,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
             textColor: const Color(0xFF333333),
             isDark: isDark,
             allowLineBreak: true,
+            moduleIdentifiant: 'evenements',
             onTap: () => MainScreenWrapper.of(
               context,
             ).navigateToExtraScreen(AllEventsScreen()),
@@ -1308,6 +1310,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     required bool isDark,
     required VoidCallback onTap,
     bool allowLineBreak = false,
+    String moduleIdentifiant = '',
   }) {
     final width = AppDimensions.getSquareCardWidthSize(context);
     return ImageMenuCardExternalTitle(
@@ -1331,6 +1334,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       enableInnerBorder: false,
       enableOuterBorder: false,
       allowLineBreak: allowLineBreak,
+      moduleIdentifiant: moduleIdentifiant,
       onTap: onTap,
     );
   }

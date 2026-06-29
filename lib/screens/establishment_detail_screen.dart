@@ -1098,17 +1098,46 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       isDark: isDark,
       isSliver: true,
       actions: [
-        AppBarAction(
-          icon: Icons.rate_review_outlined,
+        GestureDetector(
           onTap: () {
             _showActionBottomSheet(
               'voir_les_avis',
               _kActions['voir_les_avis']!,
             );
           },
-          tooltip: 'Avis et notes',
-        ).buildWidget(isDark),
-        const SizedBox(width: 4),
+          child: Tooltip(
+            message: 'Avis et notes',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.rate_review_outlined,
+                    size: 18,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Votre avis',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -2609,6 +2638,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             'assets/images/icons/consulter_une_demande_etablissement.png',
         color: _kActions['consult_requests']!.color,
         actionText: 'Consulter',
+        moduleIdentifiant: 'demande-intégration',
         onTap: () => _showActionBottomSheet(
           'consult_requests',
           _kActions['consult_requests']!,
@@ -2621,6 +2651,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/scolarite_tarifs.png',
         color: _kActions['scolarite']!.color,
         actionText: 'Voir',
+        moduleIdentifiant: 'frais-scolaires',
         onTap: () =>
             _showActionBottomSheet('scolarite', _kActions['scolarite']!),
       ),
@@ -2631,6 +2662,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/services_complementaires.png',
         color: Colors.purple,
         actionText: 'Découvrir',
+        moduleIdentifiant: 'services-extrascolaire',
         onTap: () => _showServicesComplementairesBottomSheet(),
       ),
       EstablishmentAction(
@@ -2641,6 +2673,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             'assets/images/icons/kitscolaite.png', // Utilise l'icône existante temporairement
         color: const Color(0xFF8B5CF6),
         actionText: 'Voir',
+        moduleIdentifiant: 'kit-scolaire',
         onTap: () => _showKitsBottomSheetAction(),
       ),
       EstablishmentAction(
@@ -2670,6 +2703,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/evenements_scolaires.png',
         color: _kActions['school_events']!.color,
         actionText: 'Voir',
+        moduleIdentifiant: 'evenements',
         onTap: () => _showActionBottomSheet(
           'school_events',
           _kActions['school_events']!,
@@ -2682,6 +2716,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/actualites.png',
         color: _kActions['communication']!.color,
         actionText: 'Voir',
+        moduleIdentifiant: 'messagerie',
         onTap: () => _showActionBottomSheet(
           'communication',
           _kActions['communication']!,

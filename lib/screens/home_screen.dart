@@ -5,6 +5,8 @@ import 'dart:ui';
 import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../widgets/privilege_guard.dart';
+import '../widgets/module_guard.dart';
+import '../services/module_access_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1268,20 +1270,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final double textHeight = AppDimensions.getScaledSize(context, 85.0);
     final double containerHeight = imageHeight + textHeight;
 
+    final bool showSeeMore = _filteredAstuces.length > limit;
+
     return Container(
       height: containerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _filteredAstuces.length > limit
+        itemCount: showSeeMore
             ? limit + 1
-            : _filteredAstuces.length + 1,
+            : _filteredAstuces.length,
         itemBuilder: (context, index) {
           if (index < _filteredAstuces.length && index < limit) {
             return _buildAstuceCard(_filteredAstuces[index], index);
-          } else if (index == limit ||
-              (index == _filteredAstuces.length &&
-                  _filteredAstuces.length <= limit)) {
+          } else if (showSeeMore && index == limit) {
             return _buildSeeMoreAstucesCard();
           } else {
             return const SizedBox.shrink();
@@ -2956,9 +2958,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildBottomSheetChildren() {
-    final userLevel =
-        AuthService.instance.getCurrentUser()?.userLevel ?? 'free';
-    final isPremium = userLevel == 'premium' || userLevel == 'vip';
 
     return [
       SectionRow(title: 'ACTIONS RAPIDES'),
@@ -3020,7 +3019,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: AppDimensions.getSquareCardWidthSize(context),
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
-                //isLocked: !isPremium,
+                moduleIdentifiant: 'demande-intégration',
                 onTap: () => showIntegrationBottomSheet(
                   context: context,
                   imagePath: 'assets/images/icons/demande_integration.png',
@@ -3048,7 +3047,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: AppDimensions.getSquareCardWidthSize(context),
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
-                //isLocked: !isPremium,
+                moduleIdentifiant: 'demande-intégration',
                 onTap: () => IntegrationRequestBottomSheet.show(
                   context,
                   imagePath: 'assets/images/icons/consulter_demande.png',
@@ -3076,7 +3075,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: AppDimensions.getSquareCardWidthSize(context),
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
-                //isLocked: !isPremium,
                 onTap: () => showSponsorshipBottomSheet(
                   context,
                   imagePath: 'assets/images/icons/parrainer_utilisateur.png',
@@ -3152,7 +3150,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: AppDimensions.getSquareCardWidthSize(context),
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
-                //isLocked: isPremium,
                 onTap: _showRecommendationBottomSheet,
               ),
             ],
@@ -3164,11 +3161,13 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_hasAstucesData) ...[
         SectionRow(
           title: 'ASTUCES ET CONSEILS',
-          onSeeMore: () {
-            MainScreenWrapper.of(
-              context,
-            ).navigateToExtraScreen(const TipsAdviceScreen());
-          },
+          onSeeMore: _filteredAstuces.length > 5
+              ? () {
+                  MainScreenWrapper.of(
+                    context,
+                  ).navigateToExtraScreen(const TipsAdviceScreen());
+                }
+              : null,
         ),
         const SizedBox(height: 16),
         _buildAstucesSection(),
@@ -3248,6 +3247,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color textColor,
     required String actionText,
     required VoidCallback onTap,
+    String moduleIdentifiant = '',
     bool enableInnerBorder = false,
     bool enableOuterBorder = false,
     Color? innerBorderColor,
@@ -3257,10 +3257,9 @@ class _HomeScreenState extends State<HomeScreen> {
     double doubleBorderGap = 1.0,
     bool centerTitle = false,
     bool allowLineBreak = false,
-    bool isLocked = false,
   }) {
     final isDark = _themeService.isDarkMode;
-    Widget card = ImageMenuCardExternalTitle(
+    return ImageMenuCardExternalTitle(
       index: index,
       cardKey: cardKey,
       title: title,
@@ -3279,50 +3278,14 @@ class _HomeScreenState extends State<HomeScreen> {
           : backgroundColor,
       textColor: isDark ? Colors.white : textColor,
       actionText: actionText,
-      onTap: isLocked
-          ? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SubscriptionScreen(),
-                ),
-              );
-            }
-          : onTap,
+      onTap: onTap,
       enableInnerBorder: enableInnerBorder,
       enableOuterBorder: enableOuterBorder,
       innerBorderColor: innerBorderColor,
       centerTitle: centerTitle,
       allowLineBreak: allowLineBreak,
+      moduleIdentifiant: moduleIdentifiant,
     );
-
-    if (isLocked) {
-      return Stack(
-        alignment: Alignment.topCenter,
-        children: [
-          Opacity(opacity: 0.6, child: card),
-          Positioned(
-            top: (width / 2) - 12,
-            child: IgnorePointer(
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.lock_rounded,
-                  color: Colors.amber,
-                  size: 16,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return card;
   }
 
   // ─── FILTER ROW ────────────────────────────────────────────────────────────

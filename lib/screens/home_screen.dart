@@ -4,6 +4,7 @@ import 'package:parents_responsable/config/app_config.dart';
 import 'dart:ui';
 import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
+import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/privilege_guard.dart';
 import '../widgets/module_guard.dart';
 import '../services/module_access_service.dart';
@@ -2533,57 +2534,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── NOTIFICATIONS MENU ───────────────────────────────────────────────────
   void _showNotificationsMenu() {
-    showModalBottomSheet(
+    ReusableBottomSheet.show(
       context: context,
-      backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(maxWidth: double.infinity),
-      builder: (context) => Container(
-        height: 350,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.grey800
-              : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
+      title: 'Notifications',
+      icon: Icons.notifications_none, // Optionnel, ajoute l'icône dans l'en-tête
+      initialChildSize: 0.45,
+      minChildSize: 0.3,
+      maxChildSize: 0.8,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 30),
+          Icon(
+            Icons.notifications_off_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Contenu bientot disponible',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(14),
+              color: _kTextSecondary,
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Notifications',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(17),
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : _kTextPrimary,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.notifications_off_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Contenu bientot disponible',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(14),
-                color: _kTextSecondary,
-              ),
-            ),
-            const Spacer(),
-          ],
-        ),
+          ),
+          const SizedBox(height: 30),
+        ],
       ),
     );
   }

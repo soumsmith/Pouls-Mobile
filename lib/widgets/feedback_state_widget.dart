@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import 'components/custom_button.dart';
+import 'components/custom_error_state.dart';
 
 class ErrorStateWidget extends StatelessWidget {
   final String error;
@@ -18,48 +19,13 @@ class ErrorStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline_rounded, size: 56, color: Colors.red[300]),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              error,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.screenTextSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: headerColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Réessayer',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      title: title,
+      message: error,
+      onRetry: onRetry,
+      icon: Icons.error_outline,
+      buttonIsLight: true,
+      buttonWidth: 200,
     );
   }
 }

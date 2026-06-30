@@ -6,6 +6,8 @@ import '../../services/kits_service.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_dimensions.dart';
 import '../section_header_widget.dart';
+import '../components/bottom_spacer.dart';
+import '../components/custom_error_state.dart';
 import '../../models/niveau.dart';
 import 'reusable_bottom_sheet.dart';
 
@@ -209,88 +211,25 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
     }
 
     if (_kitsError != null) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.red.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.error_outline_rounded, size: 48, color: Colors.red[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.red[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _kitsError!,
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.grey[400] : Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _fetchKitsForNiveau(_selectedNiveau!),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[50],
-                foregroundColor: Colors.red[700],
-              ),
-            )
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Erreur de chargement',
+        message: _kitsError!,
+        icon: Icons.error_outline_rounded,
+        iconColor: Colors.red[400],
+        buttonColor: Colors.red[50],
+        buttonIsLight: true,
+        buttonHasBorder: true,
+        retryText: 'Réessayer',
+        onRetry: () => _fetchKitsForNiveau(_selectedNiveau!),
       );
     }
 
     if (_kits.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: widget.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.inventory_2_outlined,
-                  size: 48,
-                  color: widget.primaryColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Aucun kit disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Il n\'y a pas encore d\'articles configurés pour le niveau ${_selectedNiveau?.niveau ?? _selectedNiveau?.nom ?? ''}.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
+      return CustomErrorState(
+        title: 'Aucun kit disponible',
+        message: 'Il n\'y a pas encore d\'articles configurés pour le niveau ${_selectedNiveau?.niveau ?? _selectedNiveau?.nom ?? ''}.',
+        icon: Icons.inventory_2_outlined,
+        iconColor: widget.primaryColor,
       );
     }
 

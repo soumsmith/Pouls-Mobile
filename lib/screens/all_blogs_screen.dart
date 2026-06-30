@@ -7,6 +7,7 @@ import '../services/blog_service.dart';
 import '../services/pays_service.dart';
 import '../services/category_api_service.dart';
 import '../models/blog.dart';
+import '../widgets/components/bottom_spacer.dart';
 import '../widgets/filter_row_widget.dart';
 import 'blog_detail_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
@@ -15,7 +16,7 @@ import '../widgets/components/custom_date_input.dart';
 import '../widgets/components/custom_text_input.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/advanced_filters_form.dart';
-import '../widgets/components/bottom_spacer.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../widgets/scroll_to_top_fab.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
@@ -502,67 +503,12 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
         ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
         : _error!;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFECEC),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
-                  size: 36, color: const Color(0xFFEF4444)),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A)),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              errorMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 13, color: Color(0xFF999999)),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: _loadBlogs,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
-                decoration: BoxDecoration(
-                  gradient: AppColors.screenOrangeGradient,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.screenOrange.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  'Réessayer',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      title: isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
+      message: errorMessage,
+      onRetry: _loadBlogs,
+      buttonIsLight: true,
+      buttonWidth: 200,
     );
   }
 

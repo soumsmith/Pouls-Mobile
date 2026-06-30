@@ -5,6 +5,7 @@ import '../services/parent_suggestion_service.dart';
 import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../widgets/main_screen_wrapper.dart';
 
 /// Écran de gestion des suggestions parents
@@ -1362,45 +1363,11 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
   Widget _buildEmptyState() {
     final isDark = _themeService.isDarkMode;
     
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: isDark 
-                  ? AppColors.primary.withOpacity(0.15)
-                  : AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Icon(
-              Icons.lightbulb_outline,
-              size: 40,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Aucune suggestion',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(18),
-              fontWeight: FontWeight.w600,
-              color: AppColors.getTextColor(isDark, type: TextType.secondary),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Soyez le premier à partager vos idées !',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              color: AppColors.getTextColor(isDark, type: TextType.secondary).withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return CustomErrorState(
+      title: 'Aucune suggestion',
+      message: 'Soyez le premier à partager vos idées !',
+      icon: Icons.lightbulb_outline,
+      iconColor: AppColors.primary,
     );
   }
 

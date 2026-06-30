@@ -5,6 +5,7 @@ class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
   final Color color;
+  final Color? borderColor;
   final bool isLight;
   final IconData? icon;
   final bool iconOnRight;
@@ -20,6 +21,7 @@ class CustomButton extends StatelessWidget {
     required this.text,
     required this.onPressed,
     required this.color,
+    this.borderColor,
     this.isLight = false,
     this.icon,
     this.iconOnRight = false,
@@ -92,7 +94,7 @@ class CustomButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(borderRadius ?? 14),
             boxShadow: shadow,
             border: isEnabled && isLight && hasBorder
-                ? Border.all(color: color.withOpacity(0.2), width: 1.0)
+                ? Border.all(color: borderColor ?? color.withOpacity(0.2), width: 1.0)
                 : null,
           ),
           child: Center(

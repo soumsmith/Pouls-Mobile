@@ -5,6 +5,7 @@ import '../services/student_scolarite_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/components/custom_error_state.dart';
 
 /// Écran de scolarité spécifique à un élève
 class StudentScolariteScreen extends StatefulWidget {
@@ -180,123 +181,32 @@ class _StudentScolariteScreenState extends State<StudentScolariteScreen>
     }
 
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                color: AppColors.getTextColor(isDark),
-                fontSize: _textSizeService.getScaledFontSize(18),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                fontSize: _textSizeService.getScaledFontSize(14),
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _refreshScolarite,
-              icon: Icon(
-                Icons.refresh,
-                size: 16,
-                color: AppColors.getTextColor(isDark),
-              ),
-              label: Text(
-                'Réessayer',
-                style: TextStyle(
-                  color: AppColors.getTextColor(isDark),
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                  width: 1,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-              ),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Erreur de chargement',
+        message: _errorMessage!,
+        icon: Icons.error_outline,
+        iconColor: Colors.red[400],
+        buttonColor: Colors.transparent,
+        buttonIsLight: true,
+        buttonHasBorder: true,
+        buttonBorderColor: AppColors.getTextColor(isDark, type: TextType.secondary),
+        retryText: 'Réessayer',
+        onRetry: _refreshScolarite,
       );
     }
 
     if (_scolariteEntries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.school,
-              size: 64,
-              color: AppColors.getTextColor(isDark, type: TextType.secondary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Aucune échéance',
-              style: TextStyle(
-                color: AppColors.getTextColor(isDark),
-                fontSize: _textSizeService.getScaledFontSize(18),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Aucune échéance de scolarité trouvée pour ${widget.child.firstName}',
-              style: TextStyle(
-                color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                fontSize: _textSizeService.getScaledFontSize(14),
-              ),
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: _refreshScolarite,
-              icon: Icon(
-                Icons.refresh,
-                size: 16,
-                color: AppColors.getTextColor(isDark),
-              ),
-              label: Text(
-                'Actualiser',
-                style: TextStyle(
-                  color: AppColors.getTextColor(isDark),
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: AppColors.getTextColor(isDark, type: TextType.secondary),
-                  width: 1,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-              ),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Aucune échéance',
+        message: 'Aucune échéance de scolarité trouvée pour ${widget.child.firstName}',
+        icon: Icons.school,
+        iconColor: AppColors.getTextColor(isDark, type: TextType.secondary),
+        buttonColor: Colors.transparent,
+        buttonIsLight: true,
+        buttonHasBorder: true,
+        buttonBorderColor: AppColors.getTextColor(isDark, type: TextType.secondary),
+        retryText: 'Actualiser',
+        onRetry: _refreshScolarite,
       );
     }
 

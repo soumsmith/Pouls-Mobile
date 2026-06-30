@@ -17,6 +17,7 @@ import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/components/custom_error_state.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   const MyTicketsScreen({super.key});
@@ -638,33 +639,10 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   }
 
   Widget _buildErrorWidget() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
-            const SizedBox(height: 16),
-            Text(
-              _error ?? 'Une erreur est survenue',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(16),
-                color: AppColors.getTextColor(_themeService.isDarkMode),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadTickets,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Réessayer'),
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      message: _error ?? 'Une erreur est survenue',
+      onRetry: _loadTickets,
+      retryText: 'Réessayer',
     );
   }
 
@@ -791,71 +769,22 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 60),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(60),
-              ),
-              child: Icon(
-                Icons.confirmation_number,
-                size: 60,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Aucun ticket acheté',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(18),
-                fontWeight: FontWeight.w600,
-                color: AppColors.getTextColor(_themeService.isDarkMode),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Découvrez nos événements et achetez vos tickets',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(14),
-                color: AppColors.getTextColor(_themeService.isDarkMode, type: TextType.secondary),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                if (MainScreenWrapper.maybeOf(context) != null) {
-                  MainScreenWrapper.of(context).goBackToPreviousTab();
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-              child: Text(
-                'Voir les événements',
-                style: TextStyle(
-                  fontSize: _textSizeService.getScaledFontSize(14),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      title: 'Aucun ticket acheté',
+      message: 'Découvrez nos événements et achetez vos tickets',
+      icon: Icons.confirmation_number,
+      iconColor: AppColors.primary,
+      buttonColor: AppColors.primary,
+      buttonIsLight: true,
+      buttonWidth: 200,
+      retryText: 'Voir les événements',
+      onRetry: () {
+        if (MainScreenWrapper.maybeOf(context) != null) {
+          MainScreenWrapper.of(context).goBackToPreviousTab();
+        } else {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 

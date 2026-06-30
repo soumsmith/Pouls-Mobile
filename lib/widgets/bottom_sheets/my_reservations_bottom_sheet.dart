@@ -3,6 +3,7 @@ import '../../config/app_colors.dart';
 import '../../services/http_service.dart';
 import '../custom_loader.dart';
 import '../components/bottom_spacer.dart';
+import '../components/custom_error_state.dart';
 import 'reusable_bottom_sheet.dart';
 
 class MyReservationsBottomSheet extends StatefulWidget {
@@ -133,84 +134,25 @@ class _MyReservationsBottomSheetState extends State<MyReservationsBottomSheet> {
     }
 
     if (_error != null) {
-      return Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(
-              'Erreur lors du chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.white70 : Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadReservations,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.screenOrange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Erreur lors du chargement',
+        message: _error!,
+        icon: Icons.error_outline,
+        iconColor: Colors.red[300],
+        buttonColor: AppColors.screenOrange,
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Réessayer',
+        onRetry: _loadReservations,
       );
     }
 
     if (_reservations.isEmpty && _sommeReservation == 0) {
-      return Padding(
-        padding: const EdgeInsets.all(40.0),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.event_busy,
-                size: 48,
-                color: isDark ? Colors.white30 : Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Aucune réservation',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Aucune réservation n\'a été trouvée pour cet élève.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.white70 : Colors.black54,
-              ),
-            ),
-          ],
-        ),
+      return const CustomErrorState(
+        title: 'Aucune réservation',
+        message: 'Aucune réservation n\'a été trouvée pour cet élève.',
+        icon: Icons.event_busy,
+        iconColor: Colors.grey,
       );
     }
 

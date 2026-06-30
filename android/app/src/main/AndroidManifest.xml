@@ -10,7 +10,7 @@
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
-        android:label="parents_responsable"
+        android:label="Parent Responsable"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

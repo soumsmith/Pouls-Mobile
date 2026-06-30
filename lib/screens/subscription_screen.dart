@@ -11,6 +11,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/components/custom_error_state.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -198,6 +199,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 child: CircularProgressIndicator(
                   color: isDark ? Colors.white : Colors.black,
                 ),
+              ),
+            )
+          else if (_offers.isEmpty)
+            SliverFillRemaining(
+              child: CustomErrorState(
+                title: 'Aucune offre',
+                message: 'Aucun abonnement n\'est disponible pour le moment.',
+                icon: Icons.card_membership,
+                retryText: 'Rafraîchir',
+                onRetry: _loadOffers,
               ),
             )
           else

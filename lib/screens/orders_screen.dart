@@ -14,6 +14,7 @@ import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/components/custom_error_state.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -417,84 +418,21 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   Widget _buildEmptyStateArea() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Center(
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : AppColors.shopBlueSurface,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.receipt_long_outlined,
-                  size: 38,
-                  color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Aucune commande',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : AppColors.screenTextPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _selectedStatusFilter == 'En attente'
-                    ? 'Vous n\'avez aucune commande en attente.'
-                    : 'Vous n\'avez aucune commande dans cette catégorie.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? const Color(0xFFAAAAAA) : AppColors.screenTextSecondary,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.shopBlueLight, AppColors.shopBlue],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shopBlue.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Text(
-                    'Commencer vos achats',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final title = 'Aucune commande';
+    final message = _selectedStatusFilter == 'En attente'
+        ? 'Vous n\'avez aucune commande en attente.'
+        : 'Vous n\'avez aucune commande dans cette catégorie.';
+        
+    return CustomErrorState(
+      title: title,
+      message: message,
+      icon: Icons.receipt_long_outlined,
+      iconColor: AppColors.shopBlue,
+      buttonColor: AppColors.shopBlue,
+      buttonIsLight: true,
+      buttonWidth: 220,
+      retryText: 'Commencer vos achats',
+      onRetry: () => Navigator.pop(context),
     );
   }
 

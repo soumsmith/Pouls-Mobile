@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../services/text_size_service.dart';
+import '../components/custom_error_state.dart';
 import 'reusable_bottom_sheet.dart';
 
 class RatingBottomSheet extends StatefulWidget {
@@ -392,88 +393,21 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
 
   // Vue d'erreur
   Widget _buildErrorView() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
-            const SizedBox(height: 16),
-            const Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _avisError!,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Veuillez réessayer plus tard',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      title: 'Erreur de chargement',
+      message: _avisError!,
+      icon: Icons.error_outline,
+      iconColor: Colors.red[400],
     );
   }
 
   // Vue vide (aucun avis)
   Widget _buildEmptyAvisView() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF0288D1).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.rate_review_outlined,
-                size: 40,
-                color: Color(0xFF0288D1),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Aucun avis pour le moment',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Soyez le premier à donner votre avis!',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return const CustomErrorState(
+      title: 'Aucun avis pour le moment',
+      message: 'Soyez le premier à donner votre avis!',
+      icon: Icons.rate_review_outlined,
+      iconColor: Color(0xFF0288D1),
     );
   }
 

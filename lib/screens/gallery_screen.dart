@@ -8,6 +8,7 @@ import '../widgets/image_menu_card_external_title.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/components/custom_error_state.dart';
 
 class GalleryScreen extends StatefulWidget {
   final String ecoleCode;
@@ -126,47 +127,14 @@ class _GalleryScreenState extends State<GalleryScreen> {
           
       return [
         SliverFillRemaining(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline,
-                  size: 48,
-                  color: isNetworkError ? Colors.red : null,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.screenTextPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Text(
-                    errorMessage,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _loadImages,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Réessayer'),
-                ),
-              ],
-            ),
+          child: CustomErrorState(
+            title: isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
+            message: errorMessage,
+            icon: isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline,
+            iconColor: isNetworkError ? Colors.red : AppColors.primary,
+            buttonColor: AppColors.primary,
+            retryText: 'Réessayer',
+            onRetry: _loadImages,
           ),
         ),
       ];
@@ -175,14 +143,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
     if (_images.isEmpty) {
       return [
         SliverFillRemaining(
-          child: Center(
-            child: Text(
-              'Aucune image disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : AppColors.screenTextPrimary,
-              ),
-            ),
+          child: CustomErrorState(
+            title: 'Aucune image',
+            message: 'Aucune image n\'est disponible pour cette galerie.',
+            icon: Icons.image_not_supported_outlined,
           ),
         ),
       ];

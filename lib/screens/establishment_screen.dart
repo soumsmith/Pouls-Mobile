@@ -4,6 +4,7 @@ import 'package:parents_responsable/widgets/section_header_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/components/custom_error_state.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
@@ -1146,77 +1147,22 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.isDarkMode(context)
-                    ? const Color(0xFF4A1A1A)
-                    : const Color(0xFFFFECEC),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                size: 36,
-                color: Color(0xFFEF4444),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimaryThemed(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondaryThemed(context),
-              ),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: _loadEcoles,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  gradient: AppColors.screenOrangeGradient,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.screenOrange.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  'Réessayer',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final errorStr = _error ?? 'Une erreur est survenue lors du chargement';
+    final isNetworkError = errorStr.contains('SocketException') || 
+                           errorStr.contains('ClientException') ||
+                           errorStr.contains('Failed host lookup') ||
+                           errorStr.contains('Connection refused');
+                           
+    final errorMessage = isNetworkError 
+        ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+        : errorStr;
+
+    return CustomErrorState(
+      title: isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement',
+      message: errorMessage,
+      onRetry: _loadEcoles,
+      buttonIsLight: true,
+      buttonWidth: 200,
     );
   }
 

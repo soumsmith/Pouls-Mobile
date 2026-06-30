@@ -1,13 +1,17 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
 import '../services/mock_api_service.dart';
@@ -508,45 +512,13 @@ class _MessagesScreenState extends State<MessagesScreen>
   }
 
   Widget _buildEmptyConversation() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-               color: const Color(0xFF0288D1).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.chat_bubble_outline,
-              size: 36,
-              color: Color(0xFF0288D1),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Aucun message',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimaryThemed(context),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _hasStudentContext
-                ? 'Envoyez un message à ${_args!.ecoleName}'
-                : 'Démarrez une conversation',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondaryThemed(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return CustomErrorState(
+      title: 'Aucun message',
+      message: _hasStudentContext
+          ? 'Envoyez un message à ${_args!.ecoleName}'
+          : 'Démarrez une conversation',
+      icon: Icons.chat_bubble_outline,
+      iconColor: const Color(0xFF0288D1),
     );
   }
 
@@ -652,60 +624,20 @@ class _MessagesScreenState extends State<MessagesScreen>
   }
 
   Widget _buildEmptyChildrenList() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF0288D1).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.child_care,
-                size: 36,
-                color: Color(0xFF0288D1),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Aucun enfant',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimaryThemed(context),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Ajoutez un enfant pour commencer à envoyer des messages',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondaryThemed(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            CustomButton(
-              width: 220,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AddChildScreen()),
-                );
-              },
-              text: 'Ajouter un enfant',
-              icon: Icons.add_circle_outline_rounded,
-              backgroundColor: const Color(0xFF0288D1),
-              textColor: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      title: 'Aucun enfant',
+      message: 'Ajoutez un enfant pour commencer à envoyer des messages',
+      icon: Icons.child_care,
+      iconColor: const Color(0xFF0288D1),
+      buttonColor: const Color(0xFF0288D1),
+      buttonIsLight: false,
+      buttonWidth: 220,
+      retryText: 'Ajouter un enfant',
+      onRetry: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AddChildScreen()),
+        );
+      },
     );
   }
 

@@ -7,6 +7,7 @@ import '../services/referral_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/components/custom_error_state.dart';
 
 class ReferredUsersScreen extends StatefulWidget {
   const ReferredUsersScreen({super.key});
@@ -89,42 +90,11 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
   Widget _buildEmptyState() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.screenOrange.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.group_add_rounded,
-              size: 64,
-              color: AppColors.screenOrange,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Aucun utilisateur parrainé',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimaryThemed(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Vous n\'avez pas encore parrainé d\'utilisateurs. Partagez votre code pour commencer à gagner des points !',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: AppColors.screenTextSecondaryThemed(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+      child: CustomErrorState(
+        title: 'Aucun utilisateur parrainé',
+        message: 'Vous n\'avez pas encore parrainé d\'utilisateurs. Partagez votre code pour commencer à gagner des points !',
+        icon: Icons.group_add_rounded,
+        iconColor: AppColors.screenOrange,
       ),
     );
   }

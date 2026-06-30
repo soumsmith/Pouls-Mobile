@@ -6,6 +6,7 @@ import 'package:syncfusion_flutter_core/theme.dart';
 import '../config/app_colors.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/custom_loader.dart';
+import '../widgets/components/custom_error_state.dart';
 
 class PDFViewerScreen extends StatefulWidget {
   final String pdfUrl;
@@ -190,73 +191,12 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
   }
 
   Widget _buildErrorState() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.red[100],
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.error_outline,
-                        size: 40,
-                        color: Colors.red[600],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur de chargement',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.screenTextPrimaryThemed(context),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      errorMessage ?? 'Impossible de charger le fichier PDF',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.screenTextSecondaryThemed(context),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.screenOrange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Retour'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return CustomErrorState(
+      title: 'Erreur de chargement',
+      message: errorMessage ?? 'Impossible de charger le fichier PDF',
+      onRetry: () => Navigator.of(context).pop(),
+      buttonIsLight: true,
+      buttonWidth: 200,
     );
   }
 }

@@ -343,38 +343,40 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
   }
 
   Widget _buildActionBar() {
-    final itemWidth = (MediaQuery.of(context).size.width - 40 - 12) / 3;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
+      child: Row(
         children: [
-          CustomButton(
-            width: itemWidth,
-            icon: Icons.share_rounded,
-            text: 'Partager',
-            color: _C.indigo,
-            isLight: true,
-            onPressed: _showShareMenu,
+          Expanded(
+            child: CustomButton(
+              icon: Icons.share_rounded,
+              text: 'Partager',
+              color: _C.indigo,
+              isLight: true,
+              onPressed: _showShareMenu,
+            ),
           ),
-          CustomButton(
-            width: itemWidth,
-            icon: _isBookmarked
-                ? Icons.favorite_rounded
-                : Icons.favorite_border_rounded,
-            text: _isBookmarked ? 'Aimé' : 'J\'aime',
-            color: _C.amber,
-            isLight: true,
-            onPressed: _toggleBookmark,
+          const SizedBox(width: 12),
+          Expanded(
+            child: CustomButton(
+              icon: _isBookmarked
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
+              text: _isBookmarked ? 'Aimé' : 'J\'aime',
+              color: _C.amber,
+              isLight: true,
+              onPressed: _toggleBookmark,
+            ),
           ),
-          CustomButton(
-            width: itemWidth,
-            icon: Icons.chat_bubble_outline_rounded,
-            text: 'Avis',
-            color: _C.emerald,
-            isLight: true,
-            onPressed: _scrollToComments,
+          const SizedBox(width: 12),
+          Expanded(
+            child: CustomButton(
+              icon: Icons.chat_bubble_outline_rounded,
+              text: 'Avis',
+              color: _C.emerald,
+              isLight: true,
+              onPressed: _scrollToComments,
+            ),
           ),
         ],
       ),

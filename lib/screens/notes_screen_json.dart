@@ -11,6 +11,8 @@ import '../widgets/subtle_retry_button.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
+import '../widgets/bottom_fade_gradient.dart';
+import '../widgets/components/custom_error_state.dart';
 
 class NotesScreenJson extends StatefulWidget {
   final String matricule;
@@ -1987,54 +1989,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   // ─── EMPTY STATE ──────────────────────────────────────────────────────────
   Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      decoration: BoxDecoration(
-        color: AppColors.screenCard,
-        borderRadius: BorderRadius.circular(20),
-        // boxShadow: const [
-        //   BoxShadow(
-        //     color: AppColors.screenShadow,
-        //     blurRadius: 12,
-        //     offset: Offset(0, 4),
-        //   ),
-        // ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: const BoxDecoration(
-              color: AppColors.screenOrangeLight,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.assignment_outlined,
-              size: 40,
-              color: AppColors.screenOrange,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Aucune note disponible',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimaryThemed(context),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Modifiez les filtres pour afficher des résultats',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondaryThemed(context),
-            ),
-          ),
-        ],
-      ),
+    return CustomErrorState(
+      title: 'Aucune note disponible',
+      message: 'Modifiez les filtres pour afficher des résultats',
+      icon: Icons.assignment_outlined,
+      iconColor: AppColors.screenOrange,
     );
   }
 

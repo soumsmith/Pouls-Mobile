@@ -7,6 +7,7 @@ import '../../models/student_scolarite.dart';
 import '../../services/theme_service.dart';
 import '../../services/text_size_service.dart';
 import '../../config/app_colors.dart';
+import '../components/custom_error_state.dart';
 
 /// Bottom sheet réutilisable pour afficher la scolarité d'un élève
 class ScolariteBottomSheet extends StatefulWidget {
@@ -60,44 +61,12 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
     }
 
     if (widget.errorMessage != null) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? Colors.grey[900]
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 48,
-              color: Colors.red[400],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.red[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.errorMessage!,
-              style: TextStyle(
-                fontSize: 14,
-                color: _themeService.isDarkMode
-                    ? Colors.grey[400]
-                    : Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Erreur de chargement',
+        message: widget.errorMessage!,
+        onRetry: widget.onRefresh ?? () {},
+        buttonIsLight: true,
+        buttonWidth: 200,
       );
     }
 

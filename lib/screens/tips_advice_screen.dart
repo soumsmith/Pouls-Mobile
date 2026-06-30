@@ -8,6 +8,7 @@ import 'tips_advice_detail_screen.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../config/app_dimensions.dart';
@@ -253,46 +254,24 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     }
     
     if (_error != null) {
+      final isNetworkError = _error!.contains('SocketException') || 
+                             _error!.contains('ClientException') ||
+                             _error!.contains('Failed host lookup') ||
+                             _error!.contains('Connection refused');
+                             
+      final errorMessage = isNetworkError 
+          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+          : 'Une erreur inattendue est survenue lors du chargement des astuces.';
+
       return [
         SliverFillRemaining(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: 48,
-                  color: Colors.red[300],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Une erreur est survenue',
-                  style: TextStyle(
-                    color: AppColors.screenTextPrimaryThemed(context),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _error!,
-                  style: TextStyle(
-                    color: AppColors.screenTextSecondaryThemed(context),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _loadAstuces,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Réessayer'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
+          hasScrollBody: false,
+          child: CustomErrorState(
+            title: isNetworkError ? 'Erreur de connexion' : 'Une erreur est survenue',
+            message: errorMessage,
+            onRetry: _loadAstuces,
+            buttonIsLight: true,
+            buttonWidth: 200,
           ),
         ),
       ];

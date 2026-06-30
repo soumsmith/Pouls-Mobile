@@ -17,6 +17,7 @@ import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/components/custom_error_state.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -256,68 +257,17 @@ class _CartScreenState extends State<CartScreen>
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.shopBlueSurface,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.shopping_bag_outlined,
-                size: 48,
-                color: AppColors.shopBlue,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Votre panier est vide',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimaryThemed(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Ajoutez des produits pour commencer vos achats',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.screenTextSecondaryThemed(context),
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.screenCardThemed(context),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.screenDividerThemed(context),
-                    width: 1,
-                  ),
-                  boxShadow: AppDimensions.getSettingsCardShadow(context),
-                ),
-                child: Text(
-                  'Continuer les achats',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.screenTextSecondaryThemed(context),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+      body: CustomErrorState(
+        title: 'Votre panier est vide',
+        message: 'Ajoutez des produits pour commencer vos achats',
+        icon: Icons.shopping_bag_outlined,
+        iconColor: AppColors.shopBlue,
+        buttonColor: AppColors.screenCardThemed(context),
+        buttonIsLight: true, // Pour avoir le style du bouton Continuer
+        buttonHasBorder: true,
+        buttonBorderColor: AppColors.screenDividerThemed(context),
+        retryText: 'Continuer les achats',
+        onRetry: () => Navigator.pop(context),
       ),
     );
   }

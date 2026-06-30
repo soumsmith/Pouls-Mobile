@@ -4,6 +4,7 @@ import '../config/app_dimensions.dart';
 import '../models/paiement_historique.dart';
 import '../services/paiement_historique_service.dart';
 import 'bottom_sheets/reusable_bottom_sheet.dart';
+import 'components/custom_error_state.dart';
 
 class PaiementHistoriqueBottomSheet {
   static void show({
@@ -131,120 +132,40 @@ class _PaiementHistoriqueSheetContentState
         }
 
         if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Erreur de chargement',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Builder(
-                    builder: (context) {
-                      final errorString = snapshot.error.toString();
-                      final isNetworkError =
-                          errorString.contains('SocketException') ||
-                          errorString.contains('ClientException') ||
-                          errorString.contains('Failed host lookup') ||
-                          errorString.contains('No address associated') ||
-                          errorString.contains('Connection refused') ||
-                          errorString.contains('Network is unreachable') ||
-                          errorString.contains(
-                            'Software caused connection abort',
-                          );
-                      final displayError = isNetworkError
-                          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
-                          : errorString.replaceAll('Exception: ', '');
-                      return Text(
-                        displayError,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                        textAlign: TextAlign.center,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.screenOrange,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    onPressed: _retry,
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text(
-                      'Réessayer',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          final errorString = snapshot.error.toString();
+          final isNetworkError =
+              errorString.contains('SocketException') ||
+              errorString.contains('ClientException') ||
+              errorString.contains('Failed host lookup') ||
+              errorString.contains('No address associated') ||
+              errorString.contains('Connection refused') ||
+              errorString.contains('Network is unreachable') ||
+              errorString.contains(
+                'Software caused connection abort',
+              );
+          final displayError = isNetworkError
+              ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+              : errorString.replaceAll('Exception: ', '');
+
+          return CustomErrorState(
+            title: 'Erreur de chargement',
+            message: displayError,
+            icon: Icons.error_outline_rounded,
+            iconColor: Colors.red,
+            buttonColor: AppColors.screenOrange,
+            buttonIsLight: false,
+            buttonHasBorder: false,
+            retryText: 'Réessayer',
+            onRetry: _retry,
           );
         }
 
         if (!snapshot.hasData || snapshot.data!.data.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.screenOrange.withOpacity(0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.receipt_long_rounded,
-                      size: 48,
-                      color: AppColors.screenOrange,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Aucun paiement trouvé',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cet élève n\'a aucun paiement enregistré pour le moment.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+          return const CustomErrorState(
+            title: 'Aucun paiement trouvé',
+            message: 'Cet élève n\'a aucun paiement enregistré pour le moment.',
+            icon: Icons.receipt_long_rounded,
+            iconColor: AppColors.screenOrange,
           );
         }
 

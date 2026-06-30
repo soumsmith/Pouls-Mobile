@@ -4,6 +4,8 @@ import '../models/place_reservation.dart';
 import '../services/place_reservation_service.dart';
 import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
+import '../models/place_reservation.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/main_screen_wrapper.dart';
@@ -1552,45 +1554,11 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
   Widget _buildEmptyState() {
     final isDark = _themeService.isDarkMode;
     
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: isDark 
-                  ? AppColors.primary.withOpacity(0.15)
-                  : AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Icon(
-              Icons.event_seat,
-              size: 40,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Aucune réservation',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(18),
-              fontWeight: FontWeight.w600,
-              color: AppColors.getTextColor(isDark, type: TextType.secondary),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Commencez par créer votre première réservation',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              color: AppColors.getTextColor(isDark, type: TextType.secondary).withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return CustomErrorState(
+      title: 'Aucune réservation',
+      message: 'Commencez par créer votre première réservation',
+      icon: Icons.event_seat,
+      iconColor: AppColors.primary,
     );
   }
 

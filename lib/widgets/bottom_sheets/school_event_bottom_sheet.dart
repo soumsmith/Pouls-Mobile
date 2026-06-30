@@ -6,6 +6,7 @@ import 'package:parents_responsable/screens/event_detail_screen.dart'; // Import
 import 'package:parents_responsable/services/event_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
+import 'package:parents_responsable/widgets/components/custom_error_state.dart';
 import 'reusable_bottom_sheet.dart';
 
 class SchoolEventBottomSheet extends StatefulWidget {
@@ -349,30 +350,20 @@ class _SchoolEventBottomSheetState extends State<SchoolEventBottomSheet> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          Icon(Icons.event_busy_rounded, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          const Text('Aucun événement', style: TextStyle(fontWeight: FontWeight.bold)),
-          const Text('Revenez plus tard pour les nouveautés.', textAlign: TextAlign.center),
-        ],
-      ),
+    return const CustomErrorState(
+      title: 'Aucun événement',
+      message: 'Revenez plus tard pour les nouveautés.',
+      icon: Icons.event_busy_rounded,
     );
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          const Text('Erreur de chargement'),
-          TextButton(onPressed: _loadInitialEvents, child: const Text('Réessayer')),
-        ],
-      ),
+    return CustomErrorState(
+      title: 'Erreur de chargement',
+      message: _eventsError ?? 'Une erreur est survenue',
+      onRetry: _loadInitialEvents,
+      buttonIsLight: true,
+      buttonWidth: 200,
     );
   }
 }

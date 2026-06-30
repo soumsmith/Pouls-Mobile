@@ -52,6 +52,7 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/bottom_sheets/child_kits_bottom_sheet.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../services/school_supply_service.dart';
@@ -1627,42 +1628,11 @@ class _ChildListScreenState extends State<ChildListScreen>
           }
 
           if (supplies.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      size: 48,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Aucune fourniture trouvée',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _themeService.isDarkMode
-                            ? Colors.white70
-                            : Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Les fournitures scolaires seront affichées ici une fois disponibles.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _themeService.isDarkMode
-                            ? Colors.white54
-                            : Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return const CustomErrorState(
+              title: 'Aucune fourniture trouvée',
+              message: 'Les fournitures scolaires seront affichées ici une fois disponibles.',
+              icon: Icons.inventory_2_outlined,
+              iconColor: Color(0xFF795548),
             );
           }
 
@@ -5329,58 +5299,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_timetableHasError) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.wifi_off_rounded, size: 48, color: Colors.orange[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Impossible de récupérer l\'emploi du temps. Veuillez réessayer.',
-              style: TextStyle(
-                fontSize: 13,
-                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: () => _loadTimetableData(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF57C00),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Réessayer',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Erreur de chargement',
+        message: 'Impossible de récupérer l\'emploi du temps. Veuillez réessayer.',
+        icon: Icons.wifi_off_rounded,
+        iconColor: Colors.orange[400],
+        buttonColor: const Color(0xFFF57C00),
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Réessayer',
+        onRetry: () => _loadTimetableData(),
       );
     }
 
@@ -5388,84 +5316,24 @@ class _ChildListScreenState extends State<ChildListScreen>
       // Vérifier si le matricule est disponible
       final matricule = widget.child.matricule;
       if (matricule == null || matricule.isEmpty) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Colors.red[400],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Matricule non disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _themeService.isDarkMode
-                      ? Colors.grey[400]
-                      : Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        return const CustomErrorState(
+          title: 'Matricule non disponible',
+          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          icon: Icons.error_outline_rounded,
+          iconColor: Color(0xFFEF4444),
         );
       }
 
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _themeService.isDarkMode
-                ? Colors.grey[700]!
-                : Colors.grey[200]!,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.schedule_outlined, size: 48, color: Colors.orange[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Aucun emploi du temps disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadTimetableData(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Actualiser'),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Aucun emploi du temps disponible',
+        message: 'L\'emploi du temps n\'est pas encore disponible pour cet élève.',
+        icon: Icons.schedule_outlined,
+        iconColor: Colors.orange[400],
+        buttonColor: Colors.orange,
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Actualiser',
+        onRetry: () => _loadTimetableData(),
       );
     }
 
@@ -5479,23 +5347,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         .toList();
 
     if (availableDays.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(Icons.schedule_outlined, size: 48, color: Colors.orange[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Aucun cours programmé',
-              style: TextStyle(
-                fontSize: 16,
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Aucun cours programmé',
+        message: 'Il n\'y a aucun cours programmé pour le moment.',
+        icon: Icons.schedule_outlined,
+        iconColor: Colors.orange[400],
       );
     }
 
@@ -5701,76 +5557,24 @@ class _ChildListScreenState extends State<ChildListScreen>
       // Vérifier si le matricule est disponible
       final matricule = widget.child.matricule;
       if (matricule == null || matricule.isEmpty) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Colors.red[400],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Matricule non disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _themeService.isDarkMode
-                      ? Colors.grey[400]
-                      : Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        return const CustomErrorState(
+          title: 'Matricule non disponible',
+          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          icon: Icons.error_outline_rounded,
+          iconColor: Color(0xFFEF4444),
         );
       }
 
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.fingerprint, size: 48, color: Colors.purple[400]),
-              const SizedBox(height: 12),
-              Text(
-                'Aucun pointage disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _themeService.isDarkMode
-                      ? Colors.white70
-                      : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => _loadAccessControlData(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Actualiser'),
-              ),
-            ],
-          ),
-        ),
+      return CustomErrorState(
+        title: 'Aucun pointage disponible',
+        message: 'Aucun pointage n\'a été trouvé pour cet élève.',
+        icon: Icons.fingerprint,
+        iconColor: Colors.purple[400],
+        buttonColor: Colors.purple,
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Actualiser',
+        onRetry: () => _loadAccessControlData(),
       );
     }
 
@@ -5960,43 +5764,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_suggestions.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _themeService.isDarkMode
-                ? Colors.grey[700]!
-                : Colors.grey[200]!,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.lightbulb_outline, size: 48, color: Colors.purple[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Aucune suggestion disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadSuggestionsData(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Actualiser'),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Aucune suggestion disponible',
+        message: 'Aucune suggestion n\'a été soumise pour le moment.',
+        icon: Icons.lightbulb_outline,
+        iconColor: Colors.purple[400],
+        buttonColor: Colors.purple,
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Actualiser',
+        onRetry: () => _loadSuggestionsData(),
       );
     }
 
@@ -6367,43 +6144,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_accessLogs.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _themeService.isDarkMode
-                ? Colors.grey[700]!
-                : Colors.grey[200]!,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.history, size: 48, color: Colors.teal[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Aucun log d\'accès disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadAccessLogsData(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Actualiser'),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Aucun log d\'accès disponible',
+        message: 'Aucun log d\'accès n\'a été trouvé pour cet élève.',
+        icon: Icons.history,
+        iconColor: Colors.teal[400],
+        buttonColor: Colors.teal,
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Actualiser',
+        onRetry: () => _loadAccessLogsData(),
       );
     }
 
@@ -6806,35 +6556,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_reservations.isEmpty) {
-      return SizedBox(
-        height: MediaQuery.of(context).size.height * 0.5,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.event_seat, size: 48, color: Colors.indigo[400]),
-              const SizedBox(height: 12),
-              Text(
-                'Aucune réservation disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _themeService.isDarkMode
-                      ? Colors.white70
-                      : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => _loadReservationsData(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Actualiser'),
-              ),
-            ],
-          ),
-        ),
+      return CustomErrorState(
+        title: 'Aucune réservation disponible',
+        message: 'Aucune réservation n\'a été trouvée pour cet élève.',
+        icon: Icons.event_seat,
+        iconColor: Colors.indigo[400],
+        buttonColor: Colors.indigo,
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Actualiser',
+        onRetry: () => _loadReservationsData(),
       );
     }
 
@@ -7269,84 +7000,24 @@ class _ChildListScreenState extends State<ChildListScreen>
       // Vérifier si le matricule est disponible
       final matricule = widget.child.matricule;
       if (matricule == null || matricule.isEmpty) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Colors.red[400],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Matricule non disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _themeService.isDarkMode
-                      ? Colors.grey[400]
-                      : Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        return const CustomErrorState(
+          title: 'Matricule non disponible',
+          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          icon: Icons.error_outline_rounded,
+          iconColor: Color(0xFFEF4444),
         );
       }
 
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _themeService.isDarkMode
-                ? Colors.grey[700]!
-                : Colors.grey[200]!,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.mail_outline, size: 48, color: Colors.blue[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Aucun message disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: _themeService.isDarkMode
-                    ? Colors.white70
-                    : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadMessagesData(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Actualiser'),
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Aucun message disponible',
+        message: 'Aucun message n\'a été reçu pour cet élève.',
+        icon: Icons.mail_outline,
+        iconColor: Colors.blue[400],
+        buttonColor: Colors.blue,
+        buttonIsLight: false,
+        buttonHasBorder: false,
+        retryText: 'Actualiser',
+        onRetry: () => _loadMessagesData(),
       );
     }
 
@@ -9069,71 +8740,32 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Widget _buildBulletinsEmptyState() {
-    final isDarkMode = _themeService.isDarkMode;
-
     // Check if it's likely a network error based on the empty state with no years loaded
     final isNetworkError = _bulletinsSchoolYears.isEmpty;
 
-    return Container(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? (isNetworkError
-                        ? const Color(0xFF8B0000)
-                        : const Color(0xFF8B4513))
-                  : (isNetworkError
-                        ? Colors.red[100]
-                        : AppColors.screenOrangeLight),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isNetworkError
-                  ? Icons.wifi_off_rounded
-                  : Icons.description_outlined,
-              size: 40,
-              color: isNetworkError ? Colors.red : AppColors.screenOrange,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isNetworkError
-                ? 'Erreur de connexion'
-                : 'Aucun bulletin disponible',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.white : Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isNetworkError
-                ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
-                : 'Les bulletins ne sont pas encore disponibles pour cette période scolaire.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 24),
-          SubtleRetryButtonWithText(
-            onTap: () {
-              setState(() {
-                _bulletins = null;
-              });
-              _loadBulletins();
-              _loadBulletinsSchoolYears();
-            },
-            color: isNetworkError ? Colors.red : AppColors.screenOrange,
-          ),
-        ],
-      ),
+    return CustomErrorState(
+      title: isNetworkError
+          ? 'Erreur de connexion'
+          : 'Aucun bulletin disponible',
+      message: isNetworkError
+          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+          : 'Les bulletins ne sont pas encore disponibles pour cette période scolaire.',
+      icon: isNetworkError
+          ? Icons.wifi_off_rounded
+          : Icons.description_outlined,
+      iconColor: isNetworkError ? Colors.red : AppColors.screenOrange,
+      buttonColor: isNetworkError ? Colors.red : AppColors.screenOrange,
+      buttonIsLight: true,
+      buttonHasBorder: true,
+      buttonBorderColor: isNetworkError ? Colors.red : AppColors.screenOrange,
+      retryText: 'Réessayer',
+      onRetry: () {
+        setState(() {
+          _bulletins = null;
+        });
+        _loadBulletins();
+        _loadBulletinsSchoolYears();
+      },
     );
   }
 
@@ -9812,43 +9444,12 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_schoolSupplies.isEmpty) {
-      return Expanded(
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.inventory_2_outlined,
-                  size: 48,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Aucune fourniture trouvée',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: _themeService.isDarkMode
-                        ? Colors.white70
-                        : Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Les fournitures scolaires seront affichées ici une fois disponibles.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _themeService.isDarkMode
-                        ? Colors.white54
-                        : Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          ),
+      return const Expanded(
+        child: CustomErrorState(
+          title: 'Aucune fourniture trouvée',
+          message: 'Les fournitures scolaires seront affichées ici une fois disponibles.',
+          icon: Icons.inventory_2_outlined,
+          iconColor: Color(0xFF795548),
         ),
       );
     }
@@ -10250,40 +9851,11 @@ class _ChildListScreenState extends State<ChildListScreen>
         Widget content;
 
         if (orders.isEmpty) {
-          content = Container(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.shopping_cart_outlined,
-                  size: 64,
-                  color: _themeService.isDarkMode
-                      ? Colors.grey[600]
-                      : Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Aucune commande trouvée',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(16),
-                    color: _themeService.isDarkMode
-                        ? Colors.grey[400]
-                        : Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Vos commandes apparaîtront ici',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    color: _themeService.isDarkMode
-                        ? Colors.grey[500]
-                        : Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
+          content = const CustomErrorState(
+            title: 'Aucune commande trouvée',
+            message: 'Vos commandes apparaîtront ici.',
+            icon: Icons.shopping_cart_outlined,
+            iconColor: AppColors.screenOrange,
           );
         } else {
           content = Column(
@@ -10390,40 +9962,11 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_orders.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            Icon(
-              Icons.shopping_cart_outlined,
-              size: 64,
-              color: _themeService.isDarkMode
-                  ? Colors.grey[600]
-                  : Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Aucune commande trouvée',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(16),
-                color: _themeService.isDarkMode
-                    ? Colors.grey[400]
-                    : Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Vos commandes apparaîtront ici',
-              style: TextStyle(
-                fontSize: _textSizeService.getScaledFontSize(14),
-                color: _themeService.isDarkMode
-                    ? Colors.grey[500]
-                    : Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
+      return const CustomErrorState(
+        title: 'Aucune commande trouvée',
+        message: 'Vos commandes apparaîtront ici.',
+        icon: Icons.shopping_cart_outlined,
+        iconColor: AppColors.screenOrange,
       );
     }
 
@@ -11315,37 +10858,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-                Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        size: 48,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Impossible de charger les statistiques',
-                        style: TextStyle(
-                          fontSize: _textSizeService.getScaledFontSize(14),
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () => _loadStatistiquesPresence(
-                          _presenceStatsModalSetState,
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1565C0),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Réessayer'),
-                      ),
-                    ],
+                CustomErrorState(
+                  title: 'Impossible de charger les statistiques',
+                  message: 'Une erreur est survenue lors du chargement des données.',
+                  icon: Icons.error_outline_rounded,
+                  iconColor: Colors.grey[400],
+                  buttonColor: const Color(0xFF1565C0),
+                  buttonIsLight: false,
+                  buttonHasBorder: false,
+                  retryText: 'Réessayer',
+                  onRetry: () => _loadStatistiquesPresence(
+                    _presenceStatsModalSetState,
                   ),
                 ),
               ],
@@ -11592,35 +11115,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
         // Message si aucune donnée
         if (!_isLoadingPresence && _presenceEntries.isEmpty)
-          Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF1E1E2A) : Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
-              ),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 48,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Aucune donnée de présence disponible',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white70 : Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+          const CustomErrorState(
+            title: 'Aucune donnée de présence disponible',
+            message: 'Les données de présence seront affichées ici une fois disponibles.',
+            icon: Icons.info_outline_rounded,
+            iconColor: Color(0xFF1565C0),
           ),
 
         const BottomSpacer(),
@@ -12398,78 +11897,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
         // Liste des messages
         if (_notifications.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [
-                        Colors.grey[800]!.withOpacity(0.5),
-                        Colors.grey[900]!.withOpacity(0.3),
-                      ]
-                    : [
-                        Colors.grey[50] ?? const Color(0xFFFAFAFA),
-                        Colors.grey[100] ?? const Color(0xFFF5F5F5),
-                      ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? Colors.grey[700]! : const Color(0xFFE5E5E5),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [
-                              Colors.grey[700]!.withOpacity(0.3),
-                              Colors.grey[600]!.withOpacity(0.2),
-                            ]
-                          : [
-                              Colors.grey[300] ?? const Color(0xFFE0E0E0),
-                              Colors.grey[200] ?? const Color(0xFFEEEEEE),
-                            ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.message_outlined,
-                    size: 32,
-                    color: isDark ? Colors.grey[500] : Colors.grey[400],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Aucun message',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(15),
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.grey[400] : const Color(0xFF4A4A4A),
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Vous n\'avez pas encore reçu de messages',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(13),
-                    color: isDark ? Colors.grey[500] : Colors.grey[500],
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+          const CustomErrorState(
+            title: 'Aucun message',
+            message: 'Vous n\'avez pas encore reçu de messages.',
+            icon: Icons.message_outlined,
+            iconColor: Color(0xFF9E9E9E),
           )
         else
           ..._notifications.map(
@@ -12772,49 +12204,11 @@ class _ExtraScolaireSheetContentState
   }
 
   Widget _buildEmptyServicesState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                color: widget.isDark
-                    ? const Color(0xFF1E0A2E)
-                    : const Color(0xFFF3E5F5),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.assignment_late_outlined,
-                size: 42,
-                color: Color(0xFF7B1FA2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Aucun abonnement actif',
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(18),
-                fontWeight: FontWeight.bold,
-                color: widget.isDark ? Colors.white : const Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Votre enfant n\'est abonné à aucun service extra-scolaire (Cantine, Transport, etc.) pour l\'année scolaire courante.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(13),
-                color: AppColors.screenTextSecondary,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return const CustomErrorState(
+      title: 'Aucun abonnement actif',
+      message: 'Votre enfant n\'est abonné à aucun service extra-scolaire (Cantine, Transport, etc.) pour l\'année scolaire courante.',
+      icon: Icons.assignment_late_outlined,
+      iconColor: Color(0xFF7B1FA2),
     );
   }
 
@@ -13233,39 +12627,11 @@ class _ExtraScolaireSheetContentState
   }
 
   Widget _buildEmptyActivitiesState(String serviceTitle) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.notifications_none_rounded,
-              size: 38,
-              color: widget.isDark ? Colors.grey[600] : Colors.grey[400],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Aucune activité aujourd\'hui',
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(14),
-                fontWeight: FontWeight.bold,
-                color: widget.isDark ? Colors.grey[400] : Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Les données quotidiennes pour le service ${serviceTitle} s\'afficheront ici dès qu\'une activité sera enregistrée.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: widget.textSizeService.getScaledFontSize(12),
-                color: Colors.grey,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      title: 'Aucune activité aujourd\'hui',
+      message: 'Les données quotidiennes pour le service $serviceTitle s\'afficheront ici dès qu\'une activité sera enregistrée.',
+      icon: Icons.notifications_none_rounded,
+      iconColor: Colors.grey[400],
     );
   }
 

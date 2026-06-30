@@ -3,6 +3,7 @@ import '../config/app_colors.dart';
 import 'custom_loader.dart';
 import 'components/custom_text_input.dart';
 import 'components/custom_button.dart';
+import 'components/custom_error_state.dart';
 import 'bottom_sheets/reusable_bottom_sheet.dart';
 
 class PaymentBottomSheet extends StatefulWidget {
@@ -309,60 +310,22 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
         ),
       );
     } else if (isClosed) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isBefore
-                    ? Colors.orange.withOpacity(0.1)
-                    : Colors.red.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isBefore
-                    ? Icons.hourglass_empty_rounded
-                    : Icons.event_busy_rounded,
-                size: 48,
-                color: isBefore ? Colors.orange[400] : Colors.red[400],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              isBefore
-                  ? 'Réservation non commencée'
-                  : 'Période de réservation terminée',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isBefore
-                  ? 'La période de réservation pour cette école commencera le ${_formatDate(_debutReservation)}.'
-                  : 'La période de réservation pour cette école s\'est terminée le ${_formatDate(_finReservation)}. Les paiements ne sont plus autorisés.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: isDark ? Colors.white70 : Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 32),
-            CustomButton(
-              text: 'Fermer',
-              onPressed: () => Navigator.of(context).pop(),
-              color: isDark ? Colors.white60 : Colors.grey[700]!,
-              isLight: true,
-              height: 48,
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: isBefore
+            ? 'Réservation non commencée'
+            : 'Période de réservation terminée',
+        message: isBefore
+            ? 'La période de réservation pour cette école commencera le ${_formatDate(_debutReservation)}.'
+            : 'La période de réservation pour cette école s\'est terminée le ${_formatDate(_finReservation)}. Les paiements ne sont plus autorisés.',
+        icon: isBefore
+            ? Icons.hourglass_empty_rounded
+            : Icons.event_busy_rounded,
+        iconColor: isBefore ? Colors.orange[400] : Colors.red[400],
+        buttonColor: isDark ? Colors.white60 : Colors.grey[700]!,
+        buttonIsLight: true,
+        buttonHasBorder: true,
+        retryText: 'Fermer',
+        onRetry: () => Navigator.of(context).pop(),
       );
     } else {
       return Padding(

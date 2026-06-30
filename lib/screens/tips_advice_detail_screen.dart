@@ -12,6 +12,7 @@ import '../widgets/components/bottom_spacer.dart';
 import '../utils/image_helper.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/share_bottom_sheet.dart';
+import '../widgets/image_menu_card_external_title.dart';
 import '../config/app_config.dart';
 import '../services/astuce_conseil_service.dart';
 import '../services/auth_service.dart';
@@ -288,8 +289,6 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           onTap: _toggleBookmark,
           scaleAnim: _bookmarkAnim,
         ),
-        const SizedBox(width: 4),
-        _NavIconBtn(icon: Icons.share_rounded, onTap: _showShareMenu),
         const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -345,41 +344,33 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
   Widget _buildActionBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
+      child: Wrap(
+        spacing: 24,
+        runSpacing: 16,
         children: [
-          Expanded(
-            child: CustomButton(
-              icon: Icons.share_rounded,
-              text: 'Partager',
-              color: _C.indigo,
-              isLight: true,
-              onPressed: _showShareMenu,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: CustomButton(
-              icon: _isBookmarked
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              text: _isBookmarked ? 'Aimé' : 'J\'aime',
-              color: _C.amber,
-              isLight: true,
-              onPressed: _toggleBookmark,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: CustomButton(
-              icon: Icons.chat_bubble_outline_rounded,
-              text: 'Avis',
-              color: _C.emerald,
-              isLight: true,
-              onPressed: _scrollToComments,
-            ),
-          ),
+          _buildActionItem(0, 'action_share', 'Partager', _C.indigo, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
+          _buildActionItem(1, 'action_comment', 'Avis', _C.emerald, _scrollToComments, imagePath: 'assets/images/icons/comment.png'),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionItem(int index, String key, String title, Color color, VoidCallback onTap, {IconData? icon, String? imagePath}) {
+    final size = AppDimensions.getSquareCardWidthSize(context);
+    return ImageMenuCardExternalTitle(
+      index: index,
+      cardKey: key,
+      width: size,
+      title: title,
+      iconData: icon,
+      imagePath: imagePath,
+      color: color,
+      imageHeight: size,
+      imageBorderRadius: size / 2,
+      centerTitle: true,
+      allowLineBreak: true,
+      titleMaxLines: 2,
+      onTap: onTap,
     );
   }
 

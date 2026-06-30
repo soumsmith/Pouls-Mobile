@@ -313,43 +313,36 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   // ── Action Bar (icônes) ─────────────────────
   Widget _buildActionBar() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        spacing: 24,
+        runSpacing: 16,
         children: [
-          Expanded(
-            child: CustomButton(
-              icon: Icons.rate_review_rounded,
-              text: 'Avis',
-              color: _AppColors.rose,
-              isLight: true,
-              onPressed: _showAddCommentDialog,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: CustomButton(
-              icon: Icons.share_rounded,
-              text: 'Partager',
-              color: _AppColors.indigo,
-              isLight: true,
-              onPressed: _showShareMenu,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: CustomButton(
-              icon: Icons.account_balance_rounded,
-              text: 'École',
-              color: _AppColors.amber,
-              isLight: true,
-              onPressed: _visitSchool,
-            ),
-          ),
+          _buildActionItem(0, 'action_review', 'Avis', _AppColors.rose, _showAddCommentDialog, imagePath: 'assets/images/icons/comment.png'),
+          _buildActionItem(1, 'action_share', 'Partager', _AppColors.indigo, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
+          _buildActionItem(2, 'action_school', 'École', _AppColors.amber, _visitSchool, imagePath: 'assets/images/icons/ecole.png'),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionItem(int index, String key, String title, Color color, VoidCallback onTap, {IconData? icon, String? imagePath}) {
+    final size = AppDimensions.getSquareCardWidthSize(context);
+    return ImageMenuCardExternalTitle(
+      index: index,
+      cardKey: key,
+      width: size,
+      title: title,
+      iconData: icon,
+      imagePath: imagePath,
+      color: color,
+      imageHeight: size,
+      imageBorderRadius: size / 2,
+      centerTitle: true,
+      allowLineBreak: true,
+      titleMaxLines: 2,
+      onTap: onTap,
     );
   }
 

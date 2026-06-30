@@ -250,7 +250,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _ecolesPerPage = AppDimensions.getEcolesPerPage(context);
   }
 
   @override

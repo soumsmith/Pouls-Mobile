@@ -284,8 +284,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           onTap: _toggleBookmark,
           scaleAnim: _bookmarkAnim,
         ),
-        const SizedBox(width: 4),
-        _NavIconBtn(icon: Icons.share_rounded, onTap: _showShareMenu),
+
         const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -348,49 +347,36 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
   // ── Action Bar ──────────────────────────────
   Widget _buildActionBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final itemWidth = (MediaQuery.of(context).size.width - 40 - 12) / 2;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
+        spacing: 24,
+        runSpacing: 16,
         children: [
-          CustomButton(
-            width: itemWidth,
-            icon: Icons.share_rounded,
-            text: 'Partager',
-            color: _C.indigo,
-            isLight: true,
-            onPressed: _showShareMenu,
-          ),
-          CustomButton(
-            width: itemWidth,
-            icon: _isBookmarked
-                ? Icons.bookmark_rounded
-                : Icons.bookmark_border_rounded,
-            text: _isBookmarked ? 'Enregistré' : 'Enregistrer',
-            color: _C.amber,
-            isLight: true,
-            onPressed: _toggleBookmark,
-          ),
-          CustomButton(
-            width: itemWidth,
-            icon: Icons.chat_bubble_outline_rounded,
-            text: 'Commenter',
-            color: _C.emerald,
-            isLight: true,
-            onPressed: _scrollToComments,
-          ),
-          CustomButton(
-            width: itemWidth,
-            icon: Icons.school_rounded,
-            text: 'École',
-            color: isDark ? const Color(0xFF333333) : _C.slate900,
-            isLight: true,
-            onPressed: _visitSchool,
-          ),
+          _buildActionItem(0, 'action_share', 'Partager', _C.indigo, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
+          _buildActionItem(1, 'action_comment', 'Commenter', _C.emerald, _scrollToComments, imagePath: 'assets/images/icons/comment.png'),
+          _buildActionItem(2, 'action_school', 'École', isDark ? const Color(0xFF888888) : _C.slate900, _visitSchool, imagePath: 'assets/images/icons/ecole.png'),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionItem(int index, String key, String title, Color color, VoidCallback onTap, {IconData? icon, String? imagePath}) {
+    final size = AppDimensions.getSquareCardWidthSize(context);
+    return ImageMenuCardExternalTitle(
+      index: index,
+      cardKey: key,
+      width: size,
+      title: title,
+      iconData: icon,
+      imagePath: imagePath,
+      color: color,
+      imageHeight: size,
+      imageBorderRadius: size / 2,
+      centerTitle: true,
+      allowLineBreak: true,
+      titleMaxLines: 2,
+      onTap: onTap,
     );
   }
 

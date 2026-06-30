@@ -785,7 +785,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                   if (r['title'] == 'Guide Complet') {
                     MainScreenWrapper.of(context).navigateToExtraScreen(
                       const PDFViewerScreen(
-                        pdfUrl: 'assets/document/guide-complet.pdf',
+                        pdfUrl:
+                            'https://groupegain.s3.eu-west-1.amazonaws.com/parent_respo/guide-complet-parent-respo.pdf',
                         title: 'Guide Complet',
                       ),
                     );
@@ -797,7 +798,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                             id: 1,
                             typeVideo: 'tutoriel',
                             youtubeUrl:
-                                'https://www.youtube.com/shorts/XTCDpCeOiHg', // URL générique
+                                'https://groupegain.s3.eu-west-1.amazonaws.com/parent_respo/parent_respo_video.mp4',
                             title: 'Tutoriel complet',
                             description:
                                 'Apprenez à utiliser l\'application étape par étape',

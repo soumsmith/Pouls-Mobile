@@ -22,47 +22,65 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
   bool isLoading = true;
   String? errorMessage;
   int totalPages = 0;
-  final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
+  GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
 
   // ValueNotifier pour le numéro de page → pas de setState → pas de rebuild du viewer
   late final ValueNotifier<int> _pageNotifier = ValueNotifier(0);
 
-  // Widget PDF construit une seule fois via late final → jamais rebuild → plus de clignotement
-  late final Widget _pdfWidget = widget.pdfUrl.startsWith('assets/')
-      ? SfPdfViewer.asset(
-          widget.pdfUrl,
-          key: _pdfViewerKey,
-          onDocumentLoaded: _onDocumentLoaded,
-          onDocumentLoadFailed: _onDocumentLoadFailed,
-          onPageChanged: _onPageChanged,
-          canShowScrollHead: true,
-          canShowScrollStatus: true,
-          enableDoubleTapZooming: true,
-          pageLayoutMode: PdfPageLayoutMode.continuous,
-        )
-      : widget.pdfUrl.startsWith('http')
-          ? SfPdfViewer.network(
-              widget.pdfUrl,
-              key: _pdfViewerKey,
-              onDocumentLoaded: _onDocumentLoaded,
-              onDocumentLoadFailed: _onDocumentLoadFailed,
-              onPageChanged: _onPageChanged,
-              canShowScrollHead: true,
-              canShowScrollStatus: true,
-              enableDoubleTapZooming: true,
-              pageLayoutMode: PdfPageLayoutMode.continuous,
-            )
-          : SfPdfViewer.file(
-              File(widget.pdfUrl),
-              key: _pdfViewerKey,
-              onDocumentLoaded: _onDocumentLoaded,
-              onDocumentLoadFailed: _onDocumentLoadFailed,
-              onPageChanged: _onPageChanged,
-              canShowScrollHead: true,
-              canShowScrollStatus: true,
-              enableDoubleTapZooming: true,
-              pageLayoutMode: PdfPageLayoutMode.continuous,
-            );
+  late Widget _pdfWidget;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPdfWidget();
+  }
+
+  void _initPdfWidget() {
+    _pdfViewerKey = GlobalKey();
+    _pdfWidget = widget.pdfUrl.startsWith('assets/')
+        ? SfPdfViewer.asset(
+            widget.pdfUrl,
+            key: _pdfViewerKey,
+            onDocumentLoaded: _onDocumentLoaded,
+            onDocumentLoadFailed: _onDocumentLoadFailed,
+            onPageChanged: _onPageChanged,
+            canShowScrollHead: true,
+            canShowScrollStatus: true,
+            enableDoubleTapZooming: true,
+            pageLayoutMode: PdfPageLayoutMode.continuous,
+          )
+        : widget.pdfUrl.startsWith('http')
+            ? SfPdfViewer.network(
+                widget.pdfUrl,
+                key: _pdfViewerKey,
+                onDocumentLoaded: _onDocumentLoaded,
+                onDocumentLoadFailed: _onDocumentLoadFailed,
+                onPageChanged: _onPageChanged,
+                canShowScrollHead: true,
+                canShowScrollStatus: true,
+                enableDoubleTapZooming: true,
+                pageLayoutMode: PdfPageLayoutMode.continuous,
+              )
+            : SfPdfViewer.file(
+                File(widget.pdfUrl),
+                key: _pdfViewerKey,
+                onDocumentLoaded: _onDocumentLoaded,
+                onDocumentLoadFailed: _onDocumentLoadFailed,
+                onPageChanged: _onPageChanged,
+                canShowScrollHead: true,
+                canShowScrollStatus: true,
+                enableDoubleTapZooming: true,
+                pageLayoutMode: PdfPageLayoutMode.continuous,
+              );
+  }
+
+  void _retryLoading() {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+      _initPdfWidget();
+    });
+  }
 
   void _onDocumentLoaded(PdfDocumentLoadedDetails details) {
     if (!mounted) return;
@@ -194,7 +212,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     return CustomErrorState(
       title: 'Erreur de chargement',
       message: errorMessage ?? 'Impossible de charger le fichier PDF',
-      onRetry: () => Navigator.of(context).pop(),
+      onRetry: _retryLoading,
       buttonIsLight: true,
       buttonWidth: 200,
     );

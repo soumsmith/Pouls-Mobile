@@ -9,6 +9,7 @@ import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/screens/visite_guidee_video_feed_screen.dart';
 import 'package:parents_responsable/widgets/custom_form_button.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/components/custom_error_state.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/custom_text_field.dart';
 import 'package:parents_responsable/widgets/image_menu_card.dart';
@@ -18,6 +19,7 @@ import 'package:parents_responsable/widgets/bottom_nav.dart';
 import 'package:parents_responsable/widgets/bottom_sheet_menu.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/feedback_state_widget.dart';
+import '../widgets/snackbar.dart';
 import 'dart:developer' as developer;
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
@@ -1626,14 +1628,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                   ),
                                 ),
                               ),
-                              child: const Text(
-                                "S'inscrire",
+                              /*child: const Text(
+                                "Intégrer",
                                 style: TextStyle(
                                   color: Color(0xFFEA580C),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                 ),
-                              ),
+                              ),*/
                             ),
                           ),
 
@@ -3452,11 +3454,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 final sortedLabels = niveauLabels.toList()..sort();
                 if (sortedLabels.isNotEmpty) {
                   setState(() {
-                    _selectedNiveauFiltre = sortedLabels.first;
-                    _scolariteFuture = ScolariteService.getScolaritesByEcole(
-                      widget.ecole.parametreCode ?? '',
-                      niveau: sortedLabels.first,
-                    );
+                    _selectedNiveauFiltre = null;
+                    _scolariteFuture = null;
                   });
                   // Force bottom sheet rebuild to display _scolariteFuture
                   _avisNotifier.value++;
@@ -3525,48 +3524,16 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Bottom sheet pour les kits scolaires ──────────────────────────────────────────────
   Future<void> _showKitsBottomSheetAction() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.transparent,
-      builder: (_) => const CustomLoader(
-        message: 'Chargement des niveaux...',
-        loaderColor: Color(0xFF8B5CF6),
-        size: 56.0,
-        showBackground: true,
-      ),
+    final codeEcole = widget.ecole.parametreCode ?? '';
+    final schoolName = widget.ecole.parametreNom ?? 'École';
+
+    showKitsBottomSheet(
+      context,
+      schoolId: codeEcole,
+      schoolName: schoolName,
+      niveaux: [], // Sera chargé par le modal s'il est vide
+      primaryColor: const Color(0xFF8B5CF6),
     );
-
-    try {
-      final codeEcole = widget.ecole.parametreCode ?? '';
-      _niveauxFuture ??= NiveauService.getNiveauxByEcole(codeEcole);
-
-      final niveaux = await _niveauxFuture!;
-
-      if (mounted) {
-        Navigator.of(context).pop(); // Ferme le loader
-
-        final schoolName = widget.ecole.parametreNom ?? 'École';
-
-        showKitsBottomSheet(
-          context,
-          schoolId: codeEcole,
-          schoolName: schoolName,
-          niveaux: niveaux,
-          primaryColor: const Color(0xFF8B5CF6),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // Ferme le loader
-        _scaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(
-            content: Text('Erreur: Impossible de charger les niveaux ($e)'),
-            backgroundColor: Colors.red[400],
-          ),
-        );
-      }
-    }
   }
 
   // ── Build Action Bottom Sheet ──────────────────────────────────────────────
@@ -3962,19 +3929,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 ),
               )
             else if (snapshot.hasError)
-              ErrorStateWidget(
-                error: snapshot.error.toString().replaceAll('Exception: ', ''),
+              CustomErrorState(
+                message:
+                    "Impossible de charger les communications. Veuillez vérifier votre connexion et réessayer.",
                 onRetry: () => setSheetState(() {}),
-                headerColor: _kActions['communication']!.color,
+                iconColor: _kActions['communication']!.color,
+                buttonColor: _kActions['communication']!.color,
               )
             else if (!snapshot.hasData || snapshot.data!.isEmpty)
-              EmptyStateWidget(
-                icon: Icons.article_outlined,
+              CustomErrorState(
                 title: 'Aucune communication',
-                subtitle: 'Aucune communication disponible pour le moment.',
-                onRefresh: () => setSheetState(() {}),
+                message: 'Aucune communication disponible pour le moment.',
+                icon: Icons.article_outlined,
+                onRetry: () => setSheetState(() {}),
+                retryText: 'Actualiser',
+                iconColor: _kActions['communication']!.color,
                 buttonColor: _kActions['communication']!.color,
-                buttonIcon: Icons.refresh_rounded,
                 buttonIsLight: true,
               )
             else
@@ -4280,20 +4250,24 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           );
         }
         if (snapshot.hasError) {
-          return ErrorStateWidget(
-            error: snapshot.error.toString().replaceAll('Exception: ', ''),
+          return CustomErrorState(
+            message:
+                "Impossible de charger les niveaux. Veuillez vérifier votre connexion et réessayer.",
             onRetry: () => setState(() {}),
-            headerColor: _kActions['niveaux']!.color,
+            iconColor: _kActions['niveaux']!.color,
+            buttonColor: _kActions['niveaux']!.color,
           );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return EmptyStateWidget(
-            icon: Icons.school_outlined,
+          return CustomErrorState(
             title: 'Aucun niveau disponible',
-            subtitle: 'Cette école n\'a pas de niveaux configurés',
-            onRefresh: () => setState(() {}),
+            message:
+                "Cette école n'a pas de niveaux configurés pour le moment.",
+            icon: Icons.school_outlined,
+            onRetry: () => setState(() {}),
+            retryText: 'Actualiser',
+            iconColor: _kActions['niveaux']!.color,
             buttonColor: _kActions['niveaux']!.color,
-            buttonIcon: Icons.refresh_rounded,
             buttonIsLight: true,
           );
         }
@@ -4642,19 +4616,22 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             ),
           )
         else if (_eventsError != null)
-          ErrorStateWidget(
-            error: _eventsError!,
+          CustomErrorState(
+            message:
+                "Impossible de charger les événements. Veuillez vérifier votre connexion et réessayer.",
             onRetry: _loadBlogsEventsAndAvis,
-            headerColor: _kActions['school_events']!.color,
+            iconColor: _kActions['school_events']!.color,
+            buttonColor: _kActions['school_events']!.color,
           )
         else if (_schoolEvents.isEmpty)
-          EmptyStateWidget(
-            icon: Icons.event_outlined,
+          CustomErrorState(
             title: 'Aucun événement',
-            subtitle: 'Aucun événement disponible pour le moment.',
-            onRefresh: _loadBlogsEventsAndAvis,
+            message: 'Aucun événement disponible pour le moment.',
+            icon: Icons.event_outlined,
+            onRetry: _loadBlogsEventsAndAvis,
+            retryText: 'Actualiser',
+            iconColor: _kActions['school_events']!.color,
             buttonColor: _kActions['school_events']!.color,
-            buttonIcon: Icons.refresh_rounded,
             buttonIsLight: true,
           )
         else
@@ -5127,9 +5104,46 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   ),
                 );
               }
-              if (levelsSnapshot.hasError ||
-                  !levelsSnapshot.hasData ||
-                  levelsSnapshot.data!.isEmpty) {
+              if (levelsSnapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: CustomErrorState(
+                    message:
+                        "Impossible de charger les niveaux. Veuillez vérifier votre connexion et réessayer.",
+                    onRetry: () {
+                      setSheetState(() {
+                        // Reset to force reload
+                        _niveauxFuture =
+                            NiveauService.getNiveauxByEcole(
+                              widget.ecole.parametreCode ?? '',
+                            ).then((niveaux) {
+                              if (niveaux.isNotEmpty) {
+                                final niveauLabels = <String>{};
+                                for (final n in niveaux) {
+                                  final label = (n.niveau?.isNotEmpty == true)
+                                      ? n.niveau!
+                                      : n.nom;
+                                  if (label != null) niveauLabels.add(label);
+                                }
+                                final sortedLabels = niveauLabels.toList()
+                                  ..sort();
+                                if (sortedLabels.isNotEmpty) {
+                                  setSheetState(() {
+                                    _selectedNiveauFiltre = null;
+                                    _scolariteFuture = null;
+                                  });
+                                }
+                              }
+                              return niveaux;
+                            });
+                      });
+                    },
+                    iconColor: AppColors.screenOrange,
+                    buttonColor: AppColors.screenOrange,
+                  ),
+                );
+              }
+              if (!levelsSnapshot.hasData || levelsSnapshot.data!.isEmpty) {
                 return const SizedBox.shrink();
               }
 
@@ -5226,7 +5240,42 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           },
         ),
         const SizedBox(height: 12),
-        if (_scolariteFuture != null)
+        if (_selectedNiveauFiltre == null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.touch_app_rounded,
+                    size: 48,
+                    color: AppColors.screenTextSecondaryThemed(
+                      context,
+                    ).withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Sélectionnez un niveau',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Veuillez sélectionner un niveau ci-dessus pour afficher les frais de scolarité associés.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (_scolariteFuture != null)
           FutureBuilder<List<Scolarite>>(
             future: _scolariteFuture,
             builder: (context, snapshot) {
@@ -5244,11 +5293,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 );
               }
               if (snapshot.hasError) {
-                return ErrorStateWidget(
-                  error: snapshot.error.toString().replaceAll(
-                    'Exception: ',
-                    '',
-                  ),
+                return CustomErrorState(
+                  message:
+                      "Impossible de charger les frais de scolarité. Veuillez vérifier votre connexion et réessayer.",
                   onRetry: () {
                     setSheetState(() {
                       if (_selectedNiveauFiltre != null) {
@@ -5260,16 +5307,17 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       }
                     });
                   },
-                  headerColor: _kActions['scolarite']!.color,
+                  iconColor: _kActions['scolarite']!.color,
+                  buttonColor: _kActions['scolarite']!.color,
                 );
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return EmptyStateWidget(
-                  icon: Icons.account_balance_wallet_outlined,
+                return CustomErrorState(
                   title: 'Aucun frais de scolarité',
-                  subtitle:
-                      'Cette école n\'a pas de frais configurés pour ce niveau',
-                  onRefresh: () {
+                  message:
+                      "Cette école n'a pas de frais configurés pour ce niveau.",
+                  icon: Icons.account_balance_wallet_outlined,
+                  onRetry: () {
                     setSheetState(() {
                       if (_selectedNiveauFiltre != null) {
                         _scolariteFuture =
@@ -5280,9 +5328,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       }
                     });
                   },
+                  retryText: 'Actualiser',
+                  iconColor: _kActions['scolarite']!.color,
                   buttonColor: _kActions['scolarite']!.color,
-                  buttonIcon: Icons.refresh_rounded,
-                  buttonIsLight: true,
                 );
               }
               final scolarites = ScolariteService.filtrerEtTrierScolarites(
@@ -5306,10 +5354,10 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   .toList();
 
               if (visibleEntries.isEmpty) {
-                return EmptyStateWidget(
-                  icon: Icons.search_off_rounded,
+                return const CustomErrorState(
                   title: 'Aucun résultat',
-                  subtitle: 'Aucun frais trouvé pour cette recherche',
+                  message: 'Aucun frais trouvé pour cette recherche.',
+                  icon: Icons.search_off_rounded,
                 );
               }
 
@@ -6277,45 +6325,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_avis.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0288D1).withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.rate_review_outlined,
-                      size: 32,
-                      color: Color(0xFF0288D1),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Aucun avis pour le moment',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Soyez le premier à donner votre avis !',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.screenTextSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: CustomErrorState(
+              title: 'Aucun avis pour le moment',
+              message: 'Soyez le premier à donner votre avis !',
+              icon: Icons.rate_review_outlined,
+              iconColor: Color(0xFF0288D1),
             ),
           )
         else
@@ -6562,44 +6578,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   // ── Vue d'erreur ────────────────────────────────────────────────────────────────
   Widget _buildErrorView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
-            const SizedBox(height: 16),
-            const Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _avisError!,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _loadAvisOnly,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Réessayer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CustomErrorState(
+      message:
+          "Impossible de charger les avis. Veuillez vérifier votre connexion internet et réessayer.",
+      onRetry: _loadAvisOnly,
+      iconColor: Colors.red[400],
+      buttonColor: Colors.red,
     );
   }
 
@@ -8440,21 +8424,44 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       if (result['success'] == true) {
         _showIntegrationResultDialog(result['data']);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['error'] ?? 'Erreur lors de la consultation'),
-            backgroundColor: Colors.red,
-          ),
+        String errorMessage =
+            result['error'] ?? 'Erreur lors de la consultation';
+        if (errorMessage.contains('SocketException') ||
+            errorMessage.contains('ClientException') ||
+            errorMessage.contains('Failed host lookup') ||
+            errorMessage.contains('Network is unreachable') ||
+            errorMessage.contains('Connection refused')) {
+          errorMessage =
+              "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.";
+        }
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur',
+          message: errorMessage,
+          backgroundColor: Colors.red.shade600,
+          icon: Icons.error_outline_rounded,
+          duration: const Duration(seconds: 4),
         );
       }
     } catch (e) {
       // Close loader
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
+      String errorMessage = e.toString();
+      if (errorMessage.contains('SocketException') ||
+          errorMessage.contains('ClientException') ||
+          errorMessage.contains('Failed host lookup') ||
+          errorMessage.contains('Network is unreachable') ||
+          errorMessage.contains('Connection refused')) {
+        errorMessage =
+            "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.";
+      }
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Erreur',
+        message: errorMessage,
+        backgroundColor: Colors.red.shade600,
+        icon: Icons.error_outline_rounded,
+        duration: const Duration(seconds: 4),
       );
     }
   }

@@ -3,6 +3,7 @@ import '../custom_loader.dart';
 import '../../services/theme_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/kits_service.dart';
+import '../../services/niveau_service.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_dimensions.dart';
 import '../section_header_widget.dart';
@@ -33,6 +34,10 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
 
+  List<Niveau> _niveaux = [];
+  bool _isLoadingNiveaux = false;
+  String? _niveauxError;
+
   Niveau? _selectedNiveau;
   bool _isLoadingKits = false;
   String? _kitsError;
@@ -42,8 +47,48 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
   void initState() {
     super.initState();
     if (widget.niveaux.isNotEmpty) {
+      _niveaux = widget.niveaux;
       _selectedNiveau = widget.niveaux.first;
       _fetchKitsForNiveau(_selectedNiveau!);
+    } else {
+      _fetchNiveaux();
+    }
+  }
+
+  Future<void> _fetchNiveaux() async {
+    setState(() {
+      _isLoadingNiveaux = true;
+      _niveauxError = null;
+    });
+
+    try {
+      final niveaux = await NiveauService.getNiveauxByEcole(widget.schoolId);
+      if (mounted) {
+        setState(() {
+          _niveaux = niveaux;
+          _isLoadingNiveaux = false;
+          if (_niveaux.isNotEmpty) {
+            _selectedNiveau = _niveaux.first;
+            _fetchKitsForNiveau(_selectedNiveau!);
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          String errorMessage = e.toString();
+          if (errorMessage.contains('SocketException') || 
+              errorMessage.contains('ClientException') || 
+              errorMessage.contains('Failed host lookup') ||
+              errorMessage.contains('Network is unreachable') ||
+              errorMessage.contains('Connection refused')) {
+            _niveauxError = "Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.";
+          } else {
+            _niveauxError = "Une erreur est survenue lors de la récupération des niveaux.";
+          }
+          _isLoadingNiveaux = false;
+        });
+      }
     }
   }
 
@@ -88,13 +133,39 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingNiveaux) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CustomLoader(
+            message: 'Chargement des niveaux...',
+            loaderColor: Color(0xFF8B5CF6),
+            size: 56.0,
+            showBackground: false,
+          ),
+        ),
+      );
+    }
+
+    if (_niveauxError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: CustomErrorState(
+          message: _niveauxError!,
+          onRetry: _fetchNiveaux,
+          iconColor: widget.primaryColor,
+          buttonColor: widget.primaryColor,
+        ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildNiveauxSelection(),
         const SizedBox(height: 24),
-        _buildKitsContent(),
+        if (_niveaux.isNotEmpty) _buildKitsContent(),
       ],
     );
   }
@@ -102,7 +173,7 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
   Widget _buildNiveauxSelection() {
     final isDark = _themeService.isDarkMode;
     
-    if (widget.niveaux.isEmpty) {
+    if (_niveaux.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -140,7 +211,7 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: widget.niveaux.map((niveau) {
+            children: _niveaux.map((niveau) {
               final isSelected = _selectedNiveau == niveau;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),

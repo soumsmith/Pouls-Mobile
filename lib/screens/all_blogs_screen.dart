@@ -158,14 +158,14 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
     }
   }
 
-  Future<void> _loadBlogs({bool loadMore = false}) async {
+  Future<void> _loadBlogs({bool loadMore = false, bool isRefresh = false}) async {
     if (loadMore) {
       if (_isLoadingMore || !_hasMore) return;
       setState(() => _isLoadingMore = true);
       _currentPage++;
     } else {
       setState(() {
-        _isLoading = true;
+        if (!isRefresh) _isLoading = true;
         _error = null;
         _currentPage = 1;
         _hasMore = true;
@@ -254,9 +254,13 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
+          RefreshIndicator(
+            onRefresh: () => _loadBlogs(isRefresh: true),
+            color: AppColors.screenOrange,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _scrollController,
+              slivers: [
               CustomSliverAppBar(
                 title: 'Actualités',
                 isDark: isDark,
@@ -324,6 +328,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
               ..._buildBodySlivers(),
             ],
           ),
+        ),
           // Fondu bas
           Positioned(
             bottom: 0,

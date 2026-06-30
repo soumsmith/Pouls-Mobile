@@ -55,9 +55,9 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
     super.dispose();
   }
 
-  Future<void> _loadVideos() async {
+  Future<void> _loadVideos({bool isRefresh = false}) async {
     setState(() {
-      _isLoading = true;
+      if (!isRefresh) _isLoading = true;
       _error = null;
     });
     try {
@@ -134,11 +134,15 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
       floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _mainScrollController,
-            slivers: [
-              CustomSliverAppBar(
-                title: 'Coulisse de l\'Excellence',
+          RefreshIndicator(
+            onRefresh: () => _loadVideos(isRefresh: true),
+            color: const Color(0xFF10B981),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _mainScrollController,
+              slivers: [
+                CustomSliverAppBar(
+                  title: 'Coulisse de l\'Excellence',
                 pinned: true,
                 elevation: 0,
                 actions: [
@@ -328,6 +332,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
               ],
             ],
           ),
+        ),
           const BottomFadeGradient(), // Gradient fade at bottom
         ],
       ),

@@ -57,7 +57,16 @@ class _ChildKitsBottomSheetState extends State<ChildKitsBottomSheet> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _kitsError = e.toString().replaceAll('Exception: ', '');
+          String errorMessage = e.toString();
+          if (errorMessage.contains('SocketException') || 
+              errorMessage.contains('ClientException') || 
+              errorMessage.contains('Failed host lookup') ||
+              errorMessage.contains('Network is unreachable') ||
+              errorMessage.contains('Connection refused')) {
+            _kitsError = "Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.";
+          } else {
+            _kitsError = "Une erreur est survenue lors de la récupération des kits scolaires. Veuillez réessayer.";
+          }
           _isLoadingKits = false;
         });
       }

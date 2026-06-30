@@ -171,14 +171,14 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   }
 
   // ── Données ──────────────────────────────────────────────
-  Future<void> _loadEvents({bool loadMore = false}) async {
+  Future<void> _loadEvents({bool loadMore = false, bool isRefresh = false}) async {
     if (loadMore) {
       if (_isLoadingMore || !_hasMore) return;
       setState(() => _isLoadingMore = true);
       _currentPage++;
     } else {
       setState(() {
-        _isLoading = true;
+        if (!isRefresh) _isLoading = true;
         _error = null;
         _currentPage = 1;
         _hasMore = true;
@@ -279,9 +279,13 @@ class _AllEventsScreenState extends State<AllEventsScreen>
       floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
+          RefreshIndicator(
+            onRefresh: () => _loadEvents(isRefresh: true),
+            color: AppColors.screenOrange,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _scrollController,
+              slivers: [
               CustomSliverAppBar(
                 title: 'Événements scolaires',
                 isDark: Theme.of(context).brightness == Brightness.dark,
@@ -349,6 +353,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
               ..._buildBodySlivers(),
             ],
           ),
+        ),
           // Fondu bas
           Positioned(
             bottom: 0,
@@ -632,75 +637,22 @@ class _AllEventsScreenState extends State<AllEventsScreen>
         SliverFillRemaining(
           child: FadeTransition(
             opacity: _fadeAnim,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.screenOrangeLight,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Icon(
-                      Icons.event_busy_rounded,
-                      size: 40,
-                      color: AppColors.screenOrange,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Aucun événement',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Aucun résultat pour ce filtre',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF999999)),
-                  ),
-                  const SizedBox(height: 24),
-                  GestureDetector(
-                    onTap: () => setState(() {
-                      _selectedFilter = 'Tous';
-                      _searchController.clear();
-                      _countryController.clear();
-                      _categoryController.clear();
-                      _dateController.clear();
-                      _loadEvents();
-                    }),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.screenOrangeGradient,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.screenOrange.withOpacity(0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        'Réinitialiser les filtres',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: CustomErrorState(
+              title: 'Aucun événement',
+              message: 'Aucun résultat pour ce filtre',
+              icon: Icons.event_busy_rounded,
+              iconColor: AppColors.screenOrange,
+              retryText: 'Réinitialiser les filtres',
+              onRetry: () {
+                setState(() {
+                  _selectedFilter = 'Tous';
+                  _searchController.clear();
+                  _countryController.clear();
+                  _categoryController.clear();
+                  _dateController.clear();
+                  _loadEvents();
+                });
+              },
             ),
           ),
         )

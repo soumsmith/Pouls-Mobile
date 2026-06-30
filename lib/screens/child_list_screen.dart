@@ -1191,6 +1191,82 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  // ─── NAVIGATION OPTIMISÉE ────────────────────────────────────
+
+  Future<void> _navigateToNotes() async {
+    if (_matricule == null) {
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Attention',
+        message: 'Matricule élève non disponible',
+        backgroundColor: Colors.orange,
+        icon: Icons.warning_amber_rounded,
+      );
+      return;
+    }
+
+    if (_anneeId != null && _classeId != null) {
+      _doNavigateToNotes();
+      return;
+    }
+
+    // Afficher un loader pendant qu'on essaie de récupérer l'année
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+
+    try {
+      if (_ecoleId != null && _anneeId == null) {
+        final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(_ecoleId!);
+        setState(() {
+          _anneeId = anneeScolaire.anneeOuverteCentraleId;
+        });
+      }
+      if (_anneeId != null && _classeId != null) {
+        await _loadStudentClassInfo();
+      }
+    } catch (e) {
+      print("Erreur de récupération à la volée: $e");
+    }
+
+    // Fermer le loader
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+
+    if (_anneeId != null && _classeId != null) {
+      _doNavigateToNotes();
+    } else {
+      if (mounted) {
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Attention',
+          message: 'Informations élève non disponibles. Veuillez réessayer plus tard.',
+          backgroundColor: Colors.orange,
+          icon: Icons.warning_amber_rounded,
+        );
+      }
+    }
+  }
+
+  void _doNavigateToNotes() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => NotesScreenJson(
+          matricule: _matricule!,
+          anneeId: _anneeId!.toString(),
+          classeId: _classeId!.toString(),
+          anneeLibelle: 'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+          ecoleId: _ecoleId?.toString(),
+        ),
+      ),
+    );
+  }
+
   // ─── MÉTHODES DE BOTTOM SHEETS DIRECTES ────────────────────────────────────
 
   void _showNotesBottomSheet() {
@@ -4315,28 +4391,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
             void handleGroup1Tap(Map<String, Object?> item) {
               if (item['key'] == 'notes') {
-                if (_matricule != null &&
-                    _anneeId != null &&
-                    _classeId != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => NotesScreenJson(
-                        matricule: _matricule!,
-                        anneeId: _anneeId!.toString(),
-                        classeId: _classeId!.toString(),
-                        anneeLibelle:
-                            'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
-                        ecoleId: _ecoleId?.toString(),
-                      ),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Informations élève non disponibles'),
-                    ),
-                  );
-                }
+                _navigateToNotes();
               } else if (item['key'] == 'bulletins') {
                 _showBulletinsBottomSheet();
               }
@@ -4549,10 +4604,9 @@ class _ChildListScreenState extends State<ChildListScreen>
               actionText: 'Voir kits',
               moduleIdentifiant: _getModuleIdentifiant('kits_scolaires'),
               onTap: () {
-                if (_ecoleCode == null) return;
                 showChildKitsBottomSheet(
                   context,
-                  schoolId: _ecoleCode!,
+                  schoolId: _ecoleCode ?? '',
                   niveau: widget.child.grade,
                   childName: widget.child.firstName,
                 );

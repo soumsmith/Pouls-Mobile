@@ -43,10 +43,16 @@ class _GalleryScreenState extends State<GalleryScreen> {
     _loadImages();
   }
 
-  Future<void> _loadImages() async {
+  Future<void> _loadImages({bool isRefresh = false}) async {
     print('=== CHARGEMENT DES IMAGES GALERIE ===');
     print('École Code: ${widget.ecoleCode}');
     print('École Nom: ${widget.ecoleNom}');
+    
+    if (!isRefresh) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
     
     try {
       final images = await GalleryService.getGalleryImages(widget.ecoleCode);
@@ -81,20 +87,25 @@ class _GalleryScreenState extends State<GalleryScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
-      body: CustomScrollView(
-        controller: _mainScrollController,
-        slivers: [
-          CustomSliverAppBar(
-            title: 'Galerie',
-            isDark: false,
-            pinned: true,
-            floating: false,
-            elevation: 0,
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-          ),
-          ..._buildBodySlivers(),
-        ],
+      body: RefreshIndicator(
+        onRefresh: () => _loadImages(isRefresh: true),
+        color: AppColors.screenOrange,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          controller: _mainScrollController,
+          slivers: [
+            CustomSliverAppBar(
+              title: 'Galerie',
+              isDark: false,
+              pinned: true,
+              floating: false,
+              elevation: 0,
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+            ),
+            ..._buildBodySlivers(),
+          ],
+        ),
       ),
     );
   }

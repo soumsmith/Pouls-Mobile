@@ -66,14 +66,14 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     super.dispose();
   }
 
-  Future<void> _loadAstuces({bool loadMore = false}) async {
+  Future<void> _loadAstuces({bool loadMore = false, bool isRefresh = false}) async {
     if (loadMore) {
       if (_isLoadingMore || !_hasMore) return;
       setState(() => _isLoadingMore = true);
       _currentPage++;
     } else {
       setState(() {
-        _isLoading = true;
+        if (!isRefresh) _isLoading = true;
         _error = null;
         _currentPage = 1;
         _hasMore = true;
@@ -137,10 +137,14 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
       ),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              CustomSliverAppBar(
+          RefreshIndicator(
+            onRefresh: () => _loadAstuces(isRefresh: true),
+            color: Colors.orange,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _scrollController,
+              slivers: [
+                CustomSliverAppBar(
                 title: 'Astuces & Conseils',
                 onBackTap: () => MainScreenWrapper.of(context).navigateToHome(),
                 actions: [
@@ -171,6 +175,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
               ..._buildBodySlivers(),
             ],
           ),
+        ),
           Positioned(
             bottom: 0,
             left: 0,

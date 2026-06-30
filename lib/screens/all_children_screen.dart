@@ -58,7 +58,12 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
   }
 
   // Load children data
-  Future<void> _loadChildren() async {
+  Future<void> _loadChildren({bool isRefresh = false}) async {
+    if (!isRefresh) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
     try {
       final user = AuthService.instance.getCurrentUser();
       final parentId = user?.id ?? 'parent1';
@@ -107,9 +112,13 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
         floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
         body: FadeTransition(
           opacity: _fadeAnimation,
-          child: CustomScrollView(
-            controller: _mainScrollController,
-            slivers: [
+          child: RefreshIndicator(
+            onRefresh: () => _loadChildren(isRefresh: true),
+            color: AppColors.screenOrange,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _mainScrollController,
+              slivers: [
               CustomSliverAppBar(
                 title: 'Tous les Enfants',
                 actions: [
@@ -145,6 +154,7 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
               ),
             ],
           ),
+        ),
         ),
       ),
     );

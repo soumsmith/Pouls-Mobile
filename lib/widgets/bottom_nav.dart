@@ -171,54 +171,56 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final viewPaddingBottom = MediaQuery.of(context).viewPadding.bottom;
     final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    
+    // Détection de la navigation par boutons (pas de swipe)
+    // La navigation par gestes a un viewPaddingBottom généralement entre 15 et 35.
+    // >= 40 indique souvent la barre à 3 boutons. 0 indique souvent l'absence d'edge-to-edge (donc 3 boutons sur vieux tels).
+    final isThreeButtonNav = isAndroid && (viewPaddingBottom == 0 || viewPaddingBottom >= 40);
+
+    final double horizontalMargin = isThreeButtonNav ? 0 : 16;
+    final BorderRadius navBorderRadius = isThreeButtonNav ? BorderRadius.zero : BorderRadius.circular(24);
 
     return Container(
       // Hauteur fixe + padding système en bas
       height: 70,
       margin: EdgeInsets.fromLTRB(
-        isAndroid ? 0 : 16,
-        12 + bottomPadding,
-        isAndroid ? 0 : 16,
-        0, //12 + bottomPadding,
+        horizontalMargin,
+        12 + MediaQuery.of(context).padding.bottom,
+        horizontalMargin,
+        0, 
       ),
       decoration: BoxDecoration(
         color: AppColors.bottomNavBg(context),
-        borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
+        borderRadius: navBorderRadius,
         border: Border.all(
           color: AppColors.bottomNavBorder(context),
           width: 0.8,
         ),
-        /*boxShadow: [
-          BoxShadow(
-            color: AppColors.bottomNavShadow1(context),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: AppColors.bottomNavShadow2(context),
-            blurRadius: 48,
-            offset: const Offset(0, 20),
-            spreadRadius: -4,
-          ),
-        ],*/
         boxShadow: AppDimensions.getBottomSheetShadow(context),
       ),
       child: ClipRRect(
-        borderRadius: isAndroid ? BorderRadius.zero : BorderRadius.circular(24),
+        borderRadius: navBorderRadius,
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final availableWidth = constraints.maxWidth;
               const minItemWidth = 76.0;
-              final totalMinWidth = minItemWidth * _navItems.length;
-              final needsScroll = totalMinWidth > availableWidth;
+              
+              // On sépare le dernier élément (Plus) du reste
+              final int lastItemIndex = _navItems.length - 1;
+              final fixedItemWidth = minItemWidth;
+              final availableWidthForOthers = availableWidth - fixedItemWidth;
+              final totalMinWidthOthers = minItemWidth * lastItemIndex;
+              
+              // Si le nombre d'éléments dépasse 5 (donc > 4 pour la partie défilable), on active le scroll
+              final needsScroll = _navItems.length > 5 || totalMinWidthOthers > availableWidthForOthers;
 
-              final items = List.generate(
-                _navItems.length,
+              // Création des items défilables (tous sauf le dernier)
+              final scrollableItems = List.generate(
+                lastItemIndex,
                 (i) => SizedBox(
                   width: needsScroll ? minItemWidth : null,
                   child: _NavItemWidget(
@@ -232,23 +234,41 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
                 ),
               );
 
+              // Création de l'item fixe (le dernier: Plus) sans largeur fixée au préalable
+              final fixedItem = _NavItemWidget(
+                item: _navItems[lastItemIndex],
+                isSelected: widget.currentIndex == lastItemIndex,
+                bounceAnim: _bounceAnims[lastItemIndex],
+                showBadge: false,
+                badgeCount: 0,
+                onTap: () => _handleTap(lastItemIndex),
+              );
+
               if (needsScroll) {
-                return SingleChildScrollView(
+                final scrollableSection = SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    children: items,
+                    children: scrollableItems,
                   ),
+                );
+                
+                return Row(
+                  children: [
+                    Expanded(child: scrollableSection),
+                    SizedBox(width: minItemWidth, child: fixedItem),
+                  ],
                 );
               }
 
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: items
-                    .map((item) => Expanded(child: item.child!))
-                    .toList(),
+                children: [
+                  ...scrollableItems.map((item) => Expanded(child: item.child!)),
+                  Expanded(child: fixedItem),
+                ],
               );
             },
           ),

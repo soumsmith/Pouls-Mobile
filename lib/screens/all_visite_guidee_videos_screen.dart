@@ -58,6 +58,28 @@ class _AllVisiteGuideeVideosScreenState
     super.dispose();
   }
 
+  Future<void> _refreshVideos() async {
+    try {
+      final newVideos = await VideoService.getVideosByType(
+        'visiteguide',
+        page: 1,
+        perPage: 20,
+      );
+      setState(() {
+        _allVideos = newVideos;
+        _filteredVideos = _getFilteredList(_allVideos, _searchController.text);
+        _hasMore = newVideos.length == 20;
+        _currentPage = 1;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   Future<void> _loadMoreVideos() async {
     if (_isLoadingMore || !_hasMore) return;
     setState(() {
@@ -134,11 +156,15 @@ class _AllVisiteGuideeVideosScreenState
       floatingActionButton: ScrollToTopFab(scrollController: _mainScrollController, bottomSpacerHeight: 70),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _mainScrollController,
-            slivers: [
-              CustomSliverAppBar(
-                title: 'Visites guidées',
+          RefreshIndicator(
+            onRefresh: _refreshVideos,
+            color: const Color(0xFF3B82F6),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _mainScrollController,
+              slivers: [
+                CustomSliverAppBar(
+                  title: 'Visites guidées',
                 pinned: true,
                 elevation: 0,
                 actions: [
@@ -261,6 +287,7 @@ class _AllVisiteGuideeVideosScreenState
               ],
             ],
           ),
+        ),
           const BottomFadeGradient(), // Gradient fade at bottom
         ],
       ),

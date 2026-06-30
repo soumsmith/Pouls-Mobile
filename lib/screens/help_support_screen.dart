@@ -345,15 +345,17 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 3),
-                          Text(
-                            card['subtitle'] as String,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.screenTextSecondaryThemed(context),
-                              fontWeight: FontWeight.w400,
+                          Expanded(
+                            child: Text(
+                              card['subtitle'] as String,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.screenTextSecondaryThemed(context),
+                                fontWeight: FontWeight.w400,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),

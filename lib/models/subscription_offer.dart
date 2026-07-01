@@ -27,9 +27,9 @@ class SubscriptionOffer {
     return SubscriptionOffer(
       id: json['uid']?.toString() ?? json['id']?.toString() ?? '',
       title: json['nom'] ?? 'Offre',
-      description: json['package']?['description'] ?? "Abonnement \${json['nom']}",
+      description: json['package']?['description'] ?? "Abonnement ${json['nom']}",
       price: isTrial ? 0 : rawPrice,
-      duration: "\${json['duration_days'] ?? 30} jours",
+      duration: "${json['duration_days'] ?? 30} jours",
       features: accessibleModules.isNotEmpty ? accessibleModules : ["Accès à l'application"],
       level: json['slug'] ?? 'standard',
       isPopular: !isTrial && rawPrice == 10, // Heuristique simple

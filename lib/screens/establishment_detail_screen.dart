@@ -5150,8 +5150,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               // Extraire les noms uniques des niveaux
               final niveauLabels = <String>{};
               for (final n in levelsSnapshot.data!) {
-                final label = (n.niveau?.isNotEmpty == true)
-                    ? n.niveau!
+                final label = (n.code?.isNotEmpty == true)
+                    ? n.code!
                     : n.nom;
                 if (label != null) {
                   niveauLabels.add(label);
@@ -5214,7 +5214,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                   _scolariteFuture =
                                       ScolariteService.getScolaritesByEcole(
                                         widget.ecole.parametreCode ?? '',
-                                        niveau: _selectedNiveauFiltre!,
+                                        code: _selectedNiveauFiltre!,
                                       );
                                 });
                               }
@@ -5302,7 +5302,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         _scolariteFuture =
                             ScolariteService.getScolaritesByEcole(
                               widget.ecole.parametreCode ?? '',
-                              niveau: _selectedNiveauFiltre!,
+                              code: _selectedNiveauFiltre!,
                             );
                       }
                     });
@@ -5323,7 +5323,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                         _scolariteFuture =
                             ScolariteService.getScolaritesByEcole(
                               widget.ecole.parametreCode ?? '',
-                              niveau: _selectedNiveauFiltre!,
+                              code: _selectedNiveauFiltre!,
                             );
                       }
                     });

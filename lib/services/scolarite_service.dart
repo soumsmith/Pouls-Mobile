@@ -9,16 +9,17 @@ class ScolariteService {
 
   static Future<List<Scolarite>> getScolaritesByEcole(
     String ecoleCode, {
-    required String niveau,
+    required String code,
   }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('💰 CHARGEMENT DES FRAIS DE SCOLARITÉ');
     print('═══════════════════════════════════════════════════════════');
     print('🏫 Code école: $ecoleCode');
-    print('🎒 Niveau: $niveau');
+    print('🎒 Niveau: $code');
 
-    String url = '$baseUrl/vie-ecoles/scolarite-niveau/${Uri.encodeComponent(niveau)}?ecole=${Uri.encodeComponent(ecoleCode)}';
+    String url =
+        '$baseUrl/vie-ecoles/scolarite-niveau/${Uri.encodeComponent(code)}?ecole=${Uri.encodeComponent(ecoleCode)}';
     print('🔗 URL: $url');
     print('📡 Envoi de la requête...');
 
@@ -43,18 +44,26 @@ class ScolariteService {
         print('✅ Données de scolarité reçues et parsées avec succès');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        
+
         List<Scolarite> allScolarites = [];
         if (jsonList.isNotEmpty) {
-           final dataMap = jsonList.first as Map<String, dynamic>;
-           if (dataMap.containsKey('AFF')) {
-             final affList = dataMap['AFF'] as List<dynamic>;
-             allScolarites.addAll(affList.map((item) => Scolarite.fromJson(item as Map<String, dynamic>)));
-           }
-           if (dataMap.containsKey('NAFF')) {
-             final naffList = dataMap['NAFF'] as List<dynamic>;
-             allScolarites.addAll(naffList.map((item) => Scolarite.fromJson(item as Map<String, dynamic>)));
-           }
+          final dataMap = jsonList.first as Map<String, dynamic>;
+          if (dataMap.containsKey('AFF')) {
+            final affList = dataMap['AFF'] as List<dynamic>;
+            allScolarites.addAll(
+              affList.map(
+                (item) => Scolarite.fromJson(item as Map<String, dynamic>),
+              ),
+            );
+          }
+          if (dataMap.containsKey('NAFF')) {
+            final naffList = dataMap['NAFF'] as List<dynamic>;
+            allScolarites.addAll(
+              naffList.map(
+                (item) => Scolarite.fromJson(item as Map<String, dynamic>),
+              ),
+            );
+          }
         }
         return allScolarites;
       } else if (response.statusCode == 404) {
@@ -63,14 +72,15 @@ class ScolariteService {
         print('');
         return [];
       } else {
-        String errorMessage = 'Erreur lors du chargement des frais de scolarité';
+        String errorMessage =
+            'Erreur lors du chargement des frais de scolarité';
         try {
           final errorData = json.decode(response.body);
           if (errorData['error'] != null) {
             errorMessage = errorData['error'];
           }
         } catch (_) {}
-        
+
         print('❌ Erreur HTTP ${response.statusCode}');
         print('❌ Corps de la réponse: ${response.body}');
         print('═══════════════════════════════════════════════════════════');
@@ -84,13 +94,17 @@ class ScolariteService {
       if (e is Exception && !e.toString().contains('Erreur de connexion')) {
         rethrow;
       }
-      throw Exception('Veuillez vérifier votre connexion internet et réessayer.');
+      throw Exception(
+        'Veuillez vérifier votre connexion internet et réessayer.',
+      );
     }
   }
 
   static List<Scolarite> filtrerEtTrierScolarites(List<Scolarite> scolarites) {
     // Filtrer pour exclure les statuts ECOLIER et exclure la branche '*'
-    final filtres = scolarites.where((s) => s.shouldDisplay && s.branche != '*').toList();
+    final filtres = scolarites
+        .where((s) => s.shouldDisplay && s.branche != '*')
+        .toList();
 
     // Trier par date limite (croissante)
     filtres.sort((a, b) {

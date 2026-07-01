@@ -353,10 +353,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       case 1:
         if (_studentNameController.text.isEmpty ||
             _studentFirstNameController.text.isEmpty ||
-            _matriculeController.text.isEmpty ||
             _birthDateController.text.isEmpty ||
-            _lieuNaissanceController.text.isEmpty ||
-            _adresseController.text.isEmpty) {
+            _lieuNaissanceController.text.isEmpty) {
           CartSnackBar.showOverlay(
             context,
             productName: 'Erreur',
@@ -455,20 +453,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       setState(() => _studentFirstNameError = true);
       hasError = true;
     }
-    if (_matriculeController.text.isEmpty) {
-      setState(() => _matriculeError = true);
-      hasError = true;
-    }
     if (_birthDateController.text.isEmpty) {
       setState(() => _birthDateError = true);
       hasError = true;
     }
     if (_lieuNaissanceController.text.isEmpty) {
       setState(() => _lieuNaissanceError = true);
-      hasError = true;
-    }
-    if (_adresseController.text.isEmpty) {
-      setState(() => _adresseError = true);
       hasError = true;
     }
     if (_contact1Controller.text.isEmpty) {
@@ -1089,7 +1079,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           hint: 'Entrez le matricule',
           icon: Icons.badge_rounded,
           controller: _matriculeController,
-          required: true,
           hasError: _matriculeError,
         ),
         StatefulBuilder(
@@ -1131,7 +1120,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           icon: Icons.home_rounded,
           controller: _adresseController,
           maxLines: 2,
-          required: true,
           hasError: _adresseError,
         ),
       ],

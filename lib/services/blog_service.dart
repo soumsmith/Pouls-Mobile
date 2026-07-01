@@ -184,4 +184,108 @@ class BlogService {
       );
     }
   }
+
+  // --- ACTIONS INTERACTION ---
+
+  Future<List<dynamic>> getComments(String slug, {int page = 1}) async {
+    final url = '$baseUrl/forums/$slug/commentaires?per_page=50&page=$page';
+    print('═══════════════════════════════════════════════════════════');
+    print('💬 CHARGEMENT DES COMMENTAIRES (BLOG)');
+    print('🔗 URL: $url');
+    try {
+      final response = await http.get(Uri.parse(url), headers: {'Accept': 'application/json'});
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['data'] ?? [];
+      }
+      return [];
+    } catch (e) {
+      print('💥 Erreur: $e');
+      return [];
+    }
+  }
+
+  Future<bool> addComment(String slug, {required String nom, required int userId, required String contenu}) async {
+    final url = '$baseUrl/forums/$slug/commentaires';
+    print('═══════════════════════════════════════════════════════════');
+    print('💬 AJOUT D\'UN COMMENTAIRE (BLOG)');
+    print('🔗 URL: $url');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: json.encode({'nom': nom, 'userid': userId, 'contenu': contenu}),
+      );
+      print('📥 Status: ${response.statusCode}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        print('❌ Response: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('💥 Erreur: $e');
+      return false;
+    }
+  }
+
+  Future<List<dynamic>> getLikes(String slug) async {
+    final url = '$baseUrl/forums/$slug/like';
+    print('═══════════════════════════════════════════════════════════');
+    print('❤️ CHARGEMENT DES LIKES (BLOG)');
+    print('🔗 URL: $url');
+    try {
+      final response = await http.get(Uri.parse(url), headers: {'Accept': 'application/json'});
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data is List ? data : (data['data'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      print('💥 Erreur: $e');
+      return [];
+    }
+  }
+
+  Future<bool> likeArticle(String slug, {required String nom, required int userId}) async {
+    final url = '$baseUrl/forums/$slug/like';
+    print('═══════════════════════════════════════════════════════════');
+    print('❤️ LIKE / DISLIKE (BLOG)');
+    print('🔗 URL: $url');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: json.encode({'nom': nom, 'userid': userId}),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('💥 Erreur: $e');
+      return false;
+    }
+  }
+
+  Future<bool> recordShare(String slug, {required String nom, required int userId}) async {
+    final url = '$baseUrl/forums/$slug/share';
+    print('═══════════════════════════════════════════════════════════');
+    print('📤 ENREGISTREMENT PARTAGE (BLOG)');
+    print('🔗 URL: $url');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: json.encode({'nom': nom, 'userid': userId}),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('💥 Erreur: $e');
+      return false;
+    }
+  }
 }

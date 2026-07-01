@@ -7,6 +7,7 @@ import '../models/blog.dart';
 import '../models/ecole.dart';
 import '../config/app_colors.dart';
 import '../services/ecole_api_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/share_bottom_sheet.dart';
 import 'establishment_detail_screen.dart';
@@ -61,9 +62,15 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
   // ── state ───────────────────────────────────
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  double _userRating = 0;
+  
   List<Map<String, dynamic>> _comments = [];
   bool _isSubmittingComment = false;
+  bool _isLoadingComments = true;
+  
+  int _likesCount = 0;
+  int _commentsCount = 0;
+  
+  final BlogService _blogService = BlogService();
 
   List<Blog> _schoolBlogs = [];
   bool _schoolBlogsLoading = true;
@@ -83,6 +90,47 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
       CurvedAnimation(parent: _bookmarkController!, curve: Curves.elasticOut),
     );
     _loadSchoolBlogs();
+    _fetchComments();
+    _checkLikeStatus();
+  }
+
+  Future<void> _fetchComments() async {
+    final slug = widget.blog.slug;
+    if (slug == null || slug.isEmpty) {
+      if (mounted) {
+        setState(() => _isLoadingComments = false);
+      }
+      return;
+    }
+    final apiComments = await _blogService.getComments(slug);
+    if (!mounted) return;
+    setState(() {
+      _comments = apiComments.map((c) => <String, dynamic>{
+        'author': c['nom']?.toString() ?? 'Utilisateur',
+        'comment': c['contenu']?.toString() ?? '',
+        'date': c['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+      }).toList();
+      _commentsCount = _comments.length;
+      _isLoadingComments = false;
+    });
+  }
+
+  Future<void> _checkLikeStatus() async {
+    final slug = widget.blog.slug;
+    if (slug == null || slug.isEmpty) return;
+    
+    final user = AuthService.instance.getCurrentUser();
+    if (user == null) return;
+    
+    final likes = await _blogService.getLikes(slug);
+    final hasLiked = likes.any((like) => like['userid']?.toString() == user.id);
+    
+    if (mounted) {
+      setState(() {
+        _isBookmarked = hasLiked;
+        _likesCount = likes.length;
+      });
+    }
   }
 
   Future<void> _loadSchoolBlogs() async {
@@ -113,13 +161,51 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
   }
 
   // ── actions ─────────────────────────────────
-  void _toggleBookmark() {
+  Future<void> _toggleBookmark() async {
+    final slug = widget.blog.slug;
+    if (slug == null || slug.isEmpty) return;
+    
+    final user = AuthService.instance.getCurrentUser();
+    if (user == null) {
+      _showSnack('Veuillez vous connecter pour aimer', _C.amber);
+      return;
+    }
+
     HapticFeedback.lightImpact();
-    setState(() => _isBookmarked = !_isBookmarked);
+    setState(() {
+      _isBookmarked = !_isBookmarked;
+      _likesCount += _isBookmarked ? 1 : -1;
+    });
     _bookmarkController?.forward(from: 0);
+
+    final success = await _blogService.likeArticle(
+      slug,
+      nom: user.fullName,
+      userId: int.tryParse(user.id) ?? 0,
+    );
+
+    if (!success && mounted) {
+      setState(() {
+        _isBookmarked = !_isBookmarked;
+        _likesCount += _isBookmarked ? 1 : -1;
+      });
+      _showSnack('Erreur de connexion', _C.rose);
+    }
   }
 
   void _showShareMenu() {
+    final slug = widget.blog.slug;
+    if (slug != null && slug.isNotEmpty) {
+      final user = AuthService.instance.getCurrentUser();
+      if (user != null) {
+        _blogService.recordShare(
+          slug,
+          nom: user.fullName,
+          userId: int.tryParse(user.id) ?? 0,
+        );
+      }
+    }
+
     showModalBottomSheet(
       constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
@@ -187,31 +273,48 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
     }
   }
 
-  void _submitComment() {
+  Future<void> _submitComment() async {
+    final slug = widget.blog.slug;
+    if (slug == null || slug.isEmpty) return;
+
+    final user = AuthService.instance.getCurrentUser();
+    if (user == null) {
+      _showSnack('Veuillez vous connecter pour commenter', _C.amber);
+      return;
+    }
+
     if (_commentController.text.trim().isEmpty) {
       _showSnack('Veuillez entrer un commentaire', _C.rose);
       return;
     }
-    if (_userRating == 0) {
-      _showSnack('Veuillez attribuer une note', _C.amber);
-      return;
-    }
+    
     setState(() => _isSubmittingComment = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
+    final content = _commentController.text.trim();
+    final success = await _blogService.addComment(
+      slug,
+      nom: user.fullName,
+      userId: int.tryParse(user.id) ?? 0,
+      contenu: content,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
       setState(() {
-        _comments.insert(0, {
-          'author': 'Vous',
-          'comment': _commentController.text.trim(),
-          'rating': _userRating,
+        _comments.insert(0, <String, dynamic>{
+          'author': user.fullName,
+          'comment': content,
           'date': DateTime.now().toIso8601String(),
         });
+        _commentsCount = _comments.length;
         _isSubmittingComment = false;
         _commentController.clear();
-        _userRating = 0;
       });
       _showSnack('Commentaire ajouté avec succès', _C.emerald);
-    });
+    } else {
+      setState(() => _isSubmittingComment = false);
+      _showSnack('Erreur lors de l\'ajout du commentaire', _C.rose);
+    }
   }
 
   void _showSnack(String msg, Color color) {
@@ -657,76 +760,6 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                       ? const Color(0xFF333333)
                       : const Color(0xFFF1F5F9),
                 ),
-                const SizedBox(height: 16),
-
-                // Étoiles
-                Text(
-                  'Note',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.screenTextSecondaryThemed(context),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: List.generate(5, (i) {
-                    final filled = i < _userRating;
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _userRating = i + 1.0);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 150),
-                          child: Icon(
-                            filled
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            key: ValueKey('$i-$filled'),
-                            color: filled
-                                ? _C.gold
-                                : (isDark
-                                      ? const Color(0xFF444444)
-                                      : _C.slate300),
-                            size: 36,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-                if (_userRating > 0) ...[
-                  const SizedBox(height: 6),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Container(
-                      key: ValueKey(_userRating),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? _C.amber.withOpacity(0.2)
-                            : _C.amberLight,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _ratingLabel(_userRating.toInt()),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: _C.amber,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-
                 // Commentaire
                 Text(
                   'Commentaire',
@@ -867,7 +900,6 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
 
   Widget _buildCommentCard(Map<String, dynamic> comment) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rating = (comment['rating'] as double).toInt();
     final author = comment['author'] as String;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -918,20 +950,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                   ],
                 ),
               ),
-              if (rating > 0)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    5,
-                    (i) => Icon(
-                      i < rating
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
-                      size: 14,
-                      color: _C.gold,
-                    ),
-                  ),
-                ),
+
             ],
           ),
           const SizedBox(height: 10),
@@ -949,11 +968,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
   }
 
   // ── Helpers ─────────────────────────────────
-  String _ratingLabel(int rating) {
-    const labels = ['Mauvais', 'Passable', 'Bien', 'Très bien', 'Excellent'];
-    if (rating < 1 || rating > 5) return '';
-    return labels[rating - 1];
-  }
+
 
   String _stripHtmlTags(String htmlString) {
     final RegExp exp = RegExp(

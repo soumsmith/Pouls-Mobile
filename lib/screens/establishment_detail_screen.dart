@@ -34,6 +34,9 @@ import 'all_events_screen.dart';
 import 'all_blogs_screen.dart';
 import 'gallery_screen.dart';
 import 'blog_detail_screen.dart';
+import '../models/video.dart';
+import 'all_videos_screen.dart';
+import 'all_visite_guidee_videos_screen.dart';
 import '../models/fee.dart';
 import '../models/scolarite.dart';
 import '../models/niveau.dart';
@@ -2640,7 +2643,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             'assets/images/icons/consulter_une_demande_etablissement.png',
         color: _kActions['consult_requests']!.color,
         actionText: 'Consulter',
-        moduleIdentifiant: 'demande-intégration',
+        // moduleIdentifiant: 'demande-intégration',
         onTap: () => _showActionBottomSheet(
           'consult_requests',
           _kActions['consult_requests']!,
@@ -2653,7 +2656,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/scolarite_tarifs.png',
         color: _kActions['scolarite']!.color,
         actionText: 'Voir',
-        moduleIdentifiant: 'frais-scolaires',
+        // moduleIdentifiant: 'frais-scolaires',
         onTap: () =>
             _showActionBottomSheet('scolarite', _kActions['scolarite']!),
       ),
@@ -2664,7 +2667,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/services_complementaires.png',
         color: Colors.purple,
         actionText: 'Découvrir',
-        moduleIdentifiant: 'services-extrascolaire',
+        // moduleIdentifiant: 'services-extrascolaire',
         onTap: () => _showServicesComplementairesBottomSheet(),
       ),
       EstablishmentAction(
@@ -2675,7 +2678,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             'assets/images/icons/kitscolaite.png', // Utilise l'icône existante temporairement
         color: const Color(0xFF8B5CF6),
         actionText: 'Voir',
-        moduleIdentifiant: 'kit-scolaire',
+        // moduleIdentifiant: 'kit-scolaire',
         onTap: () => _showKitsBottomSheetAction(),
       ),
       EstablishmentAction(
@@ -2705,7 +2708,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/evenements_scolaires.png',
         color: _kActions['school_events']!.color,
         actionText: 'Voir',
-        moduleIdentifiant: 'evenements',
+        // moduleIdentifiant: 'evenements',
         onTap: () => _showActionBottomSheet(
           'school_events',
           _kActions['school_events']!,
@@ -2718,7 +2721,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         imagePath: 'assets/images/icons/actualites.png',
         color: _kActions['communication']!.color,
         actionText: 'Voir',
-        moduleIdentifiant: 'messagerie',
+        // moduleIdentifiant: 'messagerie',
         onTap: () => _showActionBottomSheet(
           'communication',
           _kActions['communication']!,
@@ -2817,21 +2820,25 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           SectionRow(
             title: 'VISITES GUIDÉES',
             onSeeMore: () {
+              final mappedVideos = _visiteGuideeVideos.map((v) => Video(
+                id: v.id,
+                typevideo: v.typeVideo,
+                youtubeUrl: v.youtubeUrl,
+                title: v.title ?? '',
+                description: v.description ?? '',
+                createdAt: '',
+                code: v.code,
+                etablissement: v.etablissement,
+              )).toList();
               if (MainScreenWrapper.maybeOf(context) != null) {
                 MainScreenWrapper.of(context).navigateToExtraScreen(
-                  VisiteGuideeVideoFeedScreen(
-                    videos: _visiteGuideeVideos,
-                    initialIndex: 0,
-                  ),
+                  AllVisiteGuideeVideosScreen(videos: mappedVideos, ecoleCode: widget.ecole.parametreCode),
                 );
               } else {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => VisiteGuideeVideoFeedScreen(
-                      videos: _visiteGuideeVideos,
-                      initialIndex: 0,
-                    ),
+                    builder: (context) => AllVisiteGuideeVideosScreen(videos: mappedVideos, ecoleCode: widget.ecole.parametreCode),
                   ),
                 );
               }
@@ -2850,19 +2857,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             onSeeMore: () {
               if (MainScreenWrapper.maybeOf(context) != null) {
                 MainScreenWrapper.of(context).navigateToExtraScreen(
-                  CoulisseVideoFeedScreen(
-                    videos: _coulisseExcellenceVideos,
-                    initialIndex: 0,
-                  ),
+                  AllVideosScreen(ecoleCode: widget.ecole.parametreCode),
                 );
               } else {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CoulisseVideoFeedScreen(
-                      videos: _coulisseExcellenceVideos,
-                      initialIndex: 0,
-                    ),
+                    builder: (context) => AllVideosScreen(ecoleCode: widget.ecole.parametreCode),
                   ),
                 );
               }
@@ -3498,6 +3499,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       ? 0
                       : 20 + MediaQuery.of(context).viewInsets.bottom,
                 ),
+                showScrollToTopFab: actionType == 'scolarite',
                 fixedBottomWidget: actionType == 'voir_les_avis'
                     ? Padding(
                         padding: EdgeInsets.fromLTRB(
@@ -5412,10 +5414,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           color: AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isExpanded
-                ? AppColors.screenBorder(context)
-                : Colors.transparent,
-            width: isExpanded ? 1.5 : 1,
+            color: Colors.transparent,
+            width: 1,
           ),
           boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),

@@ -1221,7 +1221,9 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     try {
       if (_ecoleId != null && _anneeId == null) {
-        final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(_ecoleId!);
+        final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(
+          _ecoleId!,
+        );
         setState(() {
           _anneeId = anneeScolaire.anneeOuverteCentraleId;
         });
@@ -1245,7 +1247,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         CartSnackBar.showOverlay(
           context,
           productName: 'Attention',
-          message: 'Informations élève non disponibles. Veuillez réessayer plus tard.',
+          message:
+              'Informations élève non disponibles. Veuillez réessayer plus tard.',
           backgroundColor: Colors.orange,
           icon: Icons.warning_amber_rounded,
         );
@@ -1260,7 +1263,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           matricule: _matricule!,
           anneeId: _anneeId!.toString(),
           classeId: _classeId!.toString(),
-          anneeLibelle: 'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
+          anneeLibelle:
+              'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
           ecoleId: _ecoleId?.toString(),
         ),
       ),
@@ -1706,7 +1710,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           if (supplies.isEmpty) {
             return const CustomErrorState(
               title: 'Aucune fourniture trouvée',
-              message: 'Les fournitures scolaires seront affichées ici une fois disponibles.',
+              message:
+                  'Les fournitures scolaires seront affichées ici une fois disponibles.',
               icon: Icons.inventory_2_outlined,
               iconColor: Color(0xFF795548),
             );
@@ -3734,22 +3739,38 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   String _getModuleIdentifiant(String key) {
     switch (key) {
-      case 'notes': return 'notes-moyennes';
-      case 'bulletins': return 'notes-moyennes';
-      case 'timetable': return 'emplois-temps';
-      case 'attendance': return 'presence-classe';
-      case 'sanctions': return 'sanctions';
-      case 'homework': return 'Devoir-faire-maison-cours-exercices';
-      case 'difficulties': return 'performances';
-      case 'homework_program': return 'Devoir-faire-maison-cours-exercices';
-      case 'progression': return 'progression-cours';
-      case 'supplies': return 'fournitures-scolaires';
-      case 'kits_scolaires': return 'kit-scolaire';
-      case 'communication': return 'messagerie';
-      case 'events': return 'evenements';
-      case 'services_extras': return 'services-extrascolaire';
-      case 'access_control': return 'presence-classe';
-      default: return '';
+      case 'notes':
+        return 'notes-moyennes';
+      case 'bulletins':
+        return 'notes-moyennes';
+      case 'timetable':
+        return 'emplois-temps';
+      case 'attendance':
+        return 'presence-classe';
+      case 'sanctions':
+        return 'sanctions';
+      case 'homework':
+        return 'Devoir-faire-maison-cours-exercices';
+      case 'difficulties':
+        return 'performances';
+      case 'homework_program':
+        return 'Devoir-faire-maison-cours-exercices';
+      case 'progression':
+        return 'progression-cours';
+      case 'supplies':
+        return 'fournitures-scolaires';
+      case 'kits_scolaires':
+        return 'kit-scolaire';
+      case 'communication':
+        return 'messagerie';
+      case 'events':
+        return 'evenements';
+      case 'services_extras':
+        return 'services-extrascolaire';
+      case 'access_control':
+        return 'presence-classe';
+      default:
+        return '';
     }
   }
 
@@ -3885,7 +3906,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                       height: AppDimensions.getSquareCardHeightSize(context),
                       centerTitle: true,
                       allowLineBreak: true,
-                      moduleIdentifiant: 'reservation-place', // Pas de clé API spécifique, on utilise reservation-place
+                      moduleIdentifiant:
+                          'reservation-place', // Pas de clé API spécifique, on utilise reservation-place
                       onTap: () {
                         MyReservationsBottomSheet.show(
                           context: context,
@@ -4396,6 +4418,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 _showBulletinsBottomSheet();
               }
             }
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -4429,10 +4452,12 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                         color: item['color'] as Color,
                         actionText: item['actionText'] as String?,
-                        moduleIdentifiant: _getModuleIdentifiant(item['key'] as String),
+                        moduleIdentifiant: _getModuleIdentifiant(
+                          item['key'] as String,
+                        ),
                         onTap: () => handleGroup1Tap(item),
                       );
-                      
+
                       return card;
                     },
                   ),
@@ -5161,7 +5186,18 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     // Carte Présence
-    if (_eleveDetail != null && _eleveDetail!['pt_in_jour'] != null) {
+    if (_presenceStats != null) {
+      cards.add(
+        _buildEnhancedSummaryCard(
+          'Nbre Absent',
+          _presenceStats!.totalAbsent,
+          AppColors.error,
+          Icons.cancel,
+          subtitle: 'Total',
+          gradient: _getGradientForColor(AppColors.error),
+        ),
+      );
+    } else if (_eleveDetail != null && _eleveDetail!['pt_in_jour'] != null) {
       final isPresent = _eleveDetail!['pt_in_jour'] == 1;
       cards.add(
         _buildEnhancedSummaryCard(
@@ -5355,7 +5391,8 @@ class _ChildListScreenState extends State<ChildListScreen>
     if (_timetableHasError) {
       return CustomErrorState(
         title: 'Erreur de chargement',
-        message: 'Impossible de récupérer l\'emploi du temps. Veuillez réessayer.',
+        message:
+            'Impossible de récupérer l\'emploi du temps. Veuillez réessayer.',
         icon: Icons.wifi_off_rounded,
         iconColor: Colors.orange[400],
         buttonColor: const Color(0xFFF57C00),
@@ -5372,7 +5409,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (matricule == null || matricule.isEmpty) {
         return const CustomErrorState(
           title: 'Matricule non disponible',
-          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          message:
+              'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
           icon: Icons.error_outline_rounded,
           iconColor: Color(0xFFEF4444),
         );
@@ -5380,7 +5418,8 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       return CustomErrorState(
         title: 'Aucun emploi du temps disponible',
-        message: 'L\'emploi du temps n\'est pas encore disponible pour cet élève.',
+        message:
+            'L\'emploi du temps n\'est pas encore disponible pour cet élève.',
         icon: Icons.schedule_outlined,
         iconColor: Colors.orange[400],
         buttonColor: Colors.orange,
@@ -5613,7 +5652,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (matricule == null || matricule.isEmpty) {
         return const CustomErrorState(
           title: 'Matricule non disponible',
-          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          message:
+              'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
           icon: Icons.error_outline_rounded,
           iconColor: Color(0xFFEF4444),
         );
@@ -7056,7 +7096,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (matricule == null || matricule.isEmpty) {
         return const CustomErrorState(
           title: 'Matricule non disponible',
-          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          message:
+              'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
           icon: Icons.error_outline_rounded,
           iconColor: Color(0xFFEF4444),
         );
@@ -9501,7 +9542,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const Expanded(
         child: CustomErrorState(
           title: 'Aucune fourniture trouvée',
-          message: 'Les fournitures scolaires seront affichées ici une fois disponibles.',
+          message:
+              'Les fournitures scolaires seront affichées ici une fois disponibles.',
           icon: Icons.inventory_2_outlined,
           iconColor: Color(0xFF795548),
         ),
@@ -10914,16 +10956,16 @@ class _ChildListScreenState extends State<ChildListScreen>
                 const SizedBox(height: 20),
                 CustomErrorState(
                   title: 'Impossible de charger les statistiques',
-                  message: 'Une erreur est survenue lors du chargement des données.',
+                  message:
+                      'Une erreur est survenue lors du chargement des données.',
                   icon: Icons.error_outline_rounded,
                   iconColor: Colors.grey[400],
                   buttonColor: const Color(0xFF1565C0),
                   buttonIsLight: false,
                   buttonHasBorder: false,
                   retryText: 'Réessayer',
-                  onRetry: () => _loadStatistiquesPresence(
-                    _presenceStatsModalSetState,
-                  ),
+                  onRetry: () =>
+                      _loadStatistiquesPresence(_presenceStatsModalSetState),
                 ),
               ],
             ),
@@ -11171,7 +11213,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         if (!_isLoadingPresence && _presenceEntries.isEmpty)
           const CustomErrorState(
             title: 'Aucune donnée de présence disponible',
-            message: 'Les données de présence seront affichées ici une fois disponibles.',
+            message:
+                'Les données de présence seront affichées ici une fois disponibles.',
             icon: Icons.info_outline_rounded,
             iconColor: Color(0xFF1565C0),
           ),
@@ -12260,7 +12303,8 @@ class _ExtraScolaireSheetContentState
   Widget _buildEmptyServicesState() {
     return const CustomErrorState(
       title: 'Aucun abonnement actif',
-      message: 'Votre enfant n\'est abonné à aucun service extra-scolaire (Cantine, Transport, etc.) pour l\'année scolaire courante.',
+      message:
+          'Votre enfant n\'est abonné à aucun service extra-scolaire (Cantine, Transport, etc.) pour l\'année scolaire courante.',
       icon: Icons.assignment_late_outlined,
       iconColor: Color(0xFF7B1FA2),
     );
@@ -12683,7 +12727,8 @@ class _ExtraScolaireSheetContentState
   Widget _buildEmptyActivitiesState(String serviceTitle) {
     return CustomErrorState(
       title: 'Aucune activité aujourd\'hui',
-      message: 'Les données quotidiennes pour le service $serviceTitle s\'afficheront ici dès qu\'une activité sera enregistrée.',
+      message:
+          'Les données quotidiennes pour le service $serviceTitle s\'afficheront ici dès qu\'une activité sera enregistrée.',
       icon: Icons.notifications_none_rounded,
       iconColor: Colors.grey[400],
     );

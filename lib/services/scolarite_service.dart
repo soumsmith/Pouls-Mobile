@@ -101,9 +101,9 @@ class ScolariteService {
   }
 
   static List<Scolarite> filtrerEtTrierScolarites(List<Scolarite> scolarites) {
-    // Filtrer pour exclure les statuts ECOLIER et exclure la branche '*'
+    // Filtrer pour exclure les statuts ECOLIER
     final filtres = scolarites
-        .where((s) => s.shouldDisplay && s.branche != '*')
+        .where((s) => s.shouldDisplay)
         .toList();
 
     // Trier par date limite (croissante)
@@ -126,8 +126,22 @@ class ScolariteService {
   ) {
     final Map<String, List<Scolarite>> groupes = {};
 
+    String? mainBranche;
+    for (final s in scolarites) {
+      if (s.branche != null && s.branche != '*') {
+        mainBranche = s.branche;
+        break;
+      }
+    }
+
     for (final scolarite in scolarites) {
-      final branche = scolarite.branche ?? 'AUTRE';
+      String branche = scolarite.branche ?? 'AUTRE';
+      if (branche == '*' && mainBranche != null) {
+        branche = mainBranche;
+      } else if (branche == '*') {
+        branche = 'Général';
+      }
+      
       if (!groupes.containsKey(branche)) {
         groupes[branche] = [];
       }

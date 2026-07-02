@@ -716,7 +716,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Gérer l'action "Voir+" pour les vidéos de visite guidée
   void _handleSeeMoreVisiteGuidee() {
     MainScreenWrapper.of(context).navigateToExtraScreen(
-      AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos),
+      AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos, ecoleCode: ''),
     );
   }
 
@@ -1390,7 +1390,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleSeeMoreVideos() {
     MainScreenWrapper.of(
       context,
-    ).navigateToExtraScreen(const AllVideosScreen());
+    ).navigateToExtraScreen(const AllVideosScreen(ecoleCode: ''));
   }
 
   // Construire la section Coulisse de l'Excellence
@@ -3156,7 +3156,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onSeeMore: () {
             MainScreenWrapper.of(
               context,
-            ).navigateToExtraScreen(AllVideosScreen());
+            ).navigateToExtraScreen(const AllVideosScreen(ecoleCode: ''));
           },
         ),
         const SizedBox(height: 16),
@@ -3202,7 +3202,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'VISITE GUIDÉE',
         onSeeMore: () {
           MainScreenWrapper.of(context).navigateToExtraScreen(
-            AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos),
+            AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos, ecoleCode: ''),
           );
         },
       ),

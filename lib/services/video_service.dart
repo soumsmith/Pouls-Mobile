@@ -9,13 +9,17 @@ class VideoService {
   static String get baseUrl =>
       '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/videos';
 
-  static Future<List<Video>> getVideosByType(String type, {int page = 1, int perPage = 20}) async {
+  static Future<List<Video>> getVideosByType(String type, {int page = 1, int perPage = 20, String? ecoleCode}) async {
     try {
-      final uri = Uri.parse(baseUrl).replace(queryParameters: {
+      final Map<String, dynamic> queryParams = {
         'type_video': type,
         'page': page.toString(),
         'per_page': perPage.toString(),
-      });
+      };
+      if (ecoleCode != null && ecoleCode.isNotEmpty) {
+        queryParams['ecole'] = ecoleCode;
+      }
+      final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
       developer.log('GET Request URL: $uri');
       final response = await http.get(uri);
 

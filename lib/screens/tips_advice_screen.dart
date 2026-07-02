@@ -283,6 +283,8 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     }
     
     final items = _filteredAstuces;
+    final videos = items.where((a) => a.youtubeUrl != null && a.youtubeUrl!.isNotEmpty).toList();
+    final articles = items.where((a) => a.youtubeUrl == null || a.youtubeUrl!.isEmpty).toList();
     
     if (items.isEmpty) {
       return [
@@ -312,23 +314,195 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     }
 
     return [
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        sliver: SliverGrid(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: AppDimensions.getEcolesGridColumns(context),
-            crossAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context) *
-                (((AppDimensions.isTablet(context) ||
-                            AppDimensions.isLargeTablet(context)) &&
-                        AppDimensions.isLandscape(context))
-                    ? 1.8
-                    : 1.0),
-            mainAxisSpacing: AppDimensions.getAdaptiveGridSpacing(context),
-            mainAxisExtent: AppDimensions.getEcoleCardHeight(context),
+      if (videos.isNotEmpty) _buildVideosSection(videos),
+      if (videos.isNotEmpty && articles.isNotEmpty) _buildSeparator(),
+      if (articles.isNotEmpty) ..._buildArticlesSection(articles),
+      const SliverToBoxAdapter(child: BottomSpacer()),
+    ];
+  }
+
+  Widget _buildVideosSection(List<AstuceConseil> videos) {
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Text(
+              'Vidéos à la une',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.screenTextPrimaryThemed(context),
+              ),
+            ),
           ),
+          SizedBox(
+            height: AppDimensions.getEcoleCardHeight(context),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: videos.length > 3 ? videos.length + 1 : videos.length, // +1 for "Voir plus" button if > 3 videos
+              itemBuilder: (context, index) {
+                if (videos.length > 3 && index == videos.length) {
+                  return _buildSeeMoreVideosButton(videos);
+                }
+
+                final astuce = videos[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: SizedBox(
+                    width: 220,
+                    child: ImageMenuCardExternalTitle(
+                      index: index,
+                      cardKey: 'video_${astuce.id}',
+                      title: astuce.title,
+                      subtitle: astuce.content.replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ').trim(),
+                      imagePath: astuce.youtubeVideoId.isNotEmpty 
+                          ? 'https://img.youtube.com/vi/${astuce.youtubeVideoId}/mqdefault.jpg' 
+                          : ((astuce.image != null && astuce.image!.isNotEmpty) ? astuce.image : null),
+                      iconData: Icons.play_circle_fill,
+                      color: Colors.orange,
+                      isDark: Theme.of(context).brightness == Brightness.dark,
+                      height: AppDimensions.getEcoleCardHeight(context),
+                      externalTitleSpacing: 4,
+                      titleMaxLines: 2,
+                      allowLineBreak: true,
+                      showPlayIcon: true,
+                      onTap: () {
+                        final video = VisiteGuideeVideo(
+                          id: astuce.id,
+                          typeVideo: 'astuce',
+                          youtubeUrl: astuce.youtubeUrl!,
+                          title: astuce.title,
+                          description: astuce.content,
+                          code: astuce.codeecole,
+                          slug: astuce.slug,
+                        );
+                        MainScreenWrapper.of(context).navigateToExtraScreen(
+                          VisiteGuideeVideoFeedScreen(videos: [video]),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeeMoreVideosButton(List<AstuceConseil> videos) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Center(
+        child: InkWell(
+          onTap: () {
+            final allVideos = videos.map((a) => VisiteGuideeVideo(
+              id: a.id,
+              typeVideo: 'astuce',
+              youtubeUrl: a.youtubeUrl!,
+              title: a.title,
+              description: a.content,
+              code: a.codeecole,
+              slug: a.slug,
+            )).toList();
+            
+            if (allVideos.isNotEmpty) {
+              MainScreenWrapper.of(context).navigateToExtraScreen(
+                VisiteGuideeVideoFeedScreen(videos: allVideos),
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 140,
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Voir plus\nde vidéos',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeparator() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(child: Divider(thickness: 1, color: AppColors.screenBorder(context))),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Icon(Icons.star_outline_rounded, color: Colors.orange, size: 20),
+            ),
+            Expanded(child: Divider(thickness: 1, color: AppColors.screenBorder(context))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildArticlesSection(List<AstuceConseil> articles) {
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Text(
+            'Articles récents',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.screenTextPrimaryThemed(context),
+            ),
+          ),
+        ),
+      ),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) {
-              if (index == items.length) {
+              if (index == articles.length) {
                 return _isLoadingMore
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 20),
@@ -338,50 +512,171 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                       )
                     : const SizedBox.shrink();
               }
-              final astuce = items[index];
-              return ImageMenuCardExternalTitle(
-                index: index,
-                cardKey: astuce.id.toString(),
-                title: astuce.title,
-                subtitle: astuce.content.replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ').trim(),
-                imagePath: astuce.youtubeVideoId.isNotEmpty 
-                    ? 'https://img.youtube.com/vi/${astuce.youtubeVideoId}/mqdefault.jpg' 
-                    : ((astuce.image != null && astuce.image!.isNotEmpty) ? astuce.image : null),
-                iconData: Icons.lightbulb_outline,
-                color: Colors.orange,
-                isDark: Theme.of(context).brightness == Brightness.dark,
-                height: AppDimensions.getEcoleCardHeight(context),
-                externalTitleSpacing: 4,
-                titleMaxLines: 2,
-                allowLineBreak: true,
-                showPlayIcon: astuce.youtubeUrl != null && astuce.youtubeUrl!.isNotEmpty,
-                onTap: () {
-                  if (astuce.youtubeUrl != null && astuce.youtubeUrl!.isNotEmpty) {
-                    final video = VisiteGuideeVideo(
-                      id: astuce.id,
-                      typeVideo: 'astuce',
-                      youtubeUrl: astuce.youtubeUrl!,
-                      title: astuce.title,
-                      description: astuce.content,
-                      code: astuce.codeecole,
-                      slug: astuce.slug,
-                    );
-                    MainScreenWrapper.of(context).navigateToExtraScreen(
-                      VisiteGuideeVideoFeedScreen(videos: [video]),
-                    );
-                  } else {
+              final astuce = articles[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _AstuceCard(
+                  astuce: astuce,
+                  onTap: () {
                     MainScreenWrapper.of(context).navigateToExtraScreen(
                       TipsAdviceDetailScreen(astuce: astuce),
                     );
-                  }
-                },
+                  },
+                ),
               );
             },
-            childCount: items.length + (_hasMore ? 1 : 0),
+            childCount: articles.length + (_hasMore ? 1 : 0),
           ),
         ),
       ),
-      const SliverToBoxAdapter(child: BottomSpacer()),
     ];
+  }
+}
+
+class _AstuceCard extends StatelessWidget {
+  final AstuceConseil astuce;
+  final VoidCallback onTap;
+
+  const _AstuceCard({required this.astuce, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final uiData = astuce.toUiMap();
+    final Color color      = uiData['color'] as Color;
+    final String? imageUrl = uiData['image'] as String?;
+    final String title     = astuce.title;
+    final String subtitle  = astuce.codeecole.isNotEmpty ? astuce.codeecole : 'Astuces & Conseils';
+    final String date      = uiData['date'] as String;
+    final String type      = uiData['type'] as String;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Vignette image (gauche)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: SizedBox(
+                width: 90,
+                height: 90,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    imageUrl != null && imageUrl.isNotEmpty
+                        ? ImageHelper.buildNetworkImage(
+                            imageUrl: imageUrl,
+                            placeholder: title,
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  color.withOpacity(0.85),
+                                  color.withOpacity(0.45),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                uiData['icon'] as IconData? ?? Icons.lightbulb_outline,
+                                size: 36,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Infos (droite)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Ligne titre + badge catégorie
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.screenTextPrimaryThemed(context),
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Badge catégorie
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          type,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Sous-titre
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  // Date
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_rounded, size: 12, color: color),
+                      const SizedBox(width: 4),
+                      Text(
+                        date,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

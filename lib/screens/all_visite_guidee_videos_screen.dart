@@ -17,8 +17,9 @@ import '../widgets/main_screen_wrapper.dart';
 
 class AllVisiteGuideeVideosScreen extends StatefulWidget {
   final List<Video> videos;
+  final String ecoleCode;
 
-  const AllVisiteGuideeVideosScreen({super.key, required this.videos});
+  const AllVisiteGuideeVideosScreen({super.key, required this.videos, required this.ecoleCode});
 
   @override
   State<AllVisiteGuideeVideosScreen> createState() =>
@@ -64,6 +65,7 @@ class _AllVisiteGuideeVideosScreenState
         'visiteguide',
         page: 1,
         perPage: 20,
+        ecoleCode: widget.ecoleCode,
       );
       setState(() {
         _allVideos = newVideos;
@@ -97,6 +99,7 @@ class _AllVisiteGuideeVideosScreenState
         'visiteguide',
         page: nextPage,
         perPage: 20,
+        ecoleCode: widget.ecoleCode,
       );
       setState(() {
         final uniqueNewVideos = newVideos.where((v) => !_allVideos.contains(v)).toList();

@@ -60,9 +60,12 @@ class CoulisseExcellenceService {
   }
 
   static Future<List<CoulisseExcellence>>
-  getAllCoulisseExcellenceVideos({int page = 1, int perPage = 20}) async {
+  getAllCoulisseExcellenceVideos({int page = 1, int perPage = 20, String? ecoleCode}) async {
     try {
-      final url = '$baseUrl/coulisseexcellencelist?per_page=1000';
+      var url = '$baseUrl/coulisseexcellencelist?per_page=$perPage&page=$page';
+      if (ecoleCode != null && ecoleCode.isNotEmpty) {
+        url += '&ecole=$ecoleCode';
+      }
       developer.log('GET Request URL: $url');
       print('=== API COULISSE EXCELLENCE (ALL) ===');
       print('URL: $url');

@@ -17,7 +17,8 @@ import 'coulisse_video_feed_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 
 class AllVideosScreen extends StatefulWidget {
-  const AllVideosScreen({Key? key}) : super(key: key);
+  final String ecoleCode;
+  const AllVideosScreen({Key? key, required this.ecoleCode}) : super(key: key);
 
   @override
   State<AllVideosScreen> createState() => _AllVideosScreenState();
@@ -61,7 +62,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
       _error = null;
     });
     try {
-      final videos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(page: 1, perPage: 20);
+      final videos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(page: 1, perPage: 20, ecoleCode: widget.ecoleCode);
       setState(() {
         _videos = videos;
         _filteredVideos = _getFilteredList(videos, _searchController.text);
@@ -84,7 +85,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
     });
     try {
       final nextPage = _currentPage + 1;
-      final newVideos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(page: nextPage, perPage: 20);
+      final newVideos = await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(page: nextPage, perPage: 20, ecoleCode: widget.ecoleCode);
       setState(() {
         if (newVideos.isEmpty) {
           _hasMore = false;

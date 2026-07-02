@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/module_access_service.dart';
 import '../screens/subscription_screen.dart';
+import '../config/app_colors.dart';
 
 /// Widget qui contrôle l'accès à un module basé sur son identifiant API.
 ///
@@ -199,24 +200,20 @@ class _ModuleGuardState extends State<ModuleGuard> {
             child: Align(
               alignment: Alignment.center,
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade600,
+                  color: const Color.fromARGB(
+                    255,
+                    255,
+                    255,
+                    255,
+                  ).withOpacity(0.7),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
                 child: Icon(
                   Icons.lock_rounded,
-                  color: Colors.white,
-                  size:
-                      widget.lockIconSize +
-                      4, // Légèrement plus grand puisqu'il est au centre
+                  color: const Color.fromARGB(255, 236, 86, 0),
+                  size: widget.lockIconSize - 3, // Encore plus petit
                 ),
               ),
             ),

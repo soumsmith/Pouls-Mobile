@@ -41,6 +41,10 @@ class Video {
       if (youtubeUrl.contains('/embed/')) {
         return youtubeUrl.split('/embed/').last.split('?').first;
       }
+      // Pour les URLs de type youtube.com/shorts/ID
+      if (youtubeUrl.contains('/shorts/')) {
+        return youtubeUrl.split('/shorts/').last.split('?').first;
+      }
       // Pour les URLs avec paramètre v=
       if (youtubeUrl.contains('v=')) {
         return youtubeUrl.split('v=').last.split('&').first;

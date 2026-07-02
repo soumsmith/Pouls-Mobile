@@ -196,6 +196,9 @@ class BlogService {
       final response = await http.get(Uri.parse(url), headers: {'Accept': 'application/json'});
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        if (data['commentaire'] != null && data['commentaire']['data'] != null) {
+          return data['commentaire']['data'];
+        }
         return data['data'] ?? [];
       }
       return [];

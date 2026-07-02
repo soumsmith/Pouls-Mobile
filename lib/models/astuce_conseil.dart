@@ -46,7 +46,7 @@ class AstuceConseil {
       status: json['status']?.toString() ?? '',
       publishedAt: json['published_at']?.toString() ?? '',
       typedecontenu: json['typedecontenu']?.toString() ?? '',
-      youtubeUrl: json['youtube_url']?.toString(),
+      youtubeUrl: json['video_youtube']?.toString() ?? json['youtube_url']?.toString(),
       image: json['image']?.toString(),
       commentsCount: json['comments_count'] is int ? json['comments_count'] : int.tryParse(json['comments_count']?.toString() ?? '0') ?? 0,
       likesCount: json['likes_count'] is int ? json['likes_count'] : int.tryParse(json['likes_count']?.toString() ?? '0') ?? 0,
@@ -83,6 +83,12 @@ class AstuceConseil {
         final embedIndex = url.pathSegments.indexOf('embed');
         if (embedIndex + 1 < url.pathSegments.length) {
           return url.pathSegments[embedIndex + 1];
+        }
+      }
+      if (url.pathSegments.contains('shorts')) {
+        final shortsIndex = url.pathSegments.indexOf('shorts');
+        if (shortsIndex + 1 < url.pathSegments.length) {
+          return url.pathSegments[shortsIndex + 1];
         }
       }
       return url.queryParameters['v'] ?? '';

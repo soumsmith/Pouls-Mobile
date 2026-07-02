@@ -6,6 +6,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
 import 'visite_guidee_video_feed_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../utils/html_helper.dart';
 import '../models/video_comment.dart';
 import '../models/video_rating.dart';
 import '../services/theme_service.dart';
@@ -714,7 +715,7 @@ class _VideoPageState extends State<_VideoPage>
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        widget.video.displayDescription,
+                        HtmlHelper.stripHtmlTags(widget.video.displayDescription),
                         style: const TextStyle(
                           fontSize: 15,
                           height: 1.5,
@@ -913,7 +914,7 @@ class _VideoPageState extends State<_VideoPage>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          widget.video.displayDescription,
+                          HtmlHelper.stripHtmlTags(widget.video.displayDescription),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
@@ -1224,11 +1225,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               videoId: widget.video.id ?? widget.video.typeVideo.hashCode,
               userId: _currentUserId!,
               type: 'comment',
-              content: c['contenu']?.toString() ?? '',
+              content: (c['content'] ?? c['contenu'])?.toString() ?? '',
               createdAt: c['created_at'] != null
                   ? DateTime.tryParse(c['created_at']) ?? DateTime.now()
                   : DateTime.now(),
-              userName: c['nom']?.toString() ?? 'Utilisateur',
+              userName: (c['author_name'] ?? c['nom'])?.toString() ?? 'Utilisateur',
             ),
           )
           .toList();
@@ -1740,19 +1741,6 @@ class _RatingSheetState extends State<_RatingSheet> {
     final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
     final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
     
-    // Si c'est une vidéo astuce, il n'y a pas d'API spécifique pour récupérer les notes
-    // dans l'ancienne logique. S'il n'y a pas de notation pour les astuces, 
-    // on gère juste le fallback pour l'instant.
-    if (widget.video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          // Valeurs par défaut pour les astuces si non supporté
-        });
-      }
-      return;
-    }
-
     try {
       final ratings = await InteractionApiService.listInteractions(
         videoId: videoId,
@@ -1974,12 +1962,6 @@ class _RatingSheetState extends State<_RatingSheet> {
 
     if (userId > 0) {
       try {
-        final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
-        if (widget.video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
-           // Si astuce, utiliser l'API d'astuce si disponible (pour les ratings, il n'y a pas d'API spécifique mentionnée,
-           // mais par précaution, utilisons l'API d'interactions globale ou on ignore)
-        }
-        
         final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
         
         await InteractionApiService.createInteraction(

@@ -23,7 +23,7 @@ class VisiteGuideeVideo {
     return VisiteGuideeVideo(
       id: json['id'] as int?,
       typeVideo: (json['typevideo'] ?? json['type_video'] ?? '') as String,
-      youtubeUrl: (json['youtube_url'] ?? '') as String,
+      youtubeUrl: (json['video_youtube'] ?? json['youtube_url'] ?? '') as String,
       title: json['title'] as String?,
       description: json['description'] as String?,
       code: json['codeecole']?.toString() ?? json['code']?.toString() ?? json['ecole']?.toString() ?? '',
@@ -75,6 +75,13 @@ class VisiteGuideeVideo {
         final embedIndex = url.pathSegments.indexOf('embed');
         if (embedIndex + 1 < url.pathSegments.length) {
           return url.pathSegments[embedIndex + 1];
+        }
+      }
+      // Gérer les URLs shorts comme https://www.youtube.com/shorts/VIDEO_ID
+      if (url.pathSegments.contains('shorts')) {
+        final shortsIndex = url.pathSegments.indexOf('shorts');
+        if (shortsIndex + 1 < url.pathSegments.length) {
+          return url.pathSegments[shortsIndex + 1];
         }
       }
       // Gérer les URLs watch comme https://www.youtube.com/watch?v=VIDEO_ID

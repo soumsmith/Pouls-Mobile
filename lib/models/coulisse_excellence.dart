@@ -70,6 +70,13 @@ class CoulisseExcellence {
           return url.pathSegments[embedIndex + 1];
         }
       }
+      // Gérer les URLs shorts comme https://www.youtube.com/shorts/VIDEO_ID
+      if (url.pathSegments.contains('shorts')) {
+        final shortsIndex = url.pathSegments.indexOf('shorts');
+        if (shortsIndex + 1 < url.pathSegments.length) {
+          return url.pathSegments[shortsIndex + 1];
+        }
+      }
       // Gérer les URLs watch comme https://www.youtube.com/watch?v=VIDEO_ID
       return url.queryParameters['v'] ?? '';
     } else if (url.host.contains('youtu.be')) {

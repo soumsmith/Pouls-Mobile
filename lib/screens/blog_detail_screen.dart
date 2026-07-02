@@ -106,8 +106,8 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
     if (!mounted) return;
     setState(() {
       _comments = apiComments.map((c) => <String, dynamic>{
-        'author': c['nom']?.toString() ?? 'Utilisateur',
-        'comment': c['contenu']?.toString() ?? '',
+        'author': (c['author_name'] ?? c['nom'])?.toString() ?? 'Utilisateur',
+        'comment': (c['content'] ?? c['contenu'])?.toString() ?? '',
         'date': c['created_at']?.toString() ?? DateTime.now().toIso8601String(),
       }).toList();
       _commentsCount = _comments.length;
@@ -456,7 +456,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
         spacing: 24,
         runSpacing: 16,
         children: [
-          _buildActionItem(0, 'action_share', 'Partager', _C.indigo, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
+          _buildActionItem(0, 'action_share', 'Partager', _C.emerald, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
           _buildActionItem(1, 'action_comment', 'Commenter', _C.emerald, _scrollToComments, imagePath: 'assets/images/icons/comment.png'),
           _buildActionItem(2, 'action_school', 'École', isDark ? const Color(0xFF888888) : _C.slate900, _visitSchool, imagePath: 'assets/images/icons/ecole.png'),
         ],
@@ -720,13 +720,13 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                       height: 38,
                       decoration: BoxDecoration(
                         color: isDark
-                            ? _C.indigo.withOpacity(0.2)
-                            : _C.indigoLight,
+                            ? _C.emerald.withOpacity(0.2)
+                            : _C.emeraldLight,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
                         Icons.rate_review_rounded,
-                        color: _C.indigo,
+                        color: _C.emerald,
                         size: 19,
                       ),
                     ),
@@ -793,7 +793,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: _C.indigo,
+                        color: _C.emerald,
                         width: 1.5,
                       ),
                     ),
@@ -804,7 +804,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                 // Bouton envoyer
                 CustomButton(
                   text: 'Publier mon avis',
-                  color: _C.indigo,
+                  color: _C.emerald,
                   icon: Icons.send_rounded,
                   onPressed: _submitComment,
                   isLoading: _isSubmittingComment,
@@ -837,7 +837,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
+                    color: isDark ? _C.emerald.withOpacity(0.2) : _C.emeraldLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -845,7 +845,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: _C.indigo,
+                      color: _C.emerald,
                     ),
                   ),
                 ),
@@ -916,12 +916,12 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
               CircleAvatar(
                 radius: 18,
                 backgroundColor: isDark
-                    ? _C.indigo.withOpacity(0.2)
-                    : _C.indigoLight,
+                    ? _C.emerald.withOpacity(0.2)
+                    : _C.emeraldLight,
                 child: Text(
                   author.isNotEmpty ? author[0].toUpperCase() : '?',
                   style: const TextStyle(
-                    color: _C.indigo,
+                    color: _C.emerald,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -1415,7 +1415,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _C.indigo,
+                  color: _C.emerald,
                 ),
               ),
               const SizedBox(width: 3),
@@ -1425,7 +1425,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
                 child: const Icon(
                   Icons.keyboard_arrow_down_rounded,
                   size: 18,
-                  color: _C.indigo,
+                  color: _C.emerald,
                 ),
               ),
             ],

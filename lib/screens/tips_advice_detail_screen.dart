@@ -10,6 +10,7 @@ import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../utils/image_helper.dart';
+import '../utils/html_helper.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/share_bottom_sheet.dart';
 import '../widgets/image_menu_card_external_title.dart';
@@ -26,6 +27,7 @@ class _C {
   static const indigo = Color(0xFF6366F1);
   static const indigoLight = Color(0xFFEEF2FF);
   static const emerald = Color(0xFF10B981);
+  static const emeraldLight = Color(0xFFD1FAE5);
   static const amber = Color(0xFFF59E0B);
   static const rose = Color(0xFFEF4444);
   static const slate300 = Color(0xFFCBD5E1);
@@ -83,8 +85,8 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
     if (!mounted) return;
     setState(() {
       _comments = apiComments.map((c) => <String, dynamic>{
-        'author': c['nom']?.toString() ?? 'Utilisateur',
-        'comment': c['contenu']?.toString() ?? '',
+        'author': (c['author_name'] ?? c['nom'])?.toString() ?? 'Utilisateur',
+        'comment': (c['content'] ?? c['contenu'])?.toString() ?? '',
         'date': c['created_at']?.toString() ?? DateTime.now().toIso8601String(),
       }).toList();
       _commentsCount = _comments.length;
@@ -167,7 +169,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
             '''
 💡 ${widget.astuce.title}
 
-${widget.astuce.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
+${HtmlHelper.stripHtmlTags(widget.astuce.content)}
 
 Découvrez plus d\'astuces sur notre application! 📱
 Téléchargez l'application ici : ${AppConfig.storeUrl}
@@ -348,7 +350,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
         spacing: 24,
         runSpacing: 16,
         children: [
-          _buildActionItem(0, 'action_share', 'Partager', _C.indigo, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
+          _buildActionItem(0, 'action_share', 'Partager', _C.emerald, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
           _buildActionItem(1, 'action_comment', 'Avis', _C.emerald, _scrollToComments, imagePath: 'assets/images/icons/comment.png'),
         ],
       ),
@@ -427,7 +429,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
               borderRadius: BorderRadius.circular(16),
               boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
-            child: _ExpandableText(text: _stripHtmlTags(widget.astuce.content)),
+            child: _ExpandableText(text: HtmlHelper.stripHtmlTags(widget.astuce.content)),
           ),
         ],
       ),
@@ -501,7 +503,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                 child: CustomButton(
                   text: 'Publier',
                   icon: Icons.send_rounded,
-                  color: _C.indigo,
+                  color: _C.emerald,
                   onPressed: _submitComment,
                   isLoading: _isSubmittingComment,
                 ),
@@ -527,7 +529,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
+                    color: isDark ? _C.emerald.withOpacity(0.2) : _C.emeraldLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -535,7 +537,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: _C.indigo,
+                      color: _C.emerald,
                     ),
                   ),
                 ),
@@ -605,11 +607,11 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: isDark ? _C.indigo.withOpacity(0.2) : _C.indigoLight,
+                backgroundColor: isDark ? _C.emerald.withOpacity(0.2) : _C.emeraldLight,
                 child: Text(
                   author.isNotEmpty ? author[0].toUpperCase() : '?',
                   style: const TextStyle(
-                    color: _C.indigo,
+                    color: _C.emerald,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -652,15 +654,6 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
         ],
       ),
     );
-  }
-
-  String _stripHtmlTags(String htmlString) {
-    final RegExp exp = RegExp(
-      r'<[^>]*>',
-      multiLine: true,
-      caseSensitive: false,
-    );
-    return htmlString.replaceAll(exp, '').trim();
   }
 
   String _formatDate(String dateString) {

@@ -104,6 +104,9 @@ class AstuceConseilService {
       print('📥 Status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        if (data['commentaire'] != null && data['commentaire']['data'] != null) {
+          return data['commentaire']['data'];
+        }
         return data['data'] ?? [];
       } else {
         print('❌ Response: ${response.body}');

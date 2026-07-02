@@ -67,12 +67,8 @@ class AppConfig {
   static const String IOS_STORE_URL = 'https://apps.apple.com/app/parent-responsable/id6763526336';
   static const String ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr';
 
-  /// Retourne l'URL du store adaptée à la plateforme actuelle
+  /// Retourne les URLs des stores pour le partage
   static String get storeUrl {
-    if (kIsWeb) return ANDROID_STORE_URL;
-    if (Platform.isIOS) {
-      return IOS_STORE_URL;
-    }
-    return ANDROID_STORE_URL;
+    return 'Play Store : $ANDROID_STORE_URL\nApp Store : $IOS_STORE_URL';
   }
 }

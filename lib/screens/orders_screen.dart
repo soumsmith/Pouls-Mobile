@@ -234,6 +234,14 @@ class _OrdersScreenState extends State<OrdersScreen>
       title: 'Mes Commandes',
       isDark: isDark,
       automaticallyImplyLeading: true,
+      onBackTap: () {
+        final wrapper = MainScreenWrapper.maybeOf(context);
+        if (wrapper != null) {
+          wrapper.goBackToPreviousTab();
+        } else {
+          Navigator.pop(context);
+        }
+      },
       actions: [
         // Bouton de recherche
         GestureDetector(
@@ -255,14 +263,6 @@ class _OrdersScreenState extends State<OrdersScreen>
           ),
         ),
       ],
-      onBackTap: () {
-        final wrapper = MainScreenWrapper.maybeOf(context);
-        if (wrapper != null) {
-          wrapper.goBackToPreviousTab();
-        } else {
-          Navigator.pop(context);
-        }
-      },
     );
   }
 
@@ -432,7 +432,16 @@ class _OrdersScreenState extends State<OrdersScreen>
       buttonIsLight: true,
       buttonWidth: 220,
       retryText: 'Commencer vos achats',
-      onRetry: () => Navigator.pop(context),
+      onRetry: () {
+        final wrapper = MainScreenWrapper.maybeOf(context);
+        if (wrapper != null) {
+          wrapper.goBackToPreviousTab();
+          // Optionally force switch to Shop tab if needed, but returning to previous is safer.
+          // wrapper.updateCurrentIndex(1); // 1 is Shop
+        } else {
+          Navigator.pop(context);
+        }
+      },
     );
   }
 

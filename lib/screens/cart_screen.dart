@@ -262,7 +262,7 @@ class _CartScreenState extends State<CartScreen>
         message: 'Ajoutez des produits pour commencer vos achats',
         icon: Icons.shopping_bag_outlined,
         iconColor: AppColors.shopBlue,
-        buttonColor: AppColors.screenCardThemed(context),
+        buttonColor: AppColors.screenTextPrimaryThemed(context),
         buttonIsLight: true, // Pour avoir le style du bouton Continuer
         buttonHasBorder: true,
         buttonBorderColor: AppColors.screenDividerThemed(context),

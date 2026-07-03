@@ -79,6 +79,7 @@ import '../services/astuce_conseil_service.dart';
 import '../models/astuce_conseil.dart';
 import 'tips_advice_screen.dart';
 import 'tips_advice_detail_screen.dart';
+import '../widgets/ad_widget.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -1820,7 +1821,12 @@ class _HomeScreenState extends State<HomeScreen> {
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
       ),
-      child: Scaffold(backgroundColor: Colors.black, body: bodyContent),
+      child: Stack(
+        children: [
+          Scaffold(backgroundColor: Colors.black, body: bodyContent),
+          const AdWidget(),
+        ],
+      ),
     );
   }
 

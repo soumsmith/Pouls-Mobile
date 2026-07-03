@@ -41,7 +41,7 @@ class SubscriptionService {
 
         print('✅ ${plansJson.length} offres récupérées !');
         return plansJson
-            .map((plan) => SubscriptionOffer.fromJson(plan, modules))
+            .map((plan) => SubscriptionOffer.fromJson(plan))
             .toList();
       } else {
         print('❌ Erreur API: ${response.statusCode}');

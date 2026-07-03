@@ -12,6 +12,7 @@ import '../config/app_dimensions.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/components/custom_error_state.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -238,109 +239,244 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final subtitleColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: AppDimensions.getBottomSheetShadow(context),
         border: offer.isPopular
-            ? Border.all(color: Colors.amber.shade400, width: 3)
-            : null,
+            ? Border.all(color: Colors.amber.shade400, width: 2)
+            : Border.all(color: isDark ? Colors.white10 : Colors.black12, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (offer.isPopular)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade400,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+          // En-tête de la carte avec l'image ou le badge
+          Stack(
+            children: [
+              if (offer.image != null)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(22),
+                    topRight: Radius.circular(22),
+                  ),
+                  child: CachedNetworkImage(
+                    imageUrl: offer.image!,
+                    height: 110,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      height: 110,
+                      color: Colors.grey.withOpacity(0.1),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: 110,
+                      color: Colors.grey.withOpacity(0.1),
+                      child: const Icon(Icons.image_not_supported),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  height: 24, // Espace minimal si pas d'image
+                  decoration: BoxDecoration(
+                    color: offer.isPopular ? Colors.amber.shade400 : Colors.transparent,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(22),
+                      topRight: Radius.circular(22),
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'LE PLUS POPULAIRE',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  letterSpacing: 1.2,
+                
+              if (offer.isPopular)
+                Positioned(
+                  top: offer.image != null ? 12 : 0,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade400,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
+                      ],
+                    ),
+                    child: const Text(
+                      'POPULAIRE',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+            ],
+          ),
+          
           Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   offer.title,
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
                     color: textColor,
+                    letterSpacing: -0.5,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   offer.description,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: subtitleColor,
+                    fontSize: 13,
                   ),
                 ),
-                const SizedBox(height: 16),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+                const SizedBox(height: 12),
+                
+                // Section Prix
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
                     children: [
-                      Text(
-                        '${offer.price.toInt()} FCFA',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: textColor,
+                      if (offer.isPromoActive)
+                        Text(
+                          '${offer.price.toInt()} ${offer.currency}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.red.shade400,
+                            decoration: TextDecoration.lineThrough,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              offer.activePrice == 0 ? 'Gratuit' : '${offer.activePrice.toInt()} ${offer.currency}',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w900,
+                                color: offer.isPromoActive ? Colors.green.shade600 : textColor,
+                              ),
+                            ),
+                            if (offer.activePrice > 0)
+                              Text(
+                                ' / ${offer.durationDays}j',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: subtitleColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      Text(
-                        ' / ${offer.duration}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: subtitleColor,
-                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.family_restroom, size: 16, color: subtitleColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Jusqu\'à ${offer.maxStudents} enfant${offer.maxStudents > 1 ? 's' : ''}',
+                            style: TextStyle(
+                              color: subtitleColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                const Divider(),
+                
                 const SizedBox(height: 16),
-                ...offer.features.map((feature) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                const Divider(),
+                const SizedBox(height: 12),
+                
+                // Liste des modules
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Inclus dans ce forfait :',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...offer.packageModules.map((module) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.check_circle,
-                              color: offer.isPopular
-                                  ? Colors.amber.shade600
-                                  : Colors.green),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(feature, style: TextStyle(color: textColor))),
+                          Container(
+                            padding: const EdgeInsets.all(1),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.check_circle,
+                                color: Colors.green, size: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  module.nom, 
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                if (module.description != null && module.description!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    module.description!,
+                                    style: TextStyle(
+                                      color: subtitleColor,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ]
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     )),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 CustomButton(
-                  text: offer.price == 0 ? 'Commencer' : "S'abonner",
+                  text: offer.activePrice == 0 ? 'Commencer' : "Sélectionner ce plan",
                   onPressed: () => _subscribe(offer),
                   backgroundColor: offer.isPopular
                       ? Colors.amber.shade600
                       : Colors.indigo.shade600,
                   textColor: Colors.white,
                   borderRadius: BorderRadius.circular(30),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ],
             ),

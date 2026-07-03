@@ -49,7 +49,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
+
   bool _isBookmarked = false;
   AnimationController? _bookmarkController;
   Animation<double>? _bookmarkAnim;
@@ -57,7 +57,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
   List<Map<String, dynamic>> _comments = [];
   bool _isSubmittingComment = false;
   bool _isLoadingComments = true;
-  
+
   late int _likesCount;
   late int _commentsCount;
   final AstuceConseilService _apiService = AstuceConseilService();
@@ -67,7 +67,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
     super.initState();
     _likesCount = widget.astuce.likesCount;
     _commentsCount = widget.astuce.commentsCount;
-    
+
     _bookmarkController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -75,7 +75,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
     _bookmarkAnim = Tween<double>(begin: 1.0, end: 1.35).animate(
       CurvedAnimation(parent: _bookmarkController!, curve: Curves.elasticOut),
     );
-    
+
     _fetchComments();
     _checkLikeStatus();
   }
@@ -84,11 +84,18 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
     final apiComments = await _apiService.getComments(widget.astuce.slug);
     if (!mounted) return;
     setState(() {
-      _comments = apiComments.map((c) => <String, dynamic>{
-        'author': (c['author_name'] ?? c['nom'])?.toString() ?? 'Utilisateur',
-        'comment': (c['content'] ?? c['contenu'])?.toString() ?? '',
-        'date': c['created_at']?.toString() ?? DateTime.now().toIso8601String(),
-      }).toList();
+      _comments = apiComments
+          .map(
+            (c) => <String, dynamic>{
+              'author':
+                  (c['author_name'] ?? c['nom'])?.toString() ?? 'Utilisateur',
+              'comment': (c['content'] ?? c['contenu'])?.toString() ?? '',
+              'date':
+                  c['created_at']?.toString() ??
+                  DateTime.now().toIso8601String(),
+            },
+          )
+          .toList();
       _commentsCount = _comments.length;
       _isLoadingComments = false;
     });
@@ -97,15 +104,15 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
   Future<void> _checkLikeStatus() async {
     final user = AuthService.instance.getCurrentUser();
     if (user == null) return;
-    
+
     final likes = await _apiService.getLikes(widget.astuce.slug);
     final hasLiked = likes.any((like) => like['userid']?.toString() == user.id);
-    
+
     if (mounted) {
       setState(() {
         _isBookmarked = hasLiked;
         // Optionnel : on peut mettre à jour le count basé sur le serveur
-        // _likesCount = likes.length; 
+        // _likesCount = likes.length;
       });
     }
   }
@@ -124,20 +131,20 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
       _showSnack('Veuillez vous connecter pour aimer', _C.orange);
       return;
     }
-    
+
     HapticFeedback.lightImpact();
     setState(() {
       _isBookmarked = !_isBookmarked;
       _likesCount += _isBookmarked ? 1 : -1;
     });
     _bookmarkController?.forward(from: 0);
-    
+
     final success = await _apiService.likeArticle(
       widget.astuce.slug,
       nom: user.fullName,
       userId: int.tryParse(user.id) ?? 0,
     );
-    
+
     if (!success && mounted) {
       // Revert if failed
       setState(() {
@@ -157,7 +164,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
         userId: int.tryParse(user.id) ?? 0,
       );
     }
-    
+
     showModalBottomSheet(
       constraints: const BoxConstraints(maxWidth: double.infinity),
       context: context,
@@ -197,9 +204,9 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
       _showSnack('Veuillez entrer un commentaire', _C.rose);
       return;
     }
-    
+
     setState(() => _isSubmittingComment = true);
-    
+
     final content = _commentController.text.trim();
     final success = await _apiService.addComment(
       widget.astuce.slug,
@@ -207,9 +214,9 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
       userId: int.tryParse(user.id) ?? 0,
       contenu: content,
     );
-    
+
     if (!mounted) return;
-    
+
     if (success) {
       setState(() {
         _comments.insert(0, <String, dynamic>{
@@ -246,7 +253,10 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: AppColors.screenSurfaceThemed(context),
-        floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
+        floatingActionButton: ScrollToTopFab(
+          scrollController: _scrollController,
+          bottomSpacerHeight: 70,
+        ),
         body: CustomScrollView(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
@@ -284,6 +294,12 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
       ),
       actions: [
         _NavIconBtn(
+          icon: Icons.share_rounded,
+          iconColor: Colors.white,
+          onTap: _showShareMenu,
+        ),
+        const SizedBox(width: 8),
+        _NavIconBtn(
           icon: _isBookmarked
               ? Icons.bookmark_rounded
               : Icons.bookmark_border_rounded,
@@ -298,7 +314,10 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           StretchMode.zoomBackground,
           StretchMode.blurBackground,
         ],
-        background: _HeroBanner(astuce: widget.astuce),
+        background: _HeroBanner(
+          astuce: widget.astuce,
+          onShare: _showShareMenu,
+        ),
       ),
     );
   }
@@ -350,14 +369,36 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
         spacing: 24,
         runSpacing: 16,
         children: [
-          _buildActionItem(0, 'action_share', 'Partager', _C.emerald, _showShareMenu, imagePath: 'assets/images/icons/partage.png'),
-          _buildActionItem(1, 'action_comment', 'Avis', _C.emerald, _scrollToComments, imagePath: 'assets/images/icons/comment.png'),
+          _buildActionItem(
+            0,
+            'action_share',
+            'Partager',
+            _C.emerald,
+            _showShareMenu,
+            imagePath: 'assets/images/icons/partage.png',
+          ),
+          _buildActionItem(
+            1,
+            'action_comment',
+            'Avis',
+            _C.emerald,
+            _scrollToComments,
+            imagePath: 'assets/images/icons/comment.png',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActionItem(int index, String key, String title, Color color, VoidCallback onTap, {IconData? icon, String? imagePath}) {
+  Widget _buildActionItem(
+    int index,
+    String key,
+    String title,
+    Color color,
+    VoidCallback onTap, {
+    IconData? icon,
+    String? imagePath,
+  }) {
     final size = AppDimensions.getSquareCardWidthSize(context);
     return ImageMenuCardExternalTitle(
       index: index,
@@ -429,7 +470,9 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
               borderRadius: BorderRadius.circular(16),
               boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
-            child: _ExpandableText(text: HtmlHelper.stripHtmlTags(widget.astuce.content)),
+            child: _ExpandableText(
+              text: HtmlHelper.stripHtmlTags(widget.astuce.content),
+            ),
           ),
         ],
       ),
@@ -488,8 +531,9 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                     fontSize: 14,
                   ),
                   filled: true,
-                  fillColor:
-                      isDark ? const Color(0xFF1E1E2A) : AppColors.grey50,
+                  fillColor: isDark
+                      ? const Color(0xFF1E1E2A)
+                      : AppColors.grey50,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -527,9 +571,14 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? _C.emerald.withOpacity(0.2) : _C.emeraldLight,
+                    color: isDark
+                        ? _C.emerald.withOpacity(0.2)
+                        : _C.emeraldLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -558,31 +607,35 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: _isLoadingComments ? const CircularProgressIndicator() : Column(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E2A) : _C.slate100,
-                      borderRadius: BorderRadius.circular(14),
+              child: _isLoadingComments
+                  ? const CircularProgressIndicator()
+                  : Column(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF1E1E2A)
+                                : _C.slate100,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 26,
+                            color: AppColors.screenTextSecondaryThemed(context),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Soyez le premier à commenter',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.screenTextSecondaryThemed(context),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 26,
-                      color: AppColors.screenTextSecondaryThemed(context),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Soyez le premier à commenter',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.screenTextSecondaryThemed(context),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
@@ -607,7 +660,9 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: isDark ? _C.emerald.withOpacity(0.2) : _C.emeraldLight,
+                backgroundColor: isDark
+                    ? _C.emerald.withOpacity(0.2)
+                    : _C.emeraldLight,
                 child: Text(
                   author.isNotEmpty ? author[0].toUpperCase() : '?',
                   style: const TextStyle(
@@ -660,8 +715,18 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
     try {
       final dt = DateTime.parse(dateString);
       const months = [
-        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+        'Janvier',
+        'Février',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juillet',
+        'Août',
+        'Septembre',
+        'Octobre',
+        'Novembre',
+        'Décembre',
       ];
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
     } catch (_) {
@@ -672,82 +737,165 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
 
 class _HeroBanner extends StatelessWidget {
   final AstuceConseil astuce;
+  final VoidCallback onShare;
 
-  const _HeroBanner({required this.astuce});
+  const _HeroBanner({required this.astuce, required this.onShare});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (astuce.image != null && astuce.image!.isNotEmpty)
-          ImageHelper.buildNetworkImage(
-            imageUrl: astuce.image!,
-            placeholder: 'assets/images/placeholder.png',
-            fit: BoxFit.cover,
-            borderRadius: BorderRadius.zero,
-          )
-        else
+    return GestureDetector(
+      onTap: () => _showImageDialog(context, astuce),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (astuce.image != null && astuce.image!.isNotEmpty)
+            ImageHelper.buildNetworkImage(
+              imageUrl: astuce.image!,
+              placeholder: 'assets/images/placeholder.png',
+              fit: BoxFit.cover,
+              borderRadius: BorderRadius.zero,
+            )
+          else
+            Container(
+              color: _C.orange.withOpacity(0.1),
+              child: const Icon(
+                Icons.lightbulb_outline,
+                size: 64,
+                color: _C.orange,
+              ),
+            ),
           Container(
-            color: _C.orange.withOpacity(0.1),
-            child: const Icon(
-              Icons.lightbulb_outline,
-              size: 64,
-              color: _C.orange,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.5),
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.9),
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
             ),
           ),
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.5),
-                Colors.transparent,
-                Colors.black.withOpacity(0.9),
-              ],
-              stops: const [0.0, 0.4, 1.0],
-            ),
-          ),
-        ),
-        Positioned(
-          left: 20,
-          right: 20,
-          bottom: 40,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _C.orange,
-                  borderRadius: BorderRadius.circular(6),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 40,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _C.orange,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'CONSEIL',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
                 ),
-                child: const Text(
-                  'CONSEIL',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
+                const SizedBox(height: 12),
+                Text(
+                  astuce.title,
+                  style: const TextStyle(
+                    fontSize: 26,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+                    color: Colors.white,
+                    height: 1.2,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showImageDialog(BuildContext context, AstuceConseil astuce) {
+    if (astuce.image == null || astuce.image!.isEmpty) return;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.9),
+      builder: (BuildContext context) {
+        return Material(
+          type: MaterialType.transparency,
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: ImageHelper.buildNetworkImage(
+                    imageUrl: astuce.image!,
+                    placeholder: 'assets/images/placeholder.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                astuce.title,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  height: 1.2,
-                  letterSpacing: -0.5,
+              Positioned(
+                top: 50,
+                right: 20,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, color: Colors.white),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 40,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      icon: const Icon(Icons.share_rounded),
+                      label: const Text(
+                        'Partager',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        onShare();
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -775,9 +923,7 @@ class _NavIconBtn extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
-      child: Center(
-        child: Icon(icon, color: iconColor, size: 20),
-      ),
+      child: Center(child: Icon(icon, color: iconColor, size: 20)),
     );
     if (scaleAnim != null) {
       child = ScaleTransition(scale: scaleAnim!, child: child);

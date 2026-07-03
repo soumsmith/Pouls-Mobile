@@ -37,6 +37,7 @@ import 'blog_detail_screen.dart';
 import '../models/video.dart';
 import 'all_videos_screen.dart';
 import 'all_visite_guidee_videos_screen.dart';
+import 'integration_conditions_screen.dart';
 import '../models/fee.dart';
 import '../models/scolarite.dart';
 import '../models/niveau.dart';
@@ -6714,6 +6715,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         _buildContactInfoSection(setSheetState),
         const SizedBox(height: 16),
         _buildAcademicInfoSection(setSheetState),
+        const SizedBox(height: 16),
+        _buildIntegrationConditionsSection(),
         const SizedBox(height: 20),
       ],
     );
@@ -8788,6 +8791,80 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       ],
                     )
                   : const SizedBox(width: double.infinity, height: 0),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntegrationConditionsSection() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context); // Close the bottom sheet
+        final sigle = widget.ecole.parametreCode ?? 'gainhs';
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => IntegrationConditionsScreen(ecoleSigle: sigle),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.transparent,
+            width: 1,
+          ),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.purple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.assignment_rounded,
+                color: Colors.purple,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Conditions d\'intégration',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(14),
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  Text(
+                    'Voir les prérequis et modalités',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      color: AppColors.screenTextSecondaryThemed(context),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.screenTextSecondaryThemed(context),
+              size: 24,
             ),
           ],
         ),

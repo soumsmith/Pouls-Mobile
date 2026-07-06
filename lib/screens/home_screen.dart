@@ -1469,7 +1469,7 @@ class _HomeScreenState extends State<HomeScreen> {
         index: 0,
         cardKey: 'school_${video.id}',
         title: schoolData['title'] as String,
-        subtitle: schoolData['subtitle'] as String,
+        // subtitle: schoolData['subtitle'] as String,
         imagePath: schoolData['imagePath'] as String?,
         iconData: Icons.business,
         isDark: Theme.of(context).brightness == Brightness.dark,

@@ -23,7 +23,7 @@ class AdBannerCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => _launchUrl(ad.linkUrl),
       child: Container(
-        height: 200,
+        height: 160,
         margin: const EdgeInsets.only(bottom: 12.0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
@@ -46,9 +46,7 @@ class AdBannerCard extends StatelessWidget {
                 height: double.infinity,
                 placeholder: (context, url) => Container(
                   color: AppColors.screenCardThemed(context),
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
                 errorWidget: (context, url, error) => Container(
                   color: AppColors.screenCardThemed(context),
@@ -98,7 +96,10 @@ class AdBannerCard extends StatelessWidget {
                 top: 8,
                 left: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(4),
@@ -143,7 +144,10 @@ class _AdBannerCarouselState extends State<AdBannerCarousel> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    final adCount = widget.adGroup.ads.length;
+    final initialPage = adCount > 1 ? adCount * 5000 : 0;
+    _currentPage = 0;
+    _pageController = PageController(initialPage: initialPage);
     _startAutoScroll();
   }
 
@@ -152,12 +156,14 @@ class _AdBannerCarouselState extends State<AdBannerCarousel> {
     _autoScrollTimer?.cancel();
     _autoScrollTimer = Timer.periodic(widget.autoScrollDuration, (_) {
       if (!mounted) return;
-      final nextPage = (_currentPage + 1) % widget.adGroup.ads.length;
-      _pageController.animateToPage(
-        nextPage,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
+      if (_pageController.hasClients) {
+        final nextPage = _pageController.page!.round() + 1;
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 
@@ -182,7 +188,7 @@ class _AdBannerCarouselState extends State<AdBannerCarousel> {
     final adCount = widget.adGroup.ads.length;
 
     return SizedBox(
-      height: 200,
+      height: 160,
       child: GestureDetector(
         onPanDown: (_) => _stopAutoScroll(),
         onPanEnd: (_) => _startAutoScroll(),
@@ -190,14 +196,15 @@ class _AdBannerCarouselState extends State<AdBannerCarousel> {
         child: PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.horizontal,
-          itemCount: adCount,
+          itemCount: adCount * 10000,
           onPageChanged: (index) {
-            setState(() => _currentPage = index);
+            setState(() => _currentPage = index % adCount);
           },
           itemBuilder: (context, index) {
+            final adIndex = index % adCount;
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: AdBannerCard(ad: widget.adGroup.ads[index]),
+              child: AdBannerCard(ad: widget.adGroup.ads[adIndex]),
             );
           },
         ),

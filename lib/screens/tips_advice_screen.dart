@@ -82,7 +82,10 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     }
   }
 
-  Future<void> _loadAstuces({bool loadMore = false, bool isRefresh = false}) async {
+  Future<void> _loadAstuces({
+    bool loadMore = false,
+    bool isRefresh = false,
+  }) async {
     if (loadMore) {
       if (_isLoadingMore || !_hasMore) return;
       setState(() => _isLoadingMore = true);
@@ -97,9 +100,11 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     }
 
     try {
-      final response = await _astuceService.getAstucesConseils(page: _currentPage);
+      final response = await _astuceService.getAstucesConseils(
+        page: _currentPage,
+      );
       final newAstuces = response.data;
-      
+
       setState(() {
         if (loadMore) {
           _allAstuces.addAll(newAstuces);
@@ -110,7 +115,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
         }
         _hasMore = response.currentPage < response.lastPage;
       });
-      
+
       if (!loadMore) _fadeController.forward(from: 0);
     } catch (e) {
       setState(() {
@@ -129,16 +134,21 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     var astuces = _allAstuces;
     if (_searchController.text.isNotEmpty) {
       final q = _searchController.text.toLowerCase();
-      astuces = astuces.where((a) =>
-        a.title.toLowerCase().contains(q) ||
-        a.content.toLowerCase().contains(q)
-      ).toList();
+      astuces = astuces
+          .where(
+            (a) =>
+                a.title.toLowerCase().contains(q) ||
+                a.content.toLowerCase().contains(q),
+          )
+          .toList();
     }
     return astuces;
   }
 
   List<dynamic> get _mixedArticles {
-    final articles = _filteredAstuces.where((a) => a.youtubeUrl == null || a.youtubeUrl!.isEmpty).toList();
+    final articles = _filteredAstuces
+        .where((a) => a.youtubeUrl == null || a.youtubeUrl!.isEmpty)
+        .toList();
     return AdInjector.injectAds(articles, _ads);
   }
 
@@ -155,6 +165,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
       backgroundColor: AppColors.screenSurfaceThemed(context),
       floatingActionButton: ScrollToTopFab(
         scrollController: _scrollController,
+        bottomSpacerHeight: 90.0,
       ),
       body: Stack(
         children: [
@@ -166,36 +177,39 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
               controller: _scrollController,
               slivers: [
                 CustomSliverAppBar(
-                title: 'Astuces & Conseils',
-                onBackTap: () => MainScreenWrapper.of(context).navigateToHome(),
-                actions: [
-                  IconButton(
-                    icon: Icon(
-                      _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isSearching = !_isSearching;
-                        if (!_isSearching) {
-                          _searchController.clear();
+                  title: 'Astuces & Conseils',
+                  onBackTap: () =>
+                      MainScreenWrapper.of(context).navigateToHome(),
+                  actions: [
+                    IconButton(
+                      icon: Icon(
+                        _isSearching
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                        color: AppColors.screenTextPrimaryThemed(context),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isSearching = !_isSearching;
+                          if (!_isSearching) {
+                            _searchController.clear();
+                          }
+                        });
+                        if (_isSearching && _scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            0.0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
                         }
-                      });
-                      if (_isSearching && _scrollController.hasClients) {
-                        _scrollController.animateTo(
-                          0.0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-              SliverToBoxAdapter(child: _buildSearchBar()),
-              ..._buildBodySlivers(),
-            ],
-          ),
+                      },
+                    ),
+                  ],
+                ),
+                SliverToBoxAdapter(child: _buildSearchBar()),
+                ..._buildBodySlivers(),
+              ],
+            ),
           ),
           Positioned(
             bottom: 0,
@@ -272,28 +286,29 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     if (_isLoading) {
       return [
         const SliverFillRemaining(
-          child: Center(
-            child: CircularProgressIndicator(color: Colors.orange),
-          ),
+          child: Center(child: CircularProgressIndicator(color: Colors.orange)),
         ),
       ];
     }
-    
+
     if (_error != null) {
-      final isNetworkError = _error!.contains('SocketException') || 
-                             _error!.contains('ClientException') ||
-                             _error!.contains('Failed host lookup') ||
-                             _error!.contains('Connection refused');
-                             
-      final errorMessage = isNetworkError 
-          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+      final isNetworkError =
+          _error!.contains('SocketException') ||
+          _error!.contains('ClientException') ||
+          _error!.contains('Failed host lookup') ||
+          _error!.contains('Connection refused');
+
+      final errorMessage = isNetworkError
+          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
           : 'Une erreur inattendue est survenue lors du chargement des astuces.';
 
       return [
         SliverFillRemaining(
           hasScrollBody: false,
           child: CustomErrorState(
-            title: isNetworkError ? 'Erreur de connexion' : 'Une erreur est survenue',
+            title: isNetworkError
+                ? 'Erreur de connexion'
+                : 'Une erreur est survenue',
             message: errorMessage,
             onRetry: _loadAstuces,
             buttonIsLight: true,
@@ -302,12 +317,16 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
         ),
       ];
     }
-    
+
     final items = _filteredAstuces;
     final slivers = <Widget>[];
-    final videos = items.where((a) => a.youtubeUrl != null && a.youtubeUrl!.isNotEmpty).toList();
-    final articles = items.where((a) => a.youtubeUrl == null || a.youtubeUrl!.isEmpty).toList();
-    
+    final videos = items
+        .where((a) => a.youtubeUrl != null && a.youtubeUrl!.isNotEmpty)
+        .toList();
+    final articles = items
+        .where((a) => a.youtubeUrl == null || a.youtubeUrl!.isEmpty)
+        .toList();
+
     if (items.isEmpty) {
       return [
         SliverFillRemaining(
@@ -339,11 +358,21 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
       if (videos.isNotEmpty) _buildVideosSection(videos),
       if (videos.isNotEmpty && articles.isNotEmpty) _buildSeparator(),
       if (articles.isNotEmpty) ..._buildArticlesSection(articles),
-      const SliverToBoxAdapter(child: BottomSpacer()),
+      const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
     ];
   }
 
   Widget _buildVideosSection(List<AstuceConseil> videos) {
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    // 2.5 cards visible: card1 + spacing (16) + card2 + spacing (16) + card3*0.5
+    // Left padding of the list is 16, making total occupied horizontal space:
+    // 16 (left padding) + cardWidth + 16 (spacing) + cardWidth + 16 (spacing) + cardWidth * 0.5 = screenWidth
+    // => 2.5 * cardWidth + 48 = screenWidth
+    // => cardWidth = (screenWidth - 48) / 2.5
+    final double cardWidth = (screenWidth - 48) / 2.5;
+    // Reduce height to 85% of standard school card height to match narrower width
+    final double cardHeight = AppDimensions.getEcoleCardHeight(context) * 0.85;
+
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,33 +389,44 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
             ),
           ),
           SizedBox(
-            height: AppDimensions.getEcoleCardHeight(context),
+            height: cardHeight,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: videos.length > 3 ? videos.length + 1 : videos.length, // +1 for "Voir plus" button if > 3 videos
+              itemCount: videos.length > 3
+                  ? videos.length + 1
+                  : videos.length, // +1 for "Voir plus" button if > 3 videos
               itemBuilder: (context, index) {
                 if (videos.length > 3 && index == videos.length) {
-                  return _buildSeeMoreVideosButton(videos);
+                  return _buildSeeMoreVideosButton(
+                    videos,
+                    cardWidth,
+                    cardHeight,
+                  );
                 }
 
                 final astuce = videos[index];
                 return Padding(
                   padding: const EdgeInsets.only(right: 16),
                   child: SizedBox(
-                    width: 220,
+                    width: cardWidth,
                     child: ImageMenuCardExternalTitle(
                       index: index,
                       cardKey: 'video_${astuce.id}',
                       title: astuce.title,
-                      subtitle: astuce.content.replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ').trim(),
-                      imagePath: astuce.youtubeVideoId.isNotEmpty 
-                          ? 'https://img.youtube.com/vi/${astuce.youtubeVideoId}/mqdefault.jpg' 
-                          : ((astuce.image != null && astuce.image!.isNotEmpty) ? astuce.image : null),
+                      subtitle: astuce.content
+                          .replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ')
+                          .trim(),
+                      imagePath: astuce.youtubeVideoId.isNotEmpty
+                          ? 'https://img.youtube.com/vi/${astuce.youtubeVideoId}/mqdefault.jpg'
+                          : ((astuce.image != null && astuce.image!.isNotEmpty)
+                                ? astuce.image
+                                : null),
                       iconData: Icons.play_circle_fill,
                       color: Colors.orange,
                       isDark: Theme.of(context).brightness == Brightness.dark,
-                      height: AppDimensions.getEcoleCardHeight(context),
+                      height: cardHeight,
+                      width: cardWidth,
                       externalTitleSpacing: 4,
                       titleMaxLines: 2,
                       allowLineBreak: true,
@@ -416,22 +456,30 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     );
   }
 
-  Widget _buildSeeMoreVideosButton(List<AstuceConseil> videos) {
+  Widget _buildSeeMoreVideosButton(
+    List<AstuceConseil> videos,
+    double cardWidth,
+    double cardHeight,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(right: 16),
       child: Center(
         child: InkWell(
           onTap: () {
-            final allVideos = videos.map((a) => VisiteGuideeVideo(
-              id: a.id,
-              typeVideo: 'astuce',
-              youtubeUrl: a.youtubeUrl!,
-              title: a.title,
-              description: a.content,
-              code: a.codeecole,
-              slug: a.slug,
-            )).toList();
-            
+            final allVideos = videos
+                .map(
+                  (a) => VisiteGuideeVideo(
+                    id: a.id,
+                    typeVideo: 'astuce',
+                    youtubeUrl: a.youtubeUrl!,
+                    title: a.title,
+                    description: a.content,
+                    code: a.codeecole,
+                    slug: a.slug,
+                  ),
+                )
+                .toList();
+
             if (allVideos.isNotEmpty) {
               MainScreenWrapper.of(context).navigateToExtraScreen(
                 VisiteGuideeVideoFeedScreen(videos: allVideos),
@@ -440,7 +488,8 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
           },
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            width: 140,
+            width: cardWidth,
+            height: cardHeight,
             decoration: BoxDecoration(
               color: Colors.orange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
@@ -492,12 +541,26 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Row(
           children: [
-            Expanded(child: Divider(thickness: 1, color: AppColors.screenBorder(context))),
+            Expanded(
+              child: Divider(
+                thickness: 1,
+                color: AppColors.screenBorder(context),
+              ),
+            ),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Icon(Icons.star_outline_rounded, color: Colors.orange, size: 20),
+              child: Icon(
+                Icons.star_outline_rounded,
+                color: Colors.orange,
+                size: 20,
+              ),
             ),
-            Expanded(child: Divider(thickness: 1, color: AppColors.screenBorder(context))),
+            Expanded(
+              child: Divider(
+                thickness: 1,
+                color: AppColors.screenBorder(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -522,42 +585,39 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              if (index == articles.length) {
-                return _isLoadingMore
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(
-                          child: CircularProgressIndicator(color: Colors.orange),
-                        ),
-                      )
-                    : const SizedBox.shrink();
-              }
-              
-              final item = articles[index];
-              if (item is AdGroup) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: AdBannerCarousel(adGroup: item),
-                );
-              }
-              
-              final astuce = item as AstuceConseil;
+          delegate: SliverChildBuilderDelegate((context, index) {
+            if (index == articles.length) {
+              return _isLoadingMore
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: CircularProgressIndicator(color: Colors.orange),
+                      ),
+                    )
+                  : const SizedBox.shrink();
+            }
+
+            final item = articles[index];
+            if (item is AdGroup) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _AstuceCard(
-                  astuce: astuce,
-                  onTap: () {
-                    MainScreenWrapper.of(context).navigateToExtraScreen(
-                      TipsAdviceDetailScreen(astuce: astuce),
-                    );
-                  },
-                ),
+                child: AdBannerCarousel(adGroup: item),
               );
-            },
-            childCount: articles.length + (_hasMore ? 1 : 0),
-          ),
+            }
+
+            final astuce = item as AstuceConseil;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _AstuceCard(
+                astuce: astuce,
+                onTap: () {
+                  MainScreenWrapper.of(context).navigateToExtraScreen(
+                    TipsAdviceDetailScreen(astuce: astuce),
+                  );
+                },
+              ),
+            );
+          }, childCount: articles.length + (_hasMore ? 1 : 0)),
         ),
       ),
     ];
@@ -573,12 +633,14 @@ class _AstuceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uiData = astuce.toUiMap();
-    final Color color      = uiData['color'] as Color;
+    final Color color = uiData['color'] as Color;
     final String? imageUrl = uiData['image'] as String?;
-    final String title     = astuce.title;
-    final String subtitle  = astuce.codeecole.isNotEmpty ? astuce.codeecole : 'Astuces & Conseils';
-    final String date      = uiData['date'] as String;
-    final String type      = uiData['type'] as String;
+    final String title = astuce.title;
+    final String subtitle = astuce.codeecole.isNotEmpty
+        ? astuce.codeecole
+        : 'Astuces & Conseils';
+    final String date = uiData['date'] as String;
+    final String type = uiData['type'] as String;
 
     return GestureDetector(
       onTap: onTap,
@@ -622,7 +684,8 @@ class _AstuceCard extends StatelessWidget {
                             ),
                             child: Center(
                               child: Icon(
-                                uiData['icon'] as IconData? ?? Icons.lightbulb_outline,
+                                uiData['icon'] as IconData? ??
+                                    Icons.lightbulb_outline,
                                 size: 36,
                                 color: Colors.white.withOpacity(0.9),
                               ),
@@ -659,7 +722,9 @@ class _AstuceCard extends StatelessWidget {
                       // Badge catégorie
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.10),
                           borderRadius: BorderRadius.circular(8),
@@ -690,7 +755,11 @@ class _AstuceCard extends StatelessWidget {
                   // Date
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_rounded, size: 12, color: color),
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 12,
+                        color: color,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         date,

@@ -14,9 +14,9 @@ class HomeAdBanner extends StatefulWidget {
 
 class _HomeAdBannerState extends State<HomeAdBanner> {
   final AdService _adService = AdService();
-  final PageController _pageController = PageController();
+  PageController? _pageController;
   Timer? _timer;
-  
+
   List<AdModel> _ads = [];
   bool _isLoading = true;
   int _currentPage = 0;
@@ -30,13 +30,15 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
   @override
   void dispose() {
     _timer?.cancel();
-    _pageController.dispose();
+    _pageController?.dispose();
     super.dispose();
   }
 
   Future<void> _loadAds() async {
     final ads = await _adService.fetchAds();
     if (mounted) {
+      final initialPage = ads.length > 1 ? ads.length * 5000 : 0;
+      _pageController = PageController(initialPage: initialPage);
       setState(() {
         // Optionnel : on pourrait filtrer sur 'page' == 'accueil' selon les specs de l'API
         // Pour l'instant on prend toutes les pubs ou celles adaptées.
@@ -52,20 +54,15 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
   void _startTimer() {
     _timer?.cancel();
     if (_ads.length <= 1) return;
-    
+
     _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
-      if (_pageController.hasClients) {
-        int nextPage = _pageController.page!.round() + 1;
-        if (nextPage >= _ads.length) {
-          nextPage = 0;
-          _pageController.jumpToPage(0);
-        } else {
-          _pageController.animateToPage(
-            nextPage,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeIn,
-          );
-        }
+      if (_pageController != null && _pageController!.hasClients) {
+        int nextPage = _pageController!.page!.round() + 1;
+        _pageController!.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeIn,
+        );
       }
     });
   }
@@ -82,7 +79,7 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const SizedBox(
-        height: 120,
+        height: 160,
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -92,7 +89,7 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
     }
 
     return Container(
-      height: 120, // Hauteur de la bannière
+      height: 160, // Hauteur de la bannière
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -112,12 +109,13 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
               controller: _pageController,
               onPageChanged: (int page) {
                 setState(() {
-                  _currentPage = page;
+                  _currentPage = page % _ads.length;
                 });
               },
-              itemCount: _ads.length,
+              itemCount: _ads.length * 10000,
               itemBuilder: (context, index) {
-                final ad = _ads[index];
+                final adIndex = index % _ads.length;
+                final ad = _ads[adIndex];
                 return GestureDetector(
                   onTap: () {
                     _launchUrl(ad.linkUrl);
@@ -129,9 +127,7 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
                     height: double.infinity,
                     placeholder: (context, url) => Container(
                       color: Colors.grey[200],
-                      child: const Center(
-                        child: CircularProgressIndicator(),
-                      ),
+                      child: const Center(child: CircularProgressIndicator()),
                     ),
                     errorWidget: (context, url, error) => Container(
                       color: Colors.grey[300],

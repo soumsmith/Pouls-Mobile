@@ -60,6 +60,11 @@ class AppConfig {
   // TODO: Configurer le timeout des requêtes HTTP
   static const Duration API_TIMEOUT = Duration(seconds: 30);
 
+  // ─── Configuration des Publicités ─────────────────────────────────────────
+  static const bool SHOW_ADS = true;
+  static const int AD_INTERVAL = 6;
+
+
   // ─── External URLs ───────────────────────────────────────────────────────
   static const String TUTEUR_ADOM_URL = 'https://tuteur-adom.pouls-scolaire.net/';
 

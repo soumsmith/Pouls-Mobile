@@ -80,6 +80,7 @@ import '../models/astuce_conseil.dart';
 import 'tips_advice_screen.dart';
 import 'tips_advice_detail_screen.dart';
 import '../widgets/ad_widget.dart';
+import '../widgets/home_ad_banner.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -688,22 +689,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     // Convertir toutes les vidéos en VisiteGuideeVideo
-    final visiteVideos = _visiteGuideeVideos
-        .map(
-          (v) {
-            print('🔄 Mapping Video→VisiteGuideeVideo - id: ${v.id}, code: "${v.code}", etablissement: "${v.etablissement}"');
-            return VisiteGuideeVideo(
-              id: v.id,
-              typeVideo: v.typevideo,
-              youtubeUrl: v.youtubeUrl,
-              title: v.title,
-              description: v.description,
-              code: v.code,
-              etablissement: v.etablissement,
-            );
-          },
-        )
-        .toList();
+    final visiteVideos = _visiteGuideeVideos.map((v) {
+      print(
+        '🔄 Mapping Video→VisiteGuideeVideo - id: ${v.id}, code: "${v.code}", etablissement: "${v.etablissement}"',
+      );
+      return VisiteGuideeVideo(
+        id: v.id,
+        typeVideo: v.typevideo,
+        youtubeUrl: v.youtubeUrl,
+        title: v.title,
+        description: v.description,
+        code: v.code,
+        etablissement: v.etablissement,
+      );
+    }).toList();
 
     // Naviguer vers l'écran de visualisation des vidéos
     MainScreenWrapper.of(context).navigateToExtraScreen(
@@ -1279,9 +1278,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: showSeeMore
-            ? limit + 1
-            : _filteredAstuces.length,
+        itemCount: showSeeMore ? limit + 1 : _filteredAstuces.length,
         itemBuilder: (context, index) {
           if (index < _filteredAstuces.length && index < limit) {
             return _buildAstuceCard(_filteredAstuces[index], index);
@@ -1322,7 +1319,8 @@ class _HomeScreenState extends State<HomeScreen> {
         width: _getCardWidth(context, 16.0),
         allowLineBreak: true,
         centerTitle: false,
-        showPlayIcon: astuce.youtubeUrl != null && astuce.youtubeUrl!.isNotEmpty,
+        showPlayIcon:
+            astuce.youtubeUrl != null && astuce.youtubeUrl!.isNotEmpty,
         onTap: () {
           _handleAstuceAction(astuce);
         },
@@ -1372,19 +1370,21 @@ class _HomeScreenState extends State<HomeScreen> {
         code: astuce.codeecole,
         slug: astuce.slug,
       );
-      MainScreenWrapper.of(context).navigateToExtraScreen(
-        VisiteGuideeVideoFeedScreen(videos: [video]),
-      );
+      MainScreenWrapper.of(
+        context,
+      ).navigateToExtraScreen(VisiteGuideeVideoFeedScreen(videos: [video]));
     } else {
-      MainScreenWrapper.of(context).navigateToExtraScreen(
-        TipsAdviceDetailScreen(astuce: astuce),
-      );
+      MainScreenWrapper.of(
+        context,
+      ).navigateToExtraScreen(TipsAdviceDetailScreen(astuce: astuce));
     }
   }
 
   // Gérer l'action "Voir+" pour les astuces
   void _handleSeeMoreAstuces() {
-    MainScreenWrapper.of(context).navigateToExtraScreen(const TipsAdviceScreen());
+    MainScreenWrapper.of(
+      context,
+    ).navigateToExtraScreen(const TipsAdviceScreen());
   }
 
   // Gérer l'action "Voir+" pour les vidéos
@@ -1824,7 +1824,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         children: [
           Scaffold(backgroundColor: Colors.black, body: bodyContent),
-          const AdWidget(),
+          // const AdWidget(), // Mis en commentaire pour le nouveau test de publicité
         ],
       ),
     );
@@ -2543,7 +2543,8 @@ class _HomeScreenState extends State<HomeScreen> {
     ReusableBottomSheet.show(
       context: context,
       title: 'Notifications',
-      icon: Icons.notifications_none, // Optionnel, ajoute l'icône dans l'en-tête
+      icon:
+          Icons.notifications_none, // Optionnel, ajoute l'icône dans l'en-tête
       initialChildSize: 0.45,
       minChildSize: 0.3,
       maxChildSize: 0.8,
@@ -2940,7 +2941,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildBottomSheetChildren() {
-
     return [
       SectionRow(title: 'ACTIONS RAPIDES'),
       const SizedBox(height: 16),
@@ -3168,6 +3168,9 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 16),
         _buildCoulisseSection(),
       ],
+      // Section Publicitaire (Bannière)
+      const HomeAdBanner(),
+      // const SizedBox(height: 16),
 
       // Section Événements et Faits Scolaires
       if (_hasEventsData) ...[
@@ -3208,7 +3211,10 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'VISITE GUIDÉE',
         onSeeMore: () {
           MainScreenWrapper.of(context).navigateToExtraScreen(
-            AllVisiteGuideeVideosScreen(videos: _visiteGuideeVideos, ecoleCode: ''),
+            AllVisiteGuideeVideosScreen(
+              videos: _visiteGuideeVideos,
+              ecoleCode: '',
+            ),
           );
         },
       ),

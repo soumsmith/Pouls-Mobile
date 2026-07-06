@@ -19,6 +19,10 @@ import '../widgets/main_screen_wrapper.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/advanced_filters_form.dart';
 import '../config/app_dimensions.dart';
+import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import '../utils/ad_injector.dart';
+import '../widgets/ad_banner_card.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -55,7 +59,9 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   bool _isSearching = false;
   final _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final AdService _adService = AdService();
   List<Map<String, dynamic>> _allEvents = [];
+  List<AdModel> _ads = [];
   bool _isLoading = true;
   String? _error;
 
@@ -106,13 +112,22 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   void initState() {
     super.initState();
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeAnim =
+        CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic);
     _loadPays();
     _loadCategories();
     _loadEvents();
+    _loadAds();
+  }
+
+  Future<void> _loadAds() async {
+    final ads = await _adService.fetchAds();
+    if (mounted) {
+      setState(() {
+        _ads = ads;
+      });
+    }
   }
 
   @override
@@ -263,6 +278,10 @@ class _AllEventsScreenState extends State<AllEventsScreen>
           .toList();
     }
     return events;
+  }
+
+  List<dynamic> get _mixedContent {
+    return AdInjector.injectAds<Map<String, dynamic>>(_filteredEvents, _ads);
   }
 
   @override
@@ -550,7 +569,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   void _loadEcoles() => _loadEvents();
 
   List<Widget> _buildContentSlivers() {
-    final items = _filteredEvents;
+    final items = _mixedContent;
 
     return [
       // ── En-tête résultats ────────────────────────
@@ -565,7 +584,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: '${items.length} ',
+                        text: '${_filteredEvents.length} ',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -581,7 +600,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                         ),
                       ),
                       TextSpan(
-                        text: items.length > 1 ? 's' : '',
+                        text: _filteredEvents.length > 1 ? 's' : '',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
@@ -681,23 +700,25 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                         child: child,
                       ),
                     ),
-                    child: _EventCard(
-                      event: event,
-                      onTap: () {
-                        final wrapper = MainScreenWrapper.maybeOf(context);
-                        if (wrapper != null) {
-                          wrapper.navigateToExtraScreen(
-                            EventDetailScreen(event: Event.fromJson(event)),
-                          );
-                        } else {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => EventDetailScreen(event: Event.fromJson(event)),
-                            ),
-                          );
-                        }
-                      },
-                    ),
+                    child: event is AdGroup
+                        ? AdBannerCarousel(adGroup: event)
+                        : _EventCard(
+                            event: event as Map<String, dynamic>,
+                            onTap: () {
+                              final wrapper = MainScreenWrapper.maybeOf(context);
+                              if (wrapper != null) {
+                                wrapper.navigateToExtraScreen(
+                                  EventDetailScreen(event: Event.fromJson(event)),
+                                );
+                              } else {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => EventDetailScreen(event: Event.fromJson(event)),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
                   ),
                 ),
               );

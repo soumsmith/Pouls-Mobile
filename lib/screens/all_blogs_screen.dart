@@ -18,6 +18,10 @@ import '../widgets/main_screen_wrapper.dart';
 import '../widgets/advanced_filters_form.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import '../utils/ad_injector.dart';
+import '../widgets/ad_banner_card.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -39,7 +43,9 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   final   _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final   _blogService      = BlogService();
+  final   AdService _adService = AdService();
   List<Blog> _allBlogs = [];
+  List<AdModel> _ads = [];
   bool    _isLoading        = true;
   String? _error;
 
@@ -93,14 +99,21 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic);
     _loadPays();
     _loadCategories();
     _loadBlogs();
+    _loadAds();
+  }
+
+  Future<void> _loadAds() async {
+    final ads = await _adService.fetchAds();
+    if (mounted) {
+      setState(() {
+        _ads = ads;
+      });
+    }
   }
 
   @override
@@ -235,6 +248,10 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       ).toList();
     }
     return blogs;
+  }
+
+  List<dynamic> get _mixedContent {
+    return AdInjector.injectAds<Blog>(_filteredBlogs, _ads);
   }
 
   // ── Build ────────────────────────────────────────────────
@@ -596,7 +613,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
       ),
 
       // ── État vide ────────────────────────────────
-      if (items.isEmpty)
+      if (_mixedContent.isEmpty)
         SliverFillRemaining(
           child: FadeTransition(
             opacity: _fadeAnim,
@@ -675,10 +692,19 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (ctx, i) {
-                if (i == items.length) {
+                if (i == _mixedContent.length) {
                   return _buildLoadMoreButton();
                 }
-                final blog = items[i];
+                final item = _mixedContent[i];
+                
+                if (item is AdGroup) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: AdBannerCarousel(adGroup: item),
+                  );
+                }
+                
+                final blog = item as Blog;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: FadeTransition(
@@ -711,7 +737,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                   ),
                 );
               },
-              childCount: items.length + (_hasMore ? 1 : 0),
+              childCount: _mixedContent.length + (_hasMore ? 1 : 0),
             ),
           ),
         ),

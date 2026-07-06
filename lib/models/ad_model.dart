@@ -55,3 +55,8 @@ class AdModel {
     return now.isAfter(startDate) && now.isBefore(endDate);
   }
 }
+
+class AdGroup {
+  final List<AdModel> ads;
+  AdGroup(this.ads);
+}

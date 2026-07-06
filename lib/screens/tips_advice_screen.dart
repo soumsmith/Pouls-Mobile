@@ -14,6 +14,10 @@ import '../widgets/image_menu_card_external_title.dart';
 import '../config/app_dimensions.dart';
 import '../models/visite_guidee_video.dart';
 import 'visite_guidee_video_feed_screen.dart';
+import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import '../utils/ad_injector.dart';
+import '../widgets/ad_banner_card.dart';
 
 class TipsAdviceScreen extends StatefulWidget {
   const TipsAdviceScreen({super.key});
@@ -28,7 +32,9 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
   final _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final _astuceService = AstuceConseilService();
+  final AdService _adService = AdService();
   List<AstuceConseil> _allAstuces = [];
+  List<AdModel> _ads = [];
   bool _isLoading = true;
   String? _error;
 
@@ -49,6 +55,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     );
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _loadAstuces();
+    _loadAds();
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
@@ -64,6 +71,15 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     _fadeController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAds() async {
+    final ads = await _adService.fetchAds();
+    if (mounted) {
+      setState(() {
+        _ads = ads;
+      });
+    }
   }
 
   Future<void> _loadAstuces({bool loadMore = false, bool isRefresh = false}) async {
@@ -121,6 +137,11 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     return astuces;
   }
 
+  List<dynamic> get _mixedArticles {
+    final articles = _filteredAstuces.where((a) => a.youtubeUrl == null || a.youtubeUrl!.isEmpty).toList();
+    return AdInjector.injectAds(articles, _ads);
+  }
+
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -175,7 +196,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
               ..._buildBodySlivers(),
             ],
           ),
-        ),
+          ),
           Positioned(
             bottom: 0,
             left: 0,
@@ -283,6 +304,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     }
     
     final items = _filteredAstuces;
+    final slivers = <Widget>[];
     final videos = items.where((a) => a.youtubeUrl != null && a.youtubeUrl!.isNotEmpty).toList();
     final articles = items.where((a) => a.youtubeUrl == null || a.youtubeUrl!.isEmpty).toList();
     
@@ -482,7 +504,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
     );
   }
 
-  List<Widget> _buildArticlesSection(List<AstuceConseil> articles) {
+  List<Widget> _buildArticlesSection(List<dynamic> articles) {
     return [
       SliverToBoxAdapter(
         child: Padding(
@@ -512,7 +534,16 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                       )
                     : const SizedBox.shrink();
               }
-              final astuce = articles[index];
+              
+              final item = articles[index];
+              if (item is AdGroup) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: AdBannerCarousel(adGroup: item),
+                );
+              }
+              
+              final astuce = item as AstuceConseil;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _AstuceCard(

@@ -23,6 +23,10 @@ import '../models/ecole_detail.dart';
 import '../services/ecole_api_service.dart';
 import 'establishment_detail_screen.dart';
 import '../config/app_config.dart';
+import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import '../utils/ad_injector.dart';
+import '../widgets/ad_video_page.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
@@ -48,12 +52,47 @@ class _VisiteGuideeVideoFeedScreenState
   final Map<int, int> _videoCommentsCount = <int, int>{};
   final Map<int, int> _videoLikesCount = <int, int>{};
 
+  final AdService _adService = AdService();
+  List<AdModel> _ads = [];
+  List<dynamic> _mixedVideos = [];
+  bool _isInitializing = true;
+
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
+    _loadAdsAndInit();
+  }
+
+  Future<void> _loadAdsAndInit() async {
+    _ads = await _adService.fetchAds();
+    _mixedVideos = AdInjector.injectAds<VisiteGuideeVideo>(widget.videos, _ads);
+
+    // adjust initial index to account for injected ads
+    int newIndex = 0;
+    int oldVideoCount = 0;
+    for (int i = 0; i < _mixedVideos.length; i++) {
+      if (_mixedVideos[i] is VisiteGuideeVideo) {
+        if (oldVideoCount == widget.initialIndex) {
+          newIndex = i;
+          break;
+        }
+        oldVideoCount++;
+      }
+    }
+
+    _currentIndex = newIndex;
+    _pageController = PageController(initialPage: _currentIndex);
     _initializeControllers();
+
+    if (mounted) {
+      setState(() {
+        _isInitializing = false;
+      });
+      if (_mixedVideos.isNotEmpty &&
+          _mixedVideos[_currentIndex] is VisiteGuideeVideo) {
+        // Optionnel : _fetchVideoInteractions
+      }
+    }
   }
 
   @override
@@ -71,12 +110,20 @@ class _VisiteGuideeVideoFeedScreenState
   void _initializeControllers() {
     // Créer les contrôleurs YouTube pour chaque vidéo
     final controllers = <YoutubePlayerController?>[];
-    for (var video in widget.videos) {
-      final videoId = video.youtubeVideoId;
+    for (int i = 0; i < _mixedVideos.length; i++) {
+      final item = _mixedVideos[i];
+      if (item is AdGroup) {
+        controllers.add(null);
+        continue;
+      }
+
+      final video = item as VisiteGuideeVideo;
+      final videoId = video.youtubeVideoId.isEmpty
+          ? video.youtubeUrl
+          : video.youtubeVideoId;
       print('Traitement vidéo: ${video.typeVideo} - VideoID: $videoId');
       if (videoId.isNotEmpty) {
-        final isInitialVideo =
-            widget.videos.indexOf(video) == widget.initialIndex;
+        final isInitialVideo = i == _currentIndex;
         final controller = YoutubePlayerController(
           initialVideoId: videoId,
           flags: YoutubePlayerFlags(
@@ -93,8 +140,7 @@ class _VisiteGuideeVideoFeedScreenState
         // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
         controller.addListener(() {
           if (mounted) {
-            final activeIndex = widget.videos.indexOf(video);
-            if (activeIndex == _currentIndex) {
+            if (i == _currentIndex) {
               setState(() {});
             }
           }
@@ -114,7 +160,7 @@ class _VisiteGuideeVideoFeedScreenState
   Future<void> _fetchVideoInteractions(VisiteGuideeVideo video) async {
     final videoId = video.id ?? video.typeVideo.hashCode;
     final astuceIdentifier = video.slug ?? video.id?.toString() ?? '';
-    
+
     if (video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
       try {
         final astuceService = AstuceConseilService();
@@ -261,64 +307,50 @@ class _VisiteGuideeVideoFeedScreenState
       }
     } catch (e) {
       print('🏫 ❌ ERREUR: $e');
-      if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: '',
-          message: 'Erreur: $e',
-          backgroundColor: Colors.red,
-          icon: Icons.error_outline,
-        );
-      }
+      // La notification est déjà gérée par ApiExceptionHandler
     }
   }
 
   // Afficher les options de partage
   void _shareVideo() {
-    if (widget.videos.isEmpty) return;
+    if (_mixedVideos.isEmpty) return;
 
-    final video = widget.videos[_currentIndex];
+    final item = _mixedVideos[_currentIndex];
+    if (item is AdGroup) return;
+
+    final currentVideo = item as VisiteGuideeVideo;
 
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    final astuceIdentifier = video.slug ?? video.id?.toString() ?? '';
-    if (video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
-      final user = AuthService.instance.getCurrentUser();
-      if (user != null) {
-        AstuceConseilService().recordShare(
-          astuceIdentifier,
-          nom: user.fullName,
-          userId: int.tryParse(user.id) ?? 0,
-        );
-      }
-    }
-
-    final String videoUrl =
-        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+    final videoId = currentVideo.youtubeVideoId.isEmpty
+        ? currentVideo.youtubeUrl
+        : currentVideo.youtubeVideoId;
+    final String videoUrl = 'https://www.youtube.com/watch?v=$videoId';
+    final String videoTitle = currentVideo.title ?? 'Vidéo';
+    final String videoDesc = currentVideo.description ?? '';
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(
-        maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
-      ),
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
-        itemTitle: video.displayTitle,
+        itemTitle: videoTitle,
         shareText:
-            '🎬 Découvrez cette visite guidée : ${video.displayTitle}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
+            '🎬 Regarde cette vidéo incroyable : $videoTitle\n\n$videoDesc\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}\n\n#PoulsMobile #Éducation',
       ),
     );
   }
 
   // Afficher les commentaires
   void _showComments() {
-    if (widget.videos.isEmpty) return;
+    if (_mixedVideos.isEmpty) return;
 
-    final video = widget.videos[_currentIndex];
+    final item = _mixedVideos[_currentIndex];
+    if (item is! VisiteGuideeVideo) return;
 
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
@@ -335,15 +367,16 @@ class _VisiteGuideeVideoFeedScreenState
       initialChildSize: 0.75,
       maxChildSize: 0.9,
       contentPadding: EdgeInsets.zero,
-      content: _CommentsSheet(video: video),
+      content: _CommentsSheet(video: item),
     );
   }
 
   // Afficher la notation
   void _showRating() {
-    if (widget.videos.isEmpty) return;
+    if (_mixedVideos.isEmpty) return;
 
-    final video = widget.videos[_currentIndex];
+    final item = _mixedVideos[_currentIndex];
+    if (item is! VisiteGuideeVideo) return;
 
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
@@ -359,15 +392,17 @@ class _VisiteGuideeVideoFeedScreenState
       initialChildSize: 0.75,
       maxChildSize: 0.9,
       contentPadding: EdgeInsets.zero,
-      content: _RatingSheet(video: video),
+      content: _RatingSheet(video: item),
     );
   }
 
   Future<void> _toggleLike() async {
-    if (widget.videos.isEmpty) return;
+    if (_mixedVideos.isEmpty) return;
 
-    final video = widget.videos[_currentIndex];
-    final videoId = video.id ?? video.typeVideo.hashCode;
+    final item = _mixedVideos[_currentIndex];
+    if (item is! VisiteGuideeVideo) return;
+
+    final videoId = item.id ?? item.typeVideo.hashCode;
 
     final userId = InteractionApiService.getCurrentUserId();
     if (userId == null) {
@@ -395,8 +430,8 @@ class _VisiteGuideeVideoFeedScreenState
     final type = _likedVideoIds.contains(videoId) ? 'like' : 'dislike';
     bool success = false;
 
-    final astuceIdentifier = video.slug ?? video.id?.toString() ?? '';
-    if (video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
+    final astuceIdentifier = item.slug ?? item.id?.toString() ?? '';
+    if (item.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
       final user = AuthService.instance.getCurrentUser();
       if (user != null) {
         success = await AstuceConseilService().likeArticle(
@@ -431,10 +466,17 @@ class _VisiteGuideeVideoFeedScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
     final isDarkMode = ThemeService().isDarkMode;
 
     // Handle empty videos list
-    if (widget.videos.isEmpty) {
+    if (_mixedVideos.isEmpty) {
       return Scaffold(
         backgroundColor: isDarkMode ? Colors.black : Colors.white,
         appBar: AppBar(
@@ -493,13 +535,24 @@ class _VisiteGuideeVideoFeedScreenState
           PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
+            allowImplicitScrolling: true,
             onPageChanged: _onPageChanged,
-            itemCount: widget.videos.length,
+            itemCount: _mixedVideos.length,
             itemBuilder: (context, index) {
+              final item = _mixedVideos[index];
+              final isActive = index == _currentIndex;
+
+              if (item is AdGroup) {
+                return AdVideoCarouselPage(adGroup: item, isActive: isActive);
+              }
+
+              final video = item as VisiteGuideeVideo;
+              final controller = _youtubeControllers[index];
+
               return _VideoPage(
-                video: widget.videos[index],
-                youtubeController: _youtubeControllers[index],
-                isActive: index == _currentIndex,
+                video: video,
+                youtubeController: controller,
+                isActive: isActive,
               );
             },
           ),
@@ -507,77 +560,92 @@ class _VisiteGuideeVideoFeedScreenState
           // Indicateur de page supprimé
 
           // Boutons d'action latéraux
-          Positioned(
-            right: 16,
-            bottom: 160,
-            child: Column(
-              children: [
-                _ActionButton(
-                  icon: Icons.school,
-                  label: 'École',
-                  onTap: widget.videos.isNotEmpty
-                      ? () =>
-                            _navigateToEcole(widget.videos[_currentIndex].code)
-                      : () {},
-                ),
-                const SizedBox(height: 16),
-                _ActionButton(
-                  icon:
-                      widget.videos.isNotEmpty &&
-                          _likedVideoIds.contains(
-                            widget.videos[_currentIndex].id ??
-                                widget.videos[_currentIndex].typeVideo.hashCode,
-                          )
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  label:
-                      widget.videos.isNotEmpty &&
-                          _videoLikesCount.containsKey(
-                            widget.videos[_currentIndex].id ??
-                                widget.videos[_currentIndex].typeVideo.hashCode,
-                          ) &&
-                          _videoLikesCount[widget.videos[_currentIndex].id ??
-                                  widget
-                                      .videos[_currentIndex]
+          if (_mixedVideos[_currentIndex] is VisiteGuideeVideo)
+            Positioned(
+              right: 16,
+              bottom: 160,
+              child: Column(
+                children: [
+                  _ActionButton(
+                    icon: Icons.school,
+                    label: 'École',
+                    onTap: () {
+                      final item = _mixedVideos[_currentIndex];
+                      if (item is VisiteGuideeVideo) {
+                        _navigateToEcole(item.code);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionButton(
+                    icon:
+                        _mixedVideos[_currentIndex] is VisiteGuideeVideo &&
+                            _likedVideoIds.contains(
+                              (_mixedVideos[_currentIndex] as VisiteGuideeVideo)
+                                      .id ??
+                                  (_mixedVideos[_currentIndex]
+                                          as VisiteGuideeVideo)
                                       .typeVideo
-                                      .hashCode]! >
-                              0
-                      ? '${_videoLikesCount[widget.videos[_currentIndex].id ?? widget.videos[_currentIndex].typeVideo.hashCode]}'
-                      : 'J\'aime',
-                  onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
-                ),
-                const SizedBox(height: 16),
-                _ActionButton(
-                  icon: Icons.share,
-                  label: 'Partager',
-                  onTap: _shareVideo,
-                ),
-                const SizedBox(height: 16),
-                _ActionButton(
-                  icon: Icons.comment,
-                  label:
-                      widget.videos.isNotEmpty &&
-                          _videoCommentsCount.containsKey(
-                            widget.videos[_currentIndex].typeVideo.hashCode,
-                          ) &&
-                          _videoCommentsCount[widget
-                                  .videos[_currentIndex]
+                                      .hashCode,
+                            )
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    label:
+                        _mixedVideos[_currentIndex] is VisiteGuideeVideo &&
+                            _videoLikesCount.containsKey(
+                              (_mixedVideos[_currentIndex] as VisiteGuideeVideo)
+                                      .id ??
+                                  (_mixedVideos[_currentIndex]
+                                          as VisiteGuideeVideo)
+                                      .typeVideo
+                                      .hashCode,
+                            ) &&
+                            _videoLikesCount[(_mixedVideos[_currentIndex]
+                                            as VisiteGuideeVideo)
+                                        .id ??
+                                    (_mixedVideos[_currentIndex]
+                                            as VisiteGuideeVideo)
+                                        .typeVideo
+                                        .hashCode]! >
+                                0
+                        ? '${_videoLikesCount[(_mixedVideos[_currentIndex] as VisiteGuideeVideo).id ?? (_mixedVideos[_currentIndex] as VisiteGuideeVideo).typeVideo.hashCode]}'
+                        : 'J\'aime',
+                    onTap: _toggleLike,
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionButton(
+                    icon: Icons.share,
+                    label: 'Partager',
+                    onTap: _shareVideo,
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionButton(
+                    icon: Icons.comment,
+                    label:
+                        _mixedVideos[_currentIndex] is VisiteGuideeVideo &&
+                            _videoCommentsCount.containsKey(
+                              (_mixedVideos[_currentIndex] as VisiteGuideeVideo)
                                   .typeVideo
-                                  .hashCode]! >
-                              0
-                      ? '${_videoCommentsCount[widget.videos[_currentIndex].typeVideo.hashCode]}'
-                      : 'Commenter',
-                  onTap: _showComments,
-                ),
-                const SizedBox(height: 16),
-                _ActionButton(
-                  icon: Icons.star,
-                  label: 'Noter',
-                  onTap: _showRating,
-                ),
-              ],
+                                  .hashCode,
+                            ) &&
+                            _videoCommentsCount[(_mixedVideos[_currentIndex]
+                                        as VisiteGuideeVideo)
+                                    .typeVideo
+                                    .hashCode]! >
+                                0
+                        ? '${_videoCommentsCount[(_mixedVideos[_currentIndex] as VisiteGuideeVideo).typeVideo.hashCode]}'
+                        : 'Commenter',
+                    onTap: _showComments,
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionButton(
+                    icon: Icons.star,
+                    label: 'Noter',
+                    onTap: _showRating,
+                  ),
+                ],
+              ),
             ),
-          ),
 
           // CustomSliverAppBarFixed overlay (identique à coulisse_video_feed_screen.dart pour un effet ultra premium)
           Positioned(
@@ -715,7 +783,9 @@ class _VideoPageState extends State<_VideoPage>
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        HtmlHelper.stripHtmlTags(widget.video.displayDescription),
+                        HtmlHelper.stripHtmlTags(
+                          widget.video.displayDescription,
+                        ),
                         style: const TextStyle(
                           fontSize: 15,
                           height: 1.5,
@@ -914,7 +984,9 @@ class _VideoPageState extends State<_VideoPage>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          HtmlHelper.stripHtmlTags(widget.video.displayDescription),
+                          HtmlHelper.stripHtmlTags(
+                            widget.video.displayDescription,
+                          ),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
@@ -1212,7 +1284,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     });
 
     List<Interaction> comments = [];
-    final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
+    final astuceIdentifier =
+        widget.video.slug ?? widget.video.id?.toString() ?? '';
 
     if (widget.video.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
       final apiComments = await AstuceConseilService().getComments(
@@ -1229,7 +1302,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               createdAt: c['created_at'] != null
                   ? DateTime.tryParse(c['created_at']) ?? DateTime.now()
                   : DateTime.now(),
-              userName: (c['author_name'] ?? c['nom'])?.toString() ?? 'Utilisateur',
+              userName:
+                  (c['author_name'] ?? c['nom'])?.toString() ?? 'Utilisateur',
             ),
           )
           .toList();
@@ -1262,7 +1336,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     try {
       Interaction? newComment;
       final user = AuthService.instance.getCurrentUser();
-      final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
+      final astuceIdentifier =
+          widget.video.slug ?? widget.video.id?.toString() ?? '';
 
       if (widget.video.typeVideo == 'astuce' &&
           astuceIdentifier.isNotEmpty &&
@@ -1739,8 +1814,9 @@ class _RatingSheetState extends State<_RatingSheet> {
 
   Future<void> _loadRatings() async {
     final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
-    final astuceIdentifier = widget.video.slug ?? widget.video.id?.toString() ?? '';
-    
+    final astuceIdentifier =
+        widget.video.slug ?? widget.video.id?.toString() ?? '';
+
     try {
       final ratings = await InteractionApiService.listInteractions(
         videoId: videoId,
@@ -1749,7 +1825,7 @@ class _RatingSheetState extends State<_RatingSheet> {
 
       final user = AuthService.instance.getCurrentUser();
       final currentUserId = user != null ? int.tryParse(user.id) ?? 0 : 0;
-      
+
       bool hasRated = false;
       int sumRatings = 0;
       int count = 0;
@@ -1843,41 +1919,41 @@ class _RatingSheetState extends State<_RatingSheet> {
                 const Center(child: CircularProgressIndicator())
               else
                 Container(
-                padding: const EdgeInsets.all(16),
-                color: Colors.transparent,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                          _averageRating.toStringAsFixed(1),
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.transparent,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                            _averageRating.toStringAsFixed(1),
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        Row(
-                          children: List.generate(5, (index) {
-                            return Icon(
-                              index < _averageRating.floor()
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              color: Colors.amber,
-                              size: 16,
-                            );
-                          }),
-                        ),
-                        Text(
-                          '$_totalRatings évaluations',
-                          style: TextStyle(color: subtextColor, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Row(
+                            children: List.generate(5, (index) {
+                              return Icon(
+                                index < _averageRating.floor()
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: Colors.amber,
+                                size: 16,
+                              );
+                            }),
+                          ),
+                          Text(
+                            '$_totalRatings évaluations',
+                            style: TextStyle(color: subtextColor, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
               const SizedBox(height: 24),
 
@@ -1963,7 +2039,7 @@ class _RatingSheetState extends State<_RatingSheet> {
     if (userId > 0) {
       try {
         final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
-        
+
         await InteractionApiService.createInteraction(
           videoId: videoId,
           userId: userId,

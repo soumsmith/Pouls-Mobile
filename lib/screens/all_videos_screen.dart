@@ -15,6 +15,10 @@ import '../widgets/skeleton_box.dart';
 import '../widgets/see_more_card.dart';
 import 'coulisse_video_feed_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import '../utils/ad_injector.dart';
+import '../widgets/ad_banner_card.dart';
 
 class AllVideosScreen extends StatefulWidget {
   final String ecoleCode;
@@ -25,8 +29,10 @@ class AllVideosScreen extends StatefulWidget {
 }
 
 class _AllVideosScreenState extends State<AllVideosScreen> {
+  final AdService _adService = AdService();
   List<CoulisseExcellence> _videos = [];
   List<CoulisseExcellence> _filteredVideos = [];
+  List<AdModel> _ads = [];
   bool _isLoading = true;
   String? _error;
 
@@ -46,6 +52,16 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
   void initState() {
     super.initState();
     _loadVideos();
+    _loadAds();
+  }
+
+  Future<void> _loadAds() async {
+    final ads = await _adService.fetchAds();
+    if (mounted) {
+      setState(() {
+        _ads = ads;
+      });
+    }
   }
 
   @override
@@ -125,6 +141,10 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
         _filteredVideos = _getFilteredList(_videos, query);
       });
     });
+  }
+
+  List<dynamic> get _mixedVideos {
+    return AdInjector.injectAds<CoulisseExcellence>(_filteredVideos, _ads);
   }
 
   @override
@@ -254,7 +274,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                       ),
                     ),
                   );
-                })() else if (_filteredVideos.isEmpty)
+                })() else if (_mixedVideos.isEmpty)
                 SliverFillRemaining(
                   child: Center(
                     child: Column(
@@ -305,7 +325,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        if (index == _filteredVideos.length && _hasMore) {
+                        if (index == _mixedVideos.length && _hasMore) {
                           return SeeMoreCard(
                             cardColor: AppColors.screenCardThemed(context),
                             borderColor: const Color(0xFF10B981).withOpacity(0.3), // Green for videos
@@ -318,12 +338,16 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                             icon: Icons.add,
                           );
                         }
-                        if (index < _filteredVideos.length) {
-                          return _buildVideoCard(_filteredVideos[index]);
+                        if (index < _mixedVideos.length) {
+                          final item = _mixedVideos[index];
+                          if (item is AdGroup) {
+                            return AdBannerCarousel(adGroup: item);
+                          }
+                          return _buildVideoCard(item as CoulisseExcellence);
                         }
                         return const SizedBox.shrink();
                       },
-                      childCount: _filteredVideos.length + (_hasMore ? 1 : 0),
+                      childCount: _mixedVideos.length + (_hasMore ? 1 : 0),
                     ),
                   ),
                 ),

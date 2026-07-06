@@ -19,6 +19,10 @@ import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../config/app_config.dart';
+import '../services/ad_service.dart';
+import '../models/ad_model.dart';
+import '../utils/ad_injector.dart';
+import '../widgets/ad_video_page.dart';
 
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
@@ -43,14 +47,45 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   final Map<int, int> _videoCommentsCount = <int, int>{};
   final Map<int, int> _videoLikesCount = <int, int>{};
 
+  final AdService _adService = AdService();
+  List<AdModel> _ads = [];
+  List<dynamic> _mixedVideos = [];
+  bool _isInitializing = true;
+
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
+    _loadAdsAndInit();
+  }
+
+  Future<void> _loadAdsAndInit() async {
+    _ads = await _adService.fetchAds();
+    _mixedVideos = AdInjector.injectAds<CoulisseExcellence>(widget.videos, _ads);
+    
+    // adjust initial index to account for injected ads
+    int newIndex = 0;
+    int oldVideoCount = 0;
+    for (int i = 0; i < _mixedVideos.length; i++) {
+      if (_mixedVideos[i] is CoulisseExcellence) {
+        if (oldVideoCount == widget.initialIndex) {
+          newIndex = i;
+          break;
+        }
+        oldVideoCount++;
+      }
+    }
+    
+    _currentIndex = newIndex;
+    _pageController = PageController(initialPage: _currentIndex);
     _initializeControllers();
-    if (widget.videos.isNotEmpty) {
-      _fetchVideoInteractions(widget.videos[_currentIndex].id);
+    
+    if (mounted) {
+      setState(() {
+        _isInitializing = false;
+      });
+      if (_mixedVideos.isNotEmpty && _mixedVideos[_currentIndex] is CoulisseExcellence) {
+        _fetchVideoInteractions((_mixedVideos[_currentIndex] as CoulisseExcellence).id);
+      }
     }
   }
 
@@ -69,12 +104,18 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   void _initializeControllers() {
     // Créer les contrôleurs YouTube pour chaque vidéo
     final controllers = <YoutubePlayerController?>[];
-    for (var video in widget.videos) {
+    for (int i = 0; i < _mixedVideos.length; i++) {
+      final item = _mixedVideos[i];
+      if (item is AdGroup) {
+        controllers.add(null);
+        continue;
+      }
+      
+      final video = item as CoulisseExcellence;
       final videoId = video.youtubeVideoId;
       print('Traitement vidéo: ${video.id} - VideoID: $videoId');
       if (videoId.isNotEmpty) {
-        final isInitialVideo =
-            widget.videos.indexOf(video) == widget.initialIndex;
+        final isInitialVideo = i == _currentIndex;
         final controller = YoutubePlayerController(
           initialVideoId: videoId,
           flags: YoutubePlayerFlags(
@@ -91,8 +132,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
         // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
         controller.addListener(() {
           if (mounted) {
-            final activeIndex = widget.videos.indexOf(video);
-            if (activeIndex == _currentIndex) {
+            if (i == _currentIndex) {
               setState(() {});
             }
           }
@@ -150,8 +190,8 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       _currentIndex = index;
     });
 
-    if (widget.videos.isNotEmpty && index < widget.videos.length) {
-      _fetchVideoInteractions(widget.videos[index].id);
+    if (_mixedVideos[_currentIndex] is CoulisseExcellence) {
+      _fetchVideoInteractions((_mixedVideos[_currentIndex] as CoulisseExcellence).id);
     }
 
     // Lecture instantanée de la vidéo active dès le swipe
@@ -199,23 +239,19 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
         MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
       }
     } catch (e) {
-      if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: '',
-          message: 'Erreur: $e',
-          backgroundColor: Colors.red,
-          icon: Icons.error_outline,
-        );
-      }
+      print('🏫 ❌ ERREUR: $e');
+      // La notification est déjà gérée par ApiExceptionHandler
     }
   }
 
   // Afficher les options de partage
   void _shareVideo() {
-    if (widget.videos.isEmpty) return;
+    if (_mixedVideos.isEmpty) return;
 
-    final video = widget.videos[_currentIndex];
+    final video = _mixedVideos[_currentIndex];
+    if (video is AdGroup) return;
+
+    final item = video as CoulisseExcellence;
 
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
@@ -223,7 +259,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     }
 
     final String videoUrl =
-        'https://www.youtube.com/watch?v=${video.youtubeVideoId}';
+        'https://www.youtube.com/watch?v=${item.youtubeVideoId}';
 
     showModalBottomSheet(
       context: context,
@@ -233,18 +269,19 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       ),
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
-        itemTitle: video.titre,
+        itemTitle: item.titre,
         shareText:
-            '🎬 Regarde cette vidéo incroyable : ${video.titre}\n\n${video.description}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}\n\n#CoulissesExcellence #Éducation',
+            '🎬 Regarde cette vidéo incroyable : ${item.titre}\n\n${item.description}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}\n\n#CoulissesExcellence #Éducation',
       ),
     );
   }
 
   // Afficher les commentaires
   void _showComments() {
-    if (widget.videos.isEmpty) return;
-
-    final video = widget.videos[_currentIndex];
+    if (_mixedVideos.isEmpty) return;
+    final video = _mixedVideos[_currentIndex];
+    if (video is AdGroup) return;
+    final item = video as CoulisseExcellence;
 
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
@@ -261,15 +298,16 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       initialChildSize: 0.75,
       maxChildSize: 0.9,
       contentPadding: EdgeInsets.zero,
-      content: _CommentsSheet(videoId: video.id),
+      content: _CommentsSheet(videoId: item.id),
     );
   }
 
   // Afficher la notation
   void _showRating() {
-    if (widget.videos.isEmpty) return;
-
-    final video = widget.videos[_currentIndex];
+    if (_mixedVideos.isEmpty) return;
+    final video = _mixedVideos[_currentIndex];
+    if (video is AdGroup) return;
+    final item = video as CoulisseExcellence;
 
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
@@ -285,15 +323,17 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       initialChildSize: 0.75,
       maxChildSize: 0.9,
       contentPadding: EdgeInsets.zero,
-      content: _RatingSheet(video: video),
+      content: _RatingSheet(video: item),
     );
   }
 
   void _toggleLike() async {
-    if (widget.videos.isEmpty) return;
-
-    final video = widget.videos[_currentIndex];
-    final videoId = video.id;
+    if (_mixedVideos.isEmpty) return;
+    final video = _mixedVideos[_currentIndex];
+    if (video is AdGroup) return;
+    final item = video as CoulisseExcellence;
+    
+    final videoId = item.id;
     final userId = InteractionApiService.getCurrentUserId();
     if (userId == null) {
       print('⚠️ Aucun utilisateur connecté pour aimer la vidéo.');
@@ -353,10 +393,17 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
     final isDarkMode = ThemeService().isDarkMode;
 
     // Handle empty videos list
-    if (widget.videos.isEmpty) {
+    if (_mixedVideos.isEmpty) {
       return Scaffold(
         backgroundColor: isDarkMode ? Colors.black : Colors.white,
         appBar: AppBar(
@@ -417,12 +464,25 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
             scrollDirection: Axis.vertical,
             allowImplicitScrolling: true,
             onPageChanged: _onPageChanged,
-            itemCount: widget.videos.length,
+            itemCount: _mixedVideos.length,
             itemBuilder: (context, index) {
+              final item = _mixedVideos[index];
+              final isActive = index == _currentIndex;
+
+              if (item is AdGroup) {
+                return AdVideoCarouselPage(
+                  adGroup: item,
+                  isActive: isActive,
+                );
+              }
+              
+              final video = item as CoulisseExcellence;
+              final controller = _youtubeControllers[index];
+
               return _VideoPage(
-                video: widget.videos[index],
-                youtubeController: _youtubeControllers[index],
-                isActive: index == _currentIndex,
+                video: video,
+                youtubeController: controller,
+                isActive: isActive,
               );
             },
           ),
@@ -430,6 +490,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
           // Indicateur de page supprimé
 
           // Boutons d'action latéraux
+          if (_mixedVideos[_currentIndex] is CoulisseExcellence)
           Positioned(
             right: 16,
             bottom: 160,
@@ -438,29 +499,61 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 _ActionButton(
                   icon: Icons.school,
                   label: 'École',
-                  onTap: widget.videos.isNotEmpty
-                      ? () =>
-                            _navigateToEcole(widget.videos[_currentIndex].code)
-                      : () {},
+                  onTap: () {
+                    final video = _mixedVideos[_currentIndex] as CoulisseExcellence;
+                    final wrapper = MainScreenWrapper.maybeOf(context);
+                    if (wrapper != null) {
+                      wrapper.navigateToExtraScreen(EstablishmentDetailScreen(
+                        ecole: Ecole(
+                          pays: '',
+                          ville: '',
+                          adresse: '',
+                          parametreNom: '',
+                          logo: '',
+                          telephone: '',
+                          parametreCode: video.code,
+                          statut: '',
+                          filiereNom: [],
+                        ),
+                      ));
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EstablishmentDetailScreen(
+                            ecole: Ecole(
+                              pays: '',
+                              ville: '',
+                              adresse: '',
+                              parametreNom: '',
+                              logo: '',
+                              telephone: '',
+                              parametreCode: video.code,
+                              statut: '',
+                              filiereNom: [],
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  },
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
                   icon:
-                      widget.videos.isNotEmpty &&
-                          _likedVideoIds.contains(
-                            widget.videos[_currentIndex].id,
+                      _likedVideoIds.contains(
+                            (_mixedVideos[_currentIndex] as CoulisseExcellence).id,
                           )
                       ? Icons.favorite
                       : Icons.favorite_border,
                   label:
-                      widget.videos.isNotEmpty &&
-                          _videoLikesCount.containsKey(
-                            widget.videos[_currentIndex].id,
+                      _videoLikesCount.containsKey(
+                            (_mixedVideos[_currentIndex] as CoulisseExcellence).id,
                           ) &&
-                          _videoLikesCount[widget.videos[_currentIndex].id]! > 0
-                      ? '${_videoLikesCount[widget.videos[_currentIndex].id]}'
+                          _videoLikesCount[(_mixedVideos[_currentIndex] as CoulisseExcellence).id]! > 0
+                      ? '${_videoLikesCount[(_mixedVideos[_currentIndex] as CoulisseExcellence).id]}'
                       : 'J\'aime',
-                  onTap: widget.videos.isNotEmpty ? _toggleLike : () {},
+                  onTap: _toggleLike,
                 ),
                 const SizedBox(height: 16),
                 _ActionButton(
@@ -472,15 +565,12 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                 _ActionButton(
                   icon: Icons.comment,
                   label:
-                      widget.videos.isNotEmpty &&
-                          _videoCommentsCount.containsKey(
-                            widget.videos[_currentIndex].id,
+                      _videoCommentsCount.containsKey(
+                            (_mixedVideos[_currentIndex] as CoulisseExcellence).id,
                           ) &&
-                          _videoCommentsCount[widget
-                                  .videos[_currentIndex]
-                                  .id]! >
+                          _videoCommentsCount[(_mixedVideos[_currentIndex] as CoulisseExcellence).id]! >
                               0
-                      ? '${_videoCommentsCount[widget.videos[_currentIndex].id]}'
+                      ? '${_videoCommentsCount[(_mixedVideos[_currentIndex] as CoulisseExcellence).id]}'
                       : 'Commenter',
                   onTap: _showComments,
                 ),

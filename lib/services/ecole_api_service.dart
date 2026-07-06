@@ -253,6 +253,12 @@ class EcoleApiService {
         print('❌ Corps de la réponse: ${response.body}');
         print('═══════════════════════════════════════════════════════════');
         print('');
+        if (response.statusCode == 404) {
+          throw ApiException(
+            message: 'Aucune école associée à cette vidéo',
+            type: ApiErrorType.clientError,
+          );
+        }
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {

@@ -1130,7 +1130,30 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
                 _AppColors.emerald,
               );
             } catch (e) {
-              _showSnack('Erreur: $e', Colors.red);
+              final errorStr = e.toString();
+              String friendlyMessage = "Impossible d'enregistrer votre avis. Veuillez réessayer.";
+
+              if (errorStr.contains('SocketException') || 
+                  errorStr.contains('NetworkImage') || 
+                  errorStr.contains('connexion') ||
+                  errorStr.contains('Failed host lookup')) {
+                friendlyMessage = "Problème de connexion internet. Veuillez vérifier votre réseau et réessayer.";
+              } else if (errorStr.contains('NotFoundHttpException') || errorStr.contains('404')) {
+                friendlyMessage = "Le service de commentaires est indisponible pour cet événement.";
+              } else if (errorStr.contains('TimeoutException')) {
+                friendlyMessage = "Le serveur a mis trop de temps à répondre. Veuillez réessayer.";
+              } else if (errorStr.contains('Erreur serveur') || errorStr.contains('500') || errorStr.contains('interne')) {
+                friendlyMessage = "Une erreur est survenue sur le serveur. Veuillez réessayer plus tard.";
+              } else {
+                String cleanMsg = errorStr.replaceAll('Exception: ', '').trim();
+                cleanMsg = cleanMsg.replaceAll('Erreur lors de l\'ajout du commentaire:', '').trim();
+                cleanMsg = cleanMsg.replaceAll('Erreur lors de la mise à jour du commentaire:', '').trim();
+                cleanMsg = cleanMsg.trim();
+                if (cleanMsg.isNotEmpty) {
+                  friendlyMessage = cleanMsg;
+                }
+              }
+              _showSnack(friendlyMessage, Colors.red);
             }
           },
       ),

@@ -173,6 +173,8 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
     setState(() {
       _currentIndex = index;
       _currentChildDetailScreen = null;
+      _currentEstablishmentDetailScreen = null;
+      _extraScreenStack.clear();
     });
   }
 

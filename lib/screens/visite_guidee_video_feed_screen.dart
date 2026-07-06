@@ -308,6 +308,17 @@ class _VisiteGuideeVideoFeedScreenState
     } catch (e) {
       print('🏫 ❌ ERREUR: $e');
       // La notification est déjà gérée par ApiExceptionHandler
+      final errorStr = e.toString();
+      if (errorStr.contains('Aucune école associée à cette vidéo') || errorStr.contains('404')) {
+        if (mounted) {
+          final wrapper = MainScreenWrapper.maybeOf(context);
+          if (wrapper != null) {
+            wrapper.updateCurrentIndex(2); // Index 2 correspond à l'onglet "Établissement"
+          } else {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
+        }
+      }
     }
   }
 

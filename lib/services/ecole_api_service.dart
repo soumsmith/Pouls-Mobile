@@ -262,7 +262,12 @@ class EcoleApiService {
         throw Exception('Erreur HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      ApiExceptionHandler.handle(e, context: 'la récupération des paramètres de l\'école');
+      final isNoSchoolError = e is ApiException && e.message == 'Aucune école associée à cette vidéo';
+      ApiExceptionHandler.handle(
+        e,
+        context: 'la récupération des paramètres de l\'école',
+        showNotification: !isNoSchoolError,
+      );
       throw Exception(
         'Erreur lors de la récupération des paramètres de l\'école: $e',
       );

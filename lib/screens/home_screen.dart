@@ -1361,18 +1361,28 @@ class _HomeScreenState extends State<HomeScreen> {
   // Gérer l'action sur une astuce
   void _handleAstuceAction(AstuceConseil astuce) {
     if (astuce.youtubeUrl != null && astuce.youtubeUrl!.isNotEmpty) {
-      final video = VisiteGuideeVideo(
-        id: astuce.id,
-        typeVideo: 'astuce',
-        youtubeUrl: astuce.youtubeUrl!,
-        title: astuce.title,
-        description: astuce.content,
-        code: astuce.codeecole,
-        slug: astuce.slug,
+      // Convertir toutes les astuces vidéo en VisiteGuideeVideo
+      final allVideoAstuces = _filteredAstuces
+          .where((a) => a.youtubeUrl != null && a.youtubeUrl!.isNotEmpty)
+          .toList();
+      final allVideos = allVideoAstuces
+          .map((a) => VisiteGuideeVideo(
+                id: a.id,
+                typeVideo: 'astuce',
+                youtubeUrl: a.youtubeUrl!,
+                title: a.title,
+                description: a.content,
+                code: a.codeecole,
+                slug: a.slug,
+              ))
+          .toList();
+      final tappedIndex = allVideoAstuces.indexWhere((a) => a.id == astuce.id);
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        VisiteGuideeVideoFeedScreen(
+          videos: allVideos,
+          initialIndex: tappedIndex >= 0 ? tappedIndex : 0,
+        ),
       );
-      MainScreenWrapper.of(
-        context,
-      ).navigateToExtraScreen(VisiteGuideeVideoFeedScreen(videos: [video]));
     } else {
       MainScreenWrapper.of(
         context,

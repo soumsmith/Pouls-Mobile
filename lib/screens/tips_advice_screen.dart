@@ -432,17 +432,22 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                       allowLineBreak: true,
                       showPlayIcon: true,
                       onTap: () {
-                        final video = VisiteGuideeVideo(
-                          id: astuce.id,
-                          typeVideo: 'astuce',
-                          youtubeUrl: astuce.youtubeUrl!,
-                          title: astuce.title,
-                          description: astuce.content,
-                          code: astuce.codeecole,
-                          slug: astuce.slug,
-                        );
+                        final allVideos = videos
+                            .map((a) => VisiteGuideeVideo(
+                                  id: a.id,
+                                  typeVideo: 'astuce',
+                                  youtubeUrl: a.youtubeUrl!,
+                                  title: a.title,
+                                  description: a.content,
+                                  code: a.codeecole,
+                                  slug: a.slug,
+                                ))
+                            .toList();
                         MainScreenWrapper.of(context).navigateToExtraScreen(
-                          VisiteGuideeVideoFeedScreen(videos: [video]),
+                          VisiteGuideeVideoFeedScreen(
+                            videos: allVideos,
+                            initialIndex: index,
+                          ),
                         );
                       },
                     ),

@@ -390,6 +390,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         'rating': '4.9',
         'description': _getVideoDescription(video.typevideo),
         'videoType': video.typevideo,
+        'code': video.code,
       };
     }).toList();
 
@@ -2131,7 +2132,7 @@ class _FeaturedSchoolCard extends StatelessWidget {
         etablissement: item['location'] ?? '',
         nompays: null,
         videoYoutube: item['video'] ?? '',
-        code: '',
+        code: item['code'] ?? '',
       );
     }).toList();
   }
@@ -2479,14 +2480,23 @@ class _FeaturedSchoolCard extends StatelessWidget {
                   .length -
               1;
 
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => CoulisseVideoFeedScreen(
+          if (MainScreenWrapper.maybeOf(context) != null) {
+            MainScreenWrapper.of(context).navigateToExtraScreen(
+              CoulisseVideoFeedScreen(
                 videos: queue,
                 initialIndex: initialIndex >= 0 ? initialIndex : 0,
               ),
-            ),
-          );
+            );
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CoulisseVideoFeedScreen(
+                  videos: queue,
+                  initialIndex: initialIndex >= 0 ? initialIndex : 0,
+                ),
+              ),
+            );
+          }
         }
       },
       child: Stack(

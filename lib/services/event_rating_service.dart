@@ -26,10 +26,13 @@ class EventRatingService {
   }
   
   // Récupérer tous les commentaires et notations d'un événement
-  static Future<List<EventRatingComment>> getEventComments(String eventSlug) async {
+  static Future<List<EventRatingComment>> getEventComments(String eventSlug, {int page = 1}) async {
     try {
+      final url = '$baseUrl/forums/$eventSlug/commentaires?per_page=50&page=$page';
+      print('🌐 GET $url');
+      
       final response = await http.get(
-        Uri.parse('$baseUrl/evenements/$eventSlug/comments'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -37,8 +40,32 @@ class EventRatingService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((item) => EventRatingComment.fromJson(item as Map<String, dynamic>)).toList();
+        final data = json.decode(response.body);
+        List<dynamic> commentsList = [];
+        
+        if (data['commentaire'] != null && data['commentaire']['data'] != null) {
+          commentsList = data['commentaire']['data'];
+        } else {
+          commentsList = data['data'] ?? [];
+        }
+
+        return commentsList.map((item) {
+          final mapItem = item as Map<String, dynamic>;
+          final mapped = {
+            'id': mapItem['id']?.toString() ?? '',
+            'event_slug': eventSlug,
+            'user_id': mapItem['userid']?.toString() ?? mapItem['user_id']?.toString() ?? '',
+            'user_name': mapItem['author_name'] ?? mapItem['nom'] ?? mapItem['user_name'] ?? '',
+            'user_avatar': mapItem['avatar'] ?? mapItem['user_avatar'] ?? '',
+            'rating': mapItem['rating'] ?? 0,
+            'comment': mapItem['contenu'] ?? mapItem['content'] ?? mapItem['comment'] ?? '',
+            'created_at': mapItem['created_at'] ?? '',
+          };
+          return EventRatingComment.fromJson(mapped);
+        }).toList();
+      } else if (response.statusCode == 404) {
+        // Le forum/événement n'existe pas ou n'a pas de commentaires
+        return [];
       } else {
         throw Exception(_parseError(response));
       }
@@ -80,15 +107,12 @@ class EventRatingService {
   }) async {
     try {
       final commentData = {
-        'event_slug': eventSlug,
-        'user_id': userId,
-        'user_name': userName,
-        'user_avatar': userAvatar,
-        'rating': rating,
-        'comment': comment,
+        'nom': userName,
+        'userid': int.tryParse(userId) ?? 0,
+        'contenu': comment,
       };
 
-      final url = Uri.parse('$baseUrl/evenements/comments');
+      final url = Uri.parse('$baseUrl/forums/$eventSlug/commentaires');
       print('🌐 POST $url');
       print('📦 Payload: ${json.encode(commentData)}');
 
@@ -104,8 +128,23 @@ class EventRatingService {
       print('📥 Response [${response.statusCode}]: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        return EventRatingComment.fromJson(data);
+        try {
+          final Map<String, dynamic> data = json.decode(response.body);
+          if (data.containsKey('id') || data.containsKey('created_at')) {
+            return EventRatingComment.fromJson(data);
+          }
+        } catch (_) {}
+        // Return dummy object if parsing fails (API typically returns just a success message)
+        return EventRatingComment(
+          id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+          eventSlug: eventSlug,
+          userId: userId,
+          userName: userName,
+          userAvatar: userAvatar,
+          rating: rating,
+          comment: comment,
+          createdAt: DateTime.now(),
+        );
       } else {
         throw Exception(_parseError(response));
       }

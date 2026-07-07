@@ -72,7 +72,6 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   List<EventRatingComment> _comments = [];
   EventRatingSummary? _ratingSummary;
-  EventRatingComment? _userComment;
   bool _commentsLoading = true;
   String? _commentsError;
 
@@ -156,25 +155,12 @@ class _EventDetailScreenState extends State<EventDetailScreen>
         _commentsError = null;
       });
     try {
-      final results = await Future.wait([
-        EventRatingService.getEventComments(widget.event.slug),
-        EventRatingService.getEventRatingSummary(widget.event.slug),
-      ]);
-      final currentUser = AuthService.instance.getCurrentUser();
-      EventRatingComment? userComment;
-      if (currentUser != null) {
-        try {
-          userComment = await EventRatingService.getUserComment(
-            widget.event.slug,
-            currentUser.id,
-          );
-        } catch (_) {}
-      }
+      final comments = await EventRatingService.getEventComments(widget.event.slug);
+      
       if (mounted) {
         setState(() {
-          _comments = results[0] as List<EventRatingComment>;
-          _ratingSummary = results[1] as EventRatingSummary;
-          _userComment = userComment;
+          _comments = comments;
+          _ratingSummary = null;
           _commentsLoading = false;
         });
       }
@@ -664,84 +650,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Widget _buildCommentCard(EventRatingComment comment) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.screenCardThemed(context),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: AppDimensions.getSettingsCardShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: isDark
-                    ? _AppColors.indigo.withOpacity(0.2)
-                    : _AppColors.indigoLight,
-                backgroundImage: comment.userAvatar.isNotEmpty
-                    ? NetworkImage(comment.userAvatar)
-                    : null,
-                child: comment.userAvatar.isEmpty
-                    ? Text(
-                        comment.userName.isNotEmpty
-                            ? comment.userName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: _AppColors.indigo,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      comment.userName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.screenTextPrimaryThemed(context),
-                      ),
-                    ),
-                    Text(
-                      comment.formattedDate,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.screenTextSecondaryThemed(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _StarRow(
-                stars: List.generate(
-                  5,
-                  (i) => i < comment.rating ? 'filled' : 'empty',
-                ),
-                size: 14,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            comment.comment,
-            style: TextStyle(
-              fontSize: 13.5,
-              color: AppColors.screenTextPrimaryThemed(context),
-              height: 1.55,
-            ),
-          ),
-        ],
-      ),
-    );
+    return _CommentCardWidget(comment: comment);
   }
 
   // ─────────────────────────────────────────────
@@ -1103,32 +1012,20 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
         maxWidth: AppDimensions.getBottomSheetMaxWidth(context),
       ),
       builder: (context) => _CommentBottomSheet(
-        existingComment: _userComment,
+        existingComment: null,
           onSave: (rating, comment) async {
             Navigator.pop(context);
             try {
-              if (_userComment != null) {
-                await EventRatingService.updateComment(
-                  commentId: _userComment!.id,
-                  rating: rating,
-                  comment: comment,
-                );
-              } else {
-                await EventRatingService.addComment(
-                  eventSlug: widget.event.slug,
-                  userId: currentUser.id,
-                  userName: '${currentUser.firstName} ${currentUser.lastName}'
-                      .trim(),
-                  userAvatar: '',
-                  rating: rating,
-                  comment: comment,
-                );
-              }
-              await _loadCommentsAndRatings();
-              _showSnack(
-                _userComment != null ? 'Avis modifié' : 'Avis publié',
-                _AppColors.emerald,
+              await EventRatingService.addComment(
+                eventSlug: widget.event.slug,
+                userId: currentUser.id,
+                userName: '${currentUser.firstName} ${currentUser.lastName}'.trim(),
+                userAvatar: '',
+                rating: rating,
+                comment: comment,
               );
+              await _loadCommentsAndRatings();
+              _showSnack('Avis publié', _AppColors.emerald);
             } catch (e) {
               final errorStr = e.toString();
               String friendlyMessage = "Impossible d'enregistrer votre avis. Veuillez réessayer.";
@@ -2444,65 +2341,7 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           ),
           const SizedBox(height: 24),
 
-          // Étoiles
-          const Text(
-            'Votre note',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: _AppColors.slate700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (i) {
-              final filled = i < _rating;
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _rating = i + 1);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Icon(
-                    filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: filled ? _AppColors.gold : _AppColors.slate300,
-                    size: 40,
-                  ),
-                ),
-              );
-            }),
-          ),
-          if (_rating > 0) ...[
-            const SizedBox(height: 8),
-            Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Container(
-                  key: ValueKey(_rating),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _AppColors.amberLight,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _labels[_rating - 1],
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _AppColors.amber,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
+          // Étoiles retirées
 
           // Champ commentaire
           const Text(
@@ -2560,8 +2399,8 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
               Expanded(
                 child: CustomButton(
                   text: isEdit ? 'Modifier' : 'Publier',
-                  onPressed: _rating > 0 && _controller.text.trim().isNotEmpty
-                      ? () => widget.onSave(_rating, _controller.text.trim())
+                  onPressed: _controller.text.trim().isNotEmpty
+                      ? () => widget.onSave(0, _controller.text.trim())
                       : null,
                   color: _AppColors.indigo,
                   height: 48,
@@ -2572,6 +2411,178 @@ class _CommentBottomSheetState extends State<_CommentBottomSheet> {
           const BottomSpacer(),
         ],
       ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Comment Card Widget with Expandable Text
+// ─────────────────────────────────────────────
+class _CommentCardWidget extends StatefulWidget {
+  final EventRatingComment comment;
+
+  const _CommentCardWidget({required this.comment});
+
+  @override
+  State<_CommentCardWidget> createState() => _CommentCardWidgetState();
+}
+
+class _CommentCardWidgetState extends State<_CommentCardWidget> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const themeColor = _AppColors.indigo;
+    final isLongText = widget.comment.comment.length > 150;
+
+    return GestureDetector(
+      onTap: () {
+        if (isLongText) {
+          setState(() {
+            _isExpanded = !_isExpanded;
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: _isExpanded 
+                  ? themeColor.withOpacity(0.1) 
+                  : (isDark ? Colors.black26 : Colors.black.withOpacity(0.04)),
+              blurRadius: _isExpanded ? 16 : 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: _isExpanded 
+                ? themeColor.withOpacity(0.5) 
+                : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+            width: _isExpanded ? 1.5 : 1.0,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: themeColor.withOpacity(0.15),
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: isDark
+                        ? themeColor.withOpacity(0.2)
+                        : themeColor.withOpacity(0.08),
+                    backgroundImage: widget.comment.userAvatar.isNotEmpty
+                        ? NetworkImage(widget.comment.userAvatar)
+                        : null,
+                    child: widget.comment.userAvatar.isEmpty
+                        ? Text(
+                            widget.comment.userName.isNotEmpty
+                                ? widget.comment.userName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              color: themeColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.comment.userName.isNotEmpty ? widget.comment.userName : 'Utilisateur',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 11,
+                            color: AppColors.screenTextSecondaryThemed(context).withOpacity(0.7),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.comment.formattedDate,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.screenTextSecondaryThemed(context).withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.format_quote_rounded,
+                  color: isDark ? Colors.white10 : Colors.grey.shade200,
+                  size: 28,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              alignment: Alignment.topCenter,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.comment.comment,
+                    maxLines: _isExpanded ? null : (isLongText ? 4 : null),
+                    overflow: _isExpanded ? TextOverflow.visible : (isLongText ? TextOverflow.ellipsis : null),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.screenTextPrimaryThemed(context).withOpacity(0.9),
+                      height: 1.5,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                  if (isLongText) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _isExpanded ? 'Voir moins' : 'Voir plus',
+                      style: const TextStyle(
+                        color: themeColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ]
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

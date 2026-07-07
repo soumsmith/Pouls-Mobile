@@ -77,7 +77,13 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     
     _currentIndex = newIndex;
     _pageController = PageController(initialPage: _currentIndex);
-    _initializeControllers();
+
+    // Initialisation lazy : créer une liste de null, seule la fenêtre active sera initialisée
+    _youtubeControllers = List<YoutubePlayerController?>.filled(_mixedVideos.length, null);
+    // Pré-initialiser uniquement la vidéo courante + les adjacentes (fenêtre de 3 max)
+    _ensureControllerAt(_currentIndex, autoPlay: true);
+    if (_currentIndex - 1 >= 0) _ensureControllerAt(_currentIndex - 1, autoPlay: false);
+    if (_currentIndex + 1 < _mixedVideos.length) _ensureControllerAt(_currentIndex + 1, autoPlay: false);
     
     if (mounted) {
       setState(() {
@@ -101,52 +107,55 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     super.dispose();
   }
 
-  void _initializeControllers() {
-    // Créer les contrôleurs YouTube pour chaque vidéo
-    final controllers = <YoutubePlayerController?>[];
-    for (int i = 0; i < _mixedVideos.length; i++) {
-      final item = _mixedVideos[i];
-      if (item is AdGroup) {
-        controllers.add(null);
-        continue;
-      }
-      
-      final video = item as CoulisseExcellence;
-      final videoId = video.youtubeVideoId;
-      print('Traitement vidéo: ${video.id} - VideoID: $videoId');
-      if (videoId.isNotEmpty) {
-        final isInitialVideo = i == _currentIndex;
-        final controller = YoutubePlayerController(
-          initialVideoId: videoId,
-          flags: YoutubePlayerFlags(
-            autoPlay: isInitialVideo,
-            mute: false,
-            enableCaption: false,
-            forceHD: false,
-            loop: true, // Loopper la vidéo comme sur TikTok / YouTube Shorts
-            hideControls:
-                true, // Masquer les contrôles natifs (et le titre/logo de la chaîne en haut)
-            hideThumbnail: true, // Empêche l'affichage de l'image de couverture en pause
-          ),
-        );
-        // Ajouter un écouteur pour rafraîchir le bouton Play/Pause en direct
-        controller.addListener(() {
-          if (mounted) {
-            if (i == _currentIndex) {
-              setState(() {});
-            }
-          }
-        });
-        controllers.add(controller);
-      } else {
-        print('VideoID vide pour vidéo ${video.id} - ${video.titre}');
-        controllers.add(null);
+  /// Crée un contrôleur YouTube pour l'index donné s'il n'existe pas déjà.
+  void _ensureControllerAt(int index, {required bool autoPlay}) {
+    if (index < 0 || index >= _mixedVideos.length) return;
+    // Déjà initialisé ou c'est une pub
+    if (_youtubeControllers[index] != null) return;
+    final item = _mixedVideos[index];
+    if (item is AdGroup) return;
+
+    final video = item as CoulisseExcellence;
+    final videoId = video.youtubeVideoId;
+    if (videoId.isEmpty) return;
+
+    final controller = YoutubePlayerController(
+      initialVideoId: videoId,
+      flags: YoutubePlayerFlags(
+        autoPlay: autoPlay,
+        mute: false,
+        enableCaption: false,
+        forceHD: false,
+        loop: true,
+        hideControls: true,
+        hideThumbnail: true,
+      ),
+    );
+    _youtubeControllers[index] = controller;
+  }
+
+  /// Met à jour la fenêtre glissante : garde uniquement les contrôleurs
+  /// pour [centerIndex-1, centerIndex, centerIndex+1] et libère les autres.
+  void _updateControllersWindow(int centerIndex) {
+    final windowIndices = <int>{
+      if (centerIndex - 1 >= 0) centerIndex - 1,
+      centerIndex,
+      if (centerIndex + 1 < _mixedVideos.length) centerIndex + 1,
+    };
+
+    // Libérer les contrôleurs hors fenêtre
+    for (int i = 0; i < _youtubeControllers.length; i++) {
+      if (!windowIndices.contains(i) && _youtubeControllers[i] != null) {
+        _youtubeControllers[i]!.pause();
+        _youtubeControllers[i]!.dispose();
+        _youtubeControllers[i] = null;
       }
     }
 
-    setState(() {
-      _youtubeControllers = controllers;
-    });
+    // Pré-initialiser les contrôleurs dans la fenêtre
+    for (final i in windowIndices) {
+      _ensureControllerAt(i, autoPlay: i == centerIndex);
+    }
   }
 
   Future<void> _fetchVideoInteractions(int videoId) async {
@@ -186,6 +195,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   }
 
   void _onPageChanged(int index) {
+    final previousIndex = _currentIndex;
     setState(() {
       _currentIndex = index;
     });
@@ -194,16 +204,17 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       _fetchVideoInteractions((_mixedVideos[_currentIndex] as CoulisseExcellence).id);
     }
 
-    // Lecture instantanée de la vidéo active dès le swipe
-    if (_youtubeControllers[index] != null) {
-      _youtubeControllers[index]!.play();
+    // Pause de l'ancienne vidéo
+    if (_youtubeControllers[previousIndex] != null) {
+      _youtubeControllers[previousIndex]!.pause();
     }
 
-    // Pause immédiate de toutes les autres vidéos pour économiser le CPU et le réseau
-    for (int i = 0; i < _youtubeControllers.length; i++) {
-      if (i != index && _youtubeControllers[i] != null) {
-        _youtubeControllers[i]!.pause();
-      }
+    // Mettre à jour la fenêtre glissante (crée les adjacents, libère les éloignés)
+    _updateControllersWindow(index);
+
+    // Lecture instantanée de la vidéo active
+    if (_youtubeControllers[index] != null) {
+      _youtubeControllers[index]!.play();
     }
   }
 

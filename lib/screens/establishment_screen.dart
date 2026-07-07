@@ -180,10 +180,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   Timer? _searchTimer;
 
   // ── Timer pour slider auto-défilement ────────────────────────
-  Timer? _sliderTimer;
-  final PageController _sliderController = PageController();
-  int _currentSliderIndex = 0;
-  bool _showSliderText = false;
+  // Le slider gère désormais son propre état en interne
 
   List<String> _countriesList = ['Tous'];
   Map<String, String> _paysMap = {'Tous': ''};
@@ -244,7 +241,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _loadEcoles();
     _loadVideos();
     _initializeFeaturedSchools();
-    _startSliderAutoScroll();
   }
 
   @override
@@ -255,8 +251,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   @override
   void dispose() {
     _searchTimer?.cancel();
-    _sliderTimer?.cancel();
-    _sliderController.dispose();
     _textSizeService.removeListener(_onTextSizeChanged);
     _searchController.dispose();
     _paysController.dispose();
@@ -310,32 +304,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     if (mounted) {
       setState(() => _currentTextScale = _textSizeService.getScale());
     }
-  }
-
-  // ── Slider auto-défilement ───────────────────────────────────
-  void _startSliderAutoScroll() {
-    _sliderTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_sliderController.hasClients && mounted) {
-        if (_currentSliderIndex < _featuredSchools.length - 1) {
-          _currentSliderIndex++;
-        } else {
-          _currentSliderIndex = 0;
-        }
-        _sliderController.animateToPage(
-          _currentSliderIndex,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  void _onSliderPageChanged(int index) {
-    setState(() {
-      _currentSliderIndex = index;
-    });
-    _sliderTimer?.cancel();
-    _startSliderAutoScroll();
   }
 
   // ── Data ───────────────────────────────────────────────────
@@ -689,7 +657,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     );
   }
 
-  Widget _buildAdvancedSearchBottomSheet(BuildContext context, StateSetter setModalState) {
+  Widget _buildAdvancedSearchBottomSheet(
+    BuildContext context,
+    StateSetter setModalState,
+  ) {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
@@ -794,139 +765,148 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       20 + MediaQuery.of(context).viewInsets.bottom,
                     ),
                     child: Column(
-                  children: [
-                    Row(
                       children: [
-                        Expanded(
-                          child: SearchableDropdown(
-                            label: 'Pays',
-                            value:
-                                _paysReverseMap[_paysController.text] ?? 'Tous',
-                            items: _countriesList,
-                            isDarkMode:
-                                Theme.of(context).brightness == Brightness.dark,
-                            onChanged: (String val) {
-                              setState(() {
-                                _paysController.text = _paysMap[val] ?? '';
-                              });
-                              setModalState(() {});
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SearchableDropdown(
+                                label: 'Pays',
+                                value:
+                                    _paysReverseMap[_paysController.text] ??
+                                    'Tous',
+                                items: _countriesList,
+                                isDarkMode:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
+                                onChanged: (String val) {
+                                  setState(() {
+                                    _paysController.text = _paysMap[val] ?? '';
+                                  });
+                                  setModalState(() {});
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Code pays',
+                                hint: 'Entrez le code',
+                                icon: Icons.code_rounded,
+                                controller: _codepaysController,
+                                iconColor: AppColors.screenOrange,
+                                focusBorderColor: AppColors.screenOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Ville',
+                                hint: 'Entrez la ville',
+                                icon: Icons.location_city_rounded,
+                                controller: _villeController,
+                                iconColor: AppColors.screenOrange,
+                                focusBorderColor: AppColors.screenOrange,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Quartier',
+                                hint: 'Entrez le quartier',
+                                icon: Icons.location_on_rounded,
+                                controller: _quartierController,
+                                iconColor: AppColors.screenOrange,
+                                focusBorderColor: AppColors.screenOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SearchableDropdown(
+                                label: 'Catégorie',
+                                value: _categorieController.text.isEmpty
+                                    ? 'Tous'
+                                    : typeOptions.firstWhere(
+                                        (e) =>
+                                            e['value'] ==
+                                            _categorieController.text,
+                                        orElse: () => {'label': 'Tous'},
+                                      )['label']!,
+                                items: _filters,
+                                isDarkMode:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
+                                onChanged: (String val) {
+                                  setState(() {
+                                    final selectedValue = typeOptions
+                                        .firstWhere(
+                                          (e) => e['label'] == val,
+                                          orElse: () => {'value': 'tous'},
+                                        )['value'];
+                                    _categorieController.text =
+                                        selectedValue == 'tous'
+                                        ? ''
+                                        : selectedValue!;
+                                  });
+                                  setModalState(() {});
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Nom établissement',
+                                hint: 'Entrez le nom',
+                                icon: Icons.business_rounded,
+                                controller: _nomEtablissementController,
+                                iconColor: AppColors.screenOrange,
+                                focusBorderColor: AppColors.screenOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _applyAdvancedSearch();
+                              Navigator.of(context).pop();
                             },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.screenOrange,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Appliquer les filtres',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Code pays',
-                            hint: 'Entrez le code',
-                            icon: Icons.code_rounded,
-                            controller: _codepaysController,
-                            iconColor: AppColors.screenOrange,
-                            focusBorderColor: AppColors.screenOrange,
-                          ),
-                        ),
+                        const BottomSpacer(),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Ville',
-                            hint: 'Entrez la ville',
-                            icon: Icons.location_city_rounded,
-                            controller: _villeController,
-                            iconColor: AppColors.screenOrange,
-                            focusBorderColor: AppColors.screenOrange,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Quartier',
-                            hint: 'Entrez le quartier',
-                            icon: Icons.location_on_rounded,
-                            controller: _quartierController,
-                            iconColor: AppColors.screenOrange,
-                            focusBorderColor: AppColors.screenOrange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SearchableDropdown(
-                            label: 'Catégorie',
-                            value: _categorieController.text.isEmpty
-                                ? 'Tous'
-                                : typeOptions.firstWhere(
-                                    (e) => e['value'] == _categorieController.text,
-                                    orElse: () => {'label': 'Tous'},
-                                  )['label']!,
-                            items: _filters,
-                            isDarkMode: Theme.of(context).brightness == Brightness.dark,
-                            onChanged: (String val) {
-                              setState(() {
-                                final selectedValue = typeOptions.firstWhere(
-                                  (e) => e['label'] == val,
-                                  orElse: () => {'value': 'tous'},
-                                )['value'];
-                                _categorieController.text =
-                                    selectedValue == 'tous' ? '' : selectedValue!;
-                              });
-                              setModalState(() {});
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Nom établissement',
-                            hint: 'Entrez le nom',
-                            icon: Icons.business_rounded,
-                            controller: _nomEtablissementController,
-                            iconColor: AppColors.screenOrange,
-                            focusBorderColor: AppColors.screenOrange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _applyAdvancedSearch();
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.screenOrange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Appliquer les filtres',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const BottomSpacer(),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      );
-      },
+          );
+        },
       ),
     );
   }
@@ -945,10 +925,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 const SizedBox(height: 8),
                 _FeaturedSchoolsSlider(
                   featuredSchools: _featuredSchools,
-                  pageController: _sliderController,
-                  onPageChanged: _onSliderPageChanged,
-                  currentIndex: _currentSliderIndex,
-                  showText: _showSliderText,
+                  showText: true, // Toujours afficher les indicateurs
                 ),
               ],
             ),
@@ -1148,13 +1125,14 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
   Widget _buildErrorState() {
     final errorStr = _error ?? 'Une erreur est survenue lors du chargement';
-    final isNetworkError = errorStr.contains('SocketException') || 
-                           errorStr.contains('ClientException') ||
-                           errorStr.contains('Failed host lookup') ||
-                           errorStr.contains('Connection refused');
-                           
-    final errorMessage = isNetworkError 
-        ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.' 
+    final isNetworkError =
+        errorStr.contains('SocketException') ||
+        errorStr.contains('ClientException') ||
+        errorStr.contains('Failed host lookup') ||
+        errorStr.contains('Connection refused');
+
+    final errorMessage = isNetworkError
+        ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
         : errorStr;
 
     return CustomErrorState(
@@ -1683,7 +1661,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
     if (actionType == 'recommend') {
       showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+        constraints: const BoxConstraints(maxWidth: double.infinity),
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -1757,7 +1735,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
 
     if (actionType == 'share') {
       showModalBottomSheet(
-      constraints: const BoxConstraints(maxWidth: double.infinity),
+        constraints: const BoxConstraints(maxWidth: double.infinity),
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -2032,23 +2010,65 @@ class _EventsBannerCard extends StatelessWidget {
 }
 
 // ─── Featured Schools Slider ──────────────────────────────────────────────────
-class _FeaturedSchoolsSlider extends StatelessWidget {
+// ─── Featured Schools Slider ──────────────────────────────────────────────────
+class _FeaturedSchoolsSlider extends StatefulWidget {
   final List<Map<String, String>> featuredSchools;
-  final PageController pageController;
-  final Function(int) onPageChanged;
-  final int currentIndex;
   final bool showText;
 
   const _FeaturedSchoolsSlider({
     required this.featuredSchools,
-    required this.pageController,
-    required this.onPageChanged,
-    required this.currentIndex,
     required this.showText,
   });
 
   @override
+  State<_FeaturedSchoolsSlider> createState() => _FeaturedSchoolsSliderState();
+}
+
+class _FeaturedSchoolsSliderState extends State<_FeaturedSchoolsSlider> {
+  late PageController _pageController;
+  Timer? _autoPlayTimer;
+  int _currentPage = 0;
+
+  static const int _infiniteMultiplier = 10000;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialPage = widget.featuredSchools.length > 1
+        ? _infiniteMultiplier ~/ 2 * widget.featuredSchools.length
+        : 0;
+    _currentPage = initialPage;
+    _pageController = PageController(initialPage: initialPage);
+    _startAutoPlay();
+  }
+
+  @override
+  void dispose() {
+    _autoPlayTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer?.cancel();
+    if (widget.featuredSchools.length <= 1) return;
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      _currentPage++;
+      _pageController.animateToPage(
+        _currentPage,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (widget.featuredSchools.isEmpty) return const SizedBox.shrink();
+
+    final schoolCount = widget.featuredSchools.length;
+
     return Container(
       height: AppDimensions.getCarouselHeight(context),
       decoration: BoxDecoration(
@@ -2063,38 +2083,50 @@ class _FeaturedSchoolsSlider extends StatelessWidget {
         child: Stack(
           children: [
             PageView.builder(
-              controller: pageController,
-              onPageChanged: onPageChanged,
-              itemCount: featuredSchools.length,
-              itemBuilder: (context, index) => _FeaturedSchoolCard(
-                school: featuredSchools[index],
-                index: index,
-                schools: featuredSchools,
-                showText: showText,
-              ),
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index;
+                });
+                _startAutoPlay(); // Reset timer on manual swipe
+              },
+              itemBuilder: (context, index) {
+                final realIndex = index % schoolCount;
+                return _FeaturedSchoolCard(
+                  school: widget.featuredSchools[realIndex],
+                  index: realIndex,
+                  schools: widget.featuredSchools,
+                  showText: false, // On masque le texte (nom, description, etc.) sur les vidéos
+                );
+              },
             ),
-            if (showText)
+            if (widget.showText && schoolCount > 1)
               Positioned(
                 bottom: 12,
                 left: 0,
                 right: 0,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    featuredSchools.length,
-                    (index) => AnimatedContainer(
+                  children: List.generate(schoolCount, (index) {
+                    final isCurrent = (_currentPage % schoolCount) == index;
+                    return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: currentIndex == index ? 24 : 8,
+                      width: isCurrent ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: currentIndex == index
-                            ? AppColors.screenOrange
-                            : AppColors.screenOrange.withOpacity(0.3),
+                        color: isCurrent
+                            ? const Color.fromARGB(117, 221, 221, 221)
+                            : const Color.fromARGB(
+                                255,
+                                109,
+                                109,
+                                109,
+                              ).withOpacity(0.3),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ),
               ),
           ],

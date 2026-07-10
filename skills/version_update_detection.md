@@ -58,7 +58,7 @@ La détection automatique de version permet d'informer proactivement l'utilisate
 | Maintenance                | ⭐⭐⭐⭐ Faible       | ⭐⭐⭐ Moyen           | ⭐⭐ Nécessite un back | ⭐⭐⭐⭐ Firebase gère    |
 | Performance                | ⭐⭐⭐ Moyen          | ⭐⭐⭐ Moyen           | ⭐⭐⭐⭐⭐ Contrôlée     | ⭐⭐⭐⭐ Avec cache       |
 | Compatibilité Android      | ⭐⭐⭐⭐⭐             | ⭐⭐⭐⭐               | ⭐⭐⭐⭐⭐              | ⭐⭐⭐⭐⭐               |
-| Compatibilité iOS          | ⭐⭐⭐⭐              | ⭐⭐⭐⭐               | ⭐⭐⭐⭐⭐              | ⭐⭐⭐⭐⭐               |
+| Compatibilité iOS          | ⭐⭐⭐⭐              | ⭐⭐⭐⭐               | ⭐⭐⭐⭐⭐              | ⭐⭐⭐⭐⭐                |
 | Coût                       | Gratuit             | Gratuit              | Serveur requis        | Gratuit (limites)      |
 | Évolutivité                | ⭐⭐ Limitée         | ⭐⭐⭐ Moyenne         | ⭐⭐⭐⭐⭐ Maximale      | ⭐⭐⭐⭐ Haute            |
 | Contrôle force update      | ⭐⭐ Partiel         | Non                  | ⭐⭐⭐⭐⭐ Total         | ⭐⭐⭐⭐⭐ Total          |
@@ -259,6 +259,8 @@ Affichage UI selon résultat
 ```
 GET https://itunes.apple.com/lookup?bundleId=com.example.myapp&country=fr
 ```
+https://apps.apple.com/app/parent-responsable/id123456789';
+
 
 **Réponse :**
 ```json
